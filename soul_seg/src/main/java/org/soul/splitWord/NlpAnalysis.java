@@ -14,9 +14,7 @@ import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 
 /**
- * 自然语言分词,结果不稳定但是很全面
- * 
- * Native language processing
+ * 自然语言分词, Native language processing
  * 
  */
 public class NlpAnalysis extends Analysis {

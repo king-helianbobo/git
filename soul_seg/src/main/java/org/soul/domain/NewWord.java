@@ -1,11 +1,5 @@
 package org.soul.domain;
 
-/**
- * 新词发现,实体名
- * 
- * @author ansj
- * 
- */
 public class NewWord {
 
 	private String name;

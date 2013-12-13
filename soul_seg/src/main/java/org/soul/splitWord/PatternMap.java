@@ -7,12 +7,7 @@ import java.util.List;
 import org.soul.domain.Term;
 import org.soul.util.MathUtil;
 
-/**
- * 改成hash了
- * 
- * @author ansj
- */
-public class PatternHashMap {
+public class PatternMap {
 
 	private HashMap<String, Node> map = new HashMap<String, Node>();
 

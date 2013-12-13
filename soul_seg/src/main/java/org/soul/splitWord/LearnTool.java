@@ -14,7 +14,7 @@ import org.soul.domain.TermNatures;
 import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.CompanyRecogntion;
 import org.soul.recognition.ForeignNameRecognition;
-import org.soul.splitWord.PatternHashMap.Node;
+import org.soul.splitWord.PatternMap.Node;
 import org.soul.treeSplit.CollectionUtil;
 import org.soul.treeSplit.SmartForest;
 

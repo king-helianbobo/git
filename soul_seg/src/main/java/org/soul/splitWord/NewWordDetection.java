@@ -14,7 +14,7 @@ import org.apache.commons.logging.LogFactory;
 import org.soul.domain.Graph;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
-import org.soul.splitWord.PatternHashMap.Node;
+import org.soul.splitWord.PatternMap.Node;
 import org.soul.treeSplit.StringUtil;
 import org.soul.util.DictionaryReader;
 
@@ -48,15 +48,15 @@ public class NewWordDetection {
 
 	public Collection<Node> getNewWords(Graph graph) throws IOException {
 		// 构建patternTree
-		PatternHashMap pt = makePatHash(graph);
+		PatternMap pt = makePatHash(graph);
 		// 从patternTree中查找出最大公共字串
 		Collection<Node> words = pt.getWords();
 		return words;
 	}
 
 	// construct pat tree
-	private PatternHashMap makePatHash(Graph graph) {
-		PatternHashMap pt = new PatternHashMap();
+	private PatternMap makePatHash(Graph graph) {
+		PatternMap pt = new PatternMap();
 		// O(n^2)次遍历
 		List<Term> tempList = new ArrayList<Term>(20);
 		for (Term term : graph.terms) {
