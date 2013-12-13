@@ -1,0 +1,356 @@
+\section{ElasticSearch}
+\par Elasticsearch是个开源分布式搜索引擎，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
+\subsection{What's a mapping?}
+\par A mapping not only tells ES what is in a field…it tells ES what terms are indexed and searchable.
+\par A mapping is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
+\par Filters are easy to understand: a filter is a function that transforms data. Given a string, it returns another string (after some modifications). A function that converts strings to lowercase is a good example of a filter.
+\par An analyzer is simply a group of filters that are executed in-order. So an analyzer may first apply a lowercase filter, then apply a stop-word removal filter(中文分词作为其中一个filter). Once the analyzer is run, the remaining terms are indexed and stored in ES.因此: a mapping is simply a series of instructions on how to transform your input data into searchable, indexed terms.
+\par 使用\textbf{curl -XPUT http://localhost:9200/test/item/1 -d '\{"name":"zach", "description": "A Pretty cool guy."\}'}时，ES生成如下的mapping：
+\begin{verbatim}
+mappings: {
+   item: {
+      properties: {
+         description: { type: string }
+         name: { type: string }
+      }
+   }
+}
+\end{verbatim}
+\par ES猜测到"description"这列的类型为"string",When ES implicitly creates a "string" mapping, it applies the default global analyzer.除非显式地更改analyzer设置,否则ES将使用默认的Standard Analyzer.Standard Analyzer will apply the standard token filter, lowercase filter and stop token filter to your field. 这种情况下,句子末尾的.号和字符'A'将被丢弃.Importantly, even though ES continues to store the original document in it’s original form, the only parts that are searchable are the parts that have been run through an analyzer.So, mappings are not data-types , think of them as instructions on how you will eventually search your data. If you care about stop-words like 'a', you need to change the analyzer so that they aren’t removed.
+\subsection{Constructing more complicated mapping}
+\par Setting up proper analyzers in ES is all about thinking about the search query. You have to provide instructions to ES about the appropriate transformations so you can search intelligently.
+\par The first thing that happens to an input query is tokenization , breaking an input query into smaller chunks called tokens. There are several tokenizers available, which you should explore on your own when you get a chance. The Standard tokenizer is being used in this example, which is a pretty good tokenizer for most English-language search problems. You can query ES to see how it tokenizes a sample sentence:
+\begin{verbatim}
+curl -X GET "http://localhost:9200/test/_analyze?tokenizer=standard&pretty=true" 
+-d 'The quick brown fox is jumping over the lazy dog.'
+\end{verbatim}
+\par Ok, so our input query has been turned into tokens. Referring back to the mapping, the next step is to apply filters to these tokens. In order, these filters are applied to each token: Standard Token Filter, Lowercase Filter, ASCII Folding Filter.
+\begin{verbatim}
+curl -X GET "http://localhost:9200/test/_analyze?filter=standard&pretty=true" 
+-d 'The quick brown fox is jumping over the lazy dog.'
+\end{verbatim}
+\par As you can see, we specify both a search and index analyzer. These two separate analyzers instruct ES what to do when it is indexing a field, or searching a field. But why are these needed?
+\begin{verbatim}
+"partial":{
+     "search_analyzer":"full_name",
+     "index_analyzer":"partial_name",
+     "type":"string"
+}
+\end{verbatim}
+\par The index analyzer is easy to understand. We want to break up our input fields into various tokens so we can later search it. So we instruct ES to use the new partial\_name analyzer that we built, so that it can create nGrams for us.
+\par The search analyzer is a little trickier to understand, but crucial to getting good relevance. Imagine querying for “Race”. We want that query to match “race”, “races” and “racecar”. When searching, we want to make sure ES eventually searches with the token “race”. The full\_name analyzer will give us the needed token to search with.
+\par If, however, we used the partial\_name nGram analyzer, we would generate a list of nGrams as our search query. The search query “Race” would turn into ["ra", "rac", "race"].Those tokens are then used to search the index. As you might guess, “ra” and “rac” will match a lot of things you don’t want, such as “racket” or “ratify” or “rapport”.
+\par So specifying different index and search analyzers is critical when working with things like ngrams. Make sure you always double check what you expect to query ES with…and what is actually being passed to ES.
+\subsection{Depth into ElasticSearch}
+\par 当使用如下命令搜索时：
+\begin{verbatim}
+curl -XPOST "http://namenode:9200/_search" -d'
+{
+    "query": {
+      "match_all" : {}
+    },
+    "filter" : {
+      "term" : { "director" : "Francis Ford Coppola"}
+    }
+}'
+\end{verbatim}
+没有任何结果，而使用
+\begin{verbatim}
+curl -XPOST "http://namenode:9200/_search" -d'
+{
+    "query": {
+      "match_all" : {}
+    },
+    "filter" : {
+      "term" : { "year" : "1962"}
+    }
+}'
+\end{verbatim}
+\par 却能输出结果，What's going on here?  We've obviously indexed two movies with "Francis Ford Coppola" as director and that's what we see in search results as well. Well, while ES has a JSON object with that data that it returns to us in search results in the form of the \_source property .
+\par When we index a document with ElasticSearch it (simplified) does two things: it stores the original data untouched for later retrieval in the form of \_source and it indexes each JSON property into one or more fields in a Lucene index. During the indexing it processes each field according to how the field is mapped. If it isn't mapped , default mappings depending on the fields type (string, number etc) is used.
+\par As we haven't supplied any mappings for our index, ElasticSearch uses the default mappings for the director field. This means that in the index the director fields value isn't \textbf{"Francis Ford Coppola"}. Instead it's something like \textbf{["francis", "ford", "coppola"]}. We can verify that by modifying our filter to instead match "francis" (or "ford" or "coppola").
+\par So, what to do if we want to filter by the exact name of the director? We modify how it's mapped. There are a number of ways to add mappings to ElasticSearch, through a configuration file, as part of a HTTP request that creates and index and by calling the \_mapping endpoint. Using the last approach, we could fix the above issue by adding a mapping for the "director" field , to instruct ElasticSearch not to analyze (tokenize etc.) the field at all.
+\begin{verbatim}
+curl -X PUT namenode:9200/movies/movie/_mapping -d'
+{
+   "movie": {
+      "properties": {
+         "director": {
+            "type": "string",
+            "index": "not_analyzed"
+        }
+      }
+   }
+}'
+\end{verbatim}
+\par In many cases it's not possible to modify existing mappings. Often the easiest work around for that is to create a new index with the desired mappings and re-index all of the data into the new index. The second problem is that, even if we could add it, we would have limited our ability to search in the director field. That is, while a search for the exact value in the field would match we wouldn't be able to search for single words in the field.
+\par Luckily, there's a simple solution to our problem. We add a mapping that upgrades the field to a multi field. What that means is that we'll map the field multiple times for indexing. Given that one of the ways we map it match the existing mapping both by name and settings that will work fine and we won't have to create a new index.
+\begin{verbatim}
+curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
+{
+   "movie": {
+      "properties": {
+         "director": {
+            "type": "multi_field",
+            "fields": {
+               "director": {"type": "string's"},
+               "original": {"type" : "string", "index" : "not_analyzed"}
+            }
+         }
+      }
+   }
+}'
+\end{verbatim}
+\subsection{ElasticSearch集群设置}
+This will print the number of open files the process can open on startup. Alternatively, you can retrieve the max\_file\_descriptors for each node using the Nodes Info API, with:\\
+\textbf{curl -XGET 'namenode:9200/\_nodes/process?pretty=true'}，下面是删除ES上名为jdbc的index的Restfule命令：\\
+\textbf{curl -XDELETE 'http://namenode:9200/jdbc/'}
+\par 配置文件在\textbf{\{\$ES\_HOME\}/config}文件夹下，\textbf{elasticsearch.yml}和\textbf{logging.yml}，修改\textbf{elasticsearch.yml}文件中的cluster.name，当集群名称相同时，每个ES节点将会搜索它的伙伴节点，因此必须保证集群内每个节点的cluster.name相同,下面是关闭ES集群的Restful命令:
+\begin{verbatim}
+# 关闭集群内的某个ES节点'_local'
+$ curl -XPOST 'http://namenode:9200/_cluster/nodes/_local/_shutdown'
+# 关闭集群内的全部ES节点
+$ curl -XPOST 'http://namenode:9200/_shutdown'
+\end{verbatim}
+\par 注意，如果一台机器上不止一个ES在运行，那么通过\textbf{./bin/elasticsearch}开启的ES的http\_address将会使用9200以上的接口（形如9201,9202,$\cdots$），而相应的transport\_address也递增（形如：9301,9302,$\cdots$），因此，为使用9200端口，可使用上述命令关闭其它ES进程，可通过conf目录下的log文件来查看某些端口是否被占用。\textbf{elasticsearch.yml}文件存在如下配置信息：
+\begin{enumerate}[(1)]
+\item node.master: true,node.data: true,允许节点存储数据，同时作为主节点;
+\item node.master: true,node.data: false,节点不存储数据，但作为集群的协调者;
+\item node.master: false,node.data: true,允许节点存储数据，但不作为主节点;
+\item node.master: false,node.data: false,节点不存储数据，也不作为协调者，但作为搜索任务的一个承担者;
+\item cluster.name: HadoopSearch, node.name: "ES-Slave-02",HadoopSearch必须相同，但node.name每个节点可以自由设置;
+\end{enumerate}
+如想将ES作为一个服务，需要从github上下载elasticsearch-servicewrapper，然后调用chkconfig，将其添加到/etc/rc[0$\sim$6].d/中。
+\begin{verbatim}
+curl -L https://github.com/elasticsearch/elasticsearch-servicewrapper/archive/master.zip > master.zip
+unzip master.zip
+cd elasticsearch-servicewrapper-master/
+mv service /opt/elasticsearch/bin
+/opt/elasticsearch/bin/service/elasticsearch install
+## 如果想卸载该服务调用：
+/opt/elasticsearch/bin/service/elasticsearch remove
+## 如果想让ES开机启动
+chkconfig elasticsearch on  
+## 如果想现在开启ES服务
+service elasticsearch start 
+\end{verbatim}
+配置完后，可通过\textsl{curl -X GET 'http://192.168.50.75:9200/\_cluster/nodes?pretty'}命令，查询集群下的节点信息。
+\par 为连接hive与ES,运行hive后，在hive命令行内执行\textbf{add jar /opt/elasticsearch-hadoop-1.3.0/dist/elasticsearch-hadoop-1.3.0.jar;}或者hdfs上的jar包:\textbf{add jar hdfs://namenode:9000/elasticsearch-hadoop-1.3.0.jar}可加载elasticsearch-hadoop插件，使用该插件的具体操作如下：
+\begin{verbatim}
+DROP TABLE IF EXISTS artist_1;
+CREATE EXTERNAL TABLE artists_1 (
+  cardid STRING, date STRING, time STRING)
+STORED BY 'org.elasticsearch.hadoop.hive.ESStorageHandler'
+TBLPROPERTIES('es.resource' = 'liubo/artists/',
+              'es.host' = '192.168.50.75',
+              'es.mapping.names' = 'text:time'
+);
+-- 集群下应使用'192.168.50.75'，而非'localhost'(es-hadoop的默认值)
+-- insert data to Elasticsearch from another hive table
+INSERT OVERWRITE TABLE artists_1
+SELECT * FROM cable.temptable;
+\end{verbatim}
+\par 下面的代码是将Mysql中的表导入到ES中，建立名为jdbc的index，表名称为jiangsu。
+\begin{verbatim}
+curl -XPUT 'localhost:9200/_river/jiangsu/_meta' -d '{
+    "type" : "jdbc",
+    "jdbc" : {
+        "driver" : "com.mysql.jdbc.Driver",
+        "url" : "jdbc:mysql://192.168.50.75:3306/jsyx",
+        "user" : "root",
+        "password" : "123456",
+        "sql" : "select * from jiangsu"
+    },
+    "index" : {
+        "index" : "jdbc",
+        "type" : "jiangsu"
+    }
+}'
+\end{verbatim}
+\subsection{ES性能优化}
+\par 一个Elasticsearch节点会有多个线程池，但重要的是下面四个：
+\begin{itemize}
+\item 索引（index）：主要是索引数据和删除数据操作（默认是cached类型）;
+\item 搜索（search）：主要是获取，统计和搜索操作（默认是cached类型）;
+\item 批量操作（bulk）：对索引的批量操作，尚且不清楚它是不是原子性的，如果是原子的，则放在MapReduce里是没有问题的;
+\item 更新（refresh）：主要是更新操作，如当一个文档被索引后，何时能够通过搜索看到该文档;
+\end{itemize}
+\par 在建立索引（index相当于数据库，type相当于数据库中的表）的过程中，需要修改如下配置参数：
+\begin{itemize}
+\item index.store.type: mmapfs.因为内存映射文件机制能更好地利用OS缓存;
+\item indices.memory.index\_buffer\_size: 30\% 默认值为10\%，表示10\%的内存作为indexing buffer;
+\item index.translog.flush\_threshold\_ops: 50000，当写日志数达到50000时，做一次同步;
+\item index.refresh\_interval:30s，默认值为1s，新建的索引记录将在1秒钟后查询到;
+\end{itemize}
+\begin{verbatim}
+curl -XPUT 'http://namenode:9200/hivetest/?pretty' -d '{
+    "settings" : {
+       "index" : {
+       "refresh_interval" : "30s",
+       "index.store.type": "mmapfs",
+       "indices.memory.index_buffer_size": "30%",
+       "index.translog.flush_threshold_ops": "50000"
+        }
+    }
+}'
+\end{verbatim}
+\par 但上述设置性能低下，也不知why？ES索引的过程相对Lucene的索引过程多了分布式数据的扩展，而ES主要是用tranlog进行各节点间的数据平衡，因此设置"index.translog.flush\_threshold\_ops"为"100000"，意思是当tranlog数据达到多少条进行一次平衡操作，默认为5000，而这个过程相对而言是比较浪费资源的，必要时可以将这个值设为-1关闭，进而手动进行tranlog平衡。"refresh\_interval"是刷新频率，设置为30s是指索引在生命周期内定时刷新，一但有数据进来就在Lucene里面commit，因此其值设置大些可以提高索引效率。另外，如果有副本存在，数据也会马上同步到副本中去，因此在索引过程中，将副本设为0，待索引完成后将副本个数改回来。
+\begin{verbatim}
+curl -XPUT 'namenode:9200/hivetest/' #新建一个名为hivetest的索引
+curl -XPOST 'namenode:9200/hivetest/_close' #关闭索引，为修改参数做准备
+curl -XPUT 'namenode:9200/hivetest/_settings?pretty' -d '{
+   "index" : {
+      "refresh_interval" : "30s",
+      "index.translog.flush_threshold_ops": "100000",
+      "number_of_replicas" : 0
+   }
+}'
+curl -XPOST 'namenode:9200/hivetest/_open'
+\end{verbatim}
+\par Linux主机上硬盘空间有限，经常发现root目录下已没有可利用磁盘空间，为此，将ES的日志和数据输出目录设置在/home目录下,修改config目录下的elasticsearch.yml文件中的选项，其中path.data为索引文件存放目录，path.work为临时文件存放目录，path.logs为日志文件存放目录。
+\begin{verbatim}
+path.data: /home/elasticSearch/data
+path.work: /home/elasticSearch/work
+path.logs: /home/elasticSearch/logs
+\end{verbatim}
+\subsection{Lucene全文检索引擎}
+\subsubsection{Lucene文件结构}
+\par Files and detailed format:
+\begin{itemize}
+\item .tim: Term Dictionary
+\item .tip: Term Index
+\item .doc: Frequencies and  Skip Data
+\item .pos: Positions
+\item .pay: Payloads and Offsets
+\end{itemize}
+\par The .tim file contains the list of terms in each field along with per-term statistics (such as docfreq) and pointers to the frequencies, positions, payload and skip data in the .doc, .pos, and .pay files.
+\par The .doc file contains the lists of documents which contain each term, along with the frequency of the term in that document.
+\par The .pos file contains the lists of positions that each term occurs at within documents. It also sometimes stores part of payloads and offsets for speedup.TermPositions are order by term (terms are implicit, from the term dictionary), and position values for each term document pair are incremental, and ordered by document number.
+\subsubsection{Lucene的基本分词过程}
+\par Analyzer类是所有分词器的基类，它是个抽象类，所有的子类必须实现它, 它提供了如下方法:
+\begin{verbatim}
+@Override
+protected TokenStreamComponents createComponents(String fieldName,
+        final Reader reader) {
+    Tokenizer tokenizer = new AnsjTokenizer(new IndexAnalysis(reader),
+        reader, filter, pstemming);
+    return new TokenStreamComponents(tokenizer);
+}
+\end{verbatim}
+\par TokenStream是能够产生词序列的类，有两个类型的子类TokenFilter和Tokenizer，Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)．
+\subsubsection{开发ES插件}
+\par ES插件本质上是一个zip文件,它包含了若干个Jar包,为安装插件,机器上必须安装Maven.因此,Maven工程的main目录里须包含三个目录(java,resources,assemblies),而且必须在配置文件pom.xml添加如下行:
+\begin{verbatim}
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <name>example-plugin</name>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.elasticsearch.plugin.example</groupId>
+    <artifactId>example-plugin</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <properties>
+        <elasticsearch.version>0.90.5</elasticsearch.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>${elasticsearch.version}</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/releases/</outputDirectory>
+                    <descriptors>
+                        <descriptor>${basedir}/src/main/assemblies/plugin.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+\end{verbatim}
+\par 最重要的是必须新建src/main/assemblies/plugin.xml文件,并添加如下语句:
+\begin{verbatim}
+<?xml version="1.0"?>
+<assembly>
+  <id>plugin</id>
+  <formats>
+     <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <dependencySets>
+     <dependencySet>
+         <outputDirectory>/</outputDirectory>
+         <useProjectArtifact>true</useProjectArtifact>
+         <useTransitiveFiltering>true</useTransitiveFiltering>
+         <excludes>
+             <exclude>org.elasticsearch:elasticsearch</exclude>
+          </excludes>
+      </dependencySet>
+  </dependencySets>
+</assembly>
+\end{verbatim}
+\begin{verbatim}
+|
+|── pom.xml
+|── src
+|   |── main
+|       |── assembly
+|       |   |── plugin.xml
+|       |── java
+|       |   |── org
+|       |       |── elasticsearch
+|       |           |── plugin
+|       |               |── example
+|       |                   |── ExamplePlugin.java
+|       |── resources
+|           |── es-plugin.properties
+|
+\end{verbatim}
+\subsection{ES与hive}
+\par Hive从0.8.0版本后支持两个虚拟列:\textbf{INPUT\_\_FILE\_\_NAME}（即mapper任务的输出文件名）和\textbf{BLOCK\_\_OFFSET\_\_INSIDE\_\_FILE}（即读取记录在当前文件的全局偏移量）。对于块压缩文件，就是当前块的文件偏移量，即当前块的第一个字节在文件中的偏移量。Simple Example:
+\begin{verbatim}
+use cable;
+select INPUT__FILE__NAME, cardid, BLOCK__OFFSET__INSIDE__FILE from test;
+select min(BLOCK__OFFSET__INSIDE__FILE),count(INPUT__FILE__NAME) from test
+  where BLOCK__OFFSET__INSIDE__FILE < 12000 group by cardid;
+select * from test where BLOCK__OFFSET__INSIDE__FILE < 12000;
+\end{verbatim}
+\par 开始时将'es.mapping.id' = 'id'写成了'es.mapping.id ' = 'id'，由于多了一个空格，程序一直没有获得期望的结果。'es.mapping.id'属性告诉Hive，使用hive1表中的id列的值作为ElasticSearch的\_id域，使用剩余几列的值作为ElasticSearch的\_source。表hive1不是存储在hive内部，所以使用\textbf{EXTERNAL}关键字，对于使用\textbf{EXTERNAL}存储的表，必须提供\textbf{STORED BY}关键字，否则hive无法确定用哪个类来存储外部表。
+\par 在向ElasticSearch添加索引过程中，必须提供id域，否则当某MapTask失败若干次时，相同的记录可能会插入很多遍。因为如果不指定id，ES会给当前记录随机分配一个id，这点类似于往数据库中insert记录时，必须保证对相同record，其主键也相同，所以在使用hive向ElasticSearch中插入记录时，其id域为相应行在hdfs文件中的位置。
+\begin{verbatim}
+set mapred.max.split.size=32000000;
+add jar hdfs://namenode:9000/user/liubo/1.jar;
+DROP TABLE IF EXISTS hive1;
+CREATE EXTERNAL TABLE hive1(
+   id STRING,
+   cardId STRING, 
+   playDate STRING, 
+   playTime STRING,
+   channel STRING, 
+   program STRING
+)
+STORED BY 'org.elasticsearch.hadoop.hive.ESStorageHandler'
+TBLPROPERTIES('es.resource' = 'eshive/hive1/',
+              'es.host' = '192.168.50.75',
+              'es.mapping.id' = 'id'
+);
+INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
+\end{verbatim}

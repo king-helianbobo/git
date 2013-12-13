@@ -1,0 +1,123 @@
+%\usepackage{algorithm2e}
+%\usepackage[linesnumbered]{algorithm2e}
+%\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage{float} %%禁止浮动体四处浮动
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\XeTeXlinebreaklocale "zh" %%以中文方式断行
+\XeTeXlinebreakskip = 0pt plus 1pt %%断行间设置字符间距
+\usepackage{fontspec}                
+%% \setmainfont{宋体}
+\usepackage{xeCJK}                   
+\usepackage{verbatim}                   
+%% \setCJKmainfont{WenQuanYi Zen Hei Sharp}
+%% \setCJKmainfont[AutoFakeBold={true},AutoFakeSlant={true}]{宋体}
+\setCJKmainfont[AutoFakeBold={true},AutoFakeSlant={true}]{KaiTi_GB2312}
+\setmainfont{Consolas}
+\setmonofont[AutoFakeBold={true},AutoFakeSlant={true},Scale=0.9]{Consolas}
+%% \setCJKmonofont[AutoFakeBold={true},AutoFakeSlant={true},Scale=0.9]{KaiTi_GB2312}
+\setCJKmonofont[AutoFakeBold={true},AutoFakeSlant={false},Scale=0.9]{KaiTi_GB2312}
+%%\usepackage{indentfirst}             %% 首行缩进
+\usepackage{enumerate}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx,booktabs}
+\usepackage{multicol}
+%%\usepackage{fancyvrb}
+\usepackage[nodisplayskipstretch]{setspace} \setstretch{1.3}
+\usepackage{etoolbox}
+\preto{\verbatim}{\color{blue}\edef\tempstretch{\baselinestretch}\par\setstretch{0.85}}
+\appto{\endverbatim}{\vspace{-\tempstretch\baselineskip}\vspace{\baselineskip}\color{black}}
+
+
+% \makeatletter
+% \renewcommand{\verbatim@font}{\ttfamliy \small}
+% \makeatother
+%%%%%%%%%% 数学符号公式 %%%%%%%%%%
+
+\usepackage{amsmath}                 % AMS LaTeX宏包
+%\usepackage{amssymb}                 % 用来排版漂亮的数学公式
+%\usepackage{amsbsy}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{mathrsfs}                % 英文花体字体
+\usepackage{bm}                      % 数学公式中的黑斜体
+\usepackage{bbding,manfnt}           % 一些图标，如 \dbend
+\usepackage{lettrine}                % 首字下沉，命令\lettrine
+\def\attention{\lettrine[lines=2,lraise=0,nindent=0em]{\large\textdbend\hspace{1mm}}{}}
+%\usepackage{relsize}                 % 调整公式字体大小：\mathsmaller,\mathlarger
+%\usepackage{caption2}                % 浮动图形和表格标题样式
+
+%%%%%%%%%% 图形支持宏包 %%%%%%%%%%
+\usepackage{graphicx}                % 嵌入png图像
+\usepackage{color,xcolor}            % 支持彩色文本、底色、文本框等
+%\usepackage{subfigure}
+%\usepackage{epsfig}                 % 支持eps图像
+%\usepackage{picinpar}               % 图表和文字混排宏包
+%\usepackage[verbose]{wrapfig}       % 图表和文字混排宏包
+%\usepackage{eso-pic}                % 向文档的部分页加n副图形, 可实现水印效果
+%\usepackage{eepic}                  % 扩展的绘图支持
+%\usepackage{curves}                 % 绘制复杂曲线
+%\usepackage{texdraw}                % 增强的绘图工具
+%\usepackage{treedoc}                % 树形图绘制
+%\usepackage{pictex}                 % 可以画任意的图形
+
+% \usepackage[dvipdfm,  %pdflatex,pdftex这里决定运行文件的方式不同
+%             pdfstartview=FitH,
+%             CJKbookmarks=true,
+%             bookmarksnumbered=true,
+%             bookmarksopen=true,
+%             colorlinks, %注释掉此项则交叉引用为彩色边框(将colorlinks和pdfborder同时注释掉)
+%             pdfborder=001,   %注释掉此项则交叉引用为彩色边框
+%             linkcolor=green,
+%             anchorcolor=green,
+%             citecolor=green
+%             ]{hyperref}  
+\usepackage[colorlinks,
+        % CJKbookmarks=true,
+            linkcolor=red,
+            anchorcolor=blue,
+            citecolor=green
+            ]{hyperref}%%引入标签
+
+%%%%%%%%%% 粘贴源代码 %%%%%%%%%%
+\usepackage{listings}                 % 粘贴源代码
+\lstloadlanguages{R, C, csh, make}    % 所要粘贴代码的编程语言
+\lstdefinelanguage{Renhanced}[]{R}{%
+    morekeywords={acf,ar,arima,arima.sim,colMeans,colSums,is.na,is.null,%
+    mapply,ms,na.rm,nlmin,replicate,row.names,rowMeans,rowSums,seasonal,%
+    sys.time,system.time,ts.plot,which.max,which.min},
+    deletekeywords={c},
+    alsoletter={.\%},%
+    alsoother={:_\$}}
+\newcommand{\indexfonction}[1]{\index{#1@\texttt{#1}}}
+\lstset{language=Renhanced,tabsize=4, keepspaces=true,
+    xleftmargin=2em,xrightmargin=0em, aboveskip=1em,
+    backgroundcolor=\color{gray!20},  % 定义背景颜色
+    frame=none,                       % 表示不要边框
+    extendedchars=false,              % 解决代码跨页时，章节标题，页眉等汉字不显示的问题
+    basicstyle=\small,
+    keywordstyle=\color{black}\bfseries,
+    breakindent=10pt,
+    identifierstyle=,                 % nothing happens
+    commentstyle=\color{blue}\small,  % 注释的设置
+    morecomment=[l][\color{blue}]{\#},
+    numbers=left,stepnumber=1,numberstyle=\scriptsize,
+    showstringspaces=false,
+    showspaces=false,
+    flexiblecolumns=true,
+    breaklines=true, breakautoindent=true,breakindent=4em,
+    escapeinside={/*@}{@*/},
+}
+%%\setlength{\parindent}{2.3em}         %%%%
+\usepackage[top=1.1in,bottom=1.1in,left=1.2in,right=1.2in]{geometry}
+%%\usepackage[top=1.1in,bottom=1.1in,left=0.2in,right=0.2in]{geometry}
+\usepackage[sf]{titlesec}%% 控制标题的宏包
+\usepackage{titletoc}%% 控制目录的宏包
+\usepackage{caption2}%%浮动图形和表格标题样式
+\usepackage{fancyhdr}%% fancyhdr宏包 页眉和页脚的相关定义
+\usepackage{ifthen}
+\usepackage{afterpage} %%保护脆弱命令
+\usepackage{pifont}
+\let\OldDing\ding
+\renewcommand{\ding}[1]{\OldDing{#1}~}
+

@@ -1,0 +1,18 @@
+\documentclass[12pt,a4paper]{article}
+\input{setup/package.tex}
+\usepackage{enumerate}
+\begin{document}
+\noindent
+\input{setup/format.tex}
+\thispagestyle{plain}
+\setcounter{page}{1}\pagenumbering{Roman}
+\tableofcontents %%插入目录
+\afterpage{\pagenumbering{arabic}}
+% \include{hadoop}
+% \include{olap}
+% \include{hive}
+%% \include{es}
+%% \include{word}
+\include{git}
+\clearpage
+\end{document}

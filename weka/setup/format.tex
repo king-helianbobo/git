@@ -1,0 +1,96 @@
+\newtheorem{example}{例}             % 整体编号
+%% \newtheorem{algorithm}{算法}
+\newtheorem{theorem}{定理}[section]  % 按section 编号
+\newtheorem{definition}{定义}
+\newtheorem{axiom}{公理}
+\newtheorem{property}{性质}
+\newtheorem{proposition}{命题}
+\newtheorem{lemma}{引理}
+\newtheorem{corollary}{推论}
+\newtheorem{remark}{注解}
+\newtheorem{condition}{条件}
+\newtheorem{conclusion}{结论}
+\newtheorem{assumption}{假设}
+
+%%%%%%%%%% 一些重定义 %%%%%%%%%%
+\renewcommand{\contentsname}{目录}     % 将Contents改为目录
+\renewcommand{\abstractname}{摘要}     % 将Abstract改为摘要
+\renewcommand{\refname}{参考文献}      % 将References改为参考文献
+\renewcommand{\indexname}{索引}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+\renewcommand{\appendixname}{附录}
+\renewcommand{\proofname}{证明}
+% \renewcommand{\algorithm}{算法}
+%% add two ~ between \ref
+\let\OldRef\ref
+\renewcommand{\ref}[1]{~\OldRef{#1}~}
+
+
+
+\newcommand{\yihao}{\fontsize{26pt}{36pt}\selectfont}    %% 一号, 1.4倍行距
+\newcommand{\erhao}{\fontsize{22pt}{28pt}\selectfont}    %% 二号, 1.25倍行距
+\newcommand{\xiaoer}{\fontsize{18pt}{18pt}\selectfont}   %%  小二, 单倍行距
+\newcommand{\sanhao}{\fontsize{16pt}{24pt}\selectfont}   %% 三号, 1.5倍行距
+\newcommand{\xiaosan}{\fontsize{15pt}{22pt}\selectfont}  %% 小三, 1.5倍行距
+\newcommand{\sihao}{\fontsize{14pt}{21pt}\selectfont}    %% 四号, 1.5倍行距
+\newcommand{\banxiaosi}{\fontsize{13pt}{19.5pt}\selectfont}    %% 半小四, 1.5倍行距
+\newcommand{\xiaosi}{\fontsize{12pt}{18pt}\selectfont}    %% 小四, 1.5倍行距
+\newcommand{\dawuhao}{\fontsize{11pt}{11pt}\selectfont}    %% 大五号, 单倍行距
+\newcommand{\wuhao}{\fontsize{10.5pt}{10.5pt}\selectfont}    %% 五号, 单倍行距
+
+%% 定义段落章节的标题和目录项的格式
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{3}
+\titleformat{\section}[hang]{\ttfamily \bf \sanhao}{\mbox{\boldmath $\S$}\thesection}{0.5em}{}{}
+\titlespacing{\section}{0pt}{3ex plus 0.5ex minus 0.5ex}{4.5ex plus .5ex minus .5ex}
+
+\titleformat{\subsection}[hang]{\ttfamily \bf \xiaosan}{\mbox{\boldmath $\S$}\thesubsection}{0.5em}{}{}
+\titlespacing{\subsection}{0pt}{1ex plus .2ex minus .2ex}{1ex plus .2ex minus .2ex}
+
+\titleformat{\subsubsection}[hang]{\ttfamily \bf \sihao}{\mbox{\boldmath$\S$}\thesubsubsection }{0.5em}{}{}
+\titlespacing{\subsubsection}{0pt}{0.8ex plus .2ex minus .2ex}{0.8ex plus .2ex minus .2ex}
+
+\titleformat{\paragraph}[hang]{\ttfamily \bf \banxiaosi}{\mbox{\boldmath$\S$}\theparagraph}{0.5em}{}{}
+\titlespacing{\paragraph}{0pt}{0.5ex plus .3ex minus .3ex}{0.5ex plus .3ex minus .3ex}
+
+
+\titleformat{\subparagraph}[hang]{\ttfamily \bf \xiaosi }{\thesubparagraph}{0.5em}{}{}
+\titlespacing{\subparagraph}{0pt}{0.5ex plus .3ex minus .3ex}{0.5ex plus .3ex minus .3ex}
+
+
+
+%%  调整表格和插图的标号，不是全局显示，其计数器相对于当前节
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+\renewcommand{\thefigure}{\thesection-\arabic{figure}}
+\renewcommand{\thetable}{\thesection-\arabic{table}}
+%% 调整表格和插图的标号，不是全局显示，其计数器相对于当前节,如图1-1，表2-1形状
+\setlength{\parskip}{3pt plus1pt minus1pt} %段落之间的竖直距离
+%% 定制浮动图形和表格标题样式
+\renewcommand{\captionfont}{\small}
+\renewcommand{\captionlabelfont}{\small}
+\renewcommand{\captionlabeldelim}{\hspace{0.5em}}%%图表标签与标题的间距设为0.5em
+
+\fancyhf{}\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]{\markboth{\thesection.#1}{}}
+% \chead{\ifthenelse{
+%     \isodd{\value{page}}}{\leftmark} {平时工作总结文档}}
+
+% \chead{\ifthenelse{
+%      \isodd{\value{page}}}{\leftmark} {\rightmark}}
+\chead{\leftmark}
+\fancyfoot[C]{\wuhao\thepage}
+
+\newenvironment{myitemize}[1][]{%%%%%定义新环境
+\begin{list}{{#1}} %%标签格式
+    {
+%%     \setlength{\leftmargin}{0cm}     %左边界
+%%     \setlength{\parsep}{0ex}         %段落间距
+%%     \setlength{\topsep}{0bp}         %列表到上下文的垂直距离
+%%     \setlength{\itemsep}{0ex}        %标签间距
+%%     \setlength{\labelsep}{0.3em}     %标号和列表项之间的距离,默认0.5emanation
+     \setlength{\itemindent}{0pt}    %标签缩进量
+%%     \setlength{\listparindent}{2em} %段落缩进量
+    }}
+{\end{list}}%%%%%
