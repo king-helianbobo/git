@@ -1,4 +1,4 @@
-;;Last Modified: 2013-12-14 11:38:00.
+;;Last Modified: 2013-12-14 15:15:19.
 (set-face-attribute 'default nil :font "Consolas-22")
 (dolist (charset '(kana han symbol cjk-misc bopomofo))
   (set-fontset-font (frame-parameter nil 'font)
@@ -19,8 +19,8 @@
 (load "preview-latex.el" nil t t);;for preview latex
 (load "auctex.el" nil t t);;for latex support
 
-(require 'ibus);;emacs下的输入法
-(ibus-mode-on) ;;开启ibus
+;; (require 'ibus);;emacs下的输入法
+;; (ibus-mode-on) ;;开启ibus
 ;; (add-hook 'after-init-hook 'ibus-mode-on)
 ;(setq ibus-cursor-color '("red" "blue" "limegreen"))
 

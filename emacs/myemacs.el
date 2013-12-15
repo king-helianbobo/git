@@ -1,7 +1,8 @@
-;;Last Modified: 2013-12-14 11:34:42.
+;;Last Modified: 2013-12-15 12:46:18.
 (require 'unicad);;多个字符集在emacs下显示的问题
 (require 'sdcv);;emacs下的字典接口
 (require 'init-emms)
+(require 'json)
 (require 'color-theme)
 (color-theme-initialize)
 (color-theme-sitaramv-nt);;select one color theme

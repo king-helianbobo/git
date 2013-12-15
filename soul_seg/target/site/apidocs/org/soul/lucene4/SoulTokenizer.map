@@ -1,0 +1,10 @@
+<map id="G" name="G">
+<area shape="rect" id="c5553" href="../splitWord/Analysis.html" title="&lt;TABLE&gt;" alt="" coords="15,283,185,367"/>
+<area shape="rect" id="c5576" href="./PorterStemmer.html" title="&lt;TABLE&gt;" alt="" coords="229,291,347,360"/>
+<area shape="rect" id="c5577" href="./SoulTokenizer.html" title="&lt;TABLE&gt;" alt="" coords="283,155,768,224"/>
+<area shape="rect" id="c5627" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/tokenattributes/CharTermAttribute.html" title="&lt;TABLE&gt;" alt="" coords="391,306,510,345"/>
+<area shape="rect" id="c5628" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/tokenattributes/OffsetAttribute.html" title="&lt;TABLE&gt;" alt="" coords="554,306,649,345"/>
+<area shape="rect" id="c5629" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/tokenattributes/PositionIncrementAttribute.html" title="&lt;TABLE&gt;" alt="" coords="693,306,854,345"/>
+<area shape="rect" id="c5630" href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/Set.html" title="&lt;TABLE&gt;" alt="" coords="899,306,979,345"/>
+<area shape="rect" id="c5626" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/Tokenizer.html" title="&lt;TABLE&gt;" alt="" coords="337,11,714,95"/>
+</map>

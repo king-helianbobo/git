@@ -6,7 +6,6 @@ import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.common.inject.Module;
@@ -21,7 +20,7 @@ import org.soul.treeSplit.Library;
 public class SoulAnalysisPlugin extends AbstractPlugin {
 
 	@Override
-	public String name() {
+	public String name() { // very important
 		return "analysis-soul";
 	}
 

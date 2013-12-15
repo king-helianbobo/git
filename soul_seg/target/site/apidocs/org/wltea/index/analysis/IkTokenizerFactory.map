@@ -1,0 +1,8 @@
+<map id="G" name="G">
+<area shape="rect" id="c1125" href="./IkTokenizerFactory.html" title="&lt;TABLE&gt;" alt="" coords="51,139,677,208"/>
+<area shape="rect" id="c1359" href="http://java.sun.com/j2se/1.4.2/docs/api/org/elasticsearch/env/Environment.html" title="&lt;TABLE&gt;" alt="" coords="16,267,200,351"/>
+<area shape="rect" id="c1370" href="http://java.sun.com/j2se/1.4.2/docs/api/org/elasticsearch/common/settings/Settings.html" title="&lt;TABLE&gt;" alt="" coords="245,290,325,329"/>
+<area shape="rect" id="c1374" href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/Reader.html" title="&lt;TABLE&gt;" alt="" coords="371,267,517,351"/>
+<area shape="rect" id="c1376" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/Tokenizer.html" title="&lt;TABLE&gt;" alt="" coords="562,267,939,351"/>
+<area shape="rect" id="c1357" href="http://java.sun.com/j2se/1.4.2/docs/api/org/elasticsearch/index/analysis/AbstractTokenizerFactory.html" title="&lt;TABLE&gt;" alt="" coords="125,11,603,80"/>
+</map>

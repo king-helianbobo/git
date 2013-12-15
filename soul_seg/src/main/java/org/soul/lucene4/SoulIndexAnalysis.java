@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.soul.splitWord.IndexAnalysis;
+import org.soul.splitWord.BasicAnalysis;
 
 public class SoulIndexAnalysis extends Analyzer {
 
@@ -31,7 +31,7 @@ public class SoulIndexAnalysis extends Analyzer {
 	@Override
 	protected TokenStreamComponents createComponents(String fieldName,
 			final Reader reader) {
-		Tokenizer tokenizer = new SoulTokenizer(new IndexAnalysis(reader),
+		Tokenizer tokenizer = new SoulTokenizer(new BasicAnalysis(reader),
 				reader, filter, pstemming);
 		return new TokenStreamComponents(tokenizer);
 	}

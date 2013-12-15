@@ -69,7 +69,7 @@ curl -XPOST "http://namenode:9200/_search" -d'
 \par 却能输出结果，What's going on here?  We've obviously indexed two movies with "Francis Ford Coppola" as director and that's what we see in search results as well. Well, while ES has a JSON object with that data that it returns to us in search results in the form of the \_source property .
 \par When we index a document with ElasticSearch it (simplified) does two things: it stores the original data untouched for later retrieval in the form of \_source and it indexes each JSON property into one or more fields in a Lucene index. During the indexing it processes each field according to how the field is mapped. If it isn't mapped , default mappings depending on the fields type (string, number etc) is used.
 \par As we haven't supplied any mappings for our index, ElasticSearch uses the default mappings for the director field. This means that in the index the director fields value isn't \textbf{"Francis Ford Coppola"}. Instead it's something like \textbf{["francis", "ford", "coppola"]}. We can verify that by modifying our filter to instead match "francis" (or "ford" or "coppola").
-\par So, what to do if we want to filter by the exact name of the director? We modify how it's mapped. There are a number of ways to add mappings to ElasticSearch, through a configuration file, as part of a HTTP request that creates and index and by calling the \_mapping endpoint. Using the last approach, we could fix the above issue by adding a mapping for the "director" field , to instruct ElasticSearch not to analyze (tokenize etc.) the field at all.
+\par So, what to do if we want to filter by the exact name of the director? We modify how it's mapped. There are a number of ways to add mappings to ElasticSearch, through a HTTP request that creates by calling the \_mapping endpoint. Using this approach, we could fix the above issue by adding a mapping for the "director" field , to instruct ElasticSearch not to analyze (tokenize etc.) the field at all.
 \begin{verbatim}
 curl -X PUT namenode:9200/movies/movie/_mapping -d'
 {
@@ -84,7 +84,7 @@ curl -X PUT namenode:9200/movies/movie/_mapping -d'
 }'
 \end{verbatim}
 \par In many cases it's not possible to modify existing mappings. Often the easiest work around for that is to create a new index with the desired mappings and re-index all of the data into the new index. The second problem is that, even if we could add it, we would have limited our ability to search in the director field. That is, while a search for the exact value in the field would match we wouldn't be able to search for single words in the field.
-\par Luckily, there's a simple solution to our problem. We add a mapping that upgrades the field to a multi field. What that means is that we'll map the field multiple times for indexing. Given that one of the ways we map it match the existing mapping both by name and settings that will work fine and we won't have to create a new index.
+\par 幸运地是存在更简单的办法。We add a mapping that upgrades the field to a multi field. What that means is that we'll map the field multiple times for indexing. Given that one of the ways we map it match the existing mapping both by name and settings that will work fine and we won't have to create a new index.
 \begin{verbatim}
 curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
 {
@@ -239,54 +239,19 @@ protected TokenStreamComponents createComponents(String fieldName,
 \end{verbatim}
 \par TokenStream是能够产生词序列的类，有两个类型的子类TokenFilter和Tokenizer，Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)．
 \subsubsection{开发ES插件}
-\par ES插件本质上是一个zip文件,它包含了若干个Jar包,为安装插件,机器上必须安装Maven.因此,Maven工程的main目录里须包含三个目录(java,resources,assemblies),而且必须在配置文件pom.xml添加如下行:
+\par 插件一般情况下是一个zip文件，它包含了若干Jar包，为安装插件，依赖于Maven的安装。Maven工程的main目录里须包含三个目录(java,resources,assembly)。新建src/main/resources/es-plugin.properties文件，文件内容为：
 \begin{verbatim}
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <name>example-plugin</name>
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.elasticsearch.plugin.example</groupId>
-    <artifactId>example-plugin</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <properties>
-        <elasticsearch.version>0.90.5</elasticsearch.version>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch.version}</version>
-            <scope>compile</scope>
-        </dependency>
-    </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.3</version>
-                <configuration>
-                    <outputDirectory>${project.build.directory}/releases/</outputDirectory>
-                    <descriptors>
-                        <descriptor>${basedir}/src/main/assemblies/plugin.xml</descriptor>
-                    </descriptors>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-</project>
+plugin=${project.groupId}.${project.artifactId}
 \end{verbatim}
-\par 最重要的是必须新建src/main/assemblies/plugin.xml文件,并添加如下语句:
+\par 告诉Maven插件为当前工程，然后在配置文件pom.xml的<build>/<plugins>/<plugin>/<artifactId>maven-assembly-plugin</artifactId>标签中添加如下内容，因为maven-assembly-plugin插件负责打包Maven工程:
+\begin{verbatim}
+<descriptors>
+   <descriptor>
+    ${basedir}/src/main/assembly/plugin.xml
+  </descriptor>
+</descriptors>
+\end{verbatim}
+\par 然后新建src/main/assembly/plugin.xml文件，写入如下语句：
 \begin{verbatim}
 <?xml version="1.0"?>
 <assembly>
@@ -324,6 +289,7 @@ protected TokenStreamComponents createComponents(String fieldName,
 |           |── es-plugin.properties
 |
 \end{verbatim}
+
 \subsection{ES与hive}
 \par Hive从0.8.0版本后支持两个虚拟列:\textbf{INPUT\_\_FILE\_\_NAME}（即mapper任务的输出文件名）和\textbf{BLOCK\_\_OFFSET\_\_INSIDE\_\_FILE}（即读取记录在当前文件的全局偏移量）。对于块压缩文件，就是当前块的文件偏移量，即当前块的第一个字节在文件中的偏移量。Simple Example:
 \begin{verbatim}

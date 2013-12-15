@@ -1,0 +1,13 @@
+<map id="G" name="G">
+<area shape="rect" id="c97" href="./IKSegmenter.html" title="&lt;TABLE&gt;" alt="" coords="387,169,824,253"/>
+<area shape="rect" id="c102" href="./Configuration.html" title="&lt;TABLE&gt;" alt="" coords="237,312,446,381"/>
+<area shape="rect" id="c186" href="http://java.sun.com/j2se/1.4.2/docs/api/org/wltea/analyzer/core/AnalyzeContext.html" title="&lt;TABLE&gt;" alt="" coords="491,312,720,381"/>
+<area shape="rect" id="c187" href="http://java.sun.com/j2se/1.4.2/docs/api/org/wltea/analyzer/core/IKArbitrator.html" title="&lt;TABLE&gt;" alt="" coords="765,335,845,359"/>
+<area shape="rect" id="c98" href="./IKAnalyzer.html" title="&lt;TABLE&gt;" alt="" coords="857,11,1327,109"/>
+<area shape="rect" id="c99" href="./Lexeme.html" title="&lt;TABLE&gt;" alt="" coords="1371,25,1719,95"/>
+<area shape="rect" id="c100" href="./Dictionary.html" title="&lt;TABLE&gt;" alt="" coords="111,199,185,223"/>
+<area shape="rect" id="c188" href="http://java.sun.com/j2se/1.4.2/docs/api/org/wltea/analyzer/core/DictSegment.html" title="&lt;TABLE&gt;" alt="" coords="103,335,193,359"/>
+<area shape="rect" id="c101" href="./CharacterHelper.html" title="&lt;TABLE&gt;" alt="" coords="1764,25,1892,95"/>
+<area shape="rect" id="c103" href="./Hit.html" title="&lt;TABLE&gt;" alt="" coords="15,176,67,245"/>
+<area shape="rect" id="c104" href="./IKTokenizer.html" title="&lt;TABLE&gt;" alt="" coords="398,25,813,95"/>
+</map>
