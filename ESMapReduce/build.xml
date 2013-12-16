@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project name="ESMapReduce" default="build" basedir=".">
+  <property name="dir.src" value="src" />
+  <property name="dir.lib" value="lib" />
+  <property name="dir.classes" value="classes" />
+  <property name="dir.conf" value="conf" />
+  <property environment="env" />
+
+  <property name="hadoop.bin" value="${env.HADOOP_HOME}/bin/hadoop" />
+  <property name="hadoop.input" value="/liubo_input" />
+  <property name="hadoop.output" value="/liubo_output" />
+
+  <path id="classpath">
+    <fileset dir="${dir.lib}">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <target name="compile">
+    <echo message="Build result is ${dir.classes} direcotry" level="info" />
+    <mkdir dir="${dir.classes}" />
+    <javac debug="true" optimize="off" failonerror="off" destdir="${dir.classes}" srcdir="${dir.src}">
+      <classpath refid="classpath" />
+    </javac>
+    <copy todir="${dir.classes}">
+      <fileset dir="${dir.conf}">
+	<include name="**/*.properties" />
+	<include name="**/*.xml" />
+      </fileset>
+    </copy>
+  </target>
+  <target name="jar" depends="clean,compile" description="Create jar file">
+    <echo> Create ${ant.project.name}.jar in base directory </echo>
+    <!-- <mkdir dir="${dir.classes}/lib" /> -->
+    <!-- <copy todir="${dir.classes}/lib" file="${dir.lib}/xuggle-xuggler-5.4.jar" /> -->
+    <pathconvert property="mf.classpath" pathsep=" ">
+      <path refid="classpath" />
+      <identitymapper />
+    </pathconvert>
+    <!-- <echo> Path is ${mf.classpath}</echo> -->
+    <jar destfile="${ant.project.name}.jar" basedir="${dir.classes}">
+      <manifest>
+	<attribute name="Main-Class" value="org.elasticsearch.MapReduceSearch" />
+	<attribute name="Class-Path" value="${mf.classpath}" />
+      </manifest>
+    </jar>
+    <exec executable="${hadoop.bin}">
+      <arg value="fs" />
+      <arg value="-rm" />
+      <arg value="hdfs://namenode:9000/user/liubo/1.jar" />
+    </exec>
+    <exec executable="${hadoop.bin}">
+      <arg value="fs" />
+      <arg value="-put" />
+      <arg value="${ant.project.name}.jar" />
+      <arg value="hdfs://namenode:9000/user/liubo/1.jar" />
+    </exec>
+  </target>
+
+  <!-- use run option in order to replace bash script -->
+  <target name="run" depends="jar">
+    <!-- <exec executable="${basedir}/settings.sh" failonerror="true"> -->
+    <!-- </exec> -->
+    <exec executable="${hadoop.bin}">
+      <arg value="jar" />
+      <arg value="${ant.project.name}.jar" />
+      <!-- <arg value="${hadoop.input}"/> -->
+      <!-- <arg value="${hadoop.output}"/> -->
+    </exec>
+  </target>
+
+
+  <target name="build" depends="compile">
+    <java classname="org.elasticsearch.MapReduceSearch">
+      <classpath refid="classpath" />
+      <classpath location="${dir.classes}" />
+    </java>
+  </target>
+
+  <target name="eclipse" description="Create eclipse project files">
+    <pathconvert property="eclipse.project">
+      <path path="${basedir}" />
+      <regexpmapper from="^.*/([^/]+)$$" to="\1" handledirsep="yes" />
+    </pathconvert>
+    <echo> eclipse.project is ${eclipse.project} </echo>
+    <taskdef name="eclipse" classname="prantl.ant.eclipse.EclipseTask" classpath="${dir.conf}/ant-eclipse-1.0-jvm1.2.jar" />
+    <eclipse updatealways="true">
+      <project name="${eclipse.project}" />
+      <classpath>
+	<source path="${dir.src}" output="${dir.classes}" />
+	<output path="${dir.classes}" />
+	<!-- <variable path="ANT_HOME/lib/ant.jar" exported="false" /> -->
+	<library pathref="classpath" exported="false" />
+	<library path="${dir.conf}" exported="false" />
+      </classpath>
+    </eclipse>
+    <!-- <copy todir="." overwrite="true"> -->
+    <!--   <fileset dir=".eclipse.templates"> -->
+    <!--     <exclude name="**/README.txt"/> -->
+    <!--   </fileset> -->
+    <!--   <filterset> -->
+    <!--     <filter token="PROJECT" value="${eclipse.project}"/> -->
+    <!--   </filterset> -->
+  </target>
+
+  <target name="clean" description="Delete all generated files">
+    <delete dir="${dir.classes}" failonerror="false" />
+    <delete file="${ant.project.name}.jar" />
+  </target>
+</project>
