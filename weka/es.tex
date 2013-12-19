@@ -243,7 +243,7 @@ protected TokenStreamComponents createComponents(String fieldName,
 \begin{verbatim}
 plugin=${project.groupId}.${project.artifactId}
 \end{verbatim}
-\par 告诉Maven插件为当前工程，然后在配置文件pom.xml的<build>/<plugins>/<plugin>/<artifactId>maven-assembly-plugin</artifactId>标签中添加如下内容，因为maven-assembly-plugin插件负责打包Maven工程:
+\par 告诉Maven插件为当前工程，然后在配置文件pom.xml的<build>/<plugins>/<plugin>/<artifactId>maven-assembly-plugin</artifactId>标签中添加如下内容，为何在这个标签下添加内容,只是因为maven-assembly-plugin插件负责打包Maven工程,其中的plugin.xml为打包工程时额外执行的部分:
 \begin{verbatim}
 <descriptors>
    <descriptor>
@@ -251,7 +251,7 @@ plugin=${project.groupId}.${project.artifactId}
   </descriptor>
 </descriptors>
 \end{verbatim}
-\par 然后新建src/main/assembly/plugin.xml文件，写入如下语句：
+\par 新建src/main/assembly/plugin.xml文件，写入如下语句,告诉Maven对编译生成的classes目录下的所有内容打包：
 \begin{verbatim}
 <?xml version="1.0"?>
 <assembly>
@@ -259,37 +259,15 @@ plugin=${project.groupId}.${project.artifactId}
   <formats>
      <format>zip</format>
   </formats>
-  <includeBaseDirectory>false</includeBaseDirectory>
-  <dependencySets>
-     <dependencySet>
-         <outputDirectory>/</outputDirectory>
-         <useProjectArtifact>true</useProjectArtifact>
-         <useTransitiveFiltering>true</useTransitiveFiltering>
-         <excludes>
-             <exclude>org.elasticsearch:elasticsearch</exclude>
-          </excludes>
-      </dependencySet>
-  </dependencySets>
+  <fileSets>  
+    <fileSet>  
+      <directory>${project.build.directory}/classes</directory>
+      <outputDirectory>/</outputDirectory>  
+    </fileSet>  
+  </fileSets>
 </assembly>
 \end{verbatim}
-\begin{verbatim}
-|
-|── pom.xml
-|── src
-|   |── main
-|       |── assembly
-|       |   |── plugin.xml
-|       |── java
-|       |   |── org
-|       |       |── elasticsearch
-|       |           |── plugin
-|       |               |── example
-|       |                   |── ExamplePlugin.java
-|       |── resources
-|           |── es-plugin.properties
-|
-\end{verbatim}
-
+\par 正确的Maven工程目录树如下,做完这步后,调用命令:,将zip文件作为插件注入到ElasticSearch中.
 \subsection{ES与hive}
 \par Hive从0.8.0版本后支持两个虚拟列:\textbf{INPUT\_\_FILE\_\_NAME}（即mapper任务的输出文件名）和\textbf{BLOCK\_\_OFFSET\_\_INSIDE\_\_FILE}（即读取记录在当前文件的全局偏移量）。对于块压缩文件，就是当前块的文件偏移量，即当前块的第一个字节在文件中的偏移量。Simple Example:
 \begin{verbatim}
@@ -320,3 +298,5 @@ TBLPROPERTIES('es.resource' = 'eshive/hive1/',
 );
 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
 \end{verbatim}
+\subsection{ES源码}
+

@@ -1,8 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="c2360" href="./IKSegmenter.html" title="&lt;TABLE&gt;" alt="" coords="16,283,453,367"/>
-<area shape="rect" id="c2367" href="./IKTokenizer.html" title="&lt;TABLE&gt;" alt="" coords="425,155,839,224"/>
-<area shape="rect" id="c2450" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/tokenattributes/CharTermAttribute.html" title="&lt;TABLE&gt;" alt="" coords="498,306,617,345"/>
-<area shape="rect" id="c2451" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/tokenattributes/OffsetAttribute.html" title="&lt;TABLE&gt;" alt="" coords="661,306,755,345"/>
-<area shape="rect" id="c2452" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/tokenattributes/TypeAttribute.html" title="&lt;TABLE&gt;" alt="" coords="800,306,891,345"/>
-<area shape="rect" id="c2449" href="http://java.sun.com/j2se/1.4.2/docs/api/org/apache/lucene/analysis/Tokenizer.html" title="&lt;TABLE&gt;" alt="" coords="443,11,821,95"/>
-</map>
