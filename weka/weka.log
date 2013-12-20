@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.1415926-2.5-0.9999.3 (TeX Live 2013) (format=xelatex 2013.9.27)  16 DEC 2013 11:06
+This is XeTeX, Version 3.1415926-2.5-0.9999.3 (TeX Live 2013) (format=xelatex 2013.9.27)  20 DEC 2013 16:46
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1760,14 +1760,21 @@ Overfull \hbox (34.36935pt too wide) in paragraph at lines 242--243
   新 建 \EU1/Consolas(0)/m/n/12 src/ main/ resources/ es-plugin.properties
  []
 
+
+Overfull \hbox (45.83792pt too wide) in paragraph at lines 249--250
+[]\EU1/KaiTi_GB2312(0)/m/n/12 然 后 在 配 置 文 件 \EU1/Consolas(0)/m/n/12 pom.xml \EU
+1/KaiTi_GB2312(0)/m/n/12 的 \EU1/Consolas(0)/m/n/12 <build>/ <plugins>/ <plugin>
+/ <artifactId>maven-
+ []
+
 [10]
-Overfull \hbox (9.40277pt too wide) in paragraph at lines 298--298
+Overfull \hbox (9.40277pt too wide) in paragraph at lines 279--279
 []\EU1/Consolas(1)/m/n/12 select min(BLOCK__OFFSET__INSIDE__FILE),count(INPUT__
 FILE__NAME) from test[]  
  []
 
 [11]
-Overfull \hbox (43.05063pt too wide) in paragraph at lines 321--321
+Overfull \hbox (43.05063pt too wide) in paragraph at lines 302--302
 []\EU1/Consolas(1)/m/n/12 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__IN
 SIDE__FILE,* FROM testData2;[]  
  []
@@ -1808,10 +1815,10 @@ LaTeX Font Warning: Size substitutions with differences
 
  ) 
 Here is how much of TeX's memory you used:
- 29132 strings out of 493938
- 555240 string characters out of 6148857
- 627987 words of memory out of 5000000
- 32017 multiletter control sequences out of 15000+600000
+ 29127 strings out of 493938
+ 555034 string characters out of 6148857
+ 628073 words of memory out of 5000000
+ 32012 multiletter control sequences out of 15000+600000
  26201 words of font info for 144 fonts, out of 8000000 for 9000
  1144 hyphenation exceptions out of 8191
  48i,24n,63p,889b,840s stack positions out of 5000i,500n,10000p,200000b,80000s

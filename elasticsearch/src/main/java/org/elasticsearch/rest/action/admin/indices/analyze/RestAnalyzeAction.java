@@ -53,7 +53,7 @@ public class RestAnalyzeAction extends BaseRestHandler {
 
     @Override
     public void handleRequest(final RestRequest request, final RestChannel channel) {
-        //处理这个request
+        // 处理这个request，channel为处理连接的通道
         String text = request.param("text");
         if (text == null && request.hasContent()) {
             text = request.content().toUtf8();
@@ -71,19 +71,21 @@ public class RestAnalyzeAction extends BaseRestHandler {
         // 将参数放置在内,'http://localhost:9200/test/_analyze?analyzer=soul_query',params保留了analyzer部分
         AnalyzeRequest analyzeRequest = new AnalyzeRequest(request.param("index"), text);
         analyzeRequest.listenerThreaded(false);
+        // 请求是否愿意在本地执行
         analyzeRequest.preferLocal(request.paramAsBoolean("prefer_local", analyzeRequest.preferLocalShard()));
-        analyzeRequest.analyzer(request.param("analyzer")); //处理soul_query
+        analyzeRequest.analyzer(request.param("analyzer")); // 处理soul_query
         analyzeRequest.field(request.param("field"));
         analyzeRequest.tokenizer(request.param("tokenizer"));
         analyzeRequest.tokenFilters(request.paramAsStringArray("token_filters", request.paramAsStringArray("filters", null)));
+        // indices()返回IndicesAdminClient
         client.admin().indices().analyze(analyzeRequest, new ActionListener<AnalyzeResponse>() {
             @Override
             public void onResponse(AnalyzeResponse response) {
                 try {
                     XContentBuilder builder = restContentBuilder(request, null);
-                    builder.startObject();
+                    builder.startObject(); //输出{
                     response.toXContent(builder, request);
-                    builder.endObject();
+                    builder.endObject();//输出}
                     channel.sendResponse(new XContentRestResponse(request, OK, builder));
                 } catch (Throwable e) {
                     onFailure(e);

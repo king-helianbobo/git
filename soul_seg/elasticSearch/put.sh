@@ -12,7 +12,7 @@ curl -XPUT "localhost:9200/test/test1/_mapping?pretty" -d'{
    }
 }'
 # 这种方法有效
-curl -XGET 'http://localhost:9200/test/_analyze?analyzer=soul_query' -d '视康隐形眼镜'
+curl -XGET 'http://localhost:9200/test/_analyze?analyzer=soul_query' -d '视康隐形眼镜，钓鱼岛是日本的'
 curl -XPOST 'http://localhost:9200/test/_analyze?analyzer=soul_query' -d '视康隐形眼镜'
 
 # 这种方法无效
@@ -34,7 +34,7 @@ curl -XGET "http://localhost:9200/test/test1/_search" -d'
 }'
 
 
-curl -XPOST http://localhost:9200/liubo/HongKang/_search  -d'
+curl -XPOST http://localhost:9200/test/test1/_search  -d'
 {
     "query" : { "term" : { "name" : "姚明主席" }},
      "highlight" : {

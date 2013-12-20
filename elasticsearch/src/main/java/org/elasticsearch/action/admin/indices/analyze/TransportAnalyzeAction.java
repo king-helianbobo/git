@@ -60,8 +60,8 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
     private final IndicesAnalysisService indicesAnalysisService;
 
     @Inject
-    public TransportAnalyzeAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService,
-                                  IndicesService indicesService, IndicesAnalysisService indicesAnalysisService) {
+    public TransportAnalyzeAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
+            TransportService transportService, IndicesService indicesService, IndicesAnalysisService indicesAnalysisService) {
         super(settings, threadPool, clusterService, transportService);
         this.indicesService = indicesService;
         this.indicesAnalysisService = indicesAnalysisService;
@@ -110,27 +110,30 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
         return state.routingTable().index(request.index()).randomAllActiveShardsIt();
     }
 
+    // 执行这个请求，其中shardId为分片id，并生成Response
     @Override
     protected AnalyzeResponse shardOperation(AnalyzeRequest request, int shardId) throws ElasticSearchException {
         IndexService indexService = null;
         if (request.index() != null) {
-            indexService = indicesService.indexServiceSafe(request.index());
+            indexService = indicesService.indexServiceSafe(request.index()); // 每个index可以配置不同的analyzer
         }
         Analyzer analyzer = null;
         boolean closeAnalyzer = false;
         String field = null;
         if (request.field() != null) {
             if (indexService == null) {
-                throw new ElasticSearchIllegalArgumentException("No index provided, and trying to analyzer based on a specific field which requires the index parameter");
+                throw new ElasticSearchIllegalArgumentException(
+                        "No index provided, and trying to analyzer based on a specific field which requires the index parameter");
             }
             FieldMapper<?> fieldMapper = indexService.mapperService().smartNameFieldMapper(request.field());
             if (fieldMapper != null) {
                 if (fieldMapper.isNumeric()) {
-                    throw new ElasticSearchIllegalArgumentException("Can't process field [" + request.field() + "], Analysis requests are not supported on numeric fields");
+                    throw new ElasticSearchIllegalArgumentException("Can't process field [" + request.field()
+                            + "], Analysis requests are not supported on numeric fields");
                 }
                 analyzer = fieldMapper.indexAnalyzer();
                 field = fieldMapper.names().indexName();
-                
+
             }
         }
         if (field == null) {
@@ -145,6 +148,7 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
                 analyzer = indicesAnalysisService.analyzer(request.analyzer());
             } else {
                 analyzer = indexService.analysisService().analyzer(request.analyzer());
+                // 获得一个Analyzer，分析者必定通过什么方式配置好的
             }
             if (analyzer == null) {
                 throw new ElasticSearchIllegalArgumentException("failed to find analyzer [" + request.analyzer() + "]");
@@ -169,15 +173,19 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
                 for (int i = 0; i < request.tokenFilters().length; i++) {
                     String tokenFilterName = request.tokenFilters()[i];
                     if (indexService == null) {
-                        TokenFilterFactoryFactory tokenFilterFactoryFactory = indicesAnalysisService.tokenFilterFactoryFactory(tokenFilterName);
+                        TokenFilterFactoryFactory tokenFilterFactoryFactory = indicesAnalysisService
+                                .tokenFilterFactoryFactory(tokenFilterName);
                         if (tokenFilterFactoryFactory == null) {
-                            throw new ElasticSearchIllegalArgumentException("failed to find global token filter under [" + request.tokenizer() + "]");
+                            throw new ElasticSearchIllegalArgumentException("failed to find global token filter under ["
+                                    + request.tokenizer() + "]");
                         }
-                        tokenFilterFactories[i] = tokenFilterFactoryFactory.create(tokenFilterName, ImmutableSettings.Builder.EMPTY_SETTINGS);
+                        tokenFilterFactories[i] = tokenFilterFactoryFactory.create(tokenFilterName,
+                                ImmutableSettings.Builder.EMPTY_SETTINGS);
                     } else {
                         tokenFilterFactories[i] = indexService.analysisService().tokenFilter(tokenFilterName);
                         if (tokenFilterFactories[i] == null) {
-                            throw new ElasticSearchIllegalArgumentException("failed to find token filter under [" + request.tokenizer() + "]");
+                            throw new ElasticSearchIllegalArgumentException("failed to find token filter under [" + request.tokenizer()
+                                    + "]");
                         }
                     }
                     if (tokenFilterFactories[i] == null) {
@@ -197,10 +205,10 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
         if (analyzer == null) {
             throw new ElasticSearchIllegalArgumentException("failed to find analyzer");
         }
-
         List<AnalyzeResponse.AnalyzeToken> tokens = Lists.newArrayList();
         TokenStream stream = null;
         try {
+            // 生成token流
             stream = analyzer.tokenStream(field, request.text());
             stream.reset();
             CharTermAttribute term = stream.addAttribute(CharTermAttribute.class);
@@ -214,7 +222,8 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
                 if (increment > 0) {
                     position = position + increment;
                 }
-                tokens.add(new AnalyzeResponse.AnalyzeToken(term.toString(), position, offset.startOffset(), offset.endOffset(), type.type()));
+                tokens.add(new AnalyzeResponse.AnalyzeToken(term.toString(), position, offset.startOffset(), offset.endOffset(), type
+                        .type()));
             }
             stream.end();
         } catch (IOException e) {
@@ -232,6 +241,6 @@ public class TransportAnalyzeAction extends TransportSingleCustomOperationAction
             }
         }
 
-        return new AnalyzeResponse(tokens);
+        return new AnalyzeResponse(tokens); // 返回一个响应
     }
 }

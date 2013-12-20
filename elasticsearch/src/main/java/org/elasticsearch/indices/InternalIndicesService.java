@@ -110,7 +110,8 @@ public class InternalIndicesService extends AbstractLifecycleComponent<IndicesSe
     private final OldShardsStats oldShardsStats = new OldShardsStats();
 
     @Inject
-    public InternalIndicesService(Settings settings, IndicesLifecycle indicesLifecycle, IndicesAnalysisService indicesAnalysisService, IndicesStore indicesStore, Injector injector) {
+    public InternalIndicesService(Settings settings, IndicesLifecycle indicesLifecycle, IndicesAnalysisService indicesAnalysisService,
+            IndicesStore indicesStore, Injector injector) {
         super(settings);
         this.indicesLifecycle = (InternalIndicesLifecycle) indicesLifecycle;
         this.indicesAnalysisService = indicesAnalysisService;
@@ -183,22 +184,22 @@ public class InternalIndicesService extends AbstractLifecycleComponent<IndicesSe
             Flag[] setFlags = flags.getFlags();
             for (Flag flag : setFlags) {
                 switch (flag) {
-                    case Get:
+                    case Get :
                         stats.get.add(oldShardsStats.getStats);
                         break;
-                    case Indexing:
+                    case Indexing :
                         stats.indexing.add(oldShardsStats.indexingStats);
                         break;
-                    case Search:
+                    case Search :
                         stats.search.add(oldShardsStats.searchStats);
                         break;
-                    case Merge:
+                    case Merge :
                         stats.merge.add(oldShardsStats.mergeStats);
                         break;
-                    case Refresh:
+                    case Refresh :
                         stats.refresh.add(oldShardsStats.refreshStats);
                         break;
-                    case Flush:
+                    case Flush :
                         stats.flush.add(oldShardsStats.flushStats);
                         break;
                 }
@@ -218,9 +219,9 @@ public class InternalIndicesService extends AbstractLifecycleComponent<IndicesSe
         return new NodeIndicesStats(stats);
     }
 
-
     public boolean changesAllowed() {
-        // we check on stop here since we defined stop when we delete the indices
+        // we check on stop here since we defined stop when we delete the
+        // indices
         return lifecycle.started();
     }
 
@@ -261,13 +262,10 @@ public class InternalIndicesService extends AbstractLifecycleComponent<IndicesSe
 
         indicesLifecycle.beforeIndexCreated(index);
 
-        logger.debug("creating Index [{}], shards [{}]/[{}]", sIndexName, settings.get(SETTING_NUMBER_OF_SHARDS), settings.get(SETTING_NUMBER_OF_REPLICAS));
+        logger.debug("creating Index [{}], shards [{}]/[{}]", sIndexName, settings.get(SETTING_NUMBER_OF_SHARDS),
+                settings.get(SETTING_NUMBER_OF_REPLICAS));
 
-        Settings indexSettings = settingsBuilder()
-                .put(this.settings)
-                .put(settings)
-                .classLoader(settings.getClassLoader())
-                .build();
+        Settings indexSettings = settingsBuilder().put(this.settings).put(settings).classLoader(settings.getClassLoader()).build();
 
         ModulesBuilder modules = new ModulesBuilder();
         modules.add(new IndexNameModule(index));

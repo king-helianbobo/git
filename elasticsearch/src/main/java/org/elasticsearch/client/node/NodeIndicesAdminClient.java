@@ -71,7 +71,7 @@ public class NodeIndicesAdminClient extends AbstractIndicesAdminClient implement
     @Override
     public <Request extends ActionRequest, Response extends ActionResponse, RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>> void execute(
             IndicesAction<Request, Response, RequestBuilder> action, Request request, ActionListener<Response> listener) {
-        //执行动作为action,请求为request,对执行的监听着为listener
+        //执行动作为AnalyzeAction.INSTANCE,请求为request,对执行的监听着为listener
         TransportAction<Request, Response> transportAction = actions.get(action); 
         transportAction.execute(request, listener);//执行请求
     }
