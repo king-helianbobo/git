@@ -1,0 +1,6 @@
+use 'ant clean'，清除中间文件
+use 'ant compile'，编译.java文件
+use 'ant jar'，生成jar包
+use 'ant run'，在hadoop上运行Job
+use 'ant eclipse'，在本目录下生成eclipse工程文件
+use'ant ClientMain'，运行ClientMain类下的main程序

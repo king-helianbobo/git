@@ -7,7 +7,6 @@
   <formats>
     <format>zip</format>
   </formats>
-
   <fileSets>  
     <fileSet>  
       <directory>${project.build.directory}/classes</directory>
@@ -17,7 +16,7 @@
 
   <dependencySets>
     <dependencySet>
-      <outputDirectory>/soul</outputDirectory>
+      <outputDirectory>/</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>
       <useTransitiveFiltering>true</useTransitiveFiltering>
       <excludes>
