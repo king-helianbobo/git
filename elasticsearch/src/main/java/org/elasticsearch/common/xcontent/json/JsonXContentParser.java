@@ -194,14 +194,14 @@ public class JsonXContentParser extends AbstractXContentParser {
 
     private NumberType convertNumberType(JsonParser.NumberType numberType) {
         switch (numberType) {
-            case INT:
-                return NumberType.INT;
-            case LONG:
-                return NumberType.LONG;
-            case FLOAT:
-                return NumberType.FLOAT;
-            case DOUBLE:
-                return NumberType.DOUBLE;
+        case INT:
+            return NumberType.INT;
+        case LONG:
+            return NumberType.LONG;
+        case FLOAT:
+            return NumberType.FLOAT;
+        case DOUBLE:
+            return NumberType.DOUBLE;
         }
         throw new ElasticSearchIllegalStateException("No matching token for number_type [" + numberType + "]");
     }
@@ -211,28 +211,28 @@ public class JsonXContentParser extends AbstractXContentParser {
             return null;
         }
         switch (token) {
-            case FIELD_NAME:
-                return Token.FIELD_NAME;
-            case VALUE_FALSE:
-            case VALUE_TRUE:
-                return Token.VALUE_BOOLEAN;
-            case VALUE_STRING:
-                return Token.VALUE_STRING;
-            case VALUE_NUMBER_INT:
-            case VALUE_NUMBER_FLOAT:
-                return Token.VALUE_NUMBER;
-            case VALUE_NULL:
-                return Token.VALUE_NULL;
-            case START_OBJECT:
-                return Token.START_OBJECT;
-            case END_OBJECT:
-                return Token.END_OBJECT;
-            case START_ARRAY:
-                return Token.START_ARRAY;
-            case END_ARRAY:
-                return Token.END_ARRAY;
-            case VALUE_EMBEDDED_OBJECT:
-                return Token.VALUE_EMBEDDED_OBJECT;
+        case FIELD_NAME:
+            return Token.FIELD_NAME;
+        case VALUE_FALSE:
+        case VALUE_TRUE:
+            return Token.VALUE_BOOLEAN;
+        case VALUE_STRING:
+            return Token.VALUE_STRING;
+        case VALUE_NUMBER_INT:
+        case VALUE_NUMBER_FLOAT:
+            return Token.VALUE_NUMBER;
+        case VALUE_NULL:
+            return Token.VALUE_NULL;
+        case START_OBJECT:
+            return Token.START_OBJECT;
+        case END_OBJECT:
+            return Token.END_OBJECT;
+        case START_ARRAY:
+            return Token.START_ARRAY;
+        case END_ARRAY:
+            return Token.END_ARRAY;
+        case VALUE_EMBEDDED_OBJECT:
+            return Token.VALUE_EMBEDDED_OBJECT;
         }
         throw new ElasticSearchIllegalStateException("No matching token for json_token [" + token + "]");
     }

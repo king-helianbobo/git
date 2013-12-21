@@ -1,14 +1,14 @@
 #! /bin/bash
-# curl -XPOST 'http://namenode:9200/hivetest/?pretty' -d '{
-#     "settings" : {
-#        "index" : {
-#        "refresh_interval" : "30s",
-#        "index.store.type": "mmapfs",
-#        "indices.memory.index_buffer_size": "30%",
-#        "index.translog.flush_threshold_ops": "50000"
-#         }
-#     }
-# }'
+curl -XPOST 'http://namenode:9200/hivetest/?pretty' -d '{
+    "settings" : {
+       "index" : {
+       "refresh_interval" : "30s",
+       "index.store.type": "mmapfs",
+       "indices.memory.index_buffer_size": "30%",
+       "index.translog.flush_threshold_ops": "50000"
+        }
+    }
+}'
 
 curl -XDELETE 'http://namenode:9200/mrtest/' # create new index named mrtest
 curl -XPUT 'http://namenode:9200/mrtest/' # create new index named mrtest

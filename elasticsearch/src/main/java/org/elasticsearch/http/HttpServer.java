@@ -46,7 +46,7 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
 
     private final HttpServerTransport transport;
 
-    private final RestController restController;
+    private final RestController restController; //响应Rest请求的东东
 
     private final NodeService nodeService;
 

@@ -1,6 +1,8 @@
+## emacs files #
 .emacs
 *.elc
 *.el~
+
 ## latex files #
 auto/*
 *.acn
@@ -45,6 +47,3 @@ _region_.tex
 *.jar
 *.war
 *.ear
-## Package Files #
-ansj_seg/target/
-mapreduce/ESMapReduce/lib/

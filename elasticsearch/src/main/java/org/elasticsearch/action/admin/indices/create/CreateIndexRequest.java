@@ -45,16 +45,19 @@ import java.util.Map;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static org.elasticsearch.action.ValidateActions.addValidationError;
-import static org.elasticsearch.common.settings.ImmutableSettings.Builder.EMPTY_SETTINGS;
 import static org.elasticsearch.common.settings.ImmutableSettings.readSettingsFromStream;
 import static org.elasticsearch.common.settings.ImmutableSettings.writeSettingsToStream;
+import static org.elasticsearch.common.settings.ImmutableSettings.Builder.EMPTY_SETTINGS;
 import static org.elasticsearch.common.unit.TimeValue.readTimeValue;
 
 /**
- * A request to create an index. Best created with {@link org.elasticsearch.client.Requests#createIndexRequest(String)}.
+ * A request to create an index. Best created with
+ * {@link org.elasticsearch.client.Requests#createIndexRequest(String)}.
  * <p/>
- * <p>The index created can optionally be created with {@link #settings(org.elasticsearch.common.settings.Settings)}.
- *
+ * <p>
+ * The index created can optionally be created with
+ * {@link #settings(org.elasticsearch.common.settings.Settings)}.
+ * 
  * @see org.elasticsearch.client.IndicesAdminClient#create(CreateIndexRequest)
  * @see org.elasticsearch.client.Requests#createIndexRequest(String)
  * @see CreateIndexResponse
@@ -84,7 +87,8 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
     }
 
     /**
-     * Constructs a new request to create an index with the specified name and settings.
+     * Constructs a new request to create an index with the specified name and
+     * settings.
      */
     public CreateIndexRequest(String index, Settings settings) {
         this.index = index;
@@ -155,6 +159,7 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
      */
     public CreateIndexRequest settings(String source) {
         this.settings = ImmutableSettings.settingsBuilder().loadFromSource(source).build();
+        // 生成了settings对象
         return this;
     }
 
@@ -186,9 +191,11 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
 
     /**
      * Adds mapping that will be added when the index gets created.
-     *
-     * @param type   The mapping type
-     * @param source The mapping source
+     * 
+     * @param type
+     *            The mapping type
+     * @param source
+     *            The mapping source
      */
     public CreateIndexRequest mapping(String type, String source) {
         mappings.put(type, source);
@@ -205,9 +212,11 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
 
     /**
      * Adds mapping that will be added when the index gets created.
-     *
-     * @param type   The mapping type
-     * @param source The mapping source
+     * 
+     * @param type
+     *            The mapping type
+     * @param source
+     *            The mapping source
      */
     public CreateIndexRequest mapping(String type, XContentBuilder source) {
         try {
@@ -219,15 +228,20 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
     }
 
     /**
-     * Adds mapping that will be added when the index gets created.
-     *
-     * @param type   The mapping type
-     * @param source The mapping source
+     * Adds mapping that will be added when the index gets created. 例如：
+     * "mappings" : { "type1" : { "_source" : { "enabled" : false },
+     * "properties" : { "field1" : { "type" : "string", "index" : "not_analyzed"
+     * } } } }
+     * 
+     * @param type
+     *            The mapping type
+     * @param source
+     *            The mapping source
      */
     public CreateIndexRequest mapping(String type, Map source) {
         // wrap it in a type map if its not
         if (source.size() != 1 || !source.containsKey(type)) {
-            source = MapBuilder.<String, Object>newMapBuilder().put(type, source).map();
+            source = MapBuilder.<String, Object> newMapBuilder().put(type, source).map();
         }
         try {
             XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON);
@@ -239,8 +253,8 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
     }
 
     /**
-     * A specialized simplified mapping source method, takes the form of simple properties definition:
-     * ("field1", "type=string,store=true").
+     * A specialized simplified mapping source method, takes the form of simple
+     * properties definition: ("field1", "type=string,store=true").
      */
     public CreateIndexRequest mapping(String type, Object... source) {
         mapping(type, PutMappingRequest.buildFromSimplifiedDef(type, source));
@@ -273,10 +287,11 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
     }
 
     /**
-     * Sets the settings and mappings as a single source.
+     * Sets the settings and mappings as a single source. 设置mapping和setting
      */
     public CreateIndexRequest source(BytesReference source) {
         XContentType xContentType = XContentFactory.xContentType(source);
+        // 猜测出source的类型
         if (xContentType != null) {
             try {
                 source(XContentFactory.xContent(xContentType).createParser(source).mapAndClose());
@@ -302,6 +317,7 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
             } else if (name.equals("mappings")) {
                 found = true;
                 Map<String, Object> mappings = (Map<String, Object>) entry.getValue();
+                // 获得了Mapping数组
                 for (Map.Entry<String, Object> entry1 : mappings.entrySet()) {
                     mapping(entry1.getKey(), (Map<String, Object>) entry1.getValue());
                 }
@@ -339,16 +355,16 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
     }
 
     /**
-     * Timeout to wait for the index creation to be acknowledged by current cluster nodes. Defaults
-     * to <tt>10s</tt>.
+     * Timeout to wait for the index creation to be acknowledged by current
+     * cluster nodes. Defaults to <tt>10s</tt>.
      */
     public TimeValue timeout() {
         return timeout;
     }
 
     /**
-     * Timeout to wait for the index creation to be acknowledged by current cluster nodes. Defaults
-     * to <tt>10s</tt>.
+     * Timeout to wait for the index creation to be acknowledged by current
+     * cluster nodes. Defaults to <tt>10s</tt>.
      */
     public CreateIndexRequest timeout(TimeValue timeout) {
         this.timeout = timeout;
@@ -356,8 +372,8 @@ public class CreateIndexRequest extends MasterNodeOperationRequest<CreateIndexRe
     }
 
     /**
-     * Timeout to wait for the index creation to be acknowledged by current cluster nodes. Defaults
-     * to <tt>10s</tt>.
+     * Timeout to wait for the index creation to be acknowledged by current
+     * cluster nodes. Defaults to <tt>10s</tt>.
      */
     public CreateIndexRequest timeout(String timeout) {
         return timeout(TimeValue.parseTimeValue(timeout, null));

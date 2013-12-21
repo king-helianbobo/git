@@ -10,10 +10,3 @@
 \BOOKMARK [3][-]{subsubsection.1.6.3}{开发ES插件}{subsection.1.6}% 10
 \BOOKMARK [3][-]{subsubsection.1.6.4}{ES与hive}{subsection.1.6}% 11
 \BOOKMARK [2][-]{subsection.1.7}{ElasticSearch源码分析}{section.1}% 12
-\BOOKMARK [1][-]{section.2}{中文分词}{}% 13
-\BOOKMARK [2][-]{subsection.2.1}{机械分词法}{section.2}% 14
-\BOOKMARK [2][-]{subsection.2.2}{MMSEG算法}{section.2}% 15
-\BOOKMARK [2][-]{subsection.2.3}{基于词的频度统计的分词方法}{section.2}% 16
-\BOOKMARK [3][-]{subsubsection.2.3.1}{隐马尔科夫模型与维特比}{subsection.2.3}% 17
-\BOOKMARK [3][-]{subsubsection.2.3.2}{维特比算法}{subsection.2.3}% 18
-\BOOKMARK [3][-]{subsubsection.2.3.3}{实施方案}{subsection.2.3}% 19

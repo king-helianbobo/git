@@ -36,6 +36,8 @@ import org.elasticsearch.cluster.TimeoutClusterStateUpdateTask;
 import org.elasticsearch.cluster.action.index.NodeIndexCreatedAction;
 import org.elasticsearch.cluster.block.ClusterBlock;
 import org.elasticsearch.cluster.block.ClusterBlocks;
+import org.elasticsearch.cluster.metadata.IndexMetaData.Custom;
+import org.elasticsearch.cluster.metadata.IndexMetaData.State;
 import org.elasticsearch.cluster.routing.RoutingTable;
 import org.elasticsearch.cluster.routing.allocation.AllocationService;
 import org.elasticsearch.cluster.routing.allocation.RoutingAllocation;
@@ -113,7 +115,7 @@ public class MetaDataCreateIndexService extends AbstractComponent {
     public void createIndex(final Request request, final Listener userListener) {
         ImmutableSettings.Builder updatedSettingsBuilder = ImmutableSettings.settingsBuilder();
         for (Map.Entry<String, String> entry : request.settings.getAsMap().entrySet()) {
-            if (!entry.getKey().startsWith("index.")) {
+            if (!entry.getKey().startsWith("index.")) { // 例如       "index.store.type": "mmapfs",
                 updatedSettingsBuilder.put("index." + entry.getKey(), entry.getValue());
             } else {
                 updatedSettingsBuilder.put(entry.getKey(), entry.getValue());

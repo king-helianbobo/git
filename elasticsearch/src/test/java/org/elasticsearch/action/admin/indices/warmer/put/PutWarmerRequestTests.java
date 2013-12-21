@@ -32,7 +32,6 @@ import java.io.ByteArrayOutputStream;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 
 public class PutWarmerRequestTests extends ElasticsearchTestCase {
 
@@ -53,7 +52,7 @@ public class PutWarmerRequestTests extends ElasticsearchTestCase {
         inRequest.readFrom(esBuffer);
 
         assertThat(inRequest.name(), equalTo("warmer1"));
-        //timeout is default as we don't read it from the received buffer
+        // timeout is default as we don't read it from the received buffer
         assertThat(inRequest.timeout().millis(), equalTo(new PutWarmerRequest().timeout().millis()));
     }
 
@@ -74,11 +73,12 @@ public class PutWarmerRequestTests extends ElasticsearchTestCase {
         inRequest.readFrom(esBuffer);
 
         assertThat(inRequest.name(), equalTo("warmer1"));
-        //timeout is default as we don't read it from the received buffer
+        // timeout is default as we don't read it from the received buffer
         assertThat(inRequest.timeout().millis(), equalTo(outRequest.timeout().millis()));
     }
 
-    @Test // issue 4196
+    @Test
+    // issue 4196
     public void testThatValidationWithoutSpecifyingSearchRequestFails() {
         PutWarmerRequest putWarmerRequest = new PutWarmerRequest("foo");
         ActionRequestValidationException validationException = putWarmerRequest.validate();

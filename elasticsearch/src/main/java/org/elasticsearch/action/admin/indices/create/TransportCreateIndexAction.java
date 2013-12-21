@@ -42,7 +42,7 @@ public class TransportCreateIndexAction extends TransportMasterNodeOperationActi
 
     @Inject
     public TransportCreateIndexAction(Settings settings, TransportService transportService, ClusterService clusterService,
-                                      ThreadPool threadPool, MetaDataCreateIndexService createIndexService) {
+            ThreadPool threadPool, MetaDataCreateIndexService createIndexService) {
         super(settings, transportService, clusterService, threadPool);
         this.createIndexService = createIndexService;
     }
@@ -74,17 +74,16 @@ public class TransportCreateIndexAction extends TransportMasterNodeOperationActi
     }
 
     @Override
-    protected void masterOperation(final CreateIndexRequest request, final ClusterState state, final ActionListener<CreateIndexResponse> listener) throws ElasticSearchException {
+    protected void masterOperation(final CreateIndexRequest request, final ClusterState state,
+            final ActionListener<CreateIndexResponse> listener) throws ElasticSearchException {
         String cause = request.cause();
         if (cause.length() == 0) {
             cause = "api";
         }
 
-        createIndexService.createIndex(new MetaDataCreateIndexService.Request(cause, request.index()).settings(request.settings())
-                .mappings(request.mappings())
-                .customs(request.customs())
-                .timeout(request.timeout())
-                .masterTimeout(request.masterNodeTimeout()),
+        createIndexService.createIndex(
+                new MetaDataCreateIndexService.Request(cause, request.index()).settings(request.settings()).mappings(request.mappings())
+                        .customs(request.customs()).timeout(request.timeout()).masterTimeout(request.masterNodeTimeout()),
                 new MetaDataCreateIndexService.Listener() {
                     @Override
                     public void onResponse(MetaDataCreateIndexService.Response response) {

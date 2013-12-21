@@ -39,7 +39,8 @@ import org.elasticsearch.transport.*;
 /**
  * A base class for operations that needs to be performed on the master node.
  */
-public abstract class TransportMasterNodeOperationAction<Request extends MasterNodeOperationRequest, Response extends ActionResponse> extends TransportAction<Request, Response> {
+public abstract class TransportMasterNodeOperationAction<Request extends MasterNodeOperationRequest, Response extends ActionResponse>
+        extends TransportAction<Request, Response> {
 
     protected final TransportService transportService;
 
@@ -48,7 +49,8 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
     final String transportAction;
     final String executor;
 
-    protected TransportMasterNodeOperationAction(Settings settings, TransportService transportService, ClusterService clusterService, ThreadPool threadPool) {
+    protected TransportMasterNodeOperationAction(Settings settings, TransportService transportService, ClusterService clusterService,
+            ThreadPool threadPool) {
         super(settings, threadPool);
         this.transportService = transportService;
         this.clusterService = clusterService;
@@ -67,7 +69,8 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
 
     protected abstract Response newResponse();
 
-    protected abstract void masterOperation(Request request, ClusterState state, ActionListener<Response> listener) throws ElasticSearchException;
+    protected abstract void masterOperation(Request request, ClusterState state, ActionListener<Response> listener)
+            throws ElasticSearchException;
 
     protected boolean localExecute(Request request) {
         return false;
@@ -83,8 +86,10 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
 
     @Override
     public void execute(Request request, ActionListener<Response> listener) {
-        // since the callback is async, we typically can get called from within an event in the cluster service
-        // or something similar, so make sure we are threaded so we won't block it.
+        // since the callback is async, we typically can get called from within
+        // an event in the cluster service
+        // or something similar, so make sure we are threaded so we won't block
+        // it.
         request.listenerThreaded(true);
         super.execute(request, listener);
     }
@@ -93,6 +98,8 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
     protected void doExecute(final Request request, final ActionListener<Response> listener) {
         innerExecute(request, listener, false);
     }
+
+    // 创建索引操作必须在MasterNode处执行
 
     private void innerExecute(final Request request, final ActionListener<Response> listener, final boolean retrying) {
         final ClusterState clusterState = clusterService.state();
@@ -152,8 +159,8 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
                     listener.onFailure(t);
                 }
             }
-        } else {
-            if (nodes.masterNode() == null) {
+        } else { // 如果不能在本地执行或者本节点非master
+            if (nodes.masterNode() == null) { // 如果不存在master节点
                 if (retrying) {
                     listener.onFailure(new MasterNotDiscoveredException());
                 } else {
@@ -191,7 +198,8 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
                 }
                 return;
             }
-            processBeforeDelegationToMaster(request, clusterState);
+            processBeforeDelegationToMaster(request, clusterState); // 在创建索引的子类中，此函数什么都不需要做
+            // 将请求转发给Master节点
             transportService.sendRequest(nodes.masterNode(), transportAction, request, new BaseTransportResponseHandler<Response>() {
                 @Override
                 public Response newInstance() {
@@ -211,13 +219,15 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
                 @Override
                 public void handleException(final TransportException exp) {
                     if (exp.unwrapCause() instanceof ConnectTransportException) {
-                        // we want to retry here a bit to see if a new master is elected
+                        // we want to retry here a bit to see if a new master is
+                        // elected
                         clusterService.add(request.masterNodeTimeout(), new TimeoutClusterStateListener() {
                             @Override
                             public void postAdded() {
                                 ClusterState clusterStateV2 = clusterService.state();
                                 if (!clusterState.nodes().masterNodeId().equals(clusterStateV2.nodes().masterNodeId())) {
-                                    // master changes while adding the listener, try here
+                                    // master changes while adding the listener,
+                                    // try here
                                     clusterService.remove(this);
                                     innerExecute(request, listener, false);
                                 }

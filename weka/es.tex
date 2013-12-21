@@ -302,10 +302,13 @@ TBLPROPERTIES('es.resource' = 'eshive/hive1/',
 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
 \end{verbatim}
 \subsection{ElasticSearch源码分析}
-\par org.elasticsearch.rest.action，该目录负责处理Rest请求。
 \begin{enumerate}[(1)]
-\item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class);因此，请求将由TransportAnalyzeAction类处理，
-\item "/\{index\}/\_close"，只接受POST方法，在org/elasticsearch/rest/action/admin/indices/close/RestCloseIndexAction.java中被处理；
-\item  只有"/\{index\}"一种操作，接受POST和PUT两种方法，在org/elasticsearch/rest/action/admin/indices/create/RestCreateIndexAction.java中处理；
+\item org.elasticsearch.rest.action，该目录负责接受，解释Rest请求。
+\item org.elasticsearch.client.node负责管理节点客户端请求。
+\item org.elasticsearch.action.admin.indices.*负责处理Rest请求中的动作。
 \end{enumerate}
-\par org.elasticsearch.client.node负责管理节点客户端请求，
+\begin{enumerate}[(1)]
+\item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class)，因此，请求将由TransportAnalyzeAction类处理，
+\item "/\{index\}/\_close"，只接受POST方法，在org/elasticsearch/rest/action/admin/indices/close/RestCloseIndexAction.java中被处理；
+\item  创建一个新的索引，json参数中包括settings和mappings（\textbf{注意并非endpoint中的\_mapping}），只有"/\{index\}"一种操作，接受POST和PUT两种方法，在org/elasticsearch/rest/action/admin/indices/create/RestCreateIndexAction.java中处理；
+\end{enumerate}
