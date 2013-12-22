@@ -5,6 +5,7 @@
   <classpathentry kind="src" path="src/main/resources" excluding="**/*.java"/>
   <classpathentry kind="output" path="target/classes"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="lib" path="lib/pinyin4j-2.5.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/elasticsearch/elasticsearch/0.90.5/elasticsearch-0.90.5.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-core/4.6.0/lucene-core-4.6.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-analyzers-common/4.4.0/lucene-analyzers-common-4.4.0.jar"/>

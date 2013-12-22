@@ -47,3 +47,7 @@ _region_.tex
 *.jar
 *.war
 *.ear
+
+soul_seg/target/
+ESMapReduce/lib/
+elasticsearch/target/

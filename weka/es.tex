@@ -232,12 +232,12 @@ path.logs: /home/elasticSearch/logs
 @Override
 protected TokenStreamComponents createComponents(String fieldName,
         final Reader reader) {
-    Tokenizer tokenizer = new AnsjTokenizer(new IndexAnalysis(reader),
+    Tokenizer tokenizer = new AnsjTokenizer(new BasicAnalysis(reader),
         reader, filter, pstemming);
     return new TokenStreamComponents(tokenizer);
 }
 \end{verbatim}
-\par TokenStream是能够产生词序列的类，有两个类型的子类TokenFilter和Tokenizer，Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)。
+\par 上例中的fieldName没有用处，有两个类型的子类TokenFilter和Tokenizer（也可以继承CharTokenizer），Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)。
 \subsubsection{开发ES插件}
 \par 插件一般情况下是一个zip文件，它包含了若干Jar包，为安装插件，依赖于Maven的安装。Maven工程的main目录里须包含三个目录(java,resources,assembly)。新建src/main/resources/es-plugin.properties文件，文件内容为：
 \begin{verbatim}
@@ -270,7 +270,10 @@ plugin=org.soul.ESearch.SoulAnalysisPlugin
   </fileSets>
 </assembly>
 \end{verbatim}
-\par 执行“mvn assembly:single”后，应该生成了zip文件，调用/opt/elasticsearch-0.90.5/bin/plugin命令，将zip文件注入到ElasticSearch中。
+\par 执行“mvn assembly:single”后，应该生成了zip文件，调用bin/plugin命令，将zip文件注入到ElasticSearch中。
+\begin{verbatim}
+./bin/plugin  --url file:///home/lau/git/soul_seg/target/releases/soul_seg-0.1.0-plugin.zip  --install soul-analysis
+\end{verbatim}
 \subsubsection{ES与hive}
 \par Hive从0.8.0版本后支持两个虚拟列:\textbf{INPUT\_\_FILE\_\_NAME}（即mapper任务的输出文件名）和\textbf{BLOCK\_\_OFFSET\_\_INSIDE\_\_FILE}（即读取记录在当前文件的全局偏移量）。对于块压缩文件，就是当前块的文件偏移量，即当前块的第一个字节在文件中的偏移量。Simple Example:
 \begin{verbatim}

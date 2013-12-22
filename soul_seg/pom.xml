@@ -16,13 +16,6 @@
     </license>
   </licenses>
 
-  <!-- <scm> -->
-  <!--   <connection>scm:git:git@github.com:ansjsun/ansj_seg.git</connection> -->
-  <!--   <developerConnection>scm:git:git@github.com:ansjsun/ansj_seg.git</developerConnection> -->
-  <!--   <url>git@github.com:ansjsun/ansj_seg.git</url> -->
-  <!-- </scm> -->
-
-
   <developers>
     <developer>
       <id>soul</id>
@@ -37,6 +30,17 @@
 
   <repositories>
     <repository>
+      <id>oss.sonatype.org</id>
+      <name>OSS Sonatype</name>
+      <releases>
+	<enabled>true</enabled>
+      </releases>
+      <snapshots>
+	<enabled>true</enabled>
+      </snapshots>
+      <url>http://oss.sonatype.org/content/repositories/releases/</url>
+    </repository>
+    <repository>
       <id>remote-maven-repo</id>
       <url>http://search.maven.org</url>
     </repository>
@@ -44,6 +48,14 @@
 
 
   <dependencies>
+    <dependency>
+      <groupId>net.sourceforge.pinyin4j</groupId>
+      <artifactId>pinyin4j</artifactId>
+      <version>2.5.0</version>
+      <systemPath>${basedir}/lib/pinyin4j-2.5.0.jar</systemPath>
+      <scope>system</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
