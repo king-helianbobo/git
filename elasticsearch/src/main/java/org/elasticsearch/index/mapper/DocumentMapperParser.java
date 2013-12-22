@@ -70,12 +70,12 @@ public class DocumentMapperParser extends AbstractIndexComponent {
     private volatile ImmutableMap<String, Mapper.TypeParser> rootTypeParsers;
 
     public DocumentMapperParser(Index index, AnalysisService analysisService, PostingsFormatService postingsFormatService,
-                                SimilarityLookupService similarityLookupService) {
+            SimilarityLookupService similarityLookupService) {
         this(index, ImmutableSettings.Builder.EMPTY_SETTINGS, analysisService, postingsFormatService, similarityLookupService);
     }
 
     public DocumentMapperParser(Index index, @IndexSettings Settings indexSettings, AnalysisService analysisService,
-                                PostingsFormatService postingsFormatService, SimilarityLookupService similarityLookupService) {
+            PostingsFormatService postingsFormatService, SimilarityLookupService similarityLookupService) {
         super(index, indexSettings);
         this.analysisService = analysisService;
         this.postingsFormatService = postingsFormatService;
@@ -105,36 +105,27 @@ public class DocumentMapperParser extends AbstractIndexComponent {
 
         typeParsers = typeParsersBuilder.immutableMap();
 
-        rootTypeParsers = new MapBuilder<String, Mapper.TypeParser>()
-                .put(SizeFieldMapper.NAME, new SizeFieldMapper.TypeParser())
+        rootTypeParsers = new MapBuilder<String, Mapper.TypeParser>().put(SizeFieldMapper.NAME, new SizeFieldMapper.TypeParser())
                 .put(IndexFieldMapper.NAME, new IndexFieldMapper.TypeParser())
                 .put(SourceFieldMapper.NAME, new SourceFieldMapper.TypeParser())
-                .put(TypeFieldMapper.NAME, new TypeFieldMapper.TypeParser())
-                .put(AllFieldMapper.NAME, new AllFieldMapper.TypeParser())
-                .put(AnalyzerMapper.NAME, new AnalyzerMapper.TypeParser())
-                .put(BoostFieldMapper.NAME, new BoostFieldMapper.TypeParser())
+                .put(TypeFieldMapper.NAME, new TypeFieldMapper.TypeParser()).put(AllFieldMapper.NAME, new AllFieldMapper.TypeParser())
+                .put(AnalyzerMapper.NAME, new AnalyzerMapper.TypeParser()).put(BoostFieldMapper.NAME, new BoostFieldMapper.TypeParser())
                 .put(ParentFieldMapper.NAME, new ParentFieldMapper.TypeParser())
                 .put(RoutingFieldMapper.NAME, new RoutingFieldMapper.TypeParser())
                 .put(TimestampFieldMapper.NAME, new TimestampFieldMapper.TypeParser())
-                .put(TTLFieldMapper.NAME, new TTLFieldMapper.TypeParser())
-                .put(UidFieldMapper.NAME, new UidFieldMapper.TypeParser())
-                .put(IdFieldMapper.NAME, new IdFieldMapper.TypeParser())
-                .immutableMap();
+                .put(TTLFieldMapper.NAME, new TTLFieldMapper.TypeParser()).put(UidFieldMapper.NAME, new UidFieldMapper.TypeParser())
+                .put(IdFieldMapper.NAME, new IdFieldMapper.TypeParser()).immutableMap();
     }
 
     public void putTypeParser(String type, Mapper.TypeParser typeParser) {
         synchronized (typeParsersMutex) {
-            typeParsers = new MapBuilder<String, Mapper.TypeParser>(typeParsers)
-                    .put(type, typeParser)
-                    .immutableMap();
+            typeParsers = new MapBuilder<String, Mapper.TypeParser>(typeParsers).put(type, typeParser).immutableMap();
         }
     }
 
     public void putRootTypeParser(String type, Mapper.TypeParser typeParser) {
         synchronized (typeParsersMutex) {
-            rootTypeParsers = new MapBuilder<String, Mapper.TypeParser>(rootTypeParsers)
-                    .put(type, typeParser)
-                    .immutableMap();
+            rootTypeParsers = new MapBuilder<String, Mapper.TypeParser>(rootTypeParsers).put(type, typeParser).immutableMap();
         }
     }
 
@@ -150,7 +141,7 @@ public class DocumentMapperParser extends AbstractIndexComponent {
         return parse(type, source, null);
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     public DocumentMapper parse(@Nullable String type, String source, String defaultSource) throws MapperParsingException {
         Map<String, Object> mapping = null;
         if (source != null) {
@@ -168,13 +159,14 @@ public class DocumentMapperParser extends AbstractIndexComponent {
         return parseCompressed(type, source, null);
     }
 
-    @SuppressWarnings({"unchecked"})
-    public DocumentMapper parseCompressed(@Nullable String type, CompressedString source, String defaultSource) throws MapperParsingException {
+    @SuppressWarnings({ "unchecked" })
+    public DocumentMapper parseCompressed(@Nullable String type, CompressedString source, String defaultSource)
+            throws MapperParsingException {
         Map<String, Object> mapping = null;
         if (source != null) {
             Map<String, Object> root = XContentHelper.convertToMap(source.compressed(), true).v2();
-            Tuple<String, Map<String, Object>> t = extractMapping(type, root);
-            type = t.v1();
+            Tuple<String, Map<String, Object>> t = extractMapping(type, root); // 获得type1下的Map<>数组
+            type = t.v1(); // 获得字符流的类型
             mapping = t.v2();
         }
         if (mapping == null) {
@@ -183,7 +175,7 @@ public class DocumentMapperParser extends AbstractIndexComponent {
         return parse(type, mapping, defaultSource);
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     private DocumentMapper parse(String type, Map<String, Object> mapping, String defaultSource) throws MapperParsingException {
         if (type == null) {
             throw new MapperParsingException("Failed to derive type");
@@ -196,9 +188,11 @@ public class DocumentMapperParser extends AbstractIndexComponent {
             }
         }
 
-        Mapper.TypeParser.ParserContext parserContext = new Mapper.TypeParser.ParserContext(postingsFormatService, analysisService, similarityLookupService, typeParsers);
+        Mapper.TypeParser.ParserContext parserContext = new Mapper.TypeParser.ParserContext(postingsFormatService, analysisService,
+                similarityLookupService, typeParsers);
 
-        DocumentMapper.Builder docBuilder = doc(index.name(), indexSettings, (RootObjectMapper.Builder) rootObjectTypeParser.parse(type, mapping, parserContext));
+        DocumentMapper.Builder docBuilder = doc(index.name(), indexSettings,
+                (RootObjectMapper.Builder) rootObjectTypeParser.parse(type, mapping, parserContext));
 
         for (Map.Entry<String, Object> entry : mapping.entrySet()) {
             String fieldName = Strings.toUnderscoreCase(entry.getKey());
@@ -207,30 +201,34 @@ public class DocumentMapperParser extends AbstractIndexComponent {
             if ("index_analyzer".equals(fieldName)) {
                 NamedAnalyzer analyzer = analysisService.analyzer(fieldNode.toString());
                 if (analyzer == null) {
-                    throw new MapperParsingException("Analyzer [" + fieldNode.toString() + "] not found for index_analyzer setting on root type [" + type + "]");
+                    throw new MapperParsingException("Analyzer [" + fieldNode.toString()
+                            + "] not found for index_analyzer setting on root type [" + type + "]");
                 }
                 docBuilder.indexAnalyzer(analyzer);
             } else if ("search_analyzer".equals(fieldName)) {
                 NamedAnalyzer analyzer = analysisService.analyzer(fieldNode.toString());
                 if (analyzer == null) {
-                    throw new MapperParsingException("Analyzer [" + fieldNode.toString() + "] not found for search_analyzer setting on root type [" + type + "]");
+                    throw new MapperParsingException("Analyzer [" + fieldNode.toString()
+                            + "] not found for search_analyzer setting on root type [" + type + "]");
                 }
                 docBuilder.searchAnalyzer(analyzer);
             } else if ("search_quote_analyzer".equals(fieldName)) {
                 NamedAnalyzer analyzer = analysisService.analyzer(fieldNode.toString());
                 if (analyzer == null) {
-                    throw new MapperParsingException("Analyzer [" + fieldNode.toString() + "] not found for search_analyzer setting on root type [" + type + "]");
+                    throw new MapperParsingException("Analyzer [" + fieldNode.toString()
+                            + "] not found for search_analyzer setting on root type [" + type + "]");
                 }
                 docBuilder.searchQuoteAnalyzer(analyzer);
-            } else if ("analyzer".equals(fieldName)) {
+            } else if ("analyzer".equals(fieldName)) { // analyzer为index_analyzer和search_analyzer都设置
                 NamedAnalyzer analyzer = analysisService.analyzer(fieldNode.toString());
                 if (analyzer == null) {
-                    throw new MapperParsingException("Analyzer [" + fieldNode.toString() + "] not found for analyzer setting on root type [" + type + "]");
+                    throw new MapperParsingException("Analyzer [" + fieldNode.toString()
+                            + "] not found for analyzer setting on root type [" + type + "]");
                 }
                 docBuilder.indexAnalyzer(analyzer);
                 docBuilder.searchAnalyzer(analyzer);
             } else {
-                Mapper.TypeParser typeParser = rootTypeParsers.get(fieldName);
+                Mapper.TypeParser typeParser = rootTypeParsers.get(fieldName); // 域名包括'_source'等
                 if (typeParser != null) {
                     docBuilder.put(typeParser.parse(fieldName, (Map<String, Object>) fieldNode, parserContext));
                 }
@@ -259,7 +257,7 @@ public class DocumentMapperParser extends AbstractIndexComponent {
         return documentMapper;
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     private Tuple<String, Map<String, Object>> extractMapping(String type, String source) throws MapperParsingException {
         Map<String, Object> root;
         XContentParser xContentParser = null;
@@ -276,18 +274,19 @@ public class DocumentMapperParser extends AbstractIndexComponent {
         return extractMapping(type, root);
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     private Tuple<String, Map<String, Object>> extractMapping(String type, Map<String, Object> root) throws MapperParsingException {
         int size = root.size();
         switch (size) {
-            case 0:
-                // if we don't have any keys throw an exception
-                throw new MapperParsingException("malformed mapping no root object found");
-            case 1:
-                break;
-            default:
-                // we always assume the first and single key is the mapping type root
-                throw new MapperParsingException("mapping must have the `type` as the root object");
+        case 0:
+            // if we don't have any keys throw an exception
+            throw new MapperParsingException("malformed mapping no root object found");
+        case 1:
+            break;
+        default:
+            // we always assume the first and single key is the mapping type
+            // root
+            throw new MapperParsingException("mapping must have the `type` as the root object");
         }
 
         String rootName = root.keySet().iterator().next();

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-curl -XPUT "localhost:9200/test/test1/_mapping?pretty" -d'{
+curl -XPUT "localhost:9200/test/test1/_mapping?pretty" -d' {
    "test1": {
       "properties": {
          "content": {

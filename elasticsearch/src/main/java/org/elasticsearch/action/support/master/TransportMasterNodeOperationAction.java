@@ -109,7 +109,7 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
             final ClusterBlockException blockException = checkBlock(request, clusterState);
             if (blockException != null) {
                 if (!blockException.retryable()) {
-                    listener.onFailure(blockException);
+                    listener.onFailure(blockException); // 如果不可重试
                     return;
                 }
                 clusterService.add(request.masterNodeTimeout(), new TimeoutClusterStateListener() {
@@ -149,6 +149,7 @@ public abstract class TransportMasterNodeOperationAction<Request extends MasterN
                         @Override
                         public void run() {
                             try {
+                                // 执行这个操作
                                 masterOperation(request, clusterService.state(), listener);
                             } catch (Throwable e) {
                                 listener.onFailure(e);

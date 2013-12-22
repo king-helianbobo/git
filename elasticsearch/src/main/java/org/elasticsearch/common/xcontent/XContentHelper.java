@@ -57,7 +57,6 @@ public class XContentHelper {
         }
     }
 
-
     public static XContentParser createParser(byte[] data, int offset, int length) throws IOException {
         Compressor compressor = CompressorFactory.compressor(data, offset, length);
         if (compressor != null) {
@@ -70,7 +69,8 @@ public class XContentHelper {
         }
     }
 
-    public static Tuple<XContentType, Map<String, Object>> convertToMap(BytesReference bytes, boolean ordered) throws ElasticSearchParseException {
+    public static Tuple<XContentType, Map<String, Object>> convertToMap(BytesReference bytes, boolean ordered)
+            throws ElasticSearchParseException {
         if (bytes.hasArray()) {
             return convertToMap(bytes.array(), bytes.arrayOffset(), bytes.length(), ordered);
         }
@@ -98,10 +98,11 @@ public class XContentHelper {
     }
 
     public static Tuple<XContentType, Map<String, Object>> convertToMap(byte[] data, boolean ordered) throws ElasticSearchParseException {
-        return convertToMap(data, 0, data.length, ordered);
+        return convertToMap(data, 0, data.length, ordered); // 这是做什么呢？目的在于什么地方呢？
     }
 
-    public static Tuple<XContentType, Map<String, Object>> convertToMap(byte[] data, int offset, int length, boolean ordered) throws ElasticSearchParseException {
+    public static Tuple<XContentType, Map<String, Object>> convertToMap(byte[] data, int offset, int length, boolean ordered)
+            throws ElasticSearchParseException {
         try {
             XContentParser parser;
             XContentType contentType;
@@ -112,11 +113,11 @@ public class XContentHelper {
                 compressedStreamInput.resetToBufferStart();
                 parser = XContentFactory.xContent(contentType).createParser(compressedStreamInput);
             } else {
-                contentType = XContentFactory.xContentType(data, offset, length);
+                contentType = XContentFactory.xContentType(data, offset, length); // 获得字符流的类型，用于解析字符
                 parser = XContentFactory.xContent(contentType).createParser(data, offset, length);
             }
             if (ordered) {
-                return Tuple.tuple(contentType, parser.mapOrderedAndClose());
+                return Tuple.tuple(contentType, parser.mapOrderedAndClose()); // 对map中的内容排序
             } else {
                 return Tuple.tuple(contentType, parser.mapAndClose());
             }
@@ -182,8 +183,9 @@ public class XContentHelper {
     }
 
     /**
-     * Updates the provided changes into the source. If the key exists in the changes, it overrides the one in source
-     * unless both are Maps, in which case it recuersively updated it.
+     * Updates the provided changes into the source. If the key exists in the
+     * changes, it overrides the one in source unless both are Maps, in which
+     * case it recuersively updated it.
      */
     public static void update(Map<String, Object> source, Map<String, Object> changes) {
         for (Map.Entry<String, Object> changesEntry : changes.entrySet()) {
@@ -203,17 +205,18 @@ public class XContentHelper {
     }
 
     /**
-     * Merges the defaults provided as the second parameter into the content of the first. Only does recursive merge
-     * for inner maps.
+     * Merges the defaults provided as the second parameter into the content of
+     * the first. Only does recursive merge for inner maps.
      */
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     public static void mergeDefaults(Map<String, Object> content, Map<String, Object> defaults) {
         for (Map.Entry<String, Object> defaultEntry : defaults.entrySet()) {
             if (!content.containsKey(defaultEntry.getKey())) {
                 // copy it over, it does not exists in the content
                 content.put(defaultEntry.getKey(), defaultEntry.getValue());
             } else {
-                // in the content and in the default, only merge compound ones (maps)
+                // in the content and in the default, only merge compound ones
+                // (maps)
                 if (content.get(defaultEntry.getKey()) instanceof Map && defaultEntry.getValue() instanceof Map) {
                     mergeDefaults((Map<String, Object>) content.get(defaultEntry.getKey()), (Map<String, Object>) defaultEntry.getValue());
                 } else if (content.get(defaultEntry.getKey()) instanceof List && defaultEntry.getValue() instanceof List) {
@@ -222,7 +225,8 @@ public class XContentHelper {
 
                     List mergedList = new ArrayList();
                     if (allListValuesAreMapsOfOne(defaultList) && allListValuesAreMapsOfOne(contentList)) {
-                        // all are in the form of [ {"key1" : {}}, {"key2" : {}} ], merge based on keys
+                        // all are in the form of [ {"key1" : {}}, {"key2" : {}}
+                        // ], merge based on keys
                         Map<String, Map<String, Object>> processed = Maps.newLinkedHashMap();
                         for (Object o : contentList) {
                             Map<String, Object> map = (Map<String, Object>) o;
@@ -235,7 +239,8 @@ public class XContentHelper {
                             if (processed.containsKey(entry.getKey())) {
                                 mergeDefaults(processed.get(entry.getKey()), map);
                             } else {
-                                // put the default entries after the content ones.
+                                // put the default entries after the content
+                                // ones.
                                 processed.put(entry.getKey(), map);
                             }
                         }
@@ -243,7 +248,8 @@ public class XContentHelper {
                             mergedList.add(map);
                         }
                     } else {
-                        // if both are lists, simply combine them, first the defaults, then the content
+                        // if both are lists, simply combine them, first the
+                        // defaults, then the content
                         // just make sure not to add the same value twice
                         mergedList.addAll(defaultList);
                         for (Object o : contentList) {
@@ -281,73 +287,73 @@ public class XContentHelper {
         }
 
         switch (t) {
-            case START_ARRAY:
-                generator.writeStartArray();
-                while (parser.nextToken() != XContentParser.Token.END_ARRAY) {
-                    copyCurrentStructure(generator, parser);
-                }
-                generator.writeEndArray();
-                break;
-            case START_OBJECT:
-                generator.writeStartObject();
-                while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
-                    copyCurrentStructure(generator, parser);
-                }
-                generator.writeEndObject();
-                break;
-            default: // others are simple:
-                copyCurrentEvent(generator, parser);
+        case START_ARRAY:
+            generator.writeStartArray();
+            while (parser.nextToken() != XContentParser.Token.END_ARRAY) {
+                copyCurrentStructure(generator, parser);
+            }
+            generator.writeEndArray();
+            break;
+        case START_OBJECT:
+            generator.writeStartObject();
+            while (parser.nextToken() != XContentParser.Token.END_OBJECT) {
+                copyCurrentStructure(generator, parser);
+            }
+            generator.writeEndObject();
+            break;
+        default: // others are simple:
+            copyCurrentEvent(generator, parser);
         }
     }
 
     public static void copyCurrentEvent(XContentGenerator generator, XContentParser parser) throws IOException {
         switch (parser.currentToken()) {
-            case START_OBJECT:
-                generator.writeStartObject();
+        case START_OBJECT:
+            generator.writeStartObject();
+            break;
+        case END_OBJECT:
+            generator.writeEndObject();
+            break;
+        case START_ARRAY:
+            generator.writeStartArray();
+            break;
+        case END_ARRAY:
+            generator.writeEndArray();
+            break;
+        case FIELD_NAME:
+            generator.writeFieldName(parser.currentName());
+            break;
+        case VALUE_STRING:
+            if (parser.hasTextCharacters()) {
+                generator.writeString(parser.textCharacters(), parser.textOffset(), parser.textLength());
+            } else {
+                generator.writeString(parser.text());
+            }
+            break;
+        case VALUE_NUMBER:
+            switch (parser.numberType()) {
+            case INT:
+                generator.writeNumber(parser.intValue());
                 break;
-            case END_OBJECT:
-                generator.writeEndObject();
+            case LONG:
+                generator.writeNumber(parser.longValue());
                 break;
-            case START_ARRAY:
-                generator.writeStartArray();
+            case FLOAT:
+                generator.writeNumber(parser.floatValue());
                 break;
-            case END_ARRAY:
-                generator.writeEndArray();
+            case DOUBLE:
+                generator.writeNumber(parser.doubleValue());
                 break;
-            case FIELD_NAME:
-                generator.writeFieldName(parser.currentName());
-                break;
-            case VALUE_STRING:
-                if (parser.hasTextCharacters()) {
-                    generator.writeString(parser.textCharacters(), parser.textOffset(), parser.textLength());
-                } else {
-                    generator.writeString(parser.text());
-                }
-                break;
-            case VALUE_NUMBER:
-                switch (parser.numberType()) {
-                    case INT:
-                        generator.writeNumber(parser.intValue());
-                        break;
-                    case LONG:
-                        generator.writeNumber(parser.longValue());
-                        break;
-                    case FLOAT:
-                        generator.writeNumber(parser.floatValue());
-                        break;
-                    case DOUBLE:
-                        generator.writeNumber(parser.doubleValue());
-                        break;
-                }
-                break;
-            case VALUE_BOOLEAN:
-                generator.writeBoolean(parser.booleanValue());
-                break;
-            case VALUE_NULL:
-                generator.writeNull();
-                break;
-            case VALUE_EMBEDDED_OBJECT:
-                generator.writeBinary(parser.binaryValue());
+            }
+            break;
+        case VALUE_BOOLEAN:
+            generator.writeBoolean(parser.booleanValue());
+            break;
+        case VALUE_NULL:
+            generator.writeNull();
+            break;
+        case VALUE_EMBEDDED_OBJECT:
+            generator.writeBinary(parser.binaryValue());
         }
     }
 
@@ -388,10 +394,13 @@ public class XContentHelper {
     }
 
     /**
-     * Writes a "raw" (bytes) field, handling cases where the bytes are compressed, and tries to optimize writing using
-     * {@link XContentBuilder#rawField(String, org.elasticsearch.common.bytes.BytesReference)}.
+     * Writes a "raw" (bytes) field, handling cases where the bytes are
+     * compressed, and tries to optimize writing using
+     * {@link XContentBuilder#rawField(String, org.elasticsearch.common.bytes.BytesReference)}
+     * .
      */
-    public static void writeRawField(String field, BytesReference source, XContentBuilder builder, ToXContent.Params params) throws IOException {
+    public static void writeRawField(String field, BytesReference source, XContentBuilder builder, ToXContent.Params params)
+            throws IOException {
         Compressor compressor = CompressorFactory.compressor(source);
         if (compressor != null) {
             CompressedStreamInput compressedStreamInput = compressor.streamInput(source.streamInput());

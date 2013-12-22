@@ -306,6 +306,30 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \item org.elasticsearch.rest.action，该目录负责接受，解释Rest请求。
 \item org.elasticsearch.client.node负责管理节点客户端请求。
 \item org.elasticsearch.action.admin.indices.*负责处理Rest请求中的动作。
+\item lasticsearch里面的组件基本都是用上面的方式进行模块化管理，elasticsearch对guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
+\item PluginsModule：插件模块
+\item SettingsModule：设置参数模块
+\item NodeModule：节点模块
+\item NetworkModule：网络模块
+\item NodeCacheModule：缓存模块
+\item ScriptModule：脚本模块
+\item JmxModule：jmx模块
+\item EnvironmentModule：环境模块
+\item NodeEnvironmentModule：节点环境模块
+\item ClusterNameModule：集群名模块
+\item ThreadPoolModule：线程池模块
+\item DiscoveryModule：自动发现模块
+\item ClusterModule：集群模块
+\item RestModule：rest模块
+\item TransportModule：tcp模块
+\item HttpServerModule：http模块
+\item RiversModule：river模块
+\item IndicesModule：索引模块
+\item SearchModule：搜索模块
+\item ActionModule：行为模块
+\item MonitorModule：监控模块
+\item GatewayModule：持久化模块
+\item NodeClientModule：客户端模块
 \end{enumerate}
 \begin{enumerate}[(1)]
 \item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class)，因此，请求将由TransportAnalyzeAction类处理，

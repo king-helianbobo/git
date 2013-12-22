@@ -239,11 +239,11 @@ public class DocumentMapper implements ToXContent {
         }
     };
 
-    private final String index;
+    private final String index; //索引名称
 
-    private final Settings indexSettings;
+    private final Settings indexSettings; // 索引设置
 
-    private final String type;
+    private final String type; //索引type
     private final StringAndBytesText typeText;
 
     private final DocumentMapperParser docMapperParser;

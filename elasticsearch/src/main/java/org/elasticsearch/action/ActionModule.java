@@ -144,12 +144,12 @@ public class ActionModule extends AbstractModule {
         public final Class<? extends TransportAction<Request, Response>> transportAction;
         public final Class[] supportTransportActions;
 
-        ActionEntry(GenericAction<Request, Response> action, Class<? extends TransportAction<Request, Response>> transportAction, Class... supportTransportActions) {
+        ActionEntry(GenericAction<Request, Response> action, Class<? extends TransportAction<Request, Response>> transportAction,
+                Class... supportTransportActions) {
             this.action = action;
             this.transportAction = transportAction;
             this.supportTransportActions = supportTransportActions;
         }
-
 
     }
 
@@ -161,14 +161,20 @@ public class ActionModule extends AbstractModule {
 
     /**
      * Registers an action.
-     *
-     * @param action                  The action type.
-     * @param transportAction         The transport action implementing the actual action.
-     * @param supportTransportActions Any support actions that are needed by the transport action.
-     * @param <Request>               The request type.
-     * @param <Response>              The response type.
+     * 
+     * @param action
+     *            The action type.
+     * @param transportAction
+     *            The transport action implementing the actual action.
+     * @param supportTransportActions
+     *            Any support actions that are needed by the transport action.
+     * @param <Request>
+     *            The request type.
+     * @param <Response>
+     *            The response type.
      */
-    public <Request extends ActionRequest, Response extends ActionResponse> void registerAction(GenericAction<Request, Response> action, Class<? extends TransportAction<Request, Response>> transportAction, Class... supportTransportActions) {
+    public <Request extends ActionRequest, Response extends ActionResponse> void registerAction(GenericAction<Request, Response> action,
+            Class<? extends TransportAction<Request, Response>> transportAction, Class... supportTransportActions) {
         actions.put(action.name(), new ActionEntry<Request, Response>(action, transportAction, supportTransportActions));
     }
 
@@ -219,29 +225,20 @@ public class ActionModule extends AbstractModule {
 
         registerAction(IndexAction.INSTANCE, TransportIndexAction.class);
         registerAction(GetAction.INSTANCE, TransportGetAction.class);
-        registerAction(DeleteAction.INSTANCE, TransportDeleteAction.class,
-                TransportIndexDeleteAction.class, TransportShardDeleteAction.class);
+        registerAction(DeleteAction.INSTANCE, TransportDeleteAction.class, TransportIndexDeleteAction.class,
+                TransportShardDeleteAction.class);
         registerAction(CountAction.INSTANCE, TransportCountAction.class);
         registerAction(SuggestAction.INSTANCE, TransportSuggestAction.class);
         registerAction(UpdateAction.INSTANCE, TransportUpdateAction.class);
-        registerAction(MultiGetAction.INSTANCE, TransportMultiGetAction.class,
-                TransportShardMultiGetAction.class);
-        registerAction(BulkAction.INSTANCE, TransportBulkAction.class,
-                TransportShardBulkAction.class);
-        registerAction(DeleteByQueryAction.INSTANCE, TransportDeleteByQueryAction.class,
-                TransportIndexDeleteByQueryAction.class, TransportShardDeleteByQueryAction.class);
-        registerAction(SearchAction.INSTANCE, TransportSearchAction.class,
-                TransportSearchDfsQueryThenFetchAction.class,
-                TransportSearchQueryThenFetchAction.class,
-                TransportSearchDfsQueryAndFetchAction.class,
-                TransportSearchQueryAndFetchAction.class,
-                TransportSearchScanAction.class
-        );
-        registerAction(SearchScrollAction.INSTANCE, TransportSearchScrollAction.class,
-                TransportSearchScrollScanAction.class,
-                TransportSearchScrollQueryThenFetchAction.class,
-                TransportSearchScrollQueryAndFetchAction.class
-        );
+        registerAction(MultiGetAction.INSTANCE, TransportMultiGetAction.class, TransportShardMultiGetAction.class);
+        registerAction(BulkAction.INSTANCE, TransportBulkAction.class, TransportShardBulkAction.class);
+        registerAction(DeleteByQueryAction.INSTANCE, TransportDeleteByQueryAction.class, TransportIndexDeleteByQueryAction.class,
+                TransportShardDeleteByQueryAction.class);
+        registerAction(SearchAction.INSTANCE, TransportSearchAction.class, TransportSearchDfsQueryThenFetchAction.class,
+                TransportSearchQueryThenFetchAction.class, TransportSearchDfsQueryAndFetchAction.class,
+                TransportSearchQueryAndFetchAction.class, TransportSearchScanAction.class);
+        registerAction(SearchScrollAction.INSTANCE, TransportSearchScrollAction.class, TransportSearchScrollScanAction.class,
+                TransportSearchScrollQueryThenFetchAction.class, TransportSearchScrollQueryAndFetchAction.class);
         registerAction(MultiSearchAction.INSTANCE, TransportMultiSearchAction.class);
         registerAction(MoreLikeThisAction.INSTANCE, TransportMoreLikeThisAction.class);
         registerAction(PercolateAction.INSTANCE, TransportPercolateAction.class);
@@ -249,20 +246,21 @@ public class ActionModule extends AbstractModule {
         registerAction(ClearScrollAction.INSTANCE, TransportClearScrollAction.class);
 
         // register Name -> GenericAction Map that can be injected to instances.
-        MapBinder<String, GenericAction> actionsBinder
-                = MapBinder.newMapBinder(binder(), String.class, GenericAction.class);
+        MapBinder<String, GenericAction> actionsBinder = MapBinder.newMapBinder(binder(), String.class, GenericAction.class);
 
         for (Map.Entry<String, ActionEntry> entry : actions.entrySet()) {
             actionsBinder.addBinding(entry.getKey()).toInstance(entry.getValue().action);
         }
 
-        // register GenericAction -> transportAction Map that can be injected to instances.
+        // register GenericAction -> transportAction Map that can be injected to
+        // instances.
         // also register any supporting classes
         if (!proxy) {
-            MapBinder<GenericAction, TransportAction> transportActionsBinder
-                    = MapBinder.newMapBinder(binder(), GenericAction.class, TransportAction.class);
+            MapBinder<GenericAction, TransportAction> transportActionsBinder = MapBinder.newMapBinder(binder(), GenericAction.class,
+                    TransportAction.class);
             for (Map.Entry<String, ActionEntry> entry : actions.entrySet()) {
-                // bind the action as eager singleton, so the map binder one will reuse it
+                // bind the action as eager singleton, so the map binder one
+                // will reuse it
                 bind(entry.getValue().transportAction).asEagerSingleton();
                 transportActionsBinder.addBinding(entry.getValue().action).to(entry.getValue().transportAction).asEagerSingleton();
                 for (Class supportAction : entry.getValue().supportTransportActions) {

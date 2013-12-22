@@ -98,8 +98,9 @@ public class MetaDataCreateIndexService extends AbstractComponent {
     private final String riverIndexName;
 
     @Inject
-    public MetaDataCreateIndexService(Settings settings, Environment environment, ThreadPool threadPool, ClusterService clusterService, IndicesService indicesService,
-                                      AllocationService allocationService, NodeIndexCreatedAction nodeIndexCreatedAction, MetaDataService metaDataService, Version version, @RiverIndexName String riverIndexName) {
+    public MetaDataCreateIndexService(Settings settings, Environment environment, ThreadPool threadPool, ClusterService clusterService,
+            IndicesService indicesService, AllocationService allocationService, NodeIndexCreatedAction nodeIndexCreatedAction,
+            MetaDataService metaDataService, Version version, @RiverIndexName String riverIndexName) {
         super(settings);
         this.environment = environment;
         this.threadPool = threadPool;
@@ -115,7 +116,9 @@ public class MetaDataCreateIndexService extends AbstractComponent {
     public void createIndex(final Request request, final Listener userListener) {
         ImmutableSettings.Builder updatedSettingsBuilder = ImmutableSettings.settingsBuilder();
         for (Map.Entry<String, String> entry : request.settings.getAsMap().entrySet()) {
-            if (!entry.getKey().startsWith("index.")) { // 例如       "index.store.type": "mmapfs",
+            if (!entry.getKey().startsWith("index.")) { // 例如
+                                                        // "index.store.type":
+                                                        // "mmapfs",
                 updatedSettingsBuilder.put("index." + entry.getKey(), entry.getValue());
             } else {
                 updatedSettingsBuilder.put(entry.getKey(), entry.getValue());
@@ -123,13 +126,15 @@ public class MetaDataCreateIndexService extends AbstractComponent {
         }
         request.settings(updatedSettingsBuilder.build());
 
-        // we lock here, and not within the cluster service callback since we don't want to
+        // we lock here, and not within the cluster service callback since we
+        // don't want to
         // block the whole cluster state handling
         final Semaphore mdLock = metaDataService.indexMetaDataLock(request.index);
 
-        // quick check to see if we can acquire a lock, otherwise spawn to a thread pool
+        // quick check to see if we can acquire a lock, otherwise spawn to a
+        // thread pool
         if (mdLock.tryAcquire()) {
-            createIndex(request, userListener, mdLock);
+            createIndex(request, userListener, mdLock); // 创建索引
             return;
         }
 
@@ -153,255 +158,270 @@ public class MetaDataCreateIndexService extends AbstractComponent {
 
     private void createIndex(final Request request, final Listener userListener, Semaphore mdLock) {
         final CreateIndexListener listener = new CreateIndexListener(mdLock, request, userListener);
-        clusterService.submitStateUpdateTask("create-index [" + request.index + "], cause [" + request.cause + "]", Priority.URGENT, new TimeoutClusterStateUpdateTask() {
+        clusterService.submitStateUpdateTask("create-index [" + request.index + "], cause [" + request.cause + "]", Priority.URGENT,
+                new TimeoutClusterStateUpdateTask() {
 
-            @Override
-            public TimeValue timeout() {
-                return request.masterTimeout;
-            }
-
-            @Override
-            public void onFailure(String source, Throwable t) {
-                listener.onFailure(t);
-            }
-
-            @Override
-            public ClusterState execute(ClusterState currentState) throws Exception {
-                boolean indexCreated = false;
-                String failureReason = null;
-                try {
-                    validate(request, currentState);
-
-                    // we only find a template when its an API call (a new index)
-                    // find templates, highest order are better matching
-                    List<IndexTemplateMetaData> templates = findTemplates(request, currentState);
-
-                    Map<String, Custom> customs = Maps.newHashMap();
-
-                    // add the request mapping
-                    Map<String, Map<String, Object>> mappings = Maps.newHashMap();
-
-                    // if its a _percolator index, don't index the query object
-                    if (request.index.equals(PercolatorService.INDEX_NAME)) {
-                        mappings.put(MapperService.DEFAULT_MAPPING, parseMapping("{\n" +
-                                "    \"_default_\":{\n" +
-                                "        \"properties\" : {\n" +
-                                "            \"query\" : {\n" +
-                                "                \"type\" : \"object\",\n" +
-                                "                \"enabled\" : false\n" +
-                                "            }\n" +
-                                "        }\n" +
-                                "    }\n" +
-                                "}"));
+                    @Override
+                    public TimeValue timeout() {
+                        return request.masterTimeout;
                     }
 
-                    for (Map.Entry<String, String> entry : request.mappings.entrySet()) {
-                        mappings.put(entry.getKey(), parseMapping(entry.getValue()));
+                    @Override
+                    public void onFailure(String source, Throwable t) {
+                        listener.onFailure(t);
                     }
 
-                    for (Map.Entry<String, Custom> entry : request.customs.entrySet()) {
-                        customs.put(entry.getKey(), entry.getValue());
-                    }
-
-                    // apply templates, merging the mappings into the request mapping if exists
-                    for (IndexTemplateMetaData template : templates) {
-                        for (ObjectObjectCursor<String, CompressedString> cursor : template.mappings()) {
-                            if (mappings.containsKey(cursor.key)) {
-                                XContentHelper.mergeDefaults(mappings.get(cursor.key), parseMapping(cursor.value.string()));
-                            } else {
-                                mappings.put(cursor.key, parseMapping(cursor.value.string()));
-                            }
-                        }
-                        // handle custom
-                        for (ObjectObjectCursor<String, Custom> cursor : template.customs()) {
-                            String type = cursor.key;
-                            IndexMetaData.Custom custom = cursor.value;
-                            IndexMetaData.Custom existing = customs.get(type);
-                            if (existing == null) {
-                                customs.put(type, custom);
-                            } else {
-                                IndexMetaData.Custom merged = IndexMetaData.lookupFactorySafe(type).merge(existing, custom);
-                                customs.put(type, merged);
-                            }
-                        }
-                    }
-
-                    // now add config level mappings
-                    File mappingsDir = new File(environment.configFile(), "mappings");
-                    if (mappingsDir.exists() && mappingsDir.isDirectory()) {
-                        // first index level
-                        File indexMappingsDir = new File(mappingsDir, request.index);
-                        if (indexMappingsDir.exists() && indexMappingsDir.isDirectory()) {
-                            addMappings(mappings, indexMappingsDir);
-                        }
-
-                        // second is the _default mapping
-                        File defaultMappingsDir = new File(mappingsDir, "_default");
-                        if (defaultMappingsDir.exists() && defaultMappingsDir.isDirectory()) {
-                            addMappings(mappings, defaultMappingsDir);
-                        }
-                    }
-
-                    ImmutableSettings.Builder indexSettingsBuilder = settingsBuilder();
-                    // apply templates, here, in reverse order, since first ones are better matching
-                    for (int i = templates.size() - 1; i >= 0; i--) {
-                        indexSettingsBuilder.put(templates.get(i).settings());
-                    }
-                    // now, put the request settings, so they override templates
-                    indexSettingsBuilder.put(request.settings);
-
-                    if (request.index.equals(PercolatorService.INDEX_NAME)) {
-                        // if its percolator, always 1 shard
-                        indexSettingsBuilder.put(SETTING_NUMBER_OF_SHARDS, 1);
-                    } else {
-                        if (indexSettingsBuilder.get(SETTING_NUMBER_OF_SHARDS) == null) {
-                            if (request.index.equals(riverIndexName)) {
-                                indexSettingsBuilder.put(SETTING_NUMBER_OF_SHARDS, settings.getAsInt(SETTING_NUMBER_OF_SHARDS, 1));
-                            } else {
-                                indexSettingsBuilder.put(SETTING_NUMBER_OF_SHARDS, settings.getAsInt(SETTING_NUMBER_OF_SHARDS, 5));
-                            }
-                        }
-                    }
-                    if (request.index.equals(PercolatorService.INDEX_NAME)) {
-                        // if its percolator, always set number of replicas to 0, and expand to 0-all
-                        indexSettingsBuilder.put(SETTING_NUMBER_OF_REPLICAS, 0);
-                        indexSettingsBuilder.put(SETTING_AUTO_EXPAND_REPLICAS, "0-all");
-                    } else {
-                        if (indexSettingsBuilder.get(SETTING_NUMBER_OF_REPLICAS) == null) {
-                            if (request.index.equals(riverIndexName)) {
-                                indexSettingsBuilder.put(SETTING_NUMBER_OF_REPLICAS, settings.getAsInt(SETTING_NUMBER_OF_REPLICAS, 1));
-                            } else {
-                                indexSettingsBuilder.put(SETTING_NUMBER_OF_REPLICAS, settings.getAsInt(SETTING_NUMBER_OF_REPLICAS, 1));
-                            }
-                        }
-                    }
-
-                    if (settings.get(SETTING_AUTO_EXPAND_REPLICAS) != null && indexSettingsBuilder.get(SETTING_AUTO_EXPAND_REPLICAS) == null) {
-                        indexSettingsBuilder.put(SETTING_AUTO_EXPAND_REPLICAS, settings.get(SETTING_AUTO_EXPAND_REPLICAS));
-                    }
-
-                    if (indexSettingsBuilder.get(SETTING_VERSION_CREATED) == null) {
-                        indexSettingsBuilder.put(SETTING_VERSION_CREATED, version);
-                    }
-                    indexSettingsBuilder.put(SETTING_UUID, Strings.randomBase64UUID());
-
-                    Settings actualIndexSettings = indexSettingsBuilder.build();
-
-                    // Set up everything, now locally create the index to see that things are ok, and apply
-
-                    // create the index here (on the master) to validate it can be created, as well as adding the mapping
-                    indicesService.createIndex(request.index, actualIndexSettings, clusterService.localNode().id());
-                    indexCreated = true;
-                    // now add the mappings
-                    IndexService indexService = indicesService.indexServiceSafe(request.index);
-                    MapperService mapperService = indexService.mapperService();
-                    // first, add the default mapping
-                    if (mappings.containsKey(MapperService.DEFAULT_MAPPING)) {
+                    @Override
+                    public ClusterState execute(ClusterState currentState) throws Exception {
+                        boolean indexCreated = false;
+                        String failureReason = null;
                         try {
-                            mapperService.merge(MapperService.DEFAULT_MAPPING, new CompressedString(XContentFactory.jsonBuilder().map(mappings.get(MapperService.DEFAULT_MAPPING)).string()), false);
-                        } catch (Exception e) {
-                            failureReason = "failed on parsing default mapping on index creation";
-                            throw new MapperParsingException("mapping [" + MapperService.DEFAULT_MAPPING + "]", e);
-                        }
-                    }
-                    for (Map.Entry<String, Map<String, Object>> entry : mappings.entrySet()) {
-                        if (entry.getKey().equals(MapperService.DEFAULT_MAPPING)) {
-                            continue;
-                        }
-                        try {
-                            // apply the default here, its the first time we parse it
-                            mapperService.merge(entry.getKey(), new CompressedString(XContentFactory.jsonBuilder().map(entry.getValue()).string()), true);
-                        } catch (Exception e) {
-                            failureReason = "failed on parsing mappings on index creation";
-                            throw new MapperParsingException("mapping [" + entry.getKey() + "]", e);
-                        }
-                    }
-                    // now, update the mappings with the actual source
-                    Map<String, MappingMetaData> mappingsMetaData = Maps.newHashMap();
-                    for (DocumentMapper mapper : mapperService) {
-                        MappingMetaData mappingMd = new MappingMetaData(mapper);
-                        mappingsMetaData.put(mapper.type(), mappingMd);
-                    }
+                            validate(request, currentState); // check index 名称
 
-                    final IndexMetaData.Builder indexMetaDataBuilder = IndexMetaData.builder(request.index).settings(actualIndexSettings);
-                    for (MappingMetaData mappingMd : mappingsMetaData.values()) {
-                        indexMetaDataBuilder.putMapping(mappingMd);
-                    }
-                    for (Map.Entry<String, Custom> customEntry : customs.entrySet()) {
-                        indexMetaDataBuilder.putCustom(customEntry.getKey(), customEntry.getValue());
-                    }
-                    indexMetaDataBuilder.state(request.state);
-                    final IndexMetaData indexMetaData;
-                    try {
-                        indexMetaData = indexMetaDataBuilder.build();
-                    } catch (Exception e) {
-                        failureReason = "failed to build index metadata";
-                        throw e;
-                    }
+                            // we only find a template when its an API call (a
+                            // new index)
+                            // find templates, highest order are better matching
+                            List<IndexTemplateMetaData> templates = findTemplates(request, currentState);
 
-                    MetaData newMetaData = MetaData.builder(currentState.metaData())
-                            .put(indexMetaData, false)
-                            .build();
+                            Map<String, Custom> customs = Maps.newHashMap();
 
-                    logger.info("[{}] creating index, cause [{}], shards [{}]/[{}], mappings {}", request.index, request.cause, indexMetaData.numberOfShards(), indexMetaData.numberOfReplicas(), mappings.keySet());
+                            // add the request mapping
+                            Map<String, Map<String, Object>> mappings = Maps.newHashMap();
 
-                    ClusterBlocks.Builder blocks = ClusterBlocks.builder().blocks(currentState.blocks());
-                    if (!request.blocks.isEmpty()) {
-                        for (ClusterBlock block : request.blocks) {
-                            blocks.addIndexBlock(request.index, block);
-                        }
-                    }
-                    if (request.state == State.CLOSE) {
-                        blocks.addIndexBlock(request.index, MetaDataIndexStateService.INDEX_CLOSED_BLOCK);
-                    }
+                            // if its a _percolator index, don't index the query
+                            // object
+                            if (request.index.equals(PercolatorService.INDEX_NAME)) {
+                                mappings.put(MapperService.DEFAULT_MAPPING, parseMapping("{\n" + "    \"_default_\":{\n"
+                                        + "        \"properties\" : {\n" + "            \"query\" : {\n"
+                                        + "                \"type\" : \"object\",\n" + "                \"enabled\" : false\n"
+                                        + "            }\n" + "        }\n" + "    }\n" + "}"));
+                            }
 
-                    ClusterState updatedState = ClusterState.builder(currentState).blocks(blocks).metaData(newMetaData).build();
+                            for (Map.Entry<String, String> entry : request.mappings.entrySet()) {
+                                mappings.put(entry.getKey(), parseMapping(entry.getValue()));
+                            }
 
-                    if (request.state == State.OPEN) {
-                        RoutingTable.Builder routingTableBuilder = RoutingTable.builder(updatedState.routingTable())
-                                .addAsNew(updatedState.metaData().index(request.index));
-                        RoutingAllocation.Result routingResult = allocationService.reroute(ClusterState.builder(updatedState).routingTable(routingTableBuilder).build());
-                        updatedState = ClusterState.builder(updatedState).routingResult(routingResult).build();
-                    }
+                            for (Map.Entry<String, Custom> entry : request.customs.entrySet()) {
+                                customs.put(entry.getKey(), entry.getValue());
+                            }
 
-                    // we wait for events from all nodes that the index has been added to the metadata
-                    final AtomicInteger counter = new AtomicInteger(currentState.nodes().size());
-
-                    final NodeIndexCreatedAction.Listener nodeIndexCreatedListener = new NodeIndexCreatedAction.Listener() {
-                        @Override
-                        public void onNodeIndexCreated(String index, String nodeId) {
-                            if (index.equals(request.index)) {
-                                if (counter.decrementAndGet() == 0) {
-                                    listener.onResponse(new Response(true, indexMetaData));
-                                    nodeIndexCreatedAction.remove(this);
+                            // apply templates, merging the mappings into the
+                            // request mapping if exists
+                            for (IndexTemplateMetaData template : templates) {
+                                for (ObjectObjectCursor<String, CompressedString> cursor : template.mappings()) {
+                                    if (mappings.containsKey(cursor.key)) {
+                                        XContentHelper.mergeDefaults(mappings.get(cursor.key), parseMapping(cursor.value.string()));
+                                    } else {
+                                        mappings.put(cursor.key, parseMapping(cursor.value.string()));
+                                    }
+                                }
+                                // handle custom
+                                for (ObjectObjectCursor<String, Custom> cursor : template.customs()) {
+                                    String type = cursor.key;
+                                    IndexMetaData.Custom custom = cursor.value;
+                                    IndexMetaData.Custom existing = customs.get(type);
+                                    if (existing == null) {
+                                        customs.put(type, custom);
+                                    } else {
+                                        IndexMetaData.Custom merged = IndexMetaData.lookupFactorySafe(type).merge(existing, custom);
+                                        customs.put(type, merged);
+                                    }
                                 }
                             }
+
+                            // now add config level mappings
+                            File mappingsDir = new File(environment.configFile(), "mappings");
+                            if (mappingsDir.exists() && mappingsDir.isDirectory()) {
+                                // first index level
+                                File indexMappingsDir = new File(mappingsDir, request.index);
+                                if (indexMappingsDir.exists() && indexMappingsDir.isDirectory()) {
+                                    addMappings(mappings, indexMappingsDir);
+                                }
+
+                                // second is the _default mapping
+                                File defaultMappingsDir = new File(mappingsDir, "_default");
+                                if (defaultMappingsDir.exists() && defaultMappingsDir.isDirectory()) {
+                                    addMappings(mappings, defaultMappingsDir);
+                                }
+                            }
+
+                            ImmutableSettings.Builder indexSettingsBuilder = settingsBuilder();
+                            // apply templates, here, in reverse order, since
+                            // first ones are better matching
+                            for (int i = templates.size() - 1; i >= 0; i--) {
+                                indexSettingsBuilder.put(templates.get(i).settings());
+                            }
+                            // now, put the request settings, so they override
+                            // templates
+                            indexSettingsBuilder.put(request.settings);
+
+                            if (request.index.equals(PercolatorService.INDEX_NAME)) {
+                                // if its percolator, always 1 shard
+                                indexSettingsBuilder.put(SETTING_NUMBER_OF_SHARDS, 1);
+                            } else {
+                                if (indexSettingsBuilder.get(SETTING_NUMBER_OF_SHARDS) == null) {
+                                    if (request.index.equals(riverIndexName)) {
+                                        indexSettingsBuilder.put(SETTING_NUMBER_OF_SHARDS, settings.getAsInt(SETTING_NUMBER_OF_SHARDS, 1));
+                                    } else {
+                                        // 默认的分片数设置为5
+                                        indexSettingsBuilder.put(SETTING_NUMBER_OF_SHARDS, settings.getAsInt(SETTING_NUMBER_OF_SHARDS, 5));
+                                    }
+                                }
+                            }
+                            if (request.index.equals(PercolatorService.INDEX_NAME)) {
+                                // if its percolator, always set number of
+                                // replicas to 0, and expand to 0-all
+                                indexSettingsBuilder.put(SETTING_NUMBER_OF_REPLICAS, 0);
+                                indexSettingsBuilder.put(SETTING_AUTO_EXPAND_REPLICAS, "0-all");
+                            } else {
+                                if (indexSettingsBuilder.get(SETTING_NUMBER_OF_REPLICAS) == null) {
+                                    if (request.index.equals(riverIndexName)) {
+                                        indexSettingsBuilder.put(SETTING_NUMBER_OF_REPLICAS,
+                                                settings.getAsInt(SETTING_NUMBER_OF_REPLICAS, 1));
+                                    } else {
+                                        // 每个分片的副本数设置为1
+                                        indexSettingsBuilder.put(SETTING_NUMBER_OF_REPLICAS,
+                                                settings.getAsInt(SETTING_NUMBER_OF_REPLICAS, 1));
+                                    }
+                                }
+                            }
+
+                            if (settings.get(SETTING_AUTO_EXPAND_REPLICAS) != null
+                                    && indexSettingsBuilder.get(SETTING_AUTO_EXPAND_REPLICAS) == null) {
+                                indexSettingsBuilder.put(SETTING_AUTO_EXPAND_REPLICAS, settings.get(SETTING_AUTO_EXPAND_REPLICAS));
+                            }
+
+                            if (indexSettingsBuilder.get(SETTING_VERSION_CREATED) == null) {
+                                indexSettingsBuilder.put(SETTING_VERSION_CREATED, version);
+                            }
+                            // 索引的uuid
+                            indexSettingsBuilder.put(SETTING_UUID, Strings.randomBase64UUID());
+
+                            Settings actualIndexSettings = indexSettingsBuilder.build();
+
+                            // Set up everything, now locally create the index
+                            // to see that things are ok, and apply
+
+                            // create the index here (on the master) to validate
+                            // it can be created, as well as adding the mapping
+                            // 依据这个设置创建索引，这里好像还没有对mapping进行分析
+                            indicesService.createIndex(request.index, actualIndexSettings, clusterService.localNode().id());
+                            indexCreated = true;
+                            // now add the mappings
+                            IndexService indexService = indicesService.indexServiceSafe(request.index);
+                            MapperService mapperService = indexService.mapperService();
+                            // first, add the default mapping
+                            if (mappings.containsKey(MapperService.DEFAULT_MAPPING)) {
+                                try {
+                                    mapperService.merge(MapperService.DEFAULT_MAPPING, new CompressedString(XContentFactory.jsonBuilder()
+                                            .map(mappings.get(MapperService.DEFAULT_MAPPING)).string()), false);
+                                } catch (Exception e) {
+                                    failureReason = "failed on parsing default mapping on index creation";
+                                    throw new MapperParsingException("mapping [" + MapperService.DEFAULT_MAPPING + "]", e);
+                                }
+                            }
+                            for (Map.Entry<String, Map<String, Object>> entry : mappings.entrySet()) {
+                                if (entry.getKey().equals(MapperService.DEFAULT_MAPPING)) {
+                                    continue;
+                                }
+                                try {
+                                    // key为index中每个type，value为对type的相应设置
+                                    mapperService.merge(entry.getKey(),
+                                            new CompressedString(XContentFactory.jsonBuilder().map(entry.getValue()).string()), true);
+                                } catch (Exception e) {
+                                    failureReason = "failed on parsing mappings on index creation";
+                                    throw new MapperParsingException("mapping [" + entry.getKey() + "]", e);
+                                }
+                            }
+                            // now, update the mappings with the actual source
+                            Map<String, MappingMetaData> mappingsMetaData = Maps.newHashMap();
+                            for (DocumentMapper mapper : mapperService) {// 一个type，对应一个DocumentMapper
+                                MappingMetaData mappingMd = new MappingMetaData(mapper);
+                                mappingsMetaData.put(mapper.type(), mappingMd);
+                            }
+
+                            final IndexMetaData.Builder indexMetaDataBuilder = IndexMetaData.builder(request.index).settings(
+                                    actualIndexSettings);
+                            for (MappingMetaData mappingMd : mappingsMetaData.values()) {
+                                indexMetaDataBuilder.putMapping(mappingMd);
+                            }
+                            for (Map.Entry<String, Custom> customEntry : customs.entrySet()) {
+                                indexMetaDataBuilder.putCustom(customEntry.getKey(), customEntry.getValue());
+                            }
+                            indexMetaDataBuilder.state(request.state);
+                            final IndexMetaData indexMetaData;
+                            try {
+                                indexMetaData = indexMetaDataBuilder.build();
+                            } catch (Exception e) {
+                                failureReason = "failed to build index metadata";
+                                throw e;
+                            }
+
+                            MetaData newMetaData = MetaData.builder(currentState.metaData()).put(indexMetaData, false).build();
+
+                            logger.info("[{}] creating index, cause [{}], shards [{}]/[{}], mappings {}", request.index, request.cause,
+                                    indexMetaData.numberOfShards(), indexMetaData.numberOfReplicas(), mappings.keySet());
+
+                            ClusterBlocks.Builder blocks = ClusterBlocks.builder().blocks(currentState.blocks());
+                            if (!request.blocks.isEmpty()) {
+                                for (ClusterBlock block : request.blocks) {
+                                    blocks.addIndexBlock(request.index, block);
+                                }
+                            }
+                            if (request.state == State.CLOSE) {
+                                blocks.addIndexBlock(request.index, MetaDataIndexStateService.INDEX_CLOSED_BLOCK);
+                            }
+
+                            ClusterState updatedState = ClusterState.builder(currentState).blocks(blocks).metaData(newMetaData).build();
+
+                            if (request.state == State.OPEN) {
+                                RoutingTable.Builder routingTableBuilder = RoutingTable.builder(updatedState.routingTable()).addAsNew(
+                                        updatedState.metaData().index(request.index));
+                                RoutingAllocation.Result routingResult = allocationService.reroute(ClusterState.builder(updatedState)
+                                        .routingTable(routingTableBuilder).build());
+                                updatedState = ClusterState.builder(updatedState).routingResult(routingResult).build();
+                            }
+
+                            // we wait for events from all nodes that the index
+                            // has been added to the metadata
+                            final AtomicInteger counter = new AtomicInteger(currentState.nodes().size());
+
+                            final NodeIndexCreatedAction.Listener nodeIndexCreatedListener = new NodeIndexCreatedAction.Listener() {
+                                @Override
+                                public void onNodeIndexCreated(String index, String nodeId) {
+                                    if (index.equals(request.index)) {
+                                        if (counter.decrementAndGet() == 0) {
+                                            listener.onResponse(new Response(true, indexMetaData));
+                                            nodeIndexCreatedAction.remove(this);
+                                        }
+                                    }
+                                }
+                            };
+
+                            nodeIndexCreatedAction.add(nodeIndexCreatedListener);
+
+                            listener.future = threadPool.schedule(request.timeout, ThreadPool.Names.SAME, new Runnable() {
+                                @Override
+                                public void run() {
+                                    listener.onResponse(new Response(false, indexMetaData));
+                                    nodeIndexCreatedAction.remove(nodeIndexCreatedListener);
+                                }
+                            });
+
+                            return updatedState;
+                        } finally {
+                            if (indexCreated) {
+                                // Index was already partially created - need to
+                                // clean up
+                                indicesService.removeIndex(request.index, failureReason != null ? failureReason : "failed to create index");
+                            }
                         }
-                    };
-
-                    nodeIndexCreatedAction.add(nodeIndexCreatedListener);
-
-                    listener.future = threadPool.schedule(request.timeout, ThreadPool.Names.SAME, new Runnable() {
-                        @Override
-                        public void run() {
-                            listener.onResponse(new Response(false, indexMetaData));
-                            nodeIndexCreatedAction.remove(nodeIndexCreatedListener);
-                        }
-                    });
-
-                    return updatedState;
-                } finally {
-                    if (indexCreated) {
-                        // Index was already partially created - need to clean up
-                        indicesService.removeIndex(request.index, failureReason != null ? failureReason : "failed to create index");
                     }
-                }
-            }
 
-            @Override
-            public void clusterStateProcessed(String source, ClusterState oldState, ClusterState newState) {
-            }
-        });
+                    @Override
+                    public void clusterStateProcessed(String source, ClusterState oldState, ClusterState newState) {
+                    }
+                });
     }
 
     class CreateIndexListener implements Listener {
@@ -440,7 +460,6 @@ public class MetaDataCreateIndexService extends AbstractComponent {
             }
         }
     }
-
 
     private Map<String, Object> parseMapping(String mappingSource) throws Exception {
         return XContentFactory.xContent(mappingSource).createParser(mappingSource).mapAndClose();
@@ -509,6 +528,7 @@ public class MetaDataCreateIndexService extends AbstractComponent {
     }
 
     private void validate(Request request, ClusterState state) throws ElasticSearchException {
+        // 检查索引名称是否有效
         if (state.routingTable().hasIndex(request.index)) {
             throw new IndexAlreadyExistsException(new Index(request.index));
         }
@@ -531,7 +551,8 @@ public class MetaDataCreateIndexService extends AbstractComponent {
             throw new InvalidIndexNameException(new Index(request.index), request.index, "must be lowercase");
         }
         if (!Strings.validFileName(request.index)) {
-            throw new InvalidIndexNameException(new Index(request.index), request.index, "must not contain the following characters " + Strings.INVALID_FILENAME_CHARS);
+            throw new InvalidIndexNameException(new Index(request.index), request.index, "must not contain the following characters "
+                    + Strings.INVALID_FILENAME_CHARS);
         }
         if (state.metaData().aliases().containsKey(request.index)) {
             throw new IndexAlreadyExistsException(new Index(request.index), "already exists as alias");
@@ -557,7 +578,6 @@ public class MetaDataCreateIndexService extends AbstractComponent {
         Map<String, String> mappings = Maps.newHashMap();
 
         Map<String, IndexMetaData.Custom> customs = newHashMap();
-
 
         TimeValue timeout = TimeValue.timeValueSeconds(5);
         TimeValue masterTimeout = MasterNodeOperationRequest.DEFAULT_MASTER_NODE_TIMEOUT;
