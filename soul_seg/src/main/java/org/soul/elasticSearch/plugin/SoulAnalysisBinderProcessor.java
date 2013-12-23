@@ -3,10 +3,10 @@ package org.soul.elasticSearch.plugin;
 import org.elasticsearch.index.analysis.AnalysisModule;
 import org.elasticsearch.index.analysis.AnalysisModule.AnalysisBinderProcessor.TokenFiltersBindings;
 import org.elasticsearch.index.analysis.AnalysisModule.AnalysisBinderProcessor.TokenizersBindings;
-import org.soul.analysis.pinyin.PinyinAbbreviationTokenizerFactory;
-import org.soul.analysis.pinyin.PinyinAnalyzerProvider;
-import org.soul.analysis.pinyin.PinyinTokenFilterFactory;
-import org.soul.analysis.pinyin.PinyinTokenizerFactory;
+import org.soul.elasticSearch.pinyin.PinyinAbbreviationTokenizerFactory;
+import org.soul.elasticSearch.pinyin.PinyinAnalyzerProvider;
+import org.soul.elasticSearch.pinyin.PinyinTokenFilterFactory;
+import org.soul.elasticSearch.pinyin.PinyinTokenizerFactory;
 
 public class SoulAnalysisBinderProcessor extends
 		AnalysisModule.AnalysisBinderProcessor {
