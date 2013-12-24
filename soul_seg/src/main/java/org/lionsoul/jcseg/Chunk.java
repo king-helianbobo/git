@@ -27,7 +27,7 @@ public class Chunk implements IChunk {
 	private double wordsVariance = -1D;
 
 	/**
-	 * single word degree of morphemic freedom
+	 * single word degree of morphemics freedom
 	 */
 	private double singleWordMorphemicFreedom = -1D;
 

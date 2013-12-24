@@ -239,14 +239,14 @@ protected TokenStreamComponents createComponents(String fieldName,
 \end{verbatim}
 \par 上例中的fieldName没有用处，有两个类型的子类TokenFilter和Tokenizer（也可以继承CharTokenizer），Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)。
 \subsubsection{开发ES插件}
-\par 插件一般情况下是一个zip文件，它包含了若干Jar包，为安装插件，依赖于Maven的安装。Maven工程的main目录里须包含三个目录(java,resources,assembly)。新建src/main/resources/es-plugin.properties文件，文件内容为：
+\par 插件一般情况下是一个zip文件，它包含了若干Jar包，为安装插件，依赖于Maven的安装。Maven工程的main目录里应包含三个目录(java,resources,assembly)。新建src/main/resources/es-plugin.properties文件，文件内容为：
 \begin{verbatim}
 plugin=${project.groupId}.${project.artifactId}
 ## ${project.groupId}.${project.artifactId}必须与插件类名相同
 ## 或者直接告诉ES插件类名
-plugin=org.soul.ESearch.SoulAnalysisPlugin
+plugin=org.soul.elasticSearch.plugin.SoulAnalysisPlugin
 \end{verbatim}
-\par 然后在配置文件pom.xml的<build>/<plugins>/<plugin>/<artifactId>maven-assembly-plugin</artifactId>标签中添加如下内容，这是因为maven-assembly-plugin插件负责打包Maven工程，其中的plugin.xml为打包Project时额外执行的功能:
+\par 然后在配置文件pom.xml的<artifactId>maven-assembly-plugin</artifactId>标签中添加如下内容，为何选中maven-assembly-plugin，这是因为该插件负责打包Maven工程，其中的plugin.xml为打包Project时额外执行的功能：
 \begin{verbatim}
 <descriptors>
    <descriptor>
