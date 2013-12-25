@@ -24,8 +24,7 @@ public class SoulTokenizer extends Tokenizer {
 	protected Analysis analysis = null;
 	private Set<String> filter;
 	private boolean pstemming;
-
-	private final PorterStemmer stemmer = new PorterStemmer();
+	private final PorterStemmer stemmer = new PorterStemmer(); // 用于英文词干分析
 
 	public SoulTokenizer(Analysis ta, Reader input, Set<String> filter,
 			boolean pstemming) {

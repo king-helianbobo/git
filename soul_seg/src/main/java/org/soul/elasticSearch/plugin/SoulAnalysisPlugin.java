@@ -13,7 +13,7 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 
 	@Override
 	public String description() {
-		return "soul analysis";
+		return "soul-analysis";
 	}
 
 	@Override

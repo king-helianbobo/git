@@ -8,8 +8,9 @@ import org.soul.elasticSearch.pinyin.PinyinAnalyzerProvider;
 import org.soul.elasticSearch.pinyin.PinyinTokenFilterFactory;
 import org.soul.elasticSearch.pinyin.PinyinTokenizerFactory;
 
-public class SoulAnalysisBinderProcessor extends
-		AnalysisModule.AnalysisBinderProcessor {
+public class SoulAnalysisBinderProcessor
+		extends
+			AnalysisModule.AnalysisBinderProcessor {
 
 	@Override
 	public void processAnalyzers(AnalyzersBindings analyzersBindings) {
@@ -17,7 +18,7 @@ public class SoulAnalysisBinderProcessor extends
 				SoulIndexAnalyzerProvider.class);
 		analyzersBindings.processAnalyzer("soul_query",
 				SoulQueryAnalyzerProvider.class);
-		analyzersBindings.processAnalyzer("pinyin",
+		analyzersBindings.processAnalyzer("soul_pinyin",
 				PinyinAnalyzerProvider.class);
 		super.processAnalyzers(analyzersBindings);
 	}

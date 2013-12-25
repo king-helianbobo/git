@@ -1,5 +1,13 @@
 package org.soul.test;
 
+import java.io.*;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
+
 import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
@@ -34,7 +42,40 @@ public class Pinyin4jTest {
 		return pinyinBuf.toString();
 	}
 
+	public static void analyze(Analyzer analyzer, String text) {
+		try {
+			System.out.println("分词器:" + analyzer.getClass());
+			TokenStream tokenStream = analyzer.tokenStream("content",
+					new StringReader(text));
+			tokenStream.reset();
+
+			while (tokenStream.incrementToken()) {
+				CharTermAttribute charAttribute = tokenStream
+						.getAttribute(CharTermAttribute.class);
+				OffsetAttribute offsetAttribute = tokenStream
+						.getAttribute(OffsetAttribute.class);
+				System.out.println("[" + offsetAttribute.startOffset() + ","
+						+ offsetAttribute.endOffset() + ","
+						+ charAttribute.toString() + "]");
+			}
+			tokenStream.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
 	public static void main(String[] args) {
-		System.out.println(getPinYin("Hello,欢迎来到长春,厦门,红色中国"));
+		// System.out.println(getPinYin("Hello,欢迎来到长春,厦门,红色中国"));
+
+		Analyzer analyzer = new PinyinAnalyzer();
+		// Analyzer analyzer = new SoulIndexAnalyzer();
+		String enText = "No news is good news";
+		String chText = "没消息就是好消息";
+		String text3 = "Hello,欢迎来到长春，厦门，重庆，红色中国！";
+
+		analyze(analyzer, enText);
+		analyze(analyzer, chText);
+		analyze(analyzer, text3);
 	}
 }

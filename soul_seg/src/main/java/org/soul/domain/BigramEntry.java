@@ -5,7 +5,6 @@ import java.io.Serializable;
 /**
  * google语义模型用到的词与词之间的关联频率，这个可以在网上下载吗？
  */
-
 public class BigramEntry implements Comparable<BigramEntry>, Serializable {
 	private static final long serialVersionUID = 5994821814571715244L;
 

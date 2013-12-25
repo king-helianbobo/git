@@ -18,6 +18,11 @@ public final class PinyinAnalyzer extends Analyzer {
 		padding_char = settings.get("padding_char", "");
 	}
 
+	public PinyinAnalyzer() {
+		first_letter = "none";
+		padding_char = " ";
+	}
+
 	@Override
 	protected TokenStreamComponents createComponents(String fieldName,
 			Reader reader) {

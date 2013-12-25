@@ -36,7 +36,6 @@ public class STConverter {
 			else
 				sb.append(str.charAt(j));
 		}
-
 		return sb.toString();
 	}
 

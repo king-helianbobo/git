@@ -213,31 +213,83 @@ path.data: /home/elasticSearch/data
 path.work: /home/elasticSearch/work
 path.logs: /home/elasticSearch/logs
 \end{verbatim}
-\subsection{ElasticSearch杂项}
-\subsubsection{Lucene文件结构}
-\par Files and detailed format:
-\begin{itemize}
-\item .tim: Term Dictionary
-\item .tip: Term Index
-\item .doc: Frequencies and  Skip Data
-\item .pos: Positions
-\item .pay: Payloads and Offsets
-\end{itemize}
-\par The .tim file contains the list of terms in each field along with per-term statistics (such as docfreq) and pointers to the frequencies, positions, payload and skip data in the .doc, .pos, and .pay files.
-\par The .doc file contains the lists of documents which contain each term, along with the frequency of the term in that document.
-\par The .pos file contains the lists of positions that each term occurs at within documents. It also sometimes stores part of payloads and offsets for speedup.TermPositions are order by term (terms are implicit, from the term dictionary), and position values for each term document pair are incremental, and ordered by document number.
-\subsubsection{Lucene的基本分词过程}
-\par Analyzer类是所有分词器的基类，它是个抽象类，所有的子类必须实现它, 它提供了如下方法:
+\subsection{Lucene索引}
+\subsubsection{Lucene结构}
+Lucene基础架构如图\ref{fig-lucene-1}示，
+\begin{figure}[htbp]
+\centering\includegraphics[width=.7\linewidth]{figures/lucene-architect.jpg}
+\caption{Lucene基础架构图}\label{fig-lucene-1}
+\end{figure} 
+\begin{enumerate}[(1)]
+\item Lucene的analysis模块主要负责词法分析及语言处理而形成Term。
+\item Lucene的index模块主要负责索引的创建，里面有IndexWriter。
+\item Lucene的store模块主要负责索引的读写。
+\item Lucene的QueryParser主要负责语法分析。
+\item Lucene的search模块主要负责对索引的搜索。
+\item Lucene的similarity模块主要负责计算相关性。
+\end{enumerate}
+\par Lucene包含如下几种类型文件：
+\begin{description}
+\item [.tim]用于存放Term的库，contains the list of terms in each field along with per-term statistics (such as docfreq) and pointers to the frequencies, positions, payload and skip data in the .doc, .pos, and .pay files.
+\item [.doc]Frequencies and Skip Data，估计用于计算文档相关性，contains the lists of documents which contain each term, along with the frequency of the term in that document.
+\item [.pos]Positions，存储Term位置的文件，contains the lists of positions that each term occurs at within documents，此外，还有.tip类型文件（用于索引Term）和.pay类型文件（做什么，暂时不详）。
+\end{description}
+\par Lucene包含如下几种jar包：
+\begin{enumerate}[(1)]
+\item org.apache.lucene.util，一些公用基础设施。
+\item org.apache.lucene.analysis，语言分析器，主要用于切分单词（英文根据空格），对中文的扩展支持可改写此类。
+\item org.apache.lucene.document，索引存储时的文档结构管理，类似于关系型数据库的关系。
+\item org.apache.lucene.index，索引管理，包括索引建立、删除，更新等。
+\item org.apache.lucene.queryParser，查询分析器，实现查询关键词间的运算，如与、或、非等，据说写得十分复杂。
+\item org.apache.lucene.search，检索管理，根据查询条件，检索得到结果。
+\item org.apache.lucene.store，数据存储管理，包括一些底层I/O操作。
+\end{enumerate}
+\subsubsection{Lucene分词过程}
+\par Analyzer类是所有分词器的基类，它是个抽象类，所有的子类必须实现它。它的功能实质上是将输入文本转化为文本特征向量，这里所说的文本特征，可以是词或者是短语，它主要包括四个步骤：（1）分词，将文本解析为单词或短语；（2）归一化，将文本转化为小写；（3）停用词处理，去除一些常用的、无意义的词；（4）提取词干，解决单复数、时态语态等问题。
+\par Lucene Analyzer包含两个核心组件，Tokenizer以及TokenFilter。两者的区别在于，前者在字符级别处理流（即前者将字符串转换成Term），而后者则在词语级别处理流（对Term进行转换）。Tokenizer是Analyzer的第一步，其构造函数接收一个Reader（例如BufferedReader）作为参数，而TokenFilter则类似一个拦截器，其参数可以是TokenStream、Tokenizer，甚至是另一个TokenFilter。
+\begin{description}
+\item [Token]表示文中出现的一个词，它包含了词在文本中的位置信息等等；
+\item [Analyzer]将文本转化为TokenStream的工具，Analyzer通过对文本的分析来建立TokenStream；
+\item [TokenStream]由一个个Token组成的数据流，可以说Analyzer是一种从文本数据中抽取索引词（Term）的策略。
+\item [Tokenizer]处理输入符号流，生成一个个Token；
+\item [TokenFilter]处理符号流，输入可以是TokenStream,Tokenizer,TokenFilter；
+\end{description}
+\par Lucene提供了数十种内置的Tokenizer、TokenFilter以及Analyzer供开发人员使用，事实上大部分时候只需要使用其中几种，比如标准分词器StandardTokenizer、空格分词器WhitespaceTokenizer（按空格分词）、转化为小写格式的LowCaseFilter（将英文单词转换成小写）、提取词干的PoterStemFilter（提取英文词干，比如对英文的过去式，现在进行时等提取词干）以及组合使用StandardTokenizer和多种TokenFilter的StandardAnalyzer。 
+\par 处理英文默认的Analyzer为StandardAnalyzer，当处理中文分词和拼音等特殊情况时，需要实现自定义的Analyzer，在处理汉字时最主要的工作是实现一个Tokenizer来分词，TokenFilter（汉字的停用词过滤等）不太复杂，可不做过多考虑。当继承Analyzer时，可override其提供的createComponents方法:
 \begin{verbatim}
 @Override
 protected TokenStreamComponents createComponents(String fieldName,
         final Reader reader) {
-    Tokenizer tokenizer = new AnsjTokenizer(new BasicAnalysis(reader),
+    Tokenizer tokenizer = new SoulTokenizer(new BasicAnalysis(reader),
         reader, filter, pstemming);
     return new TokenStreamComponents(tokenizer);
 }
 \end{verbatim}
-\par 上例中的fieldName没有用处，有两个类型的子类TokenFilter和Tokenizer（也可以继承CharTokenizer），Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)。
+\par 上例中的fieldName没有用处，有两个类型的子类TokenFilter和Tokenizer（也可以继承CharTokenizer），Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)。 
+\subsubsection{TokenStream和AttributeSource}
+\par TokenStream是从Document的域（field）中或者查询条件中抽取一个个分词而组成的一个数据流，TokenStream中是一个个的分词（Token），而每个分词又是由一个个的属性（Attribute）组成。对所有的分词来说，每个属性只有一个实例，这些属性都保存在AttributeSource中，而AttributeSource正是TokenStream的父类。
+\par TokenStream的工作流程：（1）实例化TokenStream, 添加属性到AttributeSource，或从AttributeSource中获取属性；（2）调用reset()方法，设置stream的初始状态；（3）调用increamStoken()方法，获取下一个分词，这个方法会被docuemnt中的每一个分词调用；（4）调用end（）方法来完成一些收尾工作；（5）调用close()方法来释放stream拥有的一些资源。
+\par 一个AttributeSource中包含着一个由不同AttributeImpl组成的列表，以及添加和获取它们的一些方法。在同一个AttributeSource实例中，每个属性只有一个单实例。AttributeSource通过AttributeFactory来创建AttributeImpl的实例，通过State来标示每个AttributeImpl的状态。
+\begin{verbatim}
+private final Map<Class<? extends Attribute>, AttributeImpl> attributes;
+private final Map<Class<? extends AttributeImpl>, AttributeImpl> attributeImpls;
+\end{verbatim}
+\par 上述两个成员保存了两种映射关系，设计这两个映射关系的目的是在该AttributeSource实例中对每个Attribute和AttributeImpl保证只有一个AttributeImpl实例，也就是说，当用具体Attribute或者具体AttributeImpl时，不会每次都新建实例，而是类似于单例设计模式。有如下几种类型的Attribute：
+\begin{enumerate}[(1)]
+\item CharTermAttributeImpl，保存Token对应的Term文本；
+\item FlagsAttributeImpl，在Tokenizer链条中，用以在不同节点之间传递标识信息。该类同TypeAttribute有着相似的目的，但他们之间还是有所不同的，Flags可以用于不同TokenFilter之间分词（Token）信息的加密；
+\item TypeAttributeImpl，分词的词汇类型，默认值为“word”；
+\item KeywordAttributeImpl，该属性用于标识一个分词(token)为关键字。对于TokenStream来说可以用此属性判断分词(Token)是否为关键字来决定是否进行修改，对于TokenFilter来说可以根据分词是否为关键字来进行跳过(skip)处理；
+\item OffsetAttributeImpl，Token分词的起始字符，结束字符偏移量； 
+\item PositionIncrementAttribute，它表示tokenStream中的当前token与前一个token在实际的原文本中相隔的词语数量；
+\item PositionLengthAttributeImpl，Token占用的位置个数。
+\end{enumerate}
+\par 假如原文本：I'm a student. These are apples，生成的TokenSteam：
+\begin{verbatim}
+[1： I'm]  [2：a]   [3：student]   [4：these]   [5：are ]   [6：apples]
+\end{verbatim}
+\par 其中PositionIncrementAttribute有点特殊，它表示tokenStream中当前token在实际原文中的位置，比如[2：a]的PositionIncrementAttribute值为1（表示第2个Term）。如果使用停用词表过滤，TokenSteam就变成：[1：I'm],[2：student],[3：apples]，此时student的PositionIncrementAttribute值仍然是2，而apples的PositionIncrementAttribute值仍然是5。当搜索短语student apples时，显然用户是要搜索出student和apples紧挨着出现的文档，但由于apples和student的PositionIncrementAttribute值相差很大，说明没有紧挨着。
+\subsection{ElasticSearch杂项}
 \subsubsection{开发ES插件}
 \par 插件一般情况下是一个zip文件，它包含了若干Jar包，为安装插件，依赖于Maven的安装。Maven工程的main目录里应包含三个目录(java,resources,assembly)。新建src/main/resources/es-plugin.properties文件，文件内容为：
 \begin{verbatim}
