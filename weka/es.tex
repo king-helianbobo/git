@@ -277,9 +277,9 @@ private final Map<Class<? extends AttributeImpl>, AttributeImpl> attributeImpls;
 \par 上述两个成员保存了两种映射关系，设计这两个映射关系的目的是在该AttributeSource实例中对每个Attribute和AttributeImpl保证只有一个AttributeImpl实例，也就是说，当用具体Attribute或者具体AttributeImpl时，不会每次都新建实例，而是类似于单例设计模式。有如下几种类型的Attribute：
 \begin{enumerate}[(1)]
 \item CharTermAttributeImpl，保存Token对应的Term文本；
-\item FlagsAttributeImpl，在Tokenizer链条中，用以在不同节点之间传递标识信息。该类同TypeAttribute有着相似的目的，但他们之间还是有所不同的，Flags可以用于不同TokenFilter之间分词（Token）信息的加密；
+\item FlagsAttributeImpl，在Tokenizer链条中，用以在不同节点间传递标识信息。该类同TypeAttribute有相似的目的，但还是有所不同，Flags可以用于不同TokenFilter之间分词（Token）信息的加密；
 \item TypeAttributeImpl，分词的词汇类型，默认值为“word”；
-\item KeywordAttributeImpl，该属性用于标识一个分词(token)为关键字。对于TokenStream来说可以用此属性判断分词(Token)是否为关键字来决定是否进行修改，对于TokenFilter来说可以根据分词是否为关键字来进行跳过(skip)处理；
+\item KeywordAttributeImpl，用于标识一个分词是否为关键字。TokenStream可以用此属性判断分词（Token）是否为关键字，决定是否进行修改，TokenFilter可以根据分词是否为关键字进行跳过(skip)处理；
 \item OffsetAttributeImpl，Token分词的起始字符，结束字符偏移量； 
 \item PositionIncrementAttribute，它表示tokenStream中的当前token与前一个token在实际的原文本中相隔的词语数量；
 \item PositionLengthAttributeImpl，Token占用的位置个数。

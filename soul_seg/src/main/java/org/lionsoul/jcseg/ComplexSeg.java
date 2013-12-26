@@ -46,10 +46,10 @@ public class ComplexSeg extends ASegment {
 	@Override
 	public IChunk getBestCJKChunk(char chars[], int index) {
 		IWord[] mword1 = getNextMatch(chars, index), mword2, mword3;
-		for (int i = 0; i < mword1.length; i++) {
-			System.out.println("here ,we get " + mword1[i].getValue() + ","
-					+ mword1[i].getPosition());
-		}
+		// for (int i = 0; i < mword1.length; i++) {
+		// System.out.println("here ,we get " + mword1[i].getValue() + ","
+		// + mword1[i].getPosition());
+		// }
 		if (mword1.length == 1
 				&& mword1[0].getType() == ILexicon.UNMATCH_CJK_WORD) {
 			return new Chunk(new IWord[]{mword1[0]});

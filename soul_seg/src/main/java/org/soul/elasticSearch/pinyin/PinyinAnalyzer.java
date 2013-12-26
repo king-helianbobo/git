@@ -1,17 +1,20 @@
 package org.soul.elasticSearch.pinyin;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.util.Version;
 import org.elasticsearch.common.settings.Settings;
 
 import java.io.Reader;
 
-/**
- * Created by IntelliJ IDEA. User: Medcl' Date: 12-5-22 Time: 上午10:39
- */
 public final class PinyinAnalyzer extends Analyzer {
 
 	private String padding_char;
 	private String first_letter;
+
+	private int stringLen;
 
 	public PinyinAnalyzer(Settings settings) {
 		first_letter = settings.get("first_letter", "none");
@@ -22,17 +25,30 @@ public final class PinyinAnalyzer extends Analyzer {
 		first_letter = "none";
 		padding_char = " ";
 	}
-
 	@Override
 	protected TokenStreamComponents createComponents(String fieldName,
 			Reader reader) {
-		if (first_letter.equals("only")) {
-			return new TokenStreamComponents(new PinyinAbbreviationTokenizer(
-					reader));
-		} else {
-			return new TokenStreamComponents(new PinyinTokenizer(reader,
-					padding_char, first_letter));
-		}
-	}
+		final WhitespaceTokenizer src = new WhitespaceTokenizer(
+				Version.LUCENE_CURRENT, reader);
+		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT, src);
+		result = new PinyinTokenFilter(result);
+		result = new SoulEdgeNGramTokenFilter(result,
+				SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
+		return new TokenStreamComponents(src, result);
 
+		// return new TokenStreamComponents(new SoulPinyinTokenizer(reader));
+	}
 }
+
+// @Override
+// protected TokenStreamComponents createComponents(String fieldName,
+// Reader reader) {
+// if (first_letter.equals("only")) {
+// return new TokenStreamComponents(new PinyinAbbreviationTokenizer(
+// reader));
+// } else {
+// return new TokenStreamComponents(new PinyinTokenizer(reader,
+// padding_char, first_letter));
+// }
+// }
+

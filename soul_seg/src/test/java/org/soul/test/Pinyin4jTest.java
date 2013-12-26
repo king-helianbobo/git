@@ -2,11 +2,21 @@ package org.soul.test;
 
 import java.io.*;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.icu.ICUTransformFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.Version;
+import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
+import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;
+import org.soul.elasticSearch.pinyin.SoulICUTransformFilter;
 import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
+
+import com.ibm.icu.text.Transliterator;
 
 import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
@@ -22,7 +32,6 @@ public class Pinyin4jTest {
 		outputFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
 		outputFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
 		outputFormat.setVCharType(HanyuPinyinVCharType.WITH_V);
-
 		try {
 			for (int i = 0; i < src.length(); i++) {
 				String[] pinYins = PinyinHelper.toHanyuPinyinStringArray(
@@ -65,6 +74,79 @@ public class Pinyin4jTest {
 
 	}
 
+	public static void noMean() {
+
+		String[] stopWords = {"and", "of", "the", "to", "is", "their", "can",
+				"all", "i", "in"};
+		String text = "沈从文 厦门 长春 长大";
+		Reader reader = new StringReader(text);
+		TokenStream result = new WhitespaceTokenizer(Version.LUCENE_46, reader);
+		// TokenFilter lowerCaseFilter = new LowerCaseFilter(Version.LUCENE_46,
+		// tokenizer);
+
+		// TokenStream result = new LowerCaseFilter(Version.LUCENE_46,
+		// tokenizer);
+
+		result = new PinyinTokenFilter(result);
+		result = new SoulEdgeNGramTokenFilter(result,
+				SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
+		// result = new SoulEdgeNGramTokenFilter(result,
+		// SoulEdgeNGramTokenFilter.Side.BACK, 2, 20);
+		// result = new
+		// org.apache.lucene.analysis.icu.ICUTransformFilter(result,
+		// NAME_PINYIN_TRANSLITERATOR);
+		// result = new ICUTransformFilter(result, NAME_PINYIN_TRANSLITERATOR);
+		// return result;
+		//
+		// TokenStream tokenStream = lowerCaseFilter;
+
+		OffsetAttribute offsetAttribute = result
+				.addAttribute(OffsetAttribute.class);
+		CharTermAttribute charTermAttribute = result
+				.addAttribute(CharTermAttribute.class);
+		// Transliterator NAME_PINYIN_TRANSLITERATOR = Transliterator
+		// .getInstance("Han-Latin;NFD;[[:NonspacingMark:][:Space:]] Remove");
+		// result = new ICUTransformFilter(result, NAME_PINYIN_TRANSLITERATOR);
+		// // Transliterator literator2 = Transliterator
+		// // .createFromRules(
+		// // null,
+		// //
+		// ":: Han-Latin/Names;[[:space:]][bpmfdtnlgkhjqxzcsryw] { [[:any:]-[:white_space:]] >;::NFD;[[:NonspacingMark:][:Space:]]>;",
+		// // Transliterator.FORWARD);
+		//
+		// result = new
+		// org.apache.lucene.analysis.icu.ICUTransformFilter(result,
+		// NAME_PINYIN_TRANSLITERATOR);
+
+		// Transliterator[] literators = {NAME_PINYIN_TRANSLITERATOR,
+		// literator2};
+		// result = new SoulICUTransformFilter(result, literators);
+		try {
+			result.reset();
+			while (result.incrementToken()) {
+				int startOffset = offsetAttribute.startOffset();
+				int endOffset = offsetAttribute.endOffset();
+				String term = charTermAttribute.toString();
+				System.out.println("\"" + term + "\"" + " start = "
+						+ startOffset + ",end = " + endOffset);
+			}
+			result.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// WhitespaceTokenizer(Version.LUCENE_31, new StringReader(text));
+		//
+		// TokenStream tokenStream = analyzer.tokenStream("content",
+		// new StringReader(text));
+		// TokenStream result = new LowerCaseFilter(Version.LUCENE_31, stream);
+		// result = new PimEdgeNGramTokenFilter(result,
+		// PimEdgeNGramTokenFilter.Side.BACK, 2, 20);
+		// result = new PimEdgeNGramTokenFilter(result,
+		// PimEdgeNGramTokenFilter.Side.FRONT, 2, 20);
+
+		// return result;
+	}
 	public static void main(String[] args) {
 		// System.out.println(getPinYin("Hello,欢迎来到长春,厦门,红色中国"));
 
@@ -73,9 +155,11 @@ public class Pinyin4jTest {
 		String enText = "No news is good news";
 		String chText = "没消息就是好消息";
 		String text3 = "Hello,欢迎来到长春，厦门，重庆，红色中国！";
+		String text4 = "福建兴业银行";
 
-		analyze(analyzer, enText);
-		analyze(analyzer, chText);
-		analyze(analyzer, text3);
+		analyze(analyzer, text4);
+		//noMean();
+		// analyze(analyzer, chText);
+		// analyze(analyzer, text3);
 	}
 }
