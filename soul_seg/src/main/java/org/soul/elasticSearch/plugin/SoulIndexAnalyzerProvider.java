@@ -11,8 +11,9 @@ import org.elasticsearch.index.settings.IndexSettings;
 
 import static org.soul.elasticSearch.plugin.SoulElasticStaticValue.*;
 
-public class SoulIndexAnalyzerProvider extends
-		AbstractIndexAnalyzerProvider<Analyzer> {
+public class SoulIndexAnalyzerProvider
+		extends
+			AbstractIndexAnalyzerProvider<Analyzer> {
 	private final Analyzer analyzer;
 
 	@Inject

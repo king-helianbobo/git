@@ -10,8 +10,9 @@ import org.elasticsearch.index.settings.IndexSettings;
 
 import java.io.Reader;
 
-public class PinyinAbbreviationTokenizerFactory extends
-		AbstractTokenizerFactory {
+public class PinyinAbbreviationTokenizerFactory
+		extends
+			AbstractTokenizerFactory {
 	@Inject
 	public PinyinAbbreviationTokenizerFactory(Index index,
 			@IndexSettings Settings indexSettings, @Assisted String name,
