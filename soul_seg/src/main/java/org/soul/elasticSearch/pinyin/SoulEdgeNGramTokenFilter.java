@@ -18,6 +18,9 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	public static final int DEFAULT_MAX_GRAM_SIZE = 1;
 	public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
+	public static int offset = 0;// temp offset
+	public static boolean isFront = true;
+
 	/** Specifies which side of the input the n-gram should be generated from */
 	public static enum Side {
 
@@ -35,6 +38,14 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 			public String getLabel() {
 				return "back";
 			}
+		},
+		/** Get the n-gram from the end of the input */
+		TWOSIDE {
+
+			@Override
+			public String getLabel() {
+				return "twoside";
+			}
 		};
 
 		public abstract String getLabel();
@@ -45,6 +56,9 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 				return FRONT;
 			}
 			if (BACK.getLabel().equals(sideName)) {
+				return BACK;
+			}
+			if (TWOSIDE.getLabel().equals(sideName)) {
 				return BACK;
 			}
 			return null;
@@ -97,6 +111,23 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 		this.side = side;
 	}
 
+	public SoulEdgeNGramTokenFilter(TokenStream input, Side side, int minGram) {
+		super(input);
+		if (side == null) {
+			throw new IllegalArgumentException(
+					"sideLabel must be either front or back");
+		}
+
+		if (minGram < 1) {
+			throw new IllegalArgumentException(
+					"minGram must be greater than zero");
+		}
+
+		this.minGram = minGram;
+		this.maxGram = 1000 * 100 * 100;
+		this.side = side;
+	}
+
 	/**
 	 * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of
 	 * the given range
@@ -122,36 +153,56 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 				if (!input.incrementToken()) {
 					return false;
 				} else {
-					curTermBuffer = termAtt.buffer().clone();
 					curTermLength = termAtt.length();
+					curTermBuffer = new char[curTermLength];
+					System.arraycopy(termAtt.buffer(), 0, curTermBuffer, 0,
+							curTermLength);
 					curGramSize = minGram;
 					tokStart = offsetAtt.startOffset();
 				}
 			}
 			if (curGramSize <= maxGram) { // current gram length
 				if (curGramSize >= curTermLength) {
-					// if the remaining input is too short, still generate
+					// if remaining input is too short, still generate
 					clearAttributes();
 					offsetAtt.setOffset(tokStart + 0, tokStart + curTermLength);
 					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
 					curTermBuffer = null;
 					return true;
 				} else {
-					// grab gramSize chars from front or back
-					int start = side == Side.FRONT ? 0 : curTermLength
-							- curGramSize;
-					int end = start + curGramSize;
-					clearAttributes();
-					offsetAtt.setOffset(tokStart + start, tokStart + end);
-					termAtt.copyBuffer(curTermBuffer, start, curGramSize);
-					curGramSize++;
-					return true;
+					if (side == Side.FRONT || side == Side.BACK) {
+						int start = side == Side.FRONT ? 0 : curTermLength
+								- curGramSize;
+						int end = start + curGramSize;
+						clearAttributes();
+						offsetAtt.setOffset(tokStart + start, tokStart + end);
+						termAtt.copyBuffer(curTermBuffer, start, curGramSize);
+						curGramSize++;
+						return true;
+					} else {
+						int backStart = curTermLength - curGramSize;
+						int backEnd = backStart + curGramSize;
+						clearAttributes();
+						if (isFront) {
+							offsetAtt.setOffset(tokStart, tokStart
+									+ curGramSize);
+							termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
+							isFront = false;
+						} else {
+							offsetAtt.setOffset(tokStart + backStart, tokStart
+									+ backEnd);
+							termAtt.copyBuffer(curTermBuffer, backStart,
+									curGramSize);
+							isFront = true;
+							curGramSize++;
+						}
+						return true;
+					}
 				}
 			}
 			curTermBuffer = null;
 		}
 	}
-
 	@Override
 	public void reset() throws IOException {
 		super.reset();

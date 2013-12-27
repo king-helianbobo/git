@@ -1,4 +1,4 @@
-package org.elasticsearch.indices.analysis;
+package org.elasticsearch.index.analysis;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.Normalizer2;
@@ -16,6 +16,8 @@ import org.elasticsearch.index.analysis.PreBuiltTokenFilterFactoryFactory;
 import org.elasticsearch.index.analysis.PreBuiltTokenizerFactoryFactory;
 import org.elasticsearch.index.analysis.TokenFilterFactory;
 import org.elasticsearch.index.analysis.TokenizerFactory;
+import org.elasticsearch.indices.analysis.IndicesAnalysisService;
+
 import java.io.Reader;
 
 /**

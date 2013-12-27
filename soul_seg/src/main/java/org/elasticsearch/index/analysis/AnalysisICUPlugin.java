@@ -17,13 +17,11 @@
  * under the License.
  */
 
-package org.elasticsearch.plugin.analysis.icu;
+package org.elasticsearch.index.analysis;
 
 import org.elasticsearch.common.collect.ImmutableList;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.index.analysis.AnalysisModule;
-import org.elasticsearch.index.analysis.IcuAnalysisBinderProcessor;
-import org.elasticsearch.indices.analysis.IcuIndicesAnalysisModule;
 import org.elasticsearch.plugins.AbstractPlugin;
 
 import java.util.Collection;

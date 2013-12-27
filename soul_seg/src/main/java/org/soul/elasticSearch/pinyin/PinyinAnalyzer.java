@@ -29,11 +29,13 @@ public final class PinyinAnalyzer extends Analyzer {
 	protected TokenStreamComponents createComponents(String fieldName,
 			Reader reader) {
 		final WhitespaceTokenizer src = new WhitespaceTokenizer(
-				Version.LUCENE_CURRENT, reader);
+				Version.LUCENE_46, reader);
 		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT, src);
 		result = new PinyinTokenFilter(result);
+		// result = new SoulEdgeNGramTokenFilter(result,
+		// SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
 		result = new SoulEdgeNGramTokenFilter(result,
-				SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
+				SoulEdgeNGramTokenFilter.Side.TWOSIDE, 1);
 		return new TokenStreamComponents(src, result);
 
 		// return new TokenStreamComponents(new SoulPinyinTokenizer(reader));

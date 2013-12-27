@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.indices.analysis;
+package org.elasticsearch.index.analysis;
 
 import org.elasticsearch.common.inject.AbstractModule;
 

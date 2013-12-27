@@ -155,10 +155,10 @@ public class Pinyin4jTest {
 		String enText = "No news is good news";
 		String chText = "没消息就是好消息";
 		String text3 = "Hello,欢迎来到长春，厦门，重庆，红色中国！";
-		String text4 = "福建兴业银行";
+		String text4 = "沈从文 兴业银行 中华人民共和国";
 
 		analyze(analyzer, text4);
-		//noMean();
+		// noMean();
 		// analyze(analyzer, chText);
 		// analyze(analyzer, text3);
 	}
