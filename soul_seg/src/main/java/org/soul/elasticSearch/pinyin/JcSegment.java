@@ -1,4 +1,5 @@
 package org.soul.elasticSearch.pinyin;
+
 import java.io.*;
 
 import org.lionsoul.jcseg.core.ADictionary;
@@ -12,16 +13,18 @@ import org.lionsoul.jcseg.util.IStringBuffer;
 
 public class JcSegment {
 	private ISegment seg = null;
+
 	public JcSegment() {
 		JcsegTaskConfig config = new JcsegTaskConfig();
 		ADictionary dic = DictionaryFactory.createDefaultDictionary(config);
 		try {
 			seg = SegmentFactory.createJcseg(JcsegTaskConfig.COMPLEX_MODE,
-					new Object[]{config, dic});
+					new Object[] { config, dic });
 		} catch (JcsegException e) {
 			e.printStackTrace();
 		}
 	}
+
 	// turn Chinese chars to pinyin
 	public String segment(String str) throws IOException {
 		StringBuffer sb = new StringBuffer();

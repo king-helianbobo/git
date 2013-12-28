@@ -1,4 +1,4 @@
-package org.lionsoul.jcseg.util.dic;
+package org.lionsoul.jcseg.util;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -8,7 +8,6 @@ import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 
-import org.lionsoul.jcseg.util.IStringBuffer;
 
 
 /**

@@ -3,53 +3,39 @@ package org.soul.test;
 import java.io.*;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.icu.ICUTransformFilter;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.Version;
 import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
 import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;
-import org.soul.elasticSearch.pinyin.SoulICUTransformFilter;
 import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
 
-import com.ibm.icu.text.Transliterator;
-
-import net.sourceforge.pinyin4j.PinyinHelper;
-import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
-import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
-import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
-import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
-import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
-
-public class Pinyin4jTest {
-	public static String getPinYin(String src) {
-		StringBuilder pinyinBuf = new StringBuilder();
-		HanyuPinyinOutputFormat outputFormat = new HanyuPinyinOutputFormat();
-		outputFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
-		outputFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
-		outputFormat.setVCharType(HanyuPinyinVCharType.WITH_V);
-		try {
-			for (int i = 0; i < src.length(); i++) {
-				String[] pinYins = PinyinHelper.toHanyuPinyinStringArray(
-						src.charAt(i), outputFormat);
-
-				if (pinYins != null && pinYins.length > 0) {// 汉语
-					for (int j = 0; j < pinYins.length; j++)
-						pinyinBuf.append(pinYins[j] + " ");
-					// pinyinBuf.append(pinYins[0] + " ");
-				} else {// 非汉语
-					pinyinBuf.append(src.charAt(i));
-				}
-			}
-		} catch (BadHanyuPinyinOutputFormatCombination e) {
-			e.printStackTrace();
-		}
-		return pinyinBuf.toString();
-	}
+public class PinyinTest {
+	// public static String getPinYin(String src) {
+	// StringBuilder pinyinBuf = new StringBuilder();
+	// HanyuPinyinOutputFormat outputFormat = new HanyuPinyinOutputFormat();
+	// outputFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
+	// outputFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+	// outputFormat.setVCharType(HanyuPinyinVCharType.WITH_V);
+	// try {
+	// for (int i = 0; i < src.length(); i++) {
+	// String[] pinYins = PinyinHelper.toHanyuPinyinStringArray(
+	// src.charAt(i), outputFormat);
+	//
+	// if (pinYins != null && pinYins.length > 0) {// 汉语
+	// for (int j = 0; j < pinYins.length; j++)
+	// pinyinBuf.append(pinYins[j] + " ");
+	// // pinyinBuf.append(pinYins[0] + " ");
+	// } else {// 非汉语
+	// pinyinBuf.append(src.charAt(i));
+	// }
+	// }
+	// } catch (BadHanyuPinyinOutputFormatCombination e) {
+	// e.printStackTrace();
+	// }
+	// return pinyinBuf.toString();
+	// }
 
 	public static void analyze(Analyzer analyzer, String text) {
 		try {
@@ -76,8 +62,8 @@ public class Pinyin4jTest {
 
 	public static void noMean() {
 
-		String[] stopWords = {"and", "of", "the", "to", "is", "their", "can",
-				"all", "i", "in"};
+		String[] stopWords = { "and", "of", "the", "to", "is", "their", "can",
+				"all", "i", "in" };
 		String text = "沈从文 厦门 长春 长大";
 		Reader reader = new StringReader(text);
 		TokenStream result = new WhitespaceTokenizer(Version.LUCENE_46, reader);
@@ -147,6 +133,7 @@ public class Pinyin4jTest {
 
 		// return result;
 	}
+
 	public static void main(String[] args) {
 		// System.out.println(getPinYin("Hello,欢迎来到长春,厦门,红色中国"));
 

@@ -27,12 +27,6 @@ public class BasicAnalysis extends Analysis {
 			@Override
 			public List<Term> merge() {
 				graph.walkPath();// construct optimal path
-				log.info(getResult());
-				if (graph.hasNum) { // recognize consecutive number
-					NumberRecognition.recognition(graph.terms);
-				}
-				log.info(getResult());
-
 				if (graph.hasPerson && StaticVariable.allowNameRecognize) {
 					new AsianNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
@@ -41,7 +35,10 @@ public class BasicAnalysis extends Analysis {
 					graph.walkPathByScore();
 				}
 				log.info(getResult());
-				
+				if (graph.hasNum) { // recognize consecutive number
+					NumberRecognition.recognition(graph.terms);
+				}
+
 				if (forests == null) {
 					userDefineRecognize(graph, null);
 				} else {

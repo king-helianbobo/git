@@ -8,9 +8,6 @@ import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AbstractTokenFilterFactory;
 import org.elasticsearch.index.settings.IndexSettings;
 
-/**
- * @author kimchy (shay.banon)
- */
 public class PinyinTokenFilterFactory extends AbstractTokenFilterFactory {
 	private String first_letter;
 	private String padding_char;

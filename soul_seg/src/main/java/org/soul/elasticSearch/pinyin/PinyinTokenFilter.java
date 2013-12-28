@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.soul.splitWord.BasicAnalysis;
 
 public class PinyinTokenFilter extends TokenFilter {
+
+	private static Log log = LogFactory.getLog(PinyinTokenFilter.class);
 
 	private char[] curTermBuffer;
 	private int curTermLength;
@@ -38,7 +43,6 @@ public class PinyinTokenFilter extends TokenFilter {
 					curTermBuffer = new char[curTermLength];
 					System.arraycopy(termAtt.buffer(), 0, curTermBuffer, 0,
 							curTermLength);
-					// curTermBuffer = termAtt.buffer().clone(); // clone buffer
 					curNumber = 0; // first time we get equivalent Term
 					tokenStart = offsetAtt.startOffset();
 				}
@@ -49,20 +53,13 @@ public class PinyinTokenFilter extends TokenFilter {
 					offsetAtt.setOffset(tokenStart, tokenStart + curTermLength);
 					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
 				} else if (curNumber == 1) {
-					//char[] buffer = new char[curTermLenth];
 					clearAttributes();
 					offsetAtt.setOffset(tokenStart, tokenStart + curTermLength);
 					String text = new String(curTermBuffer);
-					// String text1 = text.substring(0, curTermLength);
-					// String text = new String(curTermBuffer);
-					//System.out.println("haha ,text=[" + text + "]");
 					Reader reader = new StringReader(text);
 					String pinyin = seg.segment(reader);
-					// String pinyin = "haha";
-					//System.out.println("haha ,we get " + pinyin);
+					log.info(pinyin);
 					termAtt.copyBuffer(pinyin.toCharArray(), 0, pinyin.length());
-					// termAtt.append(pinyin);
-
 					curTermBuffer = null;
 
 				}
@@ -72,6 +69,7 @@ public class PinyinTokenFilter extends TokenFilter {
 			curTermBuffer = null;
 		}
 	}
+
 	@Override
 	public void reset() throws IOException {
 		super.reset();

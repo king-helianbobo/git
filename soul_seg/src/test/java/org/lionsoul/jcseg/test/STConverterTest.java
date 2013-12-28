@@ -1,6 +1,6 @@
 package org.lionsoul.jcseg.test;
 
-import org.lionsoul.jcseg.util.dic.STConverter;
+import org.lionsoul.jcseg.util.STConverter;
 
 public class STConverterTest {
 

@@ -25,32 +25,19 @@ public final class PinyinAnalyzer extends Analyzer {
 		first_letter = "none";
 		padding_char = " ";
 	}
+
 	@Override
 	protected TokenStreamComponents createComponents(String fieldName,
 			Reader reader) {
 		final WhitespaceTokenizer src = new WhitespaceTokenizer(
-				Version.LUCENE_46, reader);
-		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT, src);
+				Version.LUCENE_44, reader);
+		TokenStream result = new StandardFilter(Version.LUCENE_44, src);
 		result = new PinyinTokenFilter(result);
 		// result = new SoulEdgeNGramTokenFilter(result,
 		// SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
 		result = new SoulEdgeNGramTokenFilter(result,
 				SoulEdgeNGramTokenFilter.Side.TWOSIDE, 1);
 		return new TokenStreamComponents(src, result);
-
 		// return new TokenStreamComponents(new SoulPinyinTokenizer(reader));
 	}
 }
-
-// @Override
-// protected TokenStreamComponents createComponents(String fieldName,
-// Reader reader) {
-// if (first_letter.equals("only")) {
-// return new TokenStreamComponents(new PinyinAbbreviationTokenizer(
-// reader));
-// } else {
-// return new TokenStreamComponents(new PinyinTokenizer(reader,
-// padding_char, first_letter));
-// }
-// }
-

@@ -35,8 +35,8 @@ public class SplitWordTest {
 							end);
 					if (content.length() > 0) {
 						allCount += content.length();
-						// List<Term> result = BasicAnalysis.parse(content);
-						List<Term> result = NlpAnalysis.parse(content);
+						List<Term> result = BasicAnalysis.parse(content);
+						// List<Term> result = NlpAnalysis.parse(content);
 						for (Term term : result) {
 							String item = term.getName().trim();
 							if (item.length() > 0) {

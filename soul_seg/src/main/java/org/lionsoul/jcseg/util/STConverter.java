@@ -1,6 +1,5 @@
-package org.lionsoul.jcseg.util.dic;
+package org.lionsoul.jcseg.util;
 
-import org.lionsoul.jcseg.util.IStringBuffer;
 
 /**
  * Simplified and traditional chinese convert class. all the search work base on

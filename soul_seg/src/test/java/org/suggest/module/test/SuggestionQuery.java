@@ -1,4 +1,4 @@
-package org.soul.elasticsearch.module.suggest.test;
+package org.suggest.module.test;
 
 public class SuggestionQuery {
 

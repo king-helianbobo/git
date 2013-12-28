@@ -1,4 +1,4 @@
-package org.soul.elasticsearch.module.suggest.test;
+package org.suggest.module.test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyArray;

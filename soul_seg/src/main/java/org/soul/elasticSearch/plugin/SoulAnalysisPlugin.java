@@ -69,6 +69,7 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 		// }
 
 	}
+
 	public void onModule(RestModule restModule) {
 		restModule.addRestAction(RestSuggestAction.class);
 		restModule.addRestAction(RestRefreshSuggestAction.class);

@@ -1,4 +1,4 @@
-package org.lionsoul.jcseg.util.dic;
+package org.lionsoul.jcseg.util;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -12,8 +12,6 @@ import java.util.HashMap;
 
 import org.lionsoul.jcseg.Word;
 import org.lionsoul.jcseg.core.IWord;
-import org.lionsoul.jcseg.util.IStringBuffer;
-import org.lionsoul.jcseg.util.Sort;
 
 
 /**

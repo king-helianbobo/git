@@ -94,8 +94,8 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 						SpellChecker spellChecker = new SpellChecker(
 								ramDirectoryCache.get(field));
 						IndexWriterConfig indexWriterConfig = new IndexWriterConfig(
-								Version.LUCENE_44, new WhitespaceAnalyzer(
-										Version.LUCENE_44));
+								Version.LUCENE_46, new WhitespaceAnalyzer(
+										Version.LUCENE_46));
 						spellChecker.indexDictionary(
 								dictCache.getUnchecked(field),
 								indexWriterConfig, false);
@@ -300,9 +300,8 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 				new LookupResultToStringFunction());
 	}
 
-	private class LookupResultToStringFunction
-			implements
-				Function<LookupResult, String> {
+	private class LookupResultToStringFunction implements
+			Function<LookupResult, String> {
 		@Override
 		public String apply(LookupResult result) {
 			return result.key.toString();
@@ -312,8 +311,9 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 	public void resetIndexReader() {
 		IndexReader currentIndexReader = null;
 		if (indexShard.state() == IndexShardState.STARTED) {
-			Engine.Searcher currentIndexSearcher = indexShard
-					.acquireSearcher("suggest");
+			// Engine.Searcher currentIndexSearcher = indexShard
+			// .acquireSearcher("suggest");
+			Engine.Searcher currentIndexSearcher = indexShard.acquireSearcher();
 			currentIndexReader = currentIndexSearcher.reader();
 			currentIndexSearcher.release();
 		}
@@ -367,8 +367,10 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 				if (indexReader == null) {
 					// logger.info("1 shard {} : ref count {}", shardId,
 					// indexReader.getRefCount());
+					// Engine.Searcher indexSearcher = indexShard
+					// .acquireSearcher("suggest");
 					Engine.Searcher indexSearcher = indexShard
-							.acquireSearcher("suggest");
+							.acquireSearcher();
 					indexReader = indexSearcher.reader();
 					indexSearcher.release();
 
@@ -392,11 +394,8 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		return indexReader;
 	}
 
-	public static class FieldType
-			implements
-				Streamable,
-				Serializable,
-				ToXContent {
+	public static class FieldType implements Streamable, Serializable,
+			ToXContent {
 
 		private String field;
 		private List<String> types = Lists.newArrayList();
@@ -421,7 +420,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		}
 
 		public String[] types() {
-			return types.toArray(new String[]{});
+			return types.toArray(new String[] {});
 		}
 
 		public String queryAnalyzer() {
