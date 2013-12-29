@@ -81,11 +81,11 @@ public class CustomAnalyzerProvider extends AbstractIndexAnalyzerProvider<Custom
         int offsetGap = analyzerSettings.getAsInt("offset_gap", -1);
 
         this.customAnalyzer = new CustomAnalyzer(tokenizer,
-                charFilters.toArray(new CharFilterFactory[charFilters.size()]),
-                tokenFilters.toArray(new TokenFilterFactory[tokenFilters.size()]),
-                positionOffsetGap,
-                offsetGap
-        );
+						 charFilters.toArray(new CharFilterFactory[charFilters.size()]),
+						 tokenFilters.toArray(new TokenFilterFactory[tokenFilters.size()]),
+						 positionOffsetGap,
+						 offsetGap
+						 );
     }
 
     @Override

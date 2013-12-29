@@ -68,7 +68,7 @@ public abstract class AbstractCacheLoaderSuggester<T> extends
 
 	public abstract T getSuggester(Analyzer indexAnalyzer,
 			Analyzer queryAnalyzer, ShardSuggestService.FieldType fieldType)
-			throws Exception;
+			throws Exception; // this method must be override
 
 	public static class CacheLoaderAnalyzingSuggester extends
 			AbstractCacheLoaderSuggester<AnalyzingSuggester> {

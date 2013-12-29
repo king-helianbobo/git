@@ -47,7 +47,6 @@ public class RestSuggestAction extends BaseRestHandler {
 			final RestChannel channel) {
 		final String[] indices = Strings.splitStringByCommaToArray(request
 				.param("index"));
-
 		log.info("index list = " + indices);
 		try {
 			Map<String, Object> parserMap = null;

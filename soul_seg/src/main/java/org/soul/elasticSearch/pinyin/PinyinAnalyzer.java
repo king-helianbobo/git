@@ -1,5 +1,7 @@
 package org.soul.elasticSearch.pinyin;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -10,6 +12,8 @@ import org.elasticsearch.common.settings.Settings;
 import java.io.Reader;
 
 public final class PinyinAnalyzer extends Analyzer {
+
+	private static Log log = LogFactory.getLog(PinyinAnalyzer.class);
 
 	private String padding_char;
 	private String first_letter;
@@ -31,12 +35,14 @@ public final class PinyinAnalyzer extends Analyzer {
 			Reader reader) {
 		final WhitespaceTokenizer src = new WhitespaceTokenizer(
 				Version.LUCENE_44, reader);
+		log.info("here, we get " + fieldName);
 		TokenStream result = new StandardFilter(Version.LUCENE_44, src);
 		result = new PinyinTokenFilter(result);
 		// result = new SoulEdgeNGramTokenFilter(result,
 		// SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
 		result = new SoulEdgeNGramTokenFilter(result,
 				SoulEdgeNGramTokenFilter.Side.TWOSIDE, 1);
+		log.info("another time , we get " + fieldName);
 		return new TokenStreamComponents(src, result);
 		// return new TokenStreamComponents(new SoulPinyinTokenizer(reader));
 	}

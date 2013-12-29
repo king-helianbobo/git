@@ -53,7 +53,6 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
     public SynonymTokenFilterFactory(Index index, @IndexSettings Settings indexSettings, Environment env, IndicesAnalysisService indicesAnalysisService, Map<String, TokenizerFactoryFactory> tokenizerFactories,
                                      @Assisted String name, @Assisted Settings settings) {
         super(index, indexSettings, name, settings);
-
         Reader rulesReader = null;
         if (settings.getAsArray("synonyms", null) != null) {
             List<String> rules = Analysis.getWordList(env, settings, "synonyms");

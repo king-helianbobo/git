@@ -1,4 +1,7 @@
 #! /bin/bash
+http://jprante.github.io/lessons/2012/05/16/multilingual-analysis-for-title-search.html
+Guava Cache是什么东西呢？
+
 
 curl -XPUT "localhost:9200/test/test1/_mapping?pretty" -d' {
    "test1": {
@@ -20,8 +23,12 @@ curl -XPOST 'http://localhost:9200/cars/_analyze?analyzer=soul_query&pretty' -d 
 curl -XPUT "http://localhost:9200/test/test1/1" -d '{"name": "区政协主席顾智杰，副主席陈晓松、政协主席许海祥、许文强，协理员平文良、宋培功、李广平和秘书长薛伟钢参加了会议，国务院总理李克强出席了亚太经合组织第一次会议。"}'
 curl -XPUT "http://localhost:9200/test/test1/2" -d '{"name": "总要解决问题的，姚明打球打的很好吗？"}'
 
-curl -X GET "http://localhost:9200/liubo/_analyze?analyzer=soul_index&pretty=true" -d '国务院总理'
-curl -X GET "http://localhost:9200/cars/_analyze?analyzer=soul_pinyin&pretty=true" -d '国务院总理'
+
+curl -X GET "http://localhost:9200/cars/_analyze?analyzer=soul_pinyin&pretty=true" -d '沈阳'
+curl -X GET "http://localhost:9200/cars/_analyze?analyzer=soul_pinyin&pretty=true" -d '沈从文'
+curl -X GET "http://localhost:9200/cars/_analyze?analyzer=soul_pinyin&pretty=true" -d '小沈阳'
+curl -X GET "http://localhost:9200/cars/_analyze?analyzer=soul_pinyin&pretty=true" -d '沈阳大学'
+
 
 curl -XGET "http://localhost:9200/_search" -d'
 {
@@ -33,9 +40,8 @@ curl -XGET "http://localhost:9200/_search" -d'
 }'
 
 
-curl -XPOST http://localhost:9200/test/test1/_search  -d'
-{
-    "query" : { "term" : { "name" : "姚明主席" }},
+curl -XPOST http://localhost:9200/test/test1/_search  -d '{
+    "query" : { "term" : { "content" : "姚明主席" }},
      "highlight" : {
         "pre_tags" : ["<tag1>", "<tag2>"],
         "post_tags" : ["</tag1>", "</tag2>"],
@@ -55,28 +61,10 @@ curl -XPUT "http://localhost:9200/movies/movie/1" -d'
     "genres": ["Crime", "Drama"]
 }'
 
-curl -XPUT "http://localhost:9200/movies/movie/2" -d'
-{
-    "title": "Lawrence of Arabia",
-    "director": "David Lean",
-    "year": 1962,
-    "genres": ["Adventure", "Biography", "Drama"]
-}'
-
-curl -XPUT "http://localhost:9200/movies/movie/3" -d'
-{
-    "title": "To Kill a Mockingbird",
-    "director": "Robert Mulligan",
-    "year": 1962,
-    "genres": ["Crime", "Drama", "Mystery"]
-}'
-
-curl -XPUT "http://localhost:9200/movies/movie/4" -d'
-{
-    "title": "Apocalypse Now",
-    "director": "Francis Ford Coppola",
-    "year": 1979,
-    "genres": ["Drama", "War"]
-}'
 
 
+curl -XPOST "http://localhost:9200/test/test1" -d '{"content": "沈阳"}'
+curl -XPOST "http://localhost:9200/test/test1" -d '{"content": "沈从文"}'
+curl -XPOST "http://localhost:9200/test/test1" -d '{"content": "小沈阳"}'
+curl -XPOST "http://localhost:9200/test/test1" -d '{"content": "沈阳大学"}'
+curl -XPOST "http://localhost:9200/test/test1" -d '{"content": "沈阳市市长"}'

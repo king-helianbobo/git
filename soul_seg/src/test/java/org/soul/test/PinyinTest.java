@@ -7,6 +7,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.Version;
+import org.elasticsearch.common.Strings;
 import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
 import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;
 import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
@@ -40,6 +41,9 @@ public class PinyinTest {
 	public static void analyze(Analyzer analyzer, String text) {
 		try {
 			System.out.println("分词器:" + analyzer.getClass());
+			System.out.println(Strings.toUnderscoreCase("providerString"));
+			
+			System.out.println(Strings.toCamelCase("_provider_string"));
 			TokenStream tokenStream = analyzer.tokenStream("content",
 					new StringReader(text));
 			tokenStream.reset();

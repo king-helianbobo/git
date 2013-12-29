@@ -58,7 +58,10 @@ public class RestUpdateAction extends BaseRestHandler {
         UpdateRequest updateRequest = new UpdateRequest(request.param("index"), request.param("type"), request.param("id"));
         updateRequest.listenerThreaded(false);
         updateRequest.routing(request.param("routing"));
-        updateRequest.parent(request.param("parent")); // order is important, set it after routing, so it will set the routing
+        updateRequest.parent(request.param("parent")); // order is important,
+                                                       // set it after routing,
+                                                       // so it will set the
+                                                       // routing
         updateRequest.timeout(request.paramAsTime("timeout", updateRequest.timeout()));
         updateRequest.refresh(request.paramAsBoolean("refresh", updateRequest.refresh()));
         String replicationType = request.param("replication");
@@ -94,7 +97,14 @@ public class RestUpdateAction extends BaseRestHandler {
                 IndexRequest upsertRequest = updateRequest.upsertRequest();
                 if (upsertRequest != null) {
                     upsertRequest.routing(request.param("routing"));
-                    upsertRequest.parent(request.param("parent")); // order is important, set it after routing, so it will set the routing
+                    upsertRequest.parent(request.param("parent")); // order is
+                                                                   // important,
+                                                                   // set it
+                                                                   // after
+                                                                   // routing,
+                                                                   // so it will
+                                                                   // set the
+                                                                   // routing
                     upsertRequest.timestamp(request.param("timestamp"));
                     if (request.hasParam("ttl")) {
                         upsertRequest.ttl(request.paramAsTime("ttl", null).millis());
@@ -105,14 +115,17 @@ public class RestUpdateAction extends BaseRestHandler {
                 IndexRequest doc = updateRequest.doc();
                 if (doc != null) {
                     doc.routing(request.param("routing"));
-                    doc.parent(request.param("parent")); // order is important, set it after routing, so it will set the routing
+                    doc.parent(request.param("parent")); // order is important,
+                                                         // set it after
+                                                         // routing, so it will
+                                                         // set the routing
                     doc.timestamp(request.param("timestamp"));
                     if (request.hasParam("ttl")) {
                         doc.ttl(request.paramAsTime("ttl", null).millis());
                     }
                     doc.version(RestActions.parseVersion(request));
                     doc.versionType(VersionType.fromString(request.param("version_type"), doc.versionType()));
-                }                
+                }
             } catch (Exception e) {
                 try {
                     channel.sendResponse(new XContentThrowableRestResponse(request, e));
@@ -128,11 +141,8 @@ public class RestUpdateAction extends BaseRestHandler {
             public void onResponse(UpdateResponse response) {
                 try {
                     XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
-                    builder.startObject()
-                            .field(Fields.OK, true)
-                            .field(Fields._INDEX, response.getIndex())
-                            .field(Fields._TYPE, response.getType())
-                            .field(Fields._ID, response.getId())
+                    builder.startObject().field(Fields.OK, true).field(Fields._INDEX, response.getIndex())
+                            .field(Fields._TYPE, response.getType()).field(Fields._ID, response.getId())
                             .field(Fields._VERSION, response.getVersion());
 
                     if (response.getGetResult() != null) {

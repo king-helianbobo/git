@@ -1,5 +1,7 @@
 package org.suggest.elasticsearch.service;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -36,6 +38,7 @@ import org.elasticsearch.index.shard.AbstractIndexShardComponent;
 import org.elasticsearch.index.shard.IndexShardState;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.shard.service.IndexShard;
+import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshRequest;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshResponse;
 import org.suggest.elasticsearch.action.statistics.FstStats;
@@ -48,8 +51,9 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
+// shardSuggestService extend AbstractIndexShardComponent
 public class ShardSuggestService extends AbstractIndexShardComponent {
-
+	private static Log log = LogFactory.getLog(ShardSuggestService.class);
 	private final IndexShard indexShard;
 
 	private final ReentrantLock lock = new ReentrantLock();
@@ -66,7 +70,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			@IndexSettings Settings indexSettings, IndexShard indexShard,
 			final AnalysisService analysisService,
 			final MapperService mapperService) {
-		super(shardId, indexSettings);
+		super(shardId, indexSettings); // belong to which shard
 		this.indexShard = indexShard;
 
 		ramDirectoryCache = CacheBuilder.newBuilder().build(
@@ -264,9 +268,12 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			ShardSuggestRequest shardSuggestRequest) {
 		List<LookupResult> lookupResults = Lists.newArrayList();
 		if ("full".equals(shardSuggestRequest.suggestType())) {
-			// TODO: support for multiple types here
+			// full represent what?
 			AnalyzingSuggester analyzingSuggester = analyzingSuggesterCache
 					.getUnchecked(new FieldType(shardSuggestRequest));
+			
+			log.info(shardSuggestRequest.term());
+
 			lookupResults.addAll(analyzingSuggester.lookup(
 					shardSuggestRequest.term(), false,
 					shardSuggestRequest.size()));
