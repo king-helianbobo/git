@@ -168,14 +168,12 @@ public class PinyinHelper {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0, len = str.length(); i < len; i++) {
 			char c = str.charAt(i);
-			if (ChineseHelper.isChinese(c) || c == '〇') // 判断是否为汉字或者〇
-			{
+			if (ChineseHelper.isChinese(c) || c == '〇') {// 判断是否为汉字或者〇
 				// 多音字识别处理
 				boolean isFoundFlag = false;
 				int rightMove = 3;
-				// 将当前汉字依次与后面的3个、2个、1个汉字组合，判断下是否存在多音字词组
-				for (int rightIndex = (i + rightMove) < len
-						? (i + rightMove)
+				// 当前汉字依次与后面的3个、2个、1个汉字组合，判断是否存在多音字词组
+				for (int rightIndex = (i + rightMove) < len ? (i + rightMove)
 						: (len - 1); rightIndex > i; rightIndex--) {
 					String cizu = str.substring(i, rightIndex + 1);
 					if (MUTIL_PINYIN_TABLE.containsKey(cizu)) {
@@ -197,7 +195,7 @@ public class PinyinHelper {
 					String[] pinyinArray = convertToPinyinArray(str.charAt(i),
 							pinyinFormat);
 					if (pinyinArray != null) {
-						sb.append(pinyinArray[0]);
+						sb.append(pinyinArray[0]); // 获取第一个字符串
 					} else {
 						sb.append(str.charAt(i));
 					}

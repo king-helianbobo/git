@@ -35,10 +35,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
+import org.soul.elasticSearch.pinyin.JcSegment;
 
 public class SoulSpellCheck implements java.io.Closeable {
 
 	private static Log log = LogFactory.getLog(SoulSpellCheck.class);
+
+	private static JcSegment jcSeg = new JcSegment();
 	public static final float DEFAULT_ACCURACY = 0.5f;
 	public static final String F_WORD = "word";
 	Directory spellIndex;
@@ -158,31 +161,50 @@ public class SoulSpellCheck implements java.io.Closeable {
 			final int lengthWord = word.length();
 			final int freq = (ir != null && field != null) ? ir
 					.docFreq(new Term(field, word)) : 0;
-			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR
-					? freq
+			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR ? freq
 					: 0;
 			// if the word exists in the real index and we don't care for word
 			// frequency, return the word itself
 			if (suggestMode == SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX
 					&& freq > 0) {
-				return new String[]{word};
+				return new String[] { word };
 			}
 
 			BooleanQuery query = new BooleanQuery();
 			String[] grams;
 			String key;
+			String pinyin = jcSeg.convertToPinyin(word);
+			int len = pinyin.length();
+			for (int ng = getPinyinMin(len); ng <= getPinyinMax(len); ng++) {
+				key = "pinyinGram" + ng; // form key
+				grams = formGrams(pinyin, ng);
+				if (grams.length == 0) {
+					continue;
+				}
+				if (bStart > 0) { // should we boost prefixes?
+					add(query, "pinyinStart" + ng, grams[0], bStart);
 
-			for (int ng = getMin(lengthWord); ng <= getMax(lengthWord); ng++) {
-				key = "gram" + ng; // form key
+				}
+				if (bEnd > 0) { // should we boost suffixes?
+					add(query, "pinyinEnd" + ng, grams[grams.length - 1], bEnd);
+					log.info(grams[grams.length - 1]);
+				}
+				for (int i = 0; i < grams.length; i++) {
+					add(query, key, grams[i]);
+				}
+			}
+			// {
+			for (int ng = 2; ng <= 3; ng++) {
+				key = "chineseGram" + ng; // form key
 				grams = formGrams(word, ng);
 				if (grams.length == 0) {
 					continue;
 				}
 				if (bStart > 0) { // should we boost prefixes?
-					add(query, "start" + ng, grams[0], bStart);
+					add(query, "chineseStart" + ng, grams[0], bStart);
 				}
 				if (bEnd > 0) { // should we boost suffixes?
-					add(query, "end" + ng, grams[grams.length - 1], bEnd);
+					add(query, "chineseEnd" + ng, grams[grams.length - 1], bEnd);
 				}
 				for (int i = 0; i < grams.length; i++) {
 					add(query, key, grams[i]);
@@ -204,6 +226,9 @@ public class SoulSpellCheck implements java.io.Closeable {
 				}
 				// edit distance
 				sugWord.score = sd.getDistance(word, sugWord.string);
+				float score = sd.getDistance(pinyin,
+						jcSeg.convertToPinyin(sugWord.string));
+				sugWord.score = Math.max(sugWord.score, score);
 				log.info("score：" + sugWord.score + " string: "
 						+ sugWord.string + "/" + word);
 				if (sugWord.score < accuracy) {
@@ -234,6 +259,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 			releaseSearcher(indexSearcher);
 		}
 	}
+
 	/**
 	 * Add a clause to a boolean query.
 	 */
@@ -338,10 +364,13 @@ public class SoulSpellCheck implements java.io.Closeable {
 				BytesRefIterator iter = dict.getWordsIterator();
 				BytesRef currentTerm;
 
-				terms : while ((currentTerm = iter.next()) != null) {
+				terms: while ((currentTerm = iter.next()) != null) {
 					String word = currentTerm.utf8ToString();
-					int len = word.length();
-					if (len < 3) {
+					// int len = word.length();
+					String pinyin = jcSeg.convertToPinyin(word);
+					int len = pinyin.length();
+					log.info("word = " + word + ",pinyin =" + pinyin);
+					if (len < 2) {
 						continue; // too short we bail but "too long" is fine...
 					}
 					if (!isEmpty) {
@@ -352,10 +381,9 @@ public class SoulSpellCheck implements java.io.Closeable {
 							}
 						}
 					}
-
 					// now index word
-					Document doc = createDocument(word, getMin(len),
-							getMax(len));
+					Document doc = createDocument(word, 2, 3, pinyin,
+							getPinyinMin(len), getPinyinMax(len));
 					writer.addDocument(doc);
 				}
 			} finally {
@@ -370,7 +398,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 		}
 	}
 
-	private static int getMin(int l) {
+	private static int getPinyinMin(int l) {
 		if (l > 5) {
 			return 3;
 		}
@@ -380,7 +408,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 		return 1;
 	}
 
-	private static int getMax(int l) {
+	private static int getPinyinMax(int l) {
 		if (l > 5) {
 			return 4;
 		}
@@ -390,36 +418,39 @@ public class SoulSpellCheck implements java.io.Closeable {
 		return 2;
 	}
 
-	private static Document createDocument(String text, int ng1, int ng2) {
+	private static Document createDocument(String text, int ng1, int ng2,
+			String pinyin, int pinyin_ng1, int pinyin_ng2) {
 		Document doc = new Document();
 		// word field is never queried on... its indexed so it can be
 		// quickly checked for rebuild (and stored for retrieval). Doesn't need
 		// norms or TF/position
 		Field f = new StringField(F_WORD, text, Field.Store.YES);
 		doc.add(f); // original term
-		addGram(text, doc, ng1, ng2);
+		addGram(text, doc, ng1, ng2, "chinese");
+		addGram(pinyin, doc, pinyin_ng1, pinyin_ng2, "pinyin");
 		return doc;
 	}
 
-	private static void addGram(String text, Document doc, int ng1, int ng2) {
+	private static void addGram(String text, Document doc, int ng1, int ng2,
+			String prefix) {
 		int len = text.length();
 		for (int ng = ng1; ng <= ng2; ng++) {
-			String key = "gram" + ng;
+			String key = prefix + "Gram" + ng;
 			String end = null;
 			for (int i = 0; i < len - ng + 1; i++) {
 				String gram = text.substring(i, i + ng);
 				FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
 				ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 				Field ngramField = new Field(key, gram, ft);
-				log.info("[gram=" + gram + ",key=" + key + "]");
+				log.info("key=" + key + ",gram=" + gram + "]");
 				// does not use positional queries, but we want use frequency
 				// for scoring these multi-valued n-gram fields.
 				doc.add(ngramField);
 				if (i == 0) {
 					// only one term possible in the startXXField, TF/pos and
 					// norms aren't needed.
-					Field startField = new StringField("start" + ng, gram,
-							Field.Store.NO);
+					Field startField = new StringField(prefix + "Start" + ng,
+							gram, Field.Store.NO);
 					doc.add(startField);
 				}
 				end = gram;
@@ -427,7 +458,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 			if (end != null) {
 				// only one term possible in the endXXField, TF/pos and norms
 				// aren't needed.
-				Field endField = new StringField("end" + ng, end,
+				Field endField = new StringField(prefix + "End" + ng, end,
 						Field.Store.NO);
 				doc.add(endField);
 			}

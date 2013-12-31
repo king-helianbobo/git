@@ -7,11 +7,9 @@ import java.lang.reflect.Constructor;
  * Segment factory to create singleton ISegment object. a path of the class that
  * has implemented the ISegment interface must be given first.
  * 
- * @author chenxin<chenxin619315@gmail.com>
  */
 public class SegmentFactory {
 
-	// current jcseg version.
 	public static final String version = "1.9.2";
 
 	/**
@@ -54,10 +52,10 @@ public class SegmentFactory {
 
 		Class<?>[] _paramtype = null;
 		if (args.length == 2) {
-			_paramtype = new Class[]{JcsegTaskConfig.class, ADictionary.class};
+			_paramtype = new Class[] { JcsegTaskConfig.class, ADictionary.class };
 		} else if (args.length == 3) {
-			_paramtype = new Class[]{Reader.class, JcsegTaskConfig.class,
-					ADictionary.class};
+			_paramtype = new Class[] { Reader.class, JcsegTaskConfig.class,
+					ADictionary.class };
 		} else {
 			throw new JcsegException("length of the arguments should be 2 or 3");
 		}

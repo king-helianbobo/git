@@ -91,6 +91,7 @@ public class JcsegTaskConfig {
 	public JcsegTaskConfig() {
 		this(null);
 	}
+
 	private static String getJarHome(Object o) {
 
 		String path = o.getClass().getProtectionDomain().getCodeSource()
@@ -101,6 +102,7 @@ public class JcsegTaskConfig {
 		else
 			return jarFile.getParentFile().getAbsolutePath();
 	}
+
 	public JcsegTaskConfig(String proFile) {
 		JAR_HOME = getJarHome(this);
 		try {
@@ -266,6 +268,7 @@ public class JcsegTaskConfig {
 	public String getLexiconFileSuffix() {
 		return suffix;
 	}
+
 	/** return the lexicon directory path */
 	public String[] getLexiconPath() {
 		return lexPath;

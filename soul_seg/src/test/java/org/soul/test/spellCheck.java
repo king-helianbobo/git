@@ -95,7 +95,7 @@ public class spellCheck {
 		int suggestionsNumber = 15;
 		// String queryString = "麻辣将";
 
-		String[] queStrs = {"麻辣将", "关羽", "关羽字云", "羽字云", "羽字云长河"};
+		String[] queStrs = { "麻辣将", "种植呵大", "关羽字云长" };
 		for (String str : queStrs) {
 			String[] result = checker.search(str, suggestionsNumber);
 			if (result == null || result.length == 0) {

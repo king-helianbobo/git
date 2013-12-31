@@ -57,7 +57,7 @@ public class PinyinTokenFilter extends TokenFilter {
 					offsetAtt.setOffset(tokenStart, tokenStart + curTermLength);
 					String text = new String(curTermBuffer);
 					Reader reader = new StringReader(text);
-					String pinyin = seg.segment(reader);
+					String pinyin = seg.convertToPinyin(reader);
 					log.info(text + "," + pinyin);
 					termAtt.copyBuffer(pinyin.toCharArray(), 0, pinyin.length());
 					curTermBuffer = null;
