@@ -4,7 +4,6 @@ import java.io.*;
 
 import opensource.jpinyin.PinyinFormat;
 import opensource.jpinyin.PinyinHelper;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.lionsoul.jcseg.core.ADictionary;
@@ -15,7 +14,6 @@ import org.lionsoul.jcseg.core.JcsegException;
 import org.lionsoul.jcseg.core.JcsegTaskConfig;
 import org.lionsoul.jcseg.core.SegmentFactory;
 import org.lionsoul.jcseg.util.IStringBuffer;
-import org.soul.test.spellCheck;
 
 public class JcSegment {
 	private ISegment seg = null;
@@ -50,7 +48,7 @@ public class JcSegment {
 		seg.reset(reader);
 		while ((word = seg.next()) != null) {
 			String pinyin = word.getPinyin();
-			// log.info("pinyin= " + pinyin + ",word = " + word.getValue());
+			log.info("拼音 = " + pinyin + ", 分词 = " + word.getValue());
 			if ((pinyin == null) || (pinyin.equals("null"))) {
 				// add another check ,assure pinyin is not null
 				pinyin = PinyinHelper.convertToPinyinString(word.getValue(),

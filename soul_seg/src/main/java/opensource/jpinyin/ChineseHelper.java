@@ -4,13 +4,6 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-/**
- * 汉字简繁体转换类
- * 
- * @author stuxuhai (dczxxuhai@gmail.com)
- * @version 1.0
- * @created 2013-5-15
- */
 public class ChineseHelper {
 	private static final Properties CHINESETABLE = PinyinResource
 			.getChineseTable();

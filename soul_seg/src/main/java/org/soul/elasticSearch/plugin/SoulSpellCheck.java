@@ -40,7 +40,6 @@ import org.soul.elasticSearch.pinyin.JcSegment;
 public class SoulSpellCheck implements java.io.Closeable {
 
 	private static Log log = LogFactory.getLog(SoulSpellCheck.class);
-
 	private static JcSegment jcSeg = new JcSegment();
 	public static final float DEFAULT_ACCURACY = 0.5f;
 	public static final String F_WORD = "word";
@@ -158,7 +157,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 				field = null;
 			}
 
-			final int lengthWord = word.length();
+			// final int lengthWord = word.length();
 			final int freq = (ir != null && field != null) ? ir
 					.docFreq(new Term(field, word)) : 0;
 			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR ? freq
@@ -220,17 +219,18 @@ public class SoulSpellCheck implements java.io.Closeable {
 			for (int i = 0; i < stop; i++) {
 				SuggestWord sugWord = new SuggestWord();
 				sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD);
+				String strPinyin = indexSearcher.doc(hits[i].doc).get("pinyin");
 				// don't suggest a word for itself, that would be silly
 				if (sugWord.string.equals(word)) {
 					continue;
 				}
 				// edit distance
 				sugWord.score = sd.getDistance(word, sugWord.string);
-				float score = sd.getDistance(pinyin,
-						jcSeg.convertToPinyin(sugWord.string));
+				float score = sd.getDistance(pinyin, strPinyin);
 				sugWord.score = Math.max(sugWord.score, score);
 				log.info("score：" + sugWord.score + " string: "
-						+ sugWord.string + "/" + word);
+						+ sugWord.string + "/" + word + "/pinyinString = "
+						+ strPinyin);
 				if (sugWord.score < accuracy) {
 					continue;
 				}
@@ -275,16 +275,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 				BooleanClause.Occur.SHOULD));
 	}
 
-	/**
-	 * Form all ngrams for a given word.
-	 * 
-	 * @param text
-	 *            the word to parse
-	 * @param ng
-	 *            the ngram length e.g. 3
-	 * @return an array of all ngrams in the word and note that duplicates are
-	 *         not removed
-	 */
 	private static String[] formGrams(String text, int ng) {
 		int len = text.length();
 		String[] res = new String[len - ng + 1];
@@ -366,13 +356,17 @@ public class SoulSpellCheck implements java.io.Closeable {
 
 				terms: while ((currentTerm = iter.next()) != null) {
 					String word = currentTerm.utf8ToString();
+					if ((word == null) || (word.equals("null"))
+							|| (word.equals("")))
+						continue;
 					// int len = word.length();
 					String pinyin = jcSeg.convertToPinyin(word);
 					int len = pinyin.length();
-					log.info("word = " + word + ",pinyin =" + pinyin);
+					log.info("word =" + word + ",pinyin =" + pinyin);
 					if (len < 2) {
 						continue; // too short we bail but "too long" is fine...
 					}
+
 					if (!isEmpty) {
 						// log.info("termsEnums.length = " + termsEnums.size());
 						for (TermsEnum te : termsEnums) {
@@ -426,6 +420,8 @@ public class SoulSpellCheck implements java.io.Closeable {
 		// norms or TF/position
 		Field f = new StringField(F_WORD, text, Field.Store.YES);
 		doc.add(f); // original term
+		f = new StringField("pinyin", pinyin, Field.Store.YES);
+		doc.add(f); // add pinyin form
 		addGram(text, doc, ng1, ng2, "chinese");
 		addGram(pinyin, doc, pinyin_ng1, pinyin_ng2, "pinyin");
 		return doc;

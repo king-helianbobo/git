@@ -8,10 +8,6 @@ import java.util.zip.ZipInputStream;
 
 /**
  * 资源文件加载类
- * 
- * @author stuxuhai (dczxxuhai@gmail.com)
- * @version 1.0
- * @created 2013-5-15
  */
 public class PinyinResource {
 	private static final Logger LOGGER = Logger.getLogger(PinyinResource.class
@@ -20,7 +16,6 @@ public class PinyinResource {
 	private static Properties getResource(String resourceName) {
 		ZipInputStream zip = new ZipInputStream(
 				PinyinResource.class.getResourceAsStream(resourceName));
-
 		try {
 			zip.getNextEntry();
 			Properties p = new Properties();
@@ -34,17 +29,17 @@ public class PinyinResource {
 	}
 
 	protected static Properties getPinyinTable() {
-		String resourceName = "/data/pinyin.db";
+		String resourceName = "/pinyindata/pinyin.db";
 		return getResource(resourceName);
 	}
 
 	protected static Properties getMutilPintinTable() {
-		String resourceName = "/data/mutil_pinyin.db";
+		String resourceName = "/pinyindata/mutil_pinyin.db";
 		return getResource(resourceName);
 	}
 
 	protected static Properties getChineseTable() {
-		String resourceName = "/data/chinese.db";
+		String resourceName = "/pinyindata/chinese.db";
 		return getResource(resourceName);
 	}
 }

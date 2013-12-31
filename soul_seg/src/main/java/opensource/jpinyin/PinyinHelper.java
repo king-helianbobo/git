@@ -4,14 +4,12 @@ import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
 
-/**
- * 汉字转拼音类
- * 
- * @author stuxuhai (dczxxuhai@gmail.com)
- * @version 1.0
- * @created 2013-5-15
- */
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 public class PinyinHelper {
+
+	private static Log log = LogFactory.getLog(PinyinHelper.class);
 	private static final Properties PINYIN_TABLE = PinyinResource
 			.getPinyinTable();
 	private static final Properties MUTIL_PINYIN_TABLE = PinyinResource
@@ -20,15 +18,16 @@ public class PinyinHelper {
 	private static final String ALL_UNMARKED_VOWEL = "aeiouv";
 	private static final String ALL_MARKED_VOWEL = "āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ"; // 所有带声调的拼音字母
 
-	static {
-
-		for (Object str : MUTIL_PINYIN_TABLE.keySet()) {
-
-			System.out.println((String) str + "/"
-					+ MUTIL_PINYIN_TABLE.getProperty((String) str));
-		}
-
-	}
+	// static {
+	// for (Object str : MUTIL_PINYIN_TABLE.keySet()) {
+	// log.info((String) str + "/"
+	// + MUTIL_PINYIN_TABLE.getProperty((String) str));
+	// }
+	// for (Object str : PINYIN_TABLE.keySet()) {
+	// log.info((String) str + "/"
+	// + PINYIN_TABLE.getProperty((String) str));
+	// }
+	// }
 
 	/**
 	 * 将带声调格式的拼音转换为数字代表声调格式的拼音
@@ -42,10 +41,8 @@ public class PinyinHelper {
 		for (int i = pinyinArray.length - 1; i >= 0; i--) {
 			boolean hasMarkedChar = false;
 			String originalPinyin = pinyinArray[i].replaceAll("ü", "v"); // 将拼音中的ü替换为v
-
 			for (int j = originalPinyin.length() - 1; j >= 0; j--) {
 				char originalChar = originalPinyin.charAt(j);
-
 				// 搜索带声调的拼音字母，如果存在则替换为对应不带声调的英文字母
 				if (originalChar < 'a' || originalChar > 'z') {
 					int indexInAllMarked = ALL_MARKED_VOWEL
@@ -71,7 +68,7 @@ public class PinyinHelper {
 	}
 
 	/**
-	 * 将带声调格式的拼音转换为不带声调格式的拼音
+	 * 将带声调格式的拼音转换为不带声调格式的拼音，如将：“guān,qiǎ”转换成guan,qia
 	 * 
 	 * @param pinyinArrayString
 	 *            带声调格式的拼音
@@ -89,12 +86,11 @@ public class PinyinHelper {
 		pinyinArray = pinyinArrayString.replaceAll("ü", "v").split(
 				PINYIN_SEPARATOR);
 
-		// 去掉声调后的拼音可能存在重复，做去重处理
+		// 去掉声调后的拼音可能存在重复，remove duplicate string
 		Set<String> pinyinSet = new LinkedHashSet<String>();
 		for (String pinyin : pinyinArray) {
 			pinyinSet.add(pinyin);
 		}
-
 		return pinyinSet.toArray(new String[pinyinSet.size()]);
 	}
 
@@ -168,17 +164,17 @@ public class PinyinHelper {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0, len = str.length(); i < len; i++) {
 			char c = str.charAt(i);
-			if (ChineseHelper.isChinese(c) || c == '〇') {// 判断是否为汉字或者〇
-				// 多音字识别处理
+			if (ChineseHelper.isChinese(c) || c == '〇') {
+				// 判断是否为汉字或者〇，多音字识别处理
 				boolean isFoundFlag = false;
 				int rightMove = 3;
 				// 当前汉字依次与后面的3个、2个、1个汉字组合，判断是否存在多音字词组
 				for (int rightIndex = (i + rightMove) < len ? (i + rightMove)
 						: (len - 1); rightIndex > i; rightIndex--) {
-					String cizu = str.substring(i, rightIndex + 1);
-					if (MUTIL_PINYIN_TABLE.containsKey(cizu)) {
+					String term = str.substring(i, rightIndex + 1);
+					if (MUTIL_PINYIN_TABLE.containsKey(term)) {
 						String[] pinyinArray = formatPinyin(
-								MUTIL_PINYIN_TABLE.getProperty(cizu),
+								MUTIL_PINYIN_TABLE.getProperty(term),
 								pinyinFormat);
 						for (int j = 0, l = pinyinArray.length; j < l; j++) {
 							sb.append(pinyinArray[j]);
@@ -195,7 +191,7 @@ public class PinyinHelper {
 					String[] pinyinArray = convertToPinyinArray(str.charAt(i),
 							pinyinFormat);
 					if (pinyinArray != null) {
-						sb.append(pinyinArray[0]); // 获取第一个字符串
+						sb.append(pinyinArray[0]); // 获取第一个拼音
 					} else {
 						sb.append(str.charAt(i));
 					}
@@ -209,7 +205,6 @@ public class PinyinHelper {
 					sb.append(separator);
 				}
 			}
-
 		}
 		return sb.toString();
 	}
