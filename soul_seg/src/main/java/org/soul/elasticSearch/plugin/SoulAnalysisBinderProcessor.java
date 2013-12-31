@@ -1,21 +1,26 @@
 package org.soul.elasticSearch.plugin;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.index.analysis.AnalysisModule;
-import org.elasticsearch.index.analysis.AnalysisModule.AnalysisBinderProcessor.TokenFiltersBindings;
-import org.elasticsearch.index.analysis.AnalysisModule.AnalysisBinderProcessor.TokenizersBindings;
 import org.soul.elasticSearch.pinyin.PinyinAnalyzerProvider;
 
-public class SoulAnalysisBinderProcessor extends
-		AnalysisModule.AnalysisBinderProcessor {
-
+public class SoulAnalysisBinderProcessor
+		extends
+			AnalysisModule.AnalysisBinderProcessor {
+	private static Log log = LogFactory
+			.getLog(SoulAnalysisBinderProcessor.class);
 	@Override
 	public void processAnalyzers(AnalyzersBindings analyzersBindings) {
+		log.info("soul_index is added!");
 		analyzersBindings.processAnalyzer("soul_index",
 				SoulIndexAnalyzerProvider.class);
 		analyzersBindings.processAnalyzer("soul_query",
 				SoulQueryAnalyzerProvider.class);
+		log.info("soul_query is added!");
 		analyzersBindings.processAnalyzer("soul_pinyin",
 				PinyinAnalyzerProvider.class);
+		log.info("soul_pinyin is added!");
 		super.processAnalyzers(analyzersBindings);
 	}
 

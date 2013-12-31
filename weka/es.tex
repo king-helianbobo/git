@@ -356,12 +356,12 @@ TBLPROPERTIES('es.resource' = 'eshive/hive1/',
 );
 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
 \end{verbatim}
-\subsubsection{ElasticSearch查询分析}
-假如索引中有如下词组：[quick] [brown] [fox] [jump] [over] [lazy] [dog]，
+\subsubsection{ES查询分析}
+\par 假如索引中存在词组：[quick] [brown] [fox] [jump] [over] [lazy] [dog]。
 \paragraph{Prefix Query}
-当想搜索“qu”时，Prefix Query查询所有前缀为“qu”的Term，因此如果索引中拥有“quack”，“quote”和“quarter”等Term时，那么查询将匹配到这些Term，查询结果为\textbf{quick OR quack OR quote OR quarter}。如果索引中类似Term很多时，查询效率很差。而且Prefix Query不能匹配中间字符，如“ball”不能匹配“baseball”，虽然可以采用通配符的方式（Wildcard query），但伸缩能力有限。
+搜索“qu”时，Prefix Query查询所有前缀为“qu”的Term，因此如果索引中存在“quack”，“quote”和“quarter”等Term，那么查询将匹配到这些Term，查询结果为\textbf{quick OR quack OR quote OR quarter}。如果索引中存在很多类似Term时，查询效率很差。Prefix Query也不能匹配中间字符，如“ball”不能匹配“baseball”，虽然可以采用通配符（Wildcard query）进行功能修正，但伸缩能力十分有限。
 \paragraph{N-Grams}
-用户输入英文时能匹配到任意前缀，例如对[quick]建立索引，其Term应该为：[q]/[qu]/[qui]/[quic]/[quick]，这种Analyzer称为Edge NGram。还有一种Analyzer称为N-Grams，以“brown”这个单词为例，设置(minGram=1和maxGram=2)，N-Grams输出[b]/[r]/[o]/[w]/[n]/[br]/[ro]/[ow]/[wn]，而Edge NGram输出[b]/[br]，只有将maxGram设置为5，Edge NGram才能输出[b]/[br]/[bro]/[brow]/[brown]。具体使用哪种Analyzer，则依赖于具体场景，当用户输入own时，如果使用N-Grams，则能匹配到brown，而Edge NGram不能，针对document的不同域，应该设置不同的Analyzer，在网页document中，一般只对标题和关键词建立NGrams索引。例如定义了autocomplete这个analyzer，然后通过multi\_field在index的name域中添加了额外的autocomplete分析器。
+如果输入英文时想匹配到目标串[quick]的任意前缀，应该对[quick]进行转换，其Term序列为：[q]/[qu]/[qui]/[quic]/[quick]，这种Analyzer称为Edge NGram。还有一种Analyzer称为N-Grams（字符串P的N-Gram是P中长度为N的所有子串），以“brown”这个单词为例，设置(minGram=1和maxGram=2)，N-Grams输出[b]/[r]/[o]/[w]/[n]/[br]/[ro]/[ow]/[wn]，而Edge NGram输出[b]/[br]（将maxGram设置为5，Edge NGram能输出[b]/[br]/[bro]/[brow]/[brown]）。针对document的不同域，应该设置不同的Analyzer，在英文网页中，一般只对标题和关键词建立NGrams索引。下面定义了名为autocomplete的\textbf{Analyzer}，然后通过\textbf{multi\_field}关键字添加了额外的autocomplete分析器。
 \begin{verbatim}
 {
   "settings":{
@@ -395,25 +395,23 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
   }
 }
 \end{verbatim}
-\par 当搜索时，可以使用name来访问name域的默认版本，或者使用name.autocomplete来访问另外一个版本。
+\par 搜索时可使用name来访问name域的默认版本，或者使用name.autocomplete访问另外一个版本。
 \subsection{ElasticSearch源码分析}
-\begin{enumerate}[(1)]
-\item org.elasticsearch.rest.action，该目录负责接受，解释Rest请求。
-\item org.elasticsearch.client.node负责管理节点客户端请求。
-\item org.elasticsearch.action.admin.indices.*负责处理Rest请求中的动作。
-\item lasticsearch里面的组件基本都是用上面的方式进行模块化管理，elasticsearch对guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
+\par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
+\begin{multicols}{2}
+\begin{itemize}
 \item PluginsModule：插件模块
-\item SettingsModule：设置参数模块
-\item NodeModule：节点模块
-\item NetworkModule：网络模块
-\item NodeCacheModule：缓存模块
-\item ScriptModule：脚本模块
-\item JmxModule：jmx模块
+\item SettingsModule：参数设置模块
+\item NodeModule：节点管理模块
+\item NetworkModule：网络管理模块
+\item NodeCacheModule：分布式缓存模块
+\item ScriptModule：脚本处理模块
+\item JmxModule：Java管理扩展模块
 \item EnvironmentModule：环境模块
 \item NodeEnvironmentModule：节点环境模块
 \item ClusterNameModule：集群名模块
 \item ThreadPoolModule：线程池模块
-\item DiscoveryModule：自动发现模块
+\item DiscoveryModule：节点自动发现模块
 \item ClusterModule：集群模块
 \item RestModule：rest模块
 \item TransportModule：tcp模块
@@ -425,9 +423,15 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \item MonitorModule：监控模块
 \item GatewayModule：持久化模块
 \item NodeClientModule：客户端模块
-\end{enumerate}
+\end{itemize}
+\end{multicols}
 \begin{enumerate}[(1)]
 \item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class)，因此，请求将由TransportAnalyzeAction类处理，
 \item "/\{index\}/\_close"，只接受POST方法，在org/elasticsearch/rest/action/admin/indices/close/RestCloseIndexAction.java中被处理；
 \item  创建一个新的索引，json参数中包括settings和mappings（\textbf{注意并非endpoint中的\_mapping}），只有"/\{index\}"一种操作，接受POST和PUT两种方法，在org/elasticsearch/rest/action/admin/indices/create/RestCreateIndexAction.java中处理；
+\end{enumerate}
+\begin{enumerate}[(1)]
+\item org.elasticsearch.rest.action，该目录负责接受，解释Rest请求。
+\item org.elasticsearch.client.node负责管理节点客户端请求。
+\item org.elasticsearch.action.admin.indices.*负责处理Rest请求中的动作。
 \end{enumerate}

@@ -79,9 +79,8 @@ public class UserDefineRecognition {
 				} else {
 					tempNature = branch.getParams()[0];
 					tempFreq = ObjectBean.getInt(branch.getParams()[1], 50);
-					if (flag) {
+					if (flag)
 						makeNewTerm();
-					}
 				}
 			} else if (branch.getStatus() == 1) {
 				if (offe == -1) {

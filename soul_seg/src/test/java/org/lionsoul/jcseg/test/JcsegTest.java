@@ -110,7 +110,7 @@ public class JcsegTest {
 		// +
 		// "英文数字: bug report chenxin619315@gmail.com or visit http://code.google.com/p/jcseg, we all admire the hacker spirit!"
 		// + "特殊数字: ① ⑩ ⑽ ㈩.";
-		String str = "歧义和同义词:研究生命起源，硕士研究生产,济南商业银行,长春大学，，重庆，重量，大厦，厦门大学";
+		//String str = "歧义和同义词:研究生命起源，硕士研究生产,济南商业银行,长春大学，，重庆，重量，大厦，厦门大学";
 		// str = "本次“畅想杯黑客技术大赛”的冠军为“电信09-2BF”的陈鑫。奖励《算法导论》一书，加上『畅想网络PHP教程』一套";
 		// str = "我很喜欢陈述高的演讲。我很不喜欢陈述高调的样子。";
 		// str = "学习宣传林俊德同志的先进事迹";
@@ -118,6 +118,7 @@ public class JcsegTest {
 		// str = "c++编程思想,c#是.net平台的主要开发语言,b超。";
 		// str = "关于这个软件的盈利我们六四分之也就是我拿十分之六剩下的给你, 你觉得怎么样?";
 
+		String str = "关羽字云长，女红";
 		String cmd = null;
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
 				System.in));

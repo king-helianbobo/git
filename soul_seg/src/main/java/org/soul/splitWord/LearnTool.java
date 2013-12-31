@@ -20,47 +20,23 @@ import org.soul.treeSplit.SmartForest;
 
 public class LearnTool {
 
-	/**
-	 * 是否开启学习机
-	 */
 	public boolean isCompany = true;
 	public boolean isNewWord = true;
 	public boolean isAsianName = true;
 	public boolean isForeignName = true;
-
-	/**
-	 * 告诉大家你学习了多少个词了
-	 */
-	public int count;
-
-	/**
-	 * 新词发现的结果集.可以序列化到硬盘.然后可以当做训练集来做.
-	 */
+	public int count; // number of newWord we found
 	private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
 
-	/**
-	 * 公司名称学习.
-	 * 
-	 * @param graph
-	 */
 	public void learn(Graph graph) {
-
-		// 机构名识别
 		if (isCompany) {
 			findCompany(graph);
 		}
-
-		// 亚洲人名识别
 		if (isAsianName) {
 			findAsianPerson(graph);
 		}
-
-		// 外国人名识别
 		if (isForeignName) {
 			findForeignPerson(graph);
 		}
-
-		// 新词发现
 		if (isNewWord) {
 			newWordDetection(graph);
 		}
@@ -78,11 +54,6 @@ public class LearnTool {
 		addListToTerm(newWords);
 	}
 
-	/**
-	 * 公司名称查找
-	 * 
-	 * @param graph
-	 */
 	private void findCompany(Graph graph) {
 		List<NewWord> newWords = new CompanyRecogntion(graph.terms)
 				.getNewWords();

@@ -31,11 +31,11 @@ public class NlpAnalysis extends Analysis {
 		Merger merger = new Merger() {
 			@Override
 			public List<Term> merge() {
-				graph.walkPath(); // 获得最优路径
+				graph.walkPath(); // get optimal path
 				log.info(getResult());
-				// if (graph.hasNum)
-				// NumberRecognition.recognition(graph.terms);
-				// log.info(getResult());
+				if (graph.hasNum)
+					NumberRecognition.recognition(graph.terms);
+				log.info(getResult());
 
 				List<Term> result = getResult();
 				new NatureRecognition(result).recognition(); // 词性标注
