@@ -39,7 +39,6 @@ import org.apache.lucene.util.Version;
 public class SoulSpellCheck implements java.io.Closeable {
 
 	private static Log log = LogFactory.getLog(SoulSpellCheck.class);
-
 	public static final float DEFAULT_ACCURACY = 0.5f;
 	public static final String F_WORD = "word";
 	Directory spellIndex;
@@ -55,49 +54,15 @@ public class SoulSpellCheck implements java.io.Closeable {
 	private StringDistance sd;
 	private Comparator<SuggestWord> comparator;
 
-	/**
-	 * Use the given directory as a spell checker index. The directory is
-	 * created if it doesn't exist yet.
-	 * 
-	 * @param spellIndex
-	 *            the spell index directory
-	 * @param sd
-	 *            the {@link StringDistance} measurement to use
-	 * @throws IOException
-	 *             if SpellChecker can not open the directory
-	 */
 	public SoulSpellCheck(Directory spellIndex, StringDistance sd)
 			throws IOException {
 		this(spellIndex, sd, SuggestWordQueue.DEFAULT_COMPARATOR);
 	}
-	/**
-	 * Use the given directory as a spell checker index with a
-	 * {@link LevensteinDistance} as the default {@link StringDistance}. The
-	 * directory is created if it doesn't exist yet.
-	 * 
-	 * @param spellIndex
-	 *            the spell index directory
-	 * @throws IOException
-	 *             if spellchecker can not open the directory
-	 */
+
 	public SoulSpellCheck(Directory spellIndex) throws IOException {
 		this(spellIndex, new LevensteinDistance());
 	}
 
-	/**
-	 * Use the given directory as a spell checker index with the given
-	 * {@link org.apache.lucene.search.spell.StringDistance} measure and the
-	 * given {@link java.util.Comparator} for sorting the results.
-	 * 
-	 * @param spellIndex
-	 *            The spelling index
-	 * @param sd
-	 *            The distance
-	 * @param comparator
-	 *            The comparator
-	 * @throws IOException
-	 *             if there is a problem opening the index
-	 */
 	public SoulSpellCheck(Directory spellIndex, StringDistance sd,
 			Comparator<SuggestWord> comparator) throws IOException {
 		setSpellIndex(spellIndex);
@@ -132,146 +97,42 @@ public class SoulSpellCheck implements java.io.Closeable {
 		}
 	}
 
-	/**
-	 * Sets the {@link java.util.Comparator} for the {@link SuggestWordQueue}.
-	 * 
-	 * @param comparator
-	 *            the comparator
-	 */
 	public void setComparator(Comparator<SuggestWord> comparator) {
 		this.comparator = comparator;
 	}
 
-	/**
-	 * Gets the comparator in use for ranking suggestions.
-	 * 
-	 * @see #setComparator(Comparator)
-	 */
 	public Comparator<SuggestWord> getComparator() {
 		return comparator;
 	}
 
-	/**
-	 * Sets the {@link StringDistance} implementation for this
-	 * {@link SoulSpellCheck} instance.
-	 * 
-	 * @param sd
-	 *            the {@link StringDistance} implementation for this
-	 *            {@link SoulSpellCheck} instance
-	 */
 	public void setStringDistance(StringDistance sd) {
 		this.sd = sd;
 	}
-	/**
-	 * Returns the {@link StringDistance} instance used by this
-	 * {@link SoulSpellCheck} instance.
-	 * 
-	 * @return the {@link StringDistance} instance used by this
-	 *         {@link SoulSpellCheck} instance.
-	 */
+
 	public StringDistance getStringDistance() {
 		return sd;
 	}
 
-	/**
-	 * Sets the accuracy 0 &lt; minScore &lt; 1; default
-	 * {@link #DEFAULT_ACCURACY}
-	 * 
-	 * @param acc
-	 *            The new accuracy
-	 */
 	public void setAccuracy(float acc) {
 		this.accuracy = acc;
 	}
 
-	/**
-	 * The accuracy (minimum score) to be used, unless overridden in
-	 * {@link #suggestSimilar(String, int, IndexReader, String, SuggestMode, float)}
-	 * , to decide whether a suggestion is included or not.
-	 * 
-	 * @return The current accuracy setting
-	 */
 	public float getAccuracy() {
 		return accuracy;
 	}
 
-	/**
-	 * Suggest similar words.
-	 * 
-	 * <p>
-	 * As the Lucene similarity that is used to fetch the most relevant
-	 * n-grammed terms is not the same as the edit distance strategy used to
-	 * calculate the best matching spell-checked word from the hits that Lucene
-	 * found, one usually has to retrieve a couple of numSug's in order to get
-	 * the true best match.
-	 * 
-	 * <p>
-	 * I.e. if numSug == 1, don't count on that suggestion being the best one.
-	 * Thus, you should set this value to <b>at least</b> 5 for a good
-	 * suggestion.
-	 * 
-	 * @param word
-	 *            the word you want a spell check done on
-	 * @param numSug
-	 *            the number of suggested words
-	 * @throws IOException
-	 *             if the underlying index throws an {@link IOException}
-	 * @throws AlreadyClosedException
-	 *             if the Spellchecker is already closed
-	 * @return String[]
-	 * 
-	 * @see #suggestSimilar(String, int, IndexReader, String, SuggestMode,
-	 *      float)
-	 */
 	public String[] suggestSimilar(String word, int numSug) throws IOException {
 		return this.suggestSimilar(word, numSug, null, null,
 				SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
 	}
 
-	/**
-	 * Suggest similar words.
-	 * 
-	 * <p>
-	 * As the Lucene similarity that is used to fetch the most relevant
-	 * n-grammed terms is not the same as the edit distance strategy used to
-	 * calculate the best matching spell-checked word from the hits that Lucene
-	 * found, one usually has to retrieve a couple of numSug's in order to get
-	 * the true best match.
-	 * 
-	 * <p>
-	 * I.e. if numSug == 1, don't count on that suggestion being the best one.
-	 * Thus, you should set this value to <b>at least</b> 5 for a good
-	 * suggestion.
-	 * 
-	 * @param word
-	 *            the word you want a spell check done on
-	 * @param numSug
-	 *            the number of suggested words
-	 * @param accuracy
-	 *            The minimum score a suggestion must have in order to qualify
-	 *            for inclusion in the results
-	 * @throws IOException
-	 *             if the underlying index throws an {@link IOException}
-	 * @throws AlreadyClosedException
-	 *             if the Spellchecker is already closed
-	 * @return String[]
-	 * 
-	 * @see #suggestSimilar(String, int, IndexReader, String, SuggestMode,
-	 *      float)
-	 */
 	public String[] suggestSimilar(String word, int numSug, float accuracy)
 			throws IOException {
 		return this.suggestSimilar(word, numSug, null, null,
 				SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, accuracy);
 	}
 
-	/**
-	 * Calls
-	 * {@link #suggestSimilar(String, int, IndexReader, String, SuggestMode, float)
-	 * suggestSimilar(word, numSug, ir, suggestMode, field, this.accuracy)}
-	 * 
-	 */
-	public String[] suggestSimilar(String word, int numSug, IndexReader ir,
+	private String[] suggestSimilar(String word, int numSug, IndexReader ir,
 			String field, SuggestMode suggestMode) throws IOException {
 		return suggestSimilar(word, numSug, ir, field, suggestMode,
 				this.accuracy);
@@ -279,49 +140,10 @@ public class SoulSpellCheck implements java.io.Closeable {
 
 	/**
 	 * Suggest similar words (optionally restricted to a field of an index).
-	 * 
-	 * <p>
-	 * As the Lucene similarity that is used to fetch the most relevant
-	 * n-grammed terms is not the same as the edit distance strategy used to
-	 * calculate the best matching spell-checked word from the hits that Lucene
-	 * found, one usually has to retrieve a couple of numSug's in order to get
-	 * the true best match.
-	 * 
-	 * <p>
-	 * I.e. if numSug == 1, don't count on that suggestion being the best one.
-	 * Thus, you should set this value to <b>at least</b> 5 for a good
-	 * suggestion.
-	 * 
-	 * @param word
-	 *            the word you want a spell check done on
-	 * @param numSuggest
-	 *            the number of suggested words
-	 * @param ir
-	 *            the indexReader of the user index (can be null see field
-	 *            param)
-	 * @param field
-	 *            the field of the user index: if field is not null, the
-	 *            suggested words are restricted to the words present in this
-	 *            field.
-	 * @param suggestMode
-	 *            (NOTE: if indexReader==null and/or field==null, then this is
-	 *            overridden with SuggestMode.SUGGEST_ALWAYS)
-	 * @param accuracy
-	 *            The minimum score a suggestion must have in order to qualify
-	 *            for inclusion in the results
-	 * @throws IOException
-	 *             if the underlying index throws an {@link IOException}
-	 * @throws AlreadyClosedException
-	 *             if the Spellchecker is already closed
-	 * @return String[] the sorted list of the suggest words with these 2
-	 *         criteria: first criteria: the edit distance, second criteria
-	 *         (only if restricted mode): the popularity of the suggest words in
-	 *         the field of the user index
-	 * 
 	 */
-	public String[] suggestSimilar(String word, int numSuggest, IndexReader ir,
-			String field, SuggestMode suggestMode, float accuracy)
-			throws IOException {
+	private String[] suggestSimilar(String word, int numSuggest,
+			IndexReader ir, String field, SuggestMode suggestMode,
+			float accuracy) throws IOException {
 		// obtainSearcher calls ensureOpen
 		final IndexSearcher indexSearcher = obtainSearcher();
 		try {
@@ -334,7 +156,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 			}
 
 			final int lengthWord = word.length();
-
 			final int freq = (ir != null && field != null) ? ir
 					.docFreq(new Term(field, word)) : 0;
 			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR
@@ -352,21 +173,16 @@ public class SoulSpellCheck implements java.io.Closeable {
 			String key;
 
 			for (int ng = getMin(lengthWord); ng <= getMax(lengthWord); ng++) {
-
 				key = "gram" + ng; // form key
 				grams = formGrams(word, ng);
-
 				if (grams.length == 0) {
 					continue;
 				}
-
 				if (bStart > 0) { // should we boost prefixes?
 					add(query, "start" + ng, grams[0], bStart);
-
 				}
 				if (bEnd > 0) { // should we boost suffixes?
 					add(query, "end" + ng, grams[grams.length - 1], bEnd);
-
 				}
 				for (int i = 0; i < grams.length; i++) {
 					add(query, key, grams[i]);
@@ -374,17 +190,9 @@ public class SoulSpellCheck implements java.io.Closeable {
 			}
 
 			int maxHits = 10 * numSuggest;
-
-			// System.out.println("Q: " + query);
 			ScoreDoc[] hits = indexSearcher.search(query, null, maxHits).scoreDocs;
-			// System.out.println("HITS: " + hits.length());
 			SuggestWordQueue sugQueue = new SuggestWordQueue(numSuggest,
 					comparator);
-
-			for (int i = 0; i < hits.length; i++) {
-				Document targetDoc = indexSearcher.doc(hits[i].doc);
-
-			}
 
 			int stop = Math.min(hits.length, maxHits);
 			for (int i = 0; i < stop; i++) {
@@ -466,7 +274,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 	 * @throws IOException
 	 *             If there is a low-level I/O error.
 	 * @throws AlreadyClosedException
-	 *             if the Spellchecker is already closed
+	 *             if the SpellChecker is already closed
 	 */
 	public void clearIndex() throws IOException {
 		synchronized (modifyCurrentIndexLock) {
@@ -488,7 +296,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 	 * @throws IOException
 	 *             If there is a low-level I/O error.
 	 * @throws AlreadyClosedException
-	 *             if the Spellchecker is already closed
+	 *             if the SpellChecker is already closed
 	 * @return true if the word exists in the index
 	 */
 	public boolean exist(String word) throws IOException {
@@ -531,7 +339,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 				BytesRef currentTerm;
 
 				terms : while ((currentTerm = iter.next()) != null) {
-
 					String word = currentTerm.utf8ToString();
 					int len = word.length();
 					if (len < 3) {
@@ -546,7 +353,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 						}
 					}
 
-					// ok index the word
+					// now index word
 					Document doc = createDocument(word, getMin(len),
 							getMax(len));
 					writer.addDocument(doc);
@@ -559,13 +366,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 			}
 			// close writer
 			writer.close();
-			// TODO: this isn't that great, maybe in the future SpellChecker
-			// should take
-			// IWC in its ctor / keep its writer open?
-
-			// also re-open the spell index to see our own changes when the next
-			// suggestion
-			// is fetched:
 			swapSearcher(dir);
 		}
 	}
@@ -611,10 +411,9 @@ public class SoulSpellCheck implements java.io.Closeable {
 				FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
 				ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 				Field ngramField = new Field(key, gram, ft);
-				log.info("gram=" + gram + "/key=" + key);
-				// spellchecker does not use positional queries, but we want
-				// freqs
-				// for scoring these multivalued n-gram fields.
+				log.info("[gram=" + gram + ",key=" + key + "]");
+				// does not use positional queries, but we want use frequency
+				// for scoring these multi-valued n-gram fields.
 				doc.add(ngramField);
 				if (i == 0) {
 					// only one term possible in the startXXField, TF/pos and
@@ -625,7 +424,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 				}
 				end = gram;
 			}
-			if (end != null) { // may not be present if len==ng1
+			if (end != null) {
 				// only one term possible in the endXXField, TF/pos and norms
 				// aren't needed.
 				Field endField = new StringField("end" + ng, end,
