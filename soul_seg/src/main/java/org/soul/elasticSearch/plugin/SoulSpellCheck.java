@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -35,6 +37,8 @@ import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
 
 public class SoulSpellCheck implements java.io.Closeable {
+
+	private static Log log = LogFactory.getLog(SoulSpellCheck.class);
 
 	public static final float DEFAULT_ACCURACY = 0.5f;
 	public static final String F_WORD = "word";
@@ -290,7 +294,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 	 * 
 	 * @param word
 	 *            the word you want a spell check done on
-	 * @param numSug
+	 * @param numSuggest
 	 *            the number of suggested words
 	 * @param ir
 	 *            the indexReader of the user index (can be null see field
@@ -315,7 +319,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 	 *         the field of the user index
 	 * 
 	 */
-	public String[] suggestSimilar(String word, int numSug, IndexReader ir,
+	public String[] suggestSimilar(String word, int numSuggest, IndexReader ir,
 			String field, SuggestMode suggestMode, float accuracy)
 			throws IOException {
 		// obtainSearcher calls ensureOpen
@@ -350,24 +354,18 @@ public class SoulSpellCheck implements java.io.Closeable {
 			for (int ng = getMin(lengthWord); ng <= getMax(lengthWord); ng++) {
 
 				key = "gram" + ng; // form key
-
-				grams = formGrams(word, ng); // form word into ngrams (allow
-												// dups too)
+				grams = formGrams(word, ng);
 
 				if (grams.length == 0) {
-					continue; // hmm
+					continue;
 				}
 
 				if (bStart > 0) { // should we boost prefixes?
-					add(query, "start" + ng, grams[0], bStart); // matches start
-																// of word
+					add(query, "start" + ng, grams[0], bStart);
 
 				}
-				if (bEnd > 0) { // should we boost suffixes
-					add(query, "end" + ng, grams[grams.length - 1], bEnd); // matches
-																			// end
-																			// of
-																			// word
+				if (bEnd > 0) { // should we boost suffixes?
+					add(query, "end" + ng, grams[grams.length - 1], bEnd);
 
 				}
 				for (int i = 0; i < grams.length; i++) {
@@ -375,39 +373,36 @@ public class SoulSpellCheck implements java.io.Closeable {
 				}
 			}
 
-			int maxHits = 10 * numSug;
+			int maxHits = 10 * numSuggest;
 
 			// System.out.println("Q: " + query);
 			ScoreDoc[] hits = indexSearcher.search(query, null, maxHits).scoreDocs;
 			// System.out.println("HITS: " + hits.length());
-			SuggestWordQueue sugQueue = new SuggestWordQueue(numSug, comparator);
+			SuggestWordQueue sugQueue = new SuggestWordQueue(numSuggest,
+					comparator);
 
-			// go thru more than 'maxr' matches in case the distance filter
-			// triggers
+			for (int i = 0; i < hits.length; i++) {
+				Document targetDoc = indexSearcher.doc(hits[i].doc);
+
+			}
+
 			int stop = Math.min(hits.length, maxHits);
-			SuggestWord sugWord = new SuggestWord();
 			for (int i = 0; i < stop; i++) {
-
-				sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD); // get
-																				// orig
-																				// word
-
+				SuggestWord sugWord = new SuggestWord();
+				sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD);
 				// don't suggest a word for itself, that would be silly
 				if (sugWord.string.equals(word)) {
 					continue;
 				}
-
 				// edit distance
 				sugWord.score = sd.getDistance(word, sugWord.string);
+				log.info("score：" + sugWord.score + " string: "
+						+ sugWord.string + "/" + word);
 				if (sugWord.score < accuracy) {
 					continue;
 				}
-
 				if (ir != null && field != null) { // use the user index
-					sugWord.freq = ir.docFreq(new Term(field, sugWord.string)); // freq
-																				// in
-																				// the
-																				// index
+					sugWord.freq = ir.docFreq(new Term(field, sugWord.string));
 					// don't suggest a word that is not present in the field
 					if ((suggestMode == SuggestMode.SUGGEST_MORE_POPULAR && goalFreq > sugWord.freq)
 							|| sugWord.freq < 1) {
@@ -415,11 +410,10 @@ public class SoulSpellCheck implements java.io.Closeable {
 					}
 				}
 				sugQueue.insertWithOverflow(sugWord);
-				if (sugQueue.size() == numSug) {
+				if (sugQueue.size() == numSuggest) {
 					// if queue full, maintain the minScore score
 					accuracy = sugQueue.top().score;
 				}
-				sugWord = new SuggestWord();
 			}
 
 			// convert to array string
@@ -427,7 +421,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 			for (int i = sugQueue.size() - 1; i >= 0; i--) {
 				list[i] = sugQueue.pop().string;
 			}
-
 			return list;
 		} finally {
 			releaseSearcher(indexSearcher);
@@ -443,9 +436,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 		q.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
 	}
 
-	/**
-	 * Add a clause to a boolean query.
-	 */
 	private static void add(BooleanQuery q, String name, String value) {
 		q.add(new BooleanClause(new TermQuery(new Term(name, value)),
 				BooleanClause.Occur.SHOULD));
@@ -517,17 +507,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 
 	/**
 	 * Indexes the data from the given {@link Dictionary}.
-	 * 
-	 * @param dict
-	 *            Dictionary to index
-	 * @param config
-	 *            {@link IndexWriterConfig} to use
-	 * @param fullMerge
-	 *            whether or not the spellcheck index should be fully merged
-	 * @throws AlreadyClosedException
-	 *             if the Spellchecker is already closed
-	 * @throws IOException
-	 *             If there is a low-level I/O error.
 	 */
 	public final void indexDictionary(Dictionary dict,
 			IndexWriterConfig config, boolean fullMerge) throws IOException {
@@ -537,8 +516,8 @@ public class SoulSpellCheck implements java.io.Closeable {
 			final IndexWriter writer = new IndexWriter(dir, config);
 			IndexSearcher indexSearcher = obtainSearcher();
 			final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
-
 			final IndexReader reader = searcher.getIndexReader();
+			// get this index's reader
 			if (reader.maxDoc() > 0) {
 				for (final AtomicReaderContext ctx : reader.leaves()) {
 					Terms terms = ctx.reader().terms(F_WORD);
@@ -546,9 +525,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 						termsEnums.add(terms.iterator(null));
 				}
 			}
-
 			boolean isEmpty = termsEnums.isEmpty();
-
 			try {
 				BytesRefIterator iter = dict.getWordsIterator();
 				BytesRef currentTerm;
@@ -560,8 +537,8 @@ public class SoulSpellCheck implements java.io.Closeable {
 					if (len < 3) {
 						continue; // too short we bail but "too long" is fine...
 					}
-
 					if (!isEmpty) {
+						// log.info("termsEnums.length = " + termsEnums.size());
 						for (TermsEnum te : termsEnums) {
 							if (te.seekExact(currentTerm)) {
 								continue terms;
@@ -615,12 +592,11 @@ public class SoulSpellCheck implements java.io.Closeable {
 
 	private static Document createDocument(String text, int ng1, int ng2) {
 		Document doc = new Document();
-		// the word field is never queried on... its indexed so it can be
-		// quickly
-		// checked for rebuild (and stored for retrieval). Doesn't need norms or
-		// TF/pos
+		// word field is never queried on... its indexed so it can be
+		// quickly checked for rebuild (and stored for retrieval). Doesn't need
+		// norms or TF/position
 		Field f = new StringField(F_WORD, text, Field.Store.YES);
-		doc.add(f); // orig term
+		doc.add(f); // original term
 		addGram(text, doc, ng1, ng2);
 		return doc;
 	}
@@ -635,6 +611,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 				FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
 				ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 				Field ngramField = new Field(key, gram, ft);
+				log.info("gram=" + gram + "/key=" + key);
 				// spellchecker does not use positional queries, but we want
 				// freqs
 				// for scoring these multivalued n-gram fields.

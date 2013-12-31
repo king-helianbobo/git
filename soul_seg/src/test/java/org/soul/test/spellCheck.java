@@ -1,17 +1,12 @@
 package org.soul.test;
 
 import java.io.*;
-import java.util.Iterator;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.LuceneDictionary;
-import org.apache.lucene.search.spell.PlainTextDictionary;
+import org.apache.lucene.search.spell.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -21,7 +16,7 @@ import org.apache.lucene.util.Version;
 import org.soul.elasticSearch.plugin.SoulSpellCheck;
 
 public class spellCheck {
-
+	private static Log log = LogFactory.getLog(spellCheck.class);
 	private SoulSpellCheck spellChecker = null;
 
 	public spellCheck(String dictionary) {
@@ -43,9 +38,7 @@ public class spellCheck {
 		Directory directory;
 		try {
 			directory = FSDirectory.open(new File(spellCheckIndexPath));
-
 			spellChecker = new SoulSpellCheck(directory);
-
 			IndexWriterConfig config = new IndexWriterConfig(
 					Version.LUCENE_CURRENT, null);
 			config.setOpenMode(OpenMode.CREATE_OR_APPEND); // set open mode
@@ -93,27 +86,29 @@ public class spellCheck {
 
 	public static void main(String[] args) {
 
-		String spellIndexPath = "/mnt/f/tmp/lucene-5";
+		// String spellIndexPath = "/mnt/f/tmp/lucene-5";
 		String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
 		scanDictionary(dictionaryPath);
-		// spellCheck checker = new spellCheck(spellIndexPath, idcFilePath);
+		// spellCheck checker = new spellCheck(spellIndexPath, dictionaryPath);
 		spellCheck checker = new spellCheck(dictionaryPath);
 		checker.setAccuracy(0.5f);
 		int suggestionsNumber = 15;
-		String queryString = "麻辣将";
-		// try {
-		// indexer.createSpellIndex(spellIndexPath, idcFilePath);
-		// indexer.createSpellIndex(oriIndexPath, fieldName, spellIndexPath);
-		// } catch (IOException e) {
-		// e.printStackTrace();
-		// }
-		String[] result = checker.search(queryString, suggestionsNumber);
-		if (result == null || result.length == 0) {
-			System.out.println("I don't know what you said!");
-		} else {
-			System.out.println("Did you mean: ");
-			for (int i = 0; i < result.length; i++) {
-				System.out.println(result[i]);
+		// String queryString = "麻辣将";
+
+		String[] queStrs = {"麻辣将", "关羽", "关羽字云", "羽字云", "羽字云长河"};
+		for (String str : queStrs) {
+			String[] result = checker.search(str, suggestionsNumber);
+			if (result == null || result.length == 0) {
+				log.info("I don't know what you said: " + str);
+			} else {
+				StringBuilder builder = new StringBuilder();
+				for (int i = 0; i < result.length; i++) {
+					if (i != (result.length - 1))
+						builder.append(result[i] + "/");
+					else
+						builder.append(result[i]);
+				}
+				log.info("Did you mean: " + builder.toString());
 			}
 		}
 	}
