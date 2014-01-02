@@ -179,7 +179,6 @@ public class Word implements IWord {
 		StringBuilder sb = new StringBuilder();
 		sb.append(value);
 		sb.append('/');
-		// append the cx
 		if (partspeech != null) {
 			for (int j = 0; j < partspeech.length; j++) {
 				if (j == 0)
@@ -194,7 +193,6 @@ public class Word implements IWord {
 		sb.append('/');
 		sb.append(pinyin);
 		sb.append('/');
-		// append the tyc
 		if (syn != null) {
 			for (int j = 0; j < syn.length; j++) {
 				if (j == 0)

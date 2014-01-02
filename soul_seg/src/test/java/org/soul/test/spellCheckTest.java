@@ -13,20 +13,20 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
-import org.soul.elasticSearch.plugin.SoulSpellCheck;
+import org.soul.elasticSearch.plugin.SoulSpellChecker;
 
-public class spellCheck {
-	private static Log log = LogFactory.getLog(spellCheck.class);
-	private SoulSpellCheck spellChecker = null;
+public class spellCheckTest {
+	private static Log log = LogFactory.getLog(spellCheckTest.class);
+	private SoulSpellChecker spellChecker = null;
 
-	public spellCheck(String dictionary) {
+	public spellCheckTest(String dictionary) {
 		Directory directory = null;
 		try {
 			directory = new RAMDirectory(); // use ram directory
 			IndexWriterConfig iwConfig = new IndexWriterConfig(
 					Version.LUCENE_CURRENT, null);
 			iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND); // set open mode
-			spellChecker = new SoulSpellCheck(directory);
+			spellChecker = new SoulSpellChecker(directory);
 			spellChecker.indexDictionary(new PlainTextDictionary(new File(
 					dictionary)), iwConfig, false);
 		} catch (IOException e) {
@@ -34,11 +34,11 @@ public class spellCheck {
 		}
 	}
 
-	public spellCheck(String spellCheckIndexPath, String dicPath) {
+	public spellCheckTest(String spellCheckIndexPath, String dicPath) {
 		Directory directory;
 		try {
 			directory = FSDirectory.open(new File(spellCheckIndexPath));
-			spellChecker = new SoulSpellCheck(directory);
+			spellChecker = new SoulSpellChecker(directory);
 			IndexWriterConfig config = new IndexWriterConfig(
 					Version.LUCENE_CURRENT, null);
 			config.setOpenMode(OpenMode.CREATE_OR_APPEND); // set open mode
@@ -51,15 +51,18 @@ public class spellCheck {
 
 	static void scanDictionary(String dicPath) {
 		try {
+			// Dictionary dict1 = new LuceneDictionary(null, dicPath);
 			Dictionary dict = new PlainTextDictionary(new File(dicPath));
 			BytesRefIterator iter = dict.getWordsIterator();
 			BytesRef currentTerm;
 			while ((currentTerm = iter.next()) != null) {
 				String word = currentTerm.utf8ToString();
 				int len = word.length();
-				System.out.println("word = " + word.length() + "," + word);
-				if (len < 3) {
-					continue; // too short we bail but "too long" is fine...
+				if (!word.equals("")) {
+					log.info("word = " + word.length() + "," + word);
+					if (len < 3) {
+						continue; // too short we bail but "too long" is fine...
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -90,12 +93,12 @@ public class spellCheck {
 		String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
 		scanDictionary(dictionaryPath);
 		// spellCheck checker = new spellCheck(spellIndexPath, dictionaryPath);
-		spellCheck checker = new spellCheck(dictionaryPath);
-		checker.setAccuracy(0.5f);
+		spellCheckTest checker = new spellCheckTest(dictionaryPath);
+		checker.setAccuracy(0.9f);
 		int suggestionsNumber = 15;
 		// String queryString = "麻辣将";
-
-		String[] queStrs = { "麻辣将", "种植呵大", "关羽字云长", "麻辣ji翅" };
+		// String[] queStrs = {"麻la将", "种植呵大", "关羽字云长", "麻辣ji翅"};
+		String[] queStrs = {"中文测试"};
 		for (String str : queStrs) {
 			String[] result = checker.search(str, suggestionsNumber);
 			if (result == null || result.length == 0) {

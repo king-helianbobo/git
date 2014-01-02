@@ -29,7 +29,7 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 		this.settings = settings;
 
 		// Check if the plugin is newer than elasticsearch
-		// First failure, if the versions dont match
+		// First failure, if the versions don't match
 		// Second failure: if the Version specified in before() does not yet
 		// exist, therefore catching Throwable
 		try {

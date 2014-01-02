@@ -15,11 +15,10 @@ public class JcsegTaskConfig {
 	/** jar home directory. */
 	public static String JAR_HOME = null;
 	/** default lexicon property file name */
-	public static final String LEX_PROPERTY_FILE = "library.properties";
+	public static final String PROPERTY_FILE = "library.properties";
 	/** simple algorithm or complex algorithm */
 	public static final int SIMPLE_MODE = 1;
 	public static final int COMPLEX_MODE = 2;
-
 	/** maximum length for maximum match(5-7) */
 	public int MAX_LENGTH = 5;
 
@@ -36,22 +35,15 @@ public class JcsegTaskConfig {
 	/** the max length for the adron of the chinese last name.like 老陈 “老” */
 	public int MAX_CN_LNADRON = 1;
 
-	/** whether to load the pinyin of the CJK_WORDS */
-	public boolean LOAD_CJK_PINYIN = false;
-
-	/** append the pinyin to the splited IWord */
-	public boolean APPEND_CJK_PINYIN = false;
-
 	/** append the part of speech. */
 	public boolean APPEND_PART_OF_SPEECH = false;
 
-	/** wether to load the syn word of the CJK_WORDS. */
-	public boolean LOAD_CJK_SYN = false;
+	public boolean LOAD_CJK_PINYIN = true;// whether to load pinyin
+	public boolean APPEND_CJK_PINYIN = false;// append pinyin to the split IWord
+	public boolean LOAD_CJK_SYN = true;// whether to load the syn words
+	public boolean APPEND_CJK_SYN = false;// append syn words to the split IWord
 
-	/** append the syn word to the splited IWord. */
-	public boolean APPEND_CJK_SYN = true;
-
-	/** wether to load the word's part of speech */
+	/** whether to load the word's part of speech */
 	public boolean LOAD_CJK_POS = false;
 
 	/**
@@ -131,14 +123,14 @@ public class JcsegTaskConfig {
 			 * Library.properties from the user.home
 			 */
 			boolean jcseg_properties = false;
-			File pro_file = new File(JAR_HOME + "/" + LEX_PROPERTY_FILE);
+			File pro_file = new File(JAR_HOME + "/" + PROPERTY_FILE);
 			if (pro_file.exists()) {
 				lexPro.load(new FileReader(pro_file));
 				jcseg_properties = true;
 			}
 			if (!jcseg_properties) {
 				InputStream is = DictionaryFactory.class
-						.getResourceAsStream("/" + LEX_PROPERTY_FILE);
+						.getResourceAsStream("/" + PROPERTY_FILE);
 				if (is != null) {
 					lexPro.load(new BufferedInputStream(is));
 					jcseg_properties = true;
@@ -146,7 +138,7 @@ public class JcsegTaskConfig {
 			}
 			if (!jcseg_properties) {
 				pro_file = new File(System.getProperty("user.home") + "/"
-						+ LEX_PROPERTY_FILE);
+						+ PROPERTY_FILE);
 				if (pro_file.exists()) {
 					lexPro.load(new FileReader(pro_file));
 					jcseg_properties = true;

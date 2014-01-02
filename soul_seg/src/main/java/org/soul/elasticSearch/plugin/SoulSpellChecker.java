@@ -37,12 +37,13 @@ import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
 import org.soul.elasticSearch.pinyin.JcSegment;
 
-public class SoulSpellCheck implements java.io.Closeable {
+public class SoulSpellChecker implements java.io.Closeable {
 
-	private static Log log = LogFactory.getLog(SoulSpellCheck.class);
+	private static Log log = LogFactory.getLog(SoulSpellChecker.class);
 	private static JcSegment jcSeg = new JcSegment();
 	public static final float DEFAULT_ACCURACY = 0.5f;
 	public static final String F_WORD = "word";
+	public static final String F_PINYIN = "soulPinyin";
 	Directory spellIndex;
 	private float bStart = 2.0f; // boost value for start
 	private float bEnd = 1.0f; // boost value for end
@@ -56,16 +57,16 @@ public class SoulSpellCheck implements java.io.Closeable {
 	private StringDistance sd;
 	private Comparator<SuggestWord> comparator;
 
-	public SoulSpellCheck(Directory spellIndex, StringDistance sd)
+	public SoulSpellChecker(Directory spellIndex, StringDistance sd)
 			throws IOException {
 		this(spellIndex, sd, SuggestWordQueue.DEFAULT_COMPARATOR);
 	}
 
-	public SoulSpellCheck(Directory spellIndex) throws IOException {
+	public SoulSpellChecker(Directory spellIndex) throws IOException {
 		this(spellIndex, new LevensteinDistance());
 	}
 
-	public SoulSpellCheck(Directory spellIndex, StringDistance sd,
+	public SoulSpellChecker(Directory spellIndex, StringDistance sd,
 			Comparator<SuggestWord> comparator) throws IOException {
 		setSpellIndex(spellIndex);
 		setStringDistance(sd);
@@ -160,13 +161,14 @@ public class SoulSpellCheck implements java.io.Closeable {
 			// final int lengthWord = word.length();
 			final int freq = (ir != null && field != null) ? ir
 					.docFreq(new Term(field, word)) : 0;
-			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR ? freq
+			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR
+					? freq
 					: 0;
 			// if the word exists in the real index and we don't care for word
 			// frequency, return the word itself
 			if (suggestMode == SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX
 					&& freq > 0) {
-				return new String[] { word };
+				return new String[]{word};
 			}
 
 			BooleanQuery query = new BooleanQuery();
@@ -174,6 +176,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 			String key;
 			String pinyin = jcSeg.convertToPinyin(word);
 			int len = pinyin.length();
+
 			for (int ng = getPinyinMin(len); ng <= getPinyinMax(len); ng++) {
 				key = "pinyinGram" + ng; // form key
 				grams = formGrams(pinyin, ng);
@@ -186,7 +189,6 @@ public class SoulSpellCheck implements java.io.Closeable {
 				}
 				if (bEnd > 0) { // should we boost suffixes?
 					add(query, "pinyinEnd" + ng, grams[grams.length - 1], bEnd);
-					log.info(grams[grams.length - 1]);
 				}
 				for (int i = 0; i < grams.length; i++) {
 					add(query, key, grams[i]);
@@ -209,7 +211,8 @@ public class SoulSpellCheck implements java.io.Closeable {
 					add(query, key, grams[i]);
 				}
 			}
-
+			log.info("suggest phrase: [word = " + word + "/pinyin=" + pinyin
+					+ "]");
 			int maxHits = 10 * numSuggest;
 			ScoreDoc[] hits = indexSearcher.search(query, null, maxHits).scoreDocs;
 			SuggestWordQueue sugQueue = new SuggestWordQueue(numSuggest,
@@ -219,18 +222,18 @@ public class SoulSpellCheck implements java.io.Closeable {
 			for (int i = 0; i < stop; i++) {
 				SuggestWord sugWord = new SuggestWord();
 				sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD);
-				String strPinyin = indexSearcher.doc(hits[i].doc).get("pinyin");
+				String originalPinyin = indexSearcher.doc(hits[i].doc).get(
+						F_PINYIN);
 				// don't suggest a word for itself, that would be silly
 				if (sugWord.string.equals(word)) {
 					continue;
 				}
 				// edit distance
 				sugWord.score = sd.getDistance(word, sugWord.string);
-				float score = sd.getDistance(pinyin, strPinyin);
+				float score = sd.getDistance(pinyin, originalPinyin);
 				sugWord.score = Math.max(sugWord.score, score);
-				log.info("score：" + sugWord.score + " string: "
-						+ sugWord.string + "/" + word + "/pinyinString = "
-						+ strPinyin);
+				log.info("score：" + sugWord.score + " [" + sugWord.string + "/"
+						+ originalPinyin + "] [" + word + "/" + pinyin + "]");
 				if (sugWord.score < accuracy) {
 					continue;
 				}
@@ -354,21 +357,26 @@ public class SoulSpellCheck implements java.io.Closeable {
 				BytesRefIterator iter = dict.getWordsIterator();
 				BytesRef currentTerm;
 
-				terms: while ((currentTerm = iter.next()) != null) {
+				terms : while ((currentTerm = iter.next()) != null) {
 					String word = currentTerm.utf8ToString();
 					if ((word == null) || (word.equals("null"))
 							|| (word.equals("")))
 						continue;
 					// int len = word.length();
+
 					String pinyin = jcSeg.convertToPinyin(word);
 					int len = pinyin.length();
-					log.info("word =" + word + ",pinyin =" + pinyin);
+					log.info("index-phrase: [word = " + word + "/pinyin ="
+							+ pinyin + "]");
+
 					if (len < 2) {
-						continue; // too short we bail but "too long" is fine...
+						continue; // too short we bail but "too long" is
+									// fine...
 					}
 
 					if (!isEmpty) {
-						// log.info("termsEnums.length = " + termsEnums.size());
+						// log.info("termsEnums.length = " +
+						// termsEnums.size());
 						for (TermsEnum te : termsEnums) {
 							if (te.seekExact(currentTerm)) {
 								continue terms;
@@ -379,6 +387,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 					Document doc = createDocument(word, 2, 3, pinyin,
 							getPinyinMin(len), getPinyinMax(len));
 					writer.addDocument(doc);
+
 				}
 			} finally {
 				releaseSearcher(indexSearcher);
@@ -420,7 +429,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 		// norms or TF/position
 		Field f = new StringField(F_WORD, text, Field.Store.YES);
 		doc.add(f); // original term
-		f = new StringField("pinyin", pinyin, Field.Store.YES);
+		f = new StringField(F_PINYIN, pinyin, Field.Store.YES);
 		doc.add(f); // add pinyin form
 		addGram(text, doc, ng1, ng2, "chinese");
 		addGram(pinyin, doc, pinyin_ng1, pinyin_ng2, "pinyin");
@@ -438,7 +447,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 				FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
 				ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 				Field ngramField = new Field(key, gram, ft);
-				log.info("key=" + key + ",gram=" + gram + "]");
+				// log.info("key=" + key + ",gram=" + gram + "]");
 				// does not use positional queries, but we want use frequency
 				// for scoring these multi-valued n-gram fields.
 				doc.add(ngramField);
@@ -488,7 +497,7 @@ public class SoulSpellCheck implements java.io.Closeable {
 	 * @throws IOException
 	 *             if the close operation causes an {@link IOException}
 	 * @throws AlreadyClosedException
-	 *             if the {@link SoulSpellCheck} is already closed
+	 *             if the {@link SoulSpellChecker} is already closed
 	 */
 	@Override
 	public void close() throws IOException {
@@ -538,10 +547,10 @@ public class SoulSpellCheck implements java.io.Closeable {
 	}
 
 	/**
-	 * Returns <code>true</code> if and only if the {@link SoulSpellCheck} is
+	 * Returns <code>true</code> if and only if the {@link SoulSpellChecker} is
 	 * closed, otherwise <code>false</code>.
 	 * 
-	 * @return <code>true</code> if and only if the {@link SoulSpellCheck} is
+	 * @return <code>true</code> if and only if the {@link SoulSpellChecker} is
 	 *         closed, otherwise <code>false</code>.
 	 */
 	boolean isClosed() {

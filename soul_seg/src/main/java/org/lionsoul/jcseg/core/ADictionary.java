@@ -277,7 +277,6 @@ public abstract class ADictionary {
 
 		InputStreamReader ir = null;
 		BufferedReader br = null;
-
 		try {// read dictionary file
 			ir = new InputStreamReader(new FileInputStream(file), charset);
 			br = new BufferedReader(ir);

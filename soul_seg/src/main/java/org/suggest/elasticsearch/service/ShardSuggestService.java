@@ -5,7 +5,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
+import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
@@ -39,6 +41,7 @@ import org.elasticsearch.index.shard.IndexShardState;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
+import org.soul.elasticSearch.plugin.SoulSpellChecker;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshRequest;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshResponse;
 import org.suggest.elasticsearch.action.statistics.FstStats;
@@ -46,6 +49,7 @@ import org.suggest.elasticsearch.action.statistics.ShardSuggestStatisticsRespons
 import org.suggest.elasticsearch.action.suggest.ShardSuggestRequest;
 import org.suggest.elasticsearch.action.suggest.ShardSuggestResponse;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
@@ -62,7 +66,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 	private final LoadingCache<FieldType, AnalyzingSuggester> analyzingSuggesterCache;
 	private final LoadingCache<FieldType, FuzzySuggester> fuzzySuggesterCache;
 	private final LoadingCache<String, HighFrequencyDictionary> dictCache;
-	private final LoadingCache<String, SpellChecker> spellCheckerCache;
+	private final LoadingCache<String, SoulSpellChecker> spellCheckerCache;
 	private final LoadingCache<String, RAMDirectory> ramDirectoryCache;
 
 	@Inject
@@ -86,26 +90,50 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 					@Override
 					public HighFrequencyDictionary load(String field)
 							throws Exception {
+						// return new HighFrequencyDictionary(
+						// createOrGetIndexReader(), field, 0.00001f);
 						return new HighFrequencyDictionary(
-								createOrGetIndexReader(), field, 0.00001f);
+								createOrGetIndexReader(), field, 0); // at least
+																		// once
 					}
 				});
 
 		spellCheckerCache = CacheBuilder.newBuilder().build(
-				new CacheLoader<String, SpellChecker>() {
+				new CacheLoader<String, SoulSpellChecker>() {
 					@Override
-					public SpellChecker load(String field) throws Exception {
-						SpellChecker spellChecker = new SpellChecker(
+					public SoulSpellChecker load(String field) throws Exception {
+						// String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
+						// log.info("filed = " + field + "/dicPath= "
+						// + dictionaryPath);
+						SoulSpellChecker spellChecker = new SoulSpellChecker(
 								ramDirectoryCache.get(field));
-						IndexWriterConfig indexWriterConfig = new IndexWriterConfig(
-								Version.LUCENE_46, new WhitespaceAnalyzer(
-										Version.LUCENE_46));
+
+						IndexWriterConfig config = new IndexWriterConfig(
+								Version.LUCENE_CURRENT, null);
+						config.setOpenMode(OpenMode.CREATE_OR_APPEND);
 						spellChecker.indexDictionary(
-								dictCache.getUnchecked(field),
-								indexWriterConfig, false);
+								dictCache.getUnchecked(field), config, false);
+						// spellChecker.indexDictionary(new PlainTextDictionary(
+						// new File(dictionaryPath)), config, false);
 						return spellChecker;
 					}
 				});
+
+		// spellCheckerCache = CacheBuilder.newBuilder().build(
+		// new CacheLoader<String, SpellChecker>() {
+		// @Override
+		// public SpellChecker load(String field) throws Exception {
+		// SpellChecker spellChecker = new SpellChecker(
+		// ramDirectoryCache.get(field));
+		// IndexWriterConfig indexWriterConfig = new IndexWriterConfig(
+		// Version.LUCENE_46, new WhitespaceAnalyzer(
+		// Version.LUCENE_46));
+		// spellChecker.indexDictionary(
+		// dictCache.getUnchecked(field),
+		// indexWriterConfig, false);
+		// return spellChecker;
+		// }
+		// });
 
 		lookupCache = CacheBuilder.newBuilder().build(
 				new CacheLoader<String, FSTCompletionLookup>() {
@@ -126,7 +154,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 				new AbstractCacheLoaderSuggester.CacheLoaderFuzzySuggester(
 						mapperService, analysisService, dictCache));
 	}
-
 	public ShardSuggestRefreshResponse refresh(
 			ShardSuggestRefreshRequest shardSuggestRefreshRequest) {
 		String field = shardSuggestRefreshRequest.field();
@@ -145,7 +172,8 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 				ramDirectoryCache.invalidate(field);
 			}
 
-			SpellChecker spellChecker = spellCheckerCache.getIfPresent(field);
+			SoulSpellChecker spellChecker = spellCheckerCache
+					.getIfPresent(field);
 			if (spellChecker != null) {
 				spellCheckerCache.refresh(field);
 				try {
@@ -183,8 +211,8 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 	public void shutDown() {
 		resetIndexReader();
 		dictCache.invalidateAll();
-		for (Map.Entry<String, SpellChecker> entry : spellCheckerCache.asMap()
-				.entrySet()) {
+		for (Map.Entry<String, SoulSpellChecker> entry : spellCheckerCache
+				.asMap().entrySet()) {
 			try {
 				ramDirectoryCache.getUnchecked(entry.getKey()).close();
 				entry.getValue().close();
@@ -210,7 +238,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 
 		try {
 			for (String field : spellCheckerCache.asMap().keySet()) {
-				SpellChecker oldSpellchecker = spellCheckerCache
+				SoulSpellChecker oldSpellchecker = spellCheckerCache
 						.getUnchecked(field);
 				RAMDirectory oldRamDirectory = ramDirectoryCache
 						.getUnchecked(field);
@@ -254,6 +282,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		try {
 			String[] suggestSimilar = spellCheckerCache.getUnchecked(field)
 					.suggestSimilar(term, limit, similarity);
+
 			return Arrays.asList(suggestSimilar);
 		} catch (IOException e) {
 			logger.error(
@@ -271,9 +300,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			// full represent what?
 			AnalyzingSuggester analyzingSuggester = analyzingSuggesterCache
 					.getUnchecked(new FieldType(shardSuggestRequest));
-			
-			log.info(shardSuggestRequest.term());
-
 			lookupResults.addAll(analyzingSuggester.lookup(
 					shardSuggestRequest.term(), false,
 					shardSuggestRequest.size()));
@@ -286,17 +312,16 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 					shardSuggestRequest.size()));
 
 		} else {
-			lookupResults.addAll(lookupCache.getUnchecked(
-					shardSuggestRequest.field()).lookup(
-					shardSuggestRequest.term(), true,
-					shardSuggestRequest.size() + 1));
-			Collection<String> suggestions = Collections2.transform(
-					lookupResults, new LookupResultToStringFunction());
-
+			// lookupResults.addAll(lookupCache.getUnchecked(
+			// shardSuggestRequest.field()).lookup(
+			// shardSuggestRequest.term(), true,
+			// shardSuggestRequest.size() + 1));
+			// Collection<String> suggestions = Collections2.transform(
+			// lookupResults, new LookupResultToStringFunction());
+			Collection<String> suggestions = new ArrayList<String>();
 			float similarity = shardSuggestRequest.similarity();
-			if (similarity < 1.0f
-					&& suggestions.size() < shardSuggestRequest.size()) {
-				suggestions = Lists.newArrayList(suggestions);
+
+			if (similarity <= 1.0f) {
 				suggestions.addAll(getSimilarSuggestions(shardSuggestRequest));
 			}
 
@@ -307,8 +332,9 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 				new LookupResultToStringFunction());
 	}
 
-	private class LookupResultToStringFunction implements
-			Function<LookupResult, String> {
+	private class LookupResultToStringFunction
+			implements
+				Function<LookupResult, String> {
 		@Override
 		public String apply(LookupResult result) {
 			return result.key.toString();
@@ -380,7 +406,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 							.acquireSearcher();
 					indexReader = indexSearcher.reader();
 					indexSearcher.release();
-
 					// If an indexreader closes, we have to refresh all our data
 					// structures!
 					indexReader
@@ -401,8 +426,11 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		return indexReader;
 	}
 
-	public static class FieldType implements Streamable, Serializable,
-			ToXContent {
+	public static class FieldType
+			implements
+				Streamable,
+				Serializable,
+				ToXContent {
 
 		private String field;
 		private List<String> types = Lists.newArrayList();
@@ -427,7 +455,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		}
 
 		public String[] types() {
-			return types.toArray(new String[] {});
+			return types.toArray(new String[]{});
 		}
 
 		public String queryAnalyzer() {

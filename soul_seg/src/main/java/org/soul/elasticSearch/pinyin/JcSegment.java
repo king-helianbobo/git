@@ -16,9 +16,9 @@ import org.lionsoul.jcseg.core.SegmentFactory;
 import org.lionsoul.jcseg.util.IStringBuffer;
 
 public class JcSegment {
-	private ISegment seg = null;
-	private static Log log = LogFactory.getLog(JcSegment.class);
 
+	private static Log log = LogFactory.getLog(JcSegment.class);
+	private ISegment seg = null;
 	// private static final ISegment seg = (ISegment) new JcSegment();
 
 	public JcSegment() {
@@ -26,7 +26,7 @@ public class JcSegment {
 		ADictionary dic = DictionaryFactory.createDefaultDictionary(config);
 		try {
 			seg = SegmentFactory.createJcseg(JcsegTaskConfig.COMPLEX_MODE,
-					new Object[] { config, dic });
+					new Object[]{config, dic});
 		} catch (JcsegException e) {
 			e.printStackTrace();
 		}
@@ -35,37 +35,48 @@ public class JcSegment {
 
 	// turn Chinese chars to pinyin
 	public String convertToPinyin(String text) throws IOException {
-
 		Reader reader = new StringReader(text);
 		return convertToPinyin(reader);
 	}
 
+	/**
+	 * convert Chinese characters to pinyin
+	 * 
+	 * @author LiuBo
+	 * @since 2014-1-2
+	 * @param reader
+	 * @return
+	 * @throws IOException
+	 *             String
+	 */
 	public String convertToPinyin(Reader reader) throws IOException {
-		StringBuffer sb = new StringBuffer();
-		IStringBuffer isb = new IStringBuffer();
-		IWord word = null;
-		boolean isFirst = true;
-		seg.reset(reader);
-		while ((word = seg.next()) != null) {
-			String pinyin = word.getPinyin();
-			log.info("拼音 = " + pinyin + ", 分词 = " + word.getValue());
-			if ((pinyin == null) || (pinyin.equals("null"))) {
-				// add another check ,assure pinyin is not null
-				pinyin = PinyinHelper.convertToPinyinString(word.getValue(),
-						"", PinyinFormat.WITHOUT_TONE);
-			}
-			if (isFirst) {
+		synchronized (this) {
+			StringBuffer sb = new StringBuffer();
+			IStringBuffer isb = new IStringBuffer();
+			IWord word = null;
+			seg.reset(reader);
+			while ((word = seg.next()) != null) {
+				String pinyin = word.getPinyin();
+				String origWord = word.getValue();
+				if (origWord.length() == 1) {
+					pinyin = PinyinHelper.convertToPinyinArray(
+							origWord.charAt(0), PinyinFormat.WITHOUT_TONE)[0];
+				}
+				if ((pinyin == null) || (pinyin.equals("null"))) {
+					// add another check ,assure pinyin String not null
+					pinyin = PinyinHelper.convertToPinyinString(
+							word.getValue(), "", PinyinFormat.WITHOUT_TONE);
+				}
+				log.info("拼音 = " + pinyin + ", 分词 = " + origWord);
 				sb.append(pinyin);
-				isFirst = false;
-			} else {
-				sb.append(pinyin);
+				word = null;
 			}
-			word = null;
+			String[] strs = sb.toString().split(" ");
+			for (String str : strs) {
+				if (!str.equals(""))
+					isb.append(str);
+			}
+			return isb.toString();
 		}
-		String[] strs = sb.toString().split(" ");
-		for (String str : strs) {
-			isb.append(str);
-		}
-		return isb.toString();
 	}
 }
