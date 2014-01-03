@@ -29,12 +29,12 @@ import static org.elasticsearch.rest.action.support.RestActions.buildBroadcastSh
 
 public class RestSuggestAction extends BaseRestHandler {
 
-	private static Log log = LogFactory.getLog(RestSuggestAction.class);
+	// private static Log log = LogFactory.getLog(RestSuggestAction.class);
 
 	@Inject
 	public RestSuggestAction(Settings settings, Client client,
 			RestController controller) {
-		// here ,we accept GET and post method
+		// we accept GET and post method
 		super(settings, client);
 		controller.registerHandler(GET, "/{index}/__suggest", this);
 		controller.registerHandler(GET, "/{index}/{type}/__suggest", this);
@@ -47,7 +47,6 @@ public class RestSuggestAction extends BaseRestHandler {
 			final RestChannel channel) {
 		final String[] indices = Strings.splitStringByCommaToArray(request
 				.param("index"));
-		log.info("index list = " + indices);
 		try {
 			Map<String, Object> parserMap = null;
 			if (request.hasContent()) {
@@ -56,7 +55,6 @@ public class RestSuggestAction extends BaseRestHandler {
 				parserMap = parser.mapAndClose();
 			} else if (request.hasParam("source")) {
 				String source = request.param("source");
-				log.info("source = " + source);
 				XContentParser parser = XContentFactory.xContent(source)
 						.createParser(source);
 				parserMap = parser.mapAndClose();
@@ -69,15 +67,9 @@ public class RestSuggestAction extends BaseRestHandler {
 			suggestRequest.field(XContentMapValues.nodeStringValue(
 					parserMap.get("field"), "")); // get field
 
-			log.info("field= "
-					+ XContentMapValues.nodeStringValue(parserMap.get("field"),
-							""));
 			suggestRequest.suggestType(XContentMapValues.nodeStringValue(
 					parserMap.get("type"), ""));// get type
 
-			log.info("type= "
-					+ XContentMapValues.nodeStringValue(parserMap.get("type"),
-							""));
 			if (parserMap.containsKey("analyzer")) {
 				// set index and query analyzer
 				suggestRequest.indexAnalyzer(XContentMapValues.nodeStringValue(

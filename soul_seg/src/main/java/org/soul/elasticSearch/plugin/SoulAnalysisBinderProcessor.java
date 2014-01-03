@@ -12,15 +12,15 @@ public class SoulAnalysisBinderProcessor
 			.getLog(SoulAnalysisBinderProcessor.class);
 	@Override
 	public void processAnalyzers(AnalyzersBindings analyzersBindings) {
-		log.info("soul_index is added!");
+
 		analyzersBindings.processAnalyzer("soul_index",
 				SoulIndexAnalyzerProvider.class);
 		analyzersBindings.processAnalyzer("soul_query",
 				SoulQueryAnalyzerProvider.class);
-		log.info("soul_query is added!");
+
 		analyzersBindings.processAnalyzer("soul_pinyin",
 				PinyinAnalyzerProvider.class);
-		log.info("soul_pinyin is added!");
+
 		super.processAnalyzers(analyzersBindings);
 	}
 

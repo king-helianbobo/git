@@ -6,8 +6,6 @@ import org.lionsoul.jcseg.core.IWord;
 /**
  * chunk concept for the mmseg chinese word segment algorithm. has implemented
  * IChunk interface.
- * 
- * @author chenxin<chenxin619315@gmail.com>
  */
 public class Chunk implements IChunk {
 
@@ -109,9 +107,6 @@ public class Chunk implements IChunk {
 		return length;
 	}
 
-	/**
-	 * @see Object#toString()
-	 */
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("chunk: ");

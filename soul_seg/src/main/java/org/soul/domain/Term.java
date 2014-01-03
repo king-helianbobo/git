@@ -1,7 +1,7 @@
 package org.soul.domain;
 
 import org.soul.recognition.ForeignNameRecognition;
-import org.soul.util.MathUtil;
+import org.soul.utility.MathUtil;
 
 public class Term implements Comparable<Term> {
 	public static final Term NULL = new Term("NULL", 0, TermNatures.NULL);

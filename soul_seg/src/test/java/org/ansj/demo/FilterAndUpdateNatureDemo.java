@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.soul.domain.Term;
 import org.soul.splitWord.BasicAnalysis;
-import org.soul.util.FilterModifWord;
+import org.soul.utility.FilterModifWord;
 
 public class FilterAndUpdateNatureDemo {
 	public static void main(String[] args) {

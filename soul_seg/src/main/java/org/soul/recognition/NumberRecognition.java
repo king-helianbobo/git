@@ -6,8 +6,8 @@ import org.apache.commons.logging.LogFactory;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.domain.TermUtil;
-import org.soul.util.InitDictionary;
-import org.soul.util.StaticVariable;
+import org.soul.utility.InitDictionary;
+import org.soul.utility.StaticVariable;
 
 public class NumberRecognition {
 	private static Log log = LogFactory.getLog(NumberRecognition.class);

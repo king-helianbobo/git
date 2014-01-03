@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.soul.domain.Term;
 import org.soul.splitWord.BasicAnalysis;
-import org.soul.util.UserDefineLibrary;
+import org.soul.utility.UserDefineLibrary;
 
 /**
  * 动态添加删除用户自定义词典!

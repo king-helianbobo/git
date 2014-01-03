@@ -8,7 +8,7 @@ import org.soul.domain.NewWord;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.domain.TermUtil;
-import org.soul.util.CompanyAttrLib;
+import org.soul.utility.CompanyAttrLib;
 
 public class CompanyRecogntion {
 

@@ -1,31 +1,20 @@
 <project 
     xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <name>soul_seg</name>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.soul</groupId>
   <artifactId>soul_seg</artifactId>
   <packaging>jar</packaging>
-  <name>soul_seg</name>
   <version>0.2</version>
   <description>Chinese word seg Toolkit!</description>
-  <licenses>
-    <license>
-      <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-
-  <developers>
-    <developer>
-      <id>soul</id>
-      <name>soul</name>
-    </developer>
-  </developers>
+  <inceptionYear>2013</inceptionYear>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <github.global.server>github</github.global.server>
+    <elasticsearch.version>0.90.7</elasticsearch.version>
+    <lucene.version>4.5.1</lucene.version>
   </properties>
 
   <repositories>
@@ -48,6 +37,12 @@
 
 
   <dependencies>
+
+<!-- <dependency> -->
+<!-- 	<groupId>commons-codec</groupId> -->
+<!-- 	<artifactId>commons-codec</artifactId> -->
+<!-- 	<version>1.5</version> -->
+<!-- </dependency> -->
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
@@ -68,6 +63,7 @@
       <version>2.4</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-mapper-asl</artifactId>
@@ -81,12 +77,12 @@
     	<version>1.7.22</version>
     </dependency>
             
-    <!-- <dependency> -->
-    <!--   <groupId>org.slf4j</groupId> -->
-    <!--   <artifactId>slf4j-log4j12</artifactId> -->
-    <!--   <version>1.6.1</version> -->
-    <!--   <scope>test</scope> -->
-    <!-- </dependency> -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.6.1</version>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>commons-lang</groupId>
@@ -105,24 +101,25 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>0.90.5</version>
+      <version>${elasticsearch.version}</version>
       <optional>false</optional>
     </dependency>
+
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
-      <version>4.6.0</version>
+      <version>${lucene.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-analyzers-icu</artifactId>
-      <version>4.6.0</version>
+      <version>${lucene.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-highlighter</artifactId>
-      <version>4.6.0</version>
+      <version>${lucene.version}</version>
     </dependency>
 
     <dependency>
@@ -130,6 +127,13 @@
       <artifactId>log4j</artifactId>
       <version>1.2.17</version>
       <optional>false</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.tika</groupId>
+      <artifactId>tika-parsers</artifactId>
+      <version>1.4</version>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -173,7 +177,6 @@
 	    </descriptor>
 	  </descriptors>
 	</configuration>
-
 	<executions>
 	  <execution>
 	    <phase>package</phase>
@@ -211,4 +214,20 @@
       </plugin>
     </plugins>
   </build>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>soul</id>
+      <name>soul</name>
+    </developer>
+  </developers>
+
 </project>

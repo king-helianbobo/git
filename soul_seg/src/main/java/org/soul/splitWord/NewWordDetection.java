@@ -16,7 +16,7 @@ import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.splitWord.PatternMap.Node;
 import org.soul.treeSplit.StringUtil;
-import org.soul.util.DictionaryReader;
+import org.soul.utility.DictionaryReader;
 
 public class NewWordDetection {
 

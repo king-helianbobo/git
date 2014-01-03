@@ -4,7 +4,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.splitWord.Analysis.Merger;
-import org.soul.util.InitDictionary;
+import org.soul.utility.InitDictionary;
 
 //维特比构建最优路径使用的图
 

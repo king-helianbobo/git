@@ -3,7 +3,7 @@ package org.ansj.test;
 import java.util.List;
 
 import org.soul.splitWord.BasicAnalysis;
-import org.soul.util.UserDefineLibrary;
+import org.soul.utility.UserDefineLibrary;
 
 public class UserDefinedAnalysisTest {
 

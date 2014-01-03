@@ -1,8 +1,8 @@
 package org.soul.splitWord;
 
-import static org.soul.util.InitDictionary.IN_SYSTEM;
-import static org.soul.util.InitDictionary.TraditionalToSimplified;
-import static org.soul.util.InitDictionary.status;
+import static org.soul.utility.InitDictionary.IN_SYSTEM;
+import static org.soul.utility.InitDictionary.TraditionalToSimplified;
+import static org.soul.utility.InitDictionary.status;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,8 +18,8 @@ import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
 import org.soul.treeSplit.GetTrieWords;
 import org.soul.treeSplit.StringUtil;
-import org.soul.util.UserDefineLibrary;
-import org.soul.util.WordAlert;
+import org.soul.utility.UserDefineLibrary;
+import org.soul.utility.WordAlert;
 
 public abstract class Analysis {
 

@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import org.soul.domain.Term;
-import org.soul.util.MathUtil;
+import org.soul.utility.MathUtil;
 
 public class PatternMap {
 

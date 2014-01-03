@@ -7,6 +7,8 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.lionsoul.jcseg.core.ADictionary;
 import org.lionsoul.jcseg.core.IChunk;
 import org.lionsoul.jcseg.core.ILexicon;
@@ -25,6 +27,8 @@ import org.lionsoul.jcseg.util.IntArrayList;
  * algorithm both share. <br />
  */
 public abstract class ASegment implements ISegment {
+
+	private static Log log = LogFactory.getLog(ASegment.class);
 
 	/* current position for the given stream. */
 	protected int idx;
@@ -239,7 +243,7 @@ public abstract class ASegment implements ISegment {
 								wordPool.add(wd);
 						} // end Chinese numeric
 						if (w != null) { // if one numeric string found
-							cjkidx += w.getLength(); // 调增cjkidx位置
+							cjkidx += w.getLength();
 							// add the pinyin to the poll
 							if (config.APPEND_CJK_PINYIN
 									&& config.LOAD_CJK_PINYIN
@@ -265,7 +269,7 @@ public abstract class ASegment implements ISegment {
 					}
 					// 先进行数字识别，然后按照mmseg规则，寻找最大匹配串
 					IChunk chunk = getBestCJKChunk(chars, cjkidx);
-					System.out.println(chunk.toString());
+					// log.info(chunk.toString());
 					// System.out.println(chunk+"\n");
 					// w = new Word(chunk.getWords()[0].getValue(),
 					// IWord.T_CJK_WORD);
@@ -372,7 +376,7 @@ public abstract class ASegment implements ISegment {
 
 					// add the syn words to the pool
 					String[] syns = null;
-					if (T == -1 && config.LOAD_CJK_SYN
+					if (T == -1 && config.LOAD_CJK_SYN && config.APPEND_CJK_SYN
 							&& (syns = w.getSyn()) != null) {
 						IWord wd;
 						for (int j = 0; j < syns.length; j++) {

@@ -42,7 +42,7 @@ public class PinyinTest {
 		try {
 			System.out.println("分词器:" + analyzer.getClass());
 			System.out.println(Strings.toUnderscoreCase("providerString"));
-			
+
 			System.out.println(Strings.toCamelCase("_provider_string"));
 			TokenStream tokenStream = analyzer.tokenStream("content",
 					new StringReader(text));
@@ -66,11 +66,11 @@ public class PinyinTest {
 
 	public static void noMean() {
 
-		String[] stopWords = { "and", "of", "the", "to", "is", "their", "can",
-				"all", "i", "in" };
+		String[] stopWords = {"and", "of", "the", "to", "is", "their", "can",
+				"all", "i", "in"};
 		String text = "沈从文 厦门 长春 长大";
 		Reader reader = new StringReader(text);
-		TokenStream result = new WhitespaceTokenizer(Version.LUCENE_46, reader);
+		TokenStream result = new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
 		// TokenFilter lowerCaseFilter = new LowerCaseFilter(Version.LUCENE_46,
 		// tokenizer);
 

@@ -1,11 +1,11 @@
 package org.soul.splitWord;
 
-import static org.soul.util.InitDictionary.TraditionalToSimplified;
-import static org.soul.util.InitDictionary.base;
-import static org.soul.util.InitDictionary.check;
-import static org.soul.util.InitDictionary.status;
-import static org.soul.util.InitDictionary.termNatures;
-import static org.soul.util.InitDictionary.words;
+import static org.soul.utility.InitDictionary.TraditionalToSimplified;
+import static org.soul.utility.InitDictionary.base;
+import static org.soul.utility.InitDictionary.check;
+import static org.soul.utility.InitDictionary.status;
+import static org.soul.utility.InitDictionary.termNatures;
+import static org.soul.utility.InitDictionary.words;
 
 import org.soul.domain.TermNatures;
 

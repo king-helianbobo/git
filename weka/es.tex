@@ -1,5 +1,8 @@
 \section{ElasticSearch}
 \par Elasticsearch是个开源分布式搜索引擎，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
+\par Index names are different indices. Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc.目前, Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type).
+\par Then you build a query and in the field (any query that acces a field to execute on), you can specify type1.field1, and in this case, it will be automatically detected, and the query will be wrapped to only be executed match on docs with \_type:type1 (in an efficient manner), on field1. This does mean that across types, having the same field name with different mappings types (for example, type1 has field1 of type numeric, and type2 also has field1 but of type string) should not be done (working on automatically detecting that...).
+\par So, the type prefix when you define the field name should allow to only search on a field against that specific type. (At the end of the day, it is wrapped in a filtered query with a \_type:type1 term filter).
 \subsection{What's a mapping?}
 \par A mapping not only tells ES what is in a field…it tells ES what terms are indexed and searchable.
 \par A mapping is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.

@@ -15,7 +15,7 @@ public class SuggestRequest extends BroadcastOperationRequest {
 
 	private int size = 10;
 	private String field;
-	private float similarity = 1.0f;
+	private float similarity = 0.8f;
 	private String term;
 	private String suggestType = "fst";
 	private String queryAnalyzer;

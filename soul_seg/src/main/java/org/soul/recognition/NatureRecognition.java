@@ -5,7 +5,7 @@ import java.util.List;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
-import org.soul.util.MathUtil;
+import org.soul.utility.MathUtil;
 
 public class NatureRecognition {
 

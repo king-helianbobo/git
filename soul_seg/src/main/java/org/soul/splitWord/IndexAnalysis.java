@@ -10,7 +10,7 @@ import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
-import org.soul.util.StaticVariable;
+import org.soul.utility.StaticVariable;
 
 public class IndexAnalysis extends Analysis {
 
