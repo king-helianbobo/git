@@ -29,6 +29,7 @@ curl -X POST localhost:9200/bus/bus3?pretty -d '{ "message" : "银铃似的声�
 curl -X POST localhost:9200/bus/bus2?pretty -d '{ "name" : "银铃似的声音" }'
 curl -X POST localhost:9200/bus/bus3?pretty -d '{ "message" : "破锣似的声音" }'
 curl -X POST localhost:9200/bus/bus1?pretty -d '{ "name" : "砂锅似的声音" }'
+curl -X POST localhost:9200/bus/bus4?pretty -d '{ "name" : "砂锅似的声音" }'
 
 
 ## 下面是一个测试的例子

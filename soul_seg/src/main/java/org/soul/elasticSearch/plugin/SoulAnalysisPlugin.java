@@ -1,5 +1,7 @@
 package org.soul.elasticSearch.plugin;
 
+import static org.elasticsearch.common.collect.Lists.newArrayList;
+
 import java.util.Collection;
 
 import org.elasticsearch.ElasticSearchException;
@@ -15,6 +17,7 @@ import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.suggest.elasticsearch.action.termlist.TermlistAction;
 import org.suggest.elasticsearch.action.termlist.TransportTermlistAction;
+import org.suggest.elasticsearch.module.AttachmentsIndexModule;
 import org.suggest.elasticsearch.module.ShardSuggestModule;
 import org.suggest.elasticsearch.module.SuggestClientModule;
 import org.suggest.elasticsearch.module.SuggestModule;
@@ -117,7 +120,15 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 		return modules;
 	}
 
+	@Override
+	public Collection<Class<? extends Module>> indexModules() {
+		Collection<Class<? extends Module>> modules = Lists.newArrayList();
+		modules.add(AttachmentsIndexModule.class);
+		return modules;
+	}
+
 	private boolean isClient() {
 		return settings.getAsBoolean("node.client", false);
 	}
+
 }
