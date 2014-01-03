@@ -1,4 +1,4 @@
-package org.soul.util;
+package org.soul.utility;
 
 import org.soul.domain.BigramEntry;
 import org.soul.domain.Term;
@@ -16,15 +16,6 @@ public class NgramLibrary {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static void main(String[] args) {
-		Term from = new Term("阿", 0, new TermNatures(TermNature.NULL));
-		from.getTermNatures().id = InitDictionary.getWordId(from.getName());
-		Term to = new Term("全国", 0, new TermNatures(TermNature.NULL));
-		to.getTermNatures().id = InitDictionary.getWordId(to.getName());
-		StaticVariable.LibraryLog.info(getTwoWordFreq(from, to) + ","
-				+ to.getTermNatures().id + "," + from.getTermNatures().id);
 	}
 
 	/**

@@ -1,4 +1,4 @@
-package org.soul.util;
+package org.soul.utility;
 
 import java.util.ArrayList;
 import java.util.HashMap;

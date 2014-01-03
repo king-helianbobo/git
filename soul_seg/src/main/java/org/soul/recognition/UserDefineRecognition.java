@@ -7,7 +7,7 @@ import org.soul.domain.TermUtil;
 import org.soul.treeSplit.Forest;
 import org.soul.treeSplit.ObjectBean;
 import org.soul.treeSplit.WoodInterface;
-import org.soul.util.UserDefineLibrary;
+import org.soul.utility.UserDefineLibrary;
 
 /**
  * 用户自定义词典.又称补充词典

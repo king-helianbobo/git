@@ -70,7 +70,7 @@ public class PinyinTest {
 				"all", "i", "in"};
 		String text = "沈从文 厦门 长春 长大";
 		Reader reader = new StringReader(text);
-		TokenStream result = new WhitespaceTokenizer(Version.LUCENE_46, reader);
+		TokenStream result = new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
 		// TokenFilter lowerCaseFilter = new LowerCaseFilter(Version.LUCENE_46,
 		// tokenizer);
 

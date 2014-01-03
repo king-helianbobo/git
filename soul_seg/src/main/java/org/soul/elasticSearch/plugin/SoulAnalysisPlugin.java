@@ -4,6 +4,7 @@ import java.util.Collection;
 
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.Version;
+import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
@@ -12,12 +13,15 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.analysis.AnalysisModule;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
+import org.suggest.elasticsearch.action.termlist.TermlistAction;
+import org.suggest.elasticsearch.action.termlist.TransportTermlistAction;
 import org.suggest.elasticsearch.module.ShardSuggestModule;
 import org.suggest.elasticsearch.module.SuggestClientModule;
 import org.suggest.elasticsearch.module.SuggestModule;
 import org.suggest.elasticsearch.rest.action.RestRefreshSuggestAction;
 import org.suggest.elasticsearch.rest.action.RestStatisticsAction;
 import org.suggest.elasticsearch.rest.action.RestSuggestAction;
+import org.suggest.elasticsearch.rest.action.RestTermlistAction;
 import org.suggest.elasticsearch.service.SuggestService;
 
 public class SoulAnalysisPlugin extends AbstractPlugin {
@@ -54,6 +58,12 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 		return "soul-analysis";
 	}
 
+	public void onModule(ActionModule module) {
+		module.registerAction(TermlistAction.INSTANCE,
+				TransportTermlistAction.class);
+		// this is very important
+	}
+
 	@Override
 	public void processModule(Module module) {
 		if (module instanceof AnalysisModule) {
@@ -74,6 +84,7 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 		restModule.addRestAction(RestSuggestAction.class);
 		restModule.addRestAction(RestRefreshSuggestAction.class);
 		restModule.addRestAction(RestStatisticsAction.class);
+		restModule.addRestAction(RestTermlistAction.class);
 	}
 
 	@SuppressWarnings("rawtypes")

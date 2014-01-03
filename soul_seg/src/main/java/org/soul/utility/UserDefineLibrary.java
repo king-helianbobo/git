@@ -1,4 +1,4 @@
-package org.soul.util;
+package org.soul.utility;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,7 +13,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.treeSplit.*;
 
-import static org.soul.util.StaticVariable.LibraryLog;
+import static org.soul.utility.StaticVariable.LibraryLog;
 
 public class UserDefineLibrary {
 

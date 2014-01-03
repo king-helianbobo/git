@@ -13,8 +13,8 @@ import org.soul.recognition.ForeignNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
-import org.soul.util.StaticVariable;
-import org.soul.util.UserDefineLibrary;
+import org.soul.utility.StaticVariable;
+import org.soul.utility.UserDefineLibrary;
 
 public class BasicAnalysis extends Analysis {
 

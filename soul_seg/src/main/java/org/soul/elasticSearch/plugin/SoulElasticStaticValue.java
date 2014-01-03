@@ -20,7 +20,7 @@ import org.elasticsearch.env.FailedToResolveConfigException;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
 import org.soul.splitWord.BasicAnalysis;
 import org.soul.treeSplit.IOUtil;
-import org.soul.util.StaticVariable;
+import org.soul.utility.StaticVariable;
 
 public class SoulElasticStaticValue {
 	public static ESLogger logger = Loggers.getLogger("soul-analyzer");

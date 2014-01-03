@@ -16,7 +16,7 @@ import org.apache.log4j.*;
 import org.soul.domain.Term;
 import org.soul.splitWord.BasicAnalysis;
 import org.soul.treeSplit.*;
-import org.soul.util.DictionaryReader;
+import org.soul.utility.DictionaryReader;
 import org.soul.wordToVec.VectorLearn;
 import org.soul.wordToVec.WordToVec;
 
