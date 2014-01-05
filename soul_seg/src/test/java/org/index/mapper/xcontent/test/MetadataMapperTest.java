@@ -1,4 +1,4 @@
-package org.elasticsearch.index.mapper.xcontent;
+package org.index.mapper.xcontent.test;
 
 import org.apache.lucene.document.Document;
 import org.elasticsearch.common.bytes.BytesReference;
@@ -9,7 +9,7 @@ import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.MapperParsingException;
-import org.elasticsearch.index.mapper.attachment.AttachmentMapper;
+import org.index.mapper.attachment.AttachmentMapper;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

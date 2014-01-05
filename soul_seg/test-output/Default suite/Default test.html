@@ -55,11 +55,11 @@ function toggleAllBoxes() {
 <body>
 <h2 align='center'>Default test</h2><table border='1' align="center">
 <tr>
-<td>Tests passed/Failed/Skipped:</td><td>6/0/0</td>
+<td>Tests passed/Failed/Skipped:</td><td>3/0/0</td>
 </tr><tr>
-<td>Started on:</td><td>Fri Jan 03 18:14:26 CST 2014</td>
+<td>Started on:</td><td>Sun Jan 05 18:02:08 CST 2014</td>
 </tr>
-<tr><td>Total time:</td><td>1 seconds (1767 ms)</td>
+<tr><td>Total time:</td><td>2 seconds (2712 ms)</td>
 </tr><tr>
 <td>Included groups:</td><td></td>
 </tr><tr>
@@ -75,41 +75,29 @@ function toggleAllBoxes() {
 <td><b>Instance</b></td>
 </tr>
 <tr>
-<td title='org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testIgnoreWithCorrectDate()'><b>testIgnoreWithCorrectDate</b><br>Test class: org.elasticsearch.index.mapper.xcontent.MetadataMapperTest</td>
+<td title='org.index.mapper.xcontent.test.EncryptedDocMapperTest.testMultipleDocsEncryptedFirst()'><b>testMultipleDocsEncryptedFirst</b><br>Test class: org.index.mapper.xcontent.test.EncryptedDocMapperTest</td>
 <td></td>
-<td>1</td>
-<td>org.elasticsearch.index.mapper.xcontent.MetadataMapperTest@60e86e8a</td></tr>
+<td>2</td>
+<td>org.index.mapper.xcontent.test.EncryptedDocMapperTest@238a47</td></tr>
 <tr>
-<td title='org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testIgnoreWithEmptyDate()'><b>testIgnoreWithEmptyDate</b><br>Test class: org.elasticsearch.index.mapper.xcontent.MetadataMapperTest</td>
-<td></td>
-<td>0</td>
-<td>org.elasticsearch.index.mapper.xcontent.MetadataMapperTest@60e86e8a</td></tr>
-<tr>
-<td title='org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testIgnoreWithoutDate()'><b>testIgnoreWithoutDate</b><br>Test class: org.elasticsearch.index.mapper.xcontent.MetadataMapperTest</td>
+<td title='org.index.mapper.xcontent.test.EncryptedDocMapperTest.testMultipleDocsEncryptedLast()'><b>testMultipleDocsEncryptedLast</b><br>Test class: org.index.mapper.xcontent.test.EncryptedDocMapperTest</td>
 <td></td>
 <td>0</td>
-<td>org.elasticsearch.index.mapper.xcontent.MetadataMapperTest@60e86e8a</td></tr>
+<td>org.index.mapper.xcontent.test.EncryptedDocMapperTest@238a47</td></tr>
 <tr>
-<td title='org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testWithCorrectDate()'><b>testWithCorrectDate</b><br>Test class: org.elasticsearch.index.mapper.xcontent.MetadataMapperTest</td>
-<td></td>
-<td>0</td>
-<td>org.elasticsearch.index.mapper.xcontent.MetadataMapperTest@60e86e8a</td></tr>
-<tr>
-<td title='org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testWithEmptyDate()'><b>testWithEmptyDate</b><br>Test class: org.elasticsearch.index.mapper.xcontent.MetadataMapperTest</td>
-<td><div><pre>org.elasticsearch.index.mapper.MapperParsingException: failed to parse [file.date]
-	at org.elasticsearch.index.mapper.core.AbstractFieldMapper.parse(AbstractFieldMapper.java:398)
-	at org.elasticsearch.index.mapper.attachment.AttachmentMapper.parse(AttachmentMapper.java:457)
-	at org.elasticsearch.index.mapper.object.ObjectMapper.serializeObject(ObjectMapper.java:519)
-	at org.elasticsearch.index.mapper.object.ObjectMapper.parse(ObjectMapper.java:461)
+<td title='org.index.mapper.xcontent.test.EncryptedDocMapperTest.testMultipleDocsEncryptedNotIgnoringErrors()'><b>testMultipleDocsEncryptedNotIgnoringErrors</b><br>Test class: org.index.mapper.xcontent.test.EncryptedDocMapperTest</td>
+<td><div><pre>org.elasticsearch.index.mapper.MapperParsingException: Failed to extract [100000] characters of text for [null]
+	at org.index.mapper.attachment.AttachmentMapper.parse(AttachmentMapper.java:449)
+	at org.elasticsearch.index.mapper.object.ObjectMapper.serializeValue(ObjectMapper.java:618)
+	at org.elasticsearch.index.mapper.object.ObjectMapper.parse(ObjectMapper.java:471)
 	at org.elasticsearch.index.mapper.DocumentMapper.parse(DocumentMapper.java:513)
 	at org.elasticsearch.index.mapper.DocumentMapper.parse(DocumentMapper.java:457)
 	at org.elasticsearch.index.mapper.DocumentMapper.parse(DocumentMapper.java:449)
-	at org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.checkMeta(MetadataMapperTest.java:45)
-	at org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testWithEmptyDate(MetadataMapperTest.java:82)
+	at org.index.mapper.xcontent.test.EncryptedDocMapperTest.testMultipleDocsEncryptedNotIgnoringErrors(EncryptedDocMapperTest.java:171)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:606)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:597)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:84)
 	at org.testng.internal.Invoker.invokeMethod(Invoker.java:714)
 	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:901)
@@ -130,31 +118,39 @@ function toggleAllBoxes() {
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-Caused by: org.elasticsearch.index.mapper.MapperParsingException: failed to parse date field [], tried both date format [dateOptionalTime], and timestamp number with locale []
-	at org.elasticsearch.index.mapper.core.DateFieldMapper.parseStringValue(DateFieldMapper.java:486)
-	at org.elasticsearch.index.mapper.core.DateFieldMapper.innerParseCreateField(DateFieldMapper.java:424)
-	at org.elasticsearch.index.mapper.core.NumberFieldMapper.parseCreateField(NumberFieldMapper.java:188)
-	at org.elasticsearch.index.mapper.core.AbstractFieldMapper.parse(AbstractFieldMapper.java:387)
-	... 32 more
-Caused by: java.lang.IllegalArgumentException: Invalid format: &quot;&quot;
-	at org.elasticsearch.common.joda.time.format.DateTimeFormatter.parseMillis(DateTimeFormatter.java:754)
-	at org.elasticsearch.index.mapper.core.DateFieldMapper.parseStringValue(DateFieldMapper.java:480)
-	... 35 more
-</pre></div><a href='#' onClick='toggleBox("stack-trace2066883585", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace2066883585'><pre>org.elasticsearch.index.mapper.MapperParsingException: failed to parse [file.date]
-	at org.elasticsearch.index.mapper.core.AbstractFieldMapper.parse(AbstractFieldMapper.java:398)
-	at org.elasticsearch.index.mapper.attachment.AttachmentMapper.parse(AttachmentMapper.java:457)
-	at org.elasticsearch.index.mapper.object.ObjectMapper.serializeObject(ObjectMapper.java:519)
-	at org.elasticsearch.index.mapper.object.ObjectMapper.parse(ObjectMapper.java:461)
+Caused by: org.apache.tika.exception.TikaException: Unable to extract PDF content
+	at org.apache.tika.parser.pdf.PDF2XHTML.process(PDF2XHTML.java:88)
+	at org.apache.tika.parser.pdf.PDFParser.parse(PDFParser.java:154)
+	at org.apache.tika.parser.CompositeParser.parse(CompositeParser.java:242)
+	at org.apache.tika.parser.CompositeParser.parse(CompositeParser.java:242)
+	at org.apache.tika.parser.AutoDetectParser.parse(AutoDetectParser.java:120)
+	at org.apache.tika.Tika.parseToString(Tika.java:421)
+	at org.index.mapper.attachment.AttachmentMapper.parse(AttachmentMapper.java:441)
+	... 30 more
+Caused by: org.apache.pdfbox.exceptions.WrappedIOException: Error decrypting document, details: 
+	at org.apache.pdfbox.util.PDFTextStripper.writeText(PDFTextStripper.java:327)
+	at org.apache.tika.parser.pdf.PDF2XHTML.process(PDF2XHTML.java:72)
+	... 36 more
+Caused by: org.apache.pdfbox.exceptions.CryptographyException: Error: The supplied password does not match either the owner or user password in the document.
+	at org.apache.pdfbox.pdmodel.encryption.StandardSecurityHandler.prepareForDecryption(StandardSecurityHandler.java:262)
+	at org.apache.pdfbox.pdmodel.encryption.StandardSecurityHandler.decryptDocument(StandardSecurityHandler.java:154)
+	at org.apache.pdfbox.pdmodel.PDDocument.openProtection(PDDocument.java:1504)
+	at org.apache.pdfbox.pdmodel.PDDocument.decrypt(PDDocument.java:914)
+	at org.apache.pdfbox.util.PDFTextStripper.writeText(PDFTextStripper.java:323)
+	... 37 more
+</pre></div><a href='#' onClick='toggleBox("stack-trace21943671", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace21943671'><pre>org.elasticsearch.index.mapper.MapperParsingException: Failed to extract [100000] characters of text for [null]
+	at org.index.mapper.attachment.AttachmentMapper.parse(AttachmentMapper.java:449)
+	at org.elasticsearch.index.mapper.object.ObjectMapper.serializeValue(ObjectMapper.java:618)
+	at org.elasticsearch.index.mapper.object.ObjectMapper.parse(ObjectMapper.java:471)
 	at org.elasticsearch.index.mapper.DocumentMapper.parse(DocumentMapper.java:513)
 	at org.elasticsearch.index.mapper.DocumentMapper.parse(DocumentMapper.java:457)
 	at org.elasticsearch.index.mapper.DocumentMapper.parse(DocumentMapper.java:449)
-	at org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.checkMeta(MetadataMapperTest.java:45)
-	at org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testWithEmptyDate(MetadataMapperTest.java:82)
+	at org.index.mapper.xcontent.test.EncryptedDocMapperTest.testMultipleDocsEncryptedNotIgnoringErrors(EncryptedDocMapperTest.java:171)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:606)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:597)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:84)
 	at org.testng.internal.Invoker.invokeMethod(Invoker.java:714)
 	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:901)
@@ -175,24 +171,29 @@ Caused by: java.lang.IllegalArgumentException: Invalid format: &quot;&quot;
 	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:111)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:204)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:175)
-Caused by: org.elasticsearch.index.mapper.MapperParsingException: failed to parse date field [], tried both date format [dateOptionalTime], and timestamp number with locale []
-	at org.elasticsearch.index.mapper.core.DateFieldMapper.parseStringValue(DateFieldMapper.java:486)
-	at org.elasticsearch.index.mapper.core.DateFieldMapper.innerParseCreateField(DateFieldMapper.java:424)
-	at org.elasticsearch.index.mapper.core.NumberFieldMapper.parseCreateField(NumberFieldMapper.java:188)
-	at org.elasticsearch.index.mapper.core.AbstractFieldMapper.parse(AbstractFieldMapper.java:387)
-	... 32 more
-Caused by: java.lang.IllegalArgumentException: Invalid format: &quot;&quot;
-	at org.elasticsearch.common.joda.time.format.DateTimeFormatter.parseMillis(DateTimeFormatter.java:754)
-	at org.elasticsearch.index.mapper.core.DateFieldMapper.parseStringValue(DateFieldMapper.java:480)
-	... 35 more
+Caused by: org.apache.tika.exception.TikaException: Unable to extract PDF content
+	at org.apache.tika.parser.pdf.PDF2XHTML.process(PDF2XHTML.java:88)
+	at org.apache.tika.parser.pdf.PDFParser.parse(PDFParser.java:154)
+	at org.apache.tika.parser.CompositeParser.parse(CompositeParser.java:242)
+	at org.apache.tika.parser.CompositeParser.parse(CompositeParser.java:242)
+	at org.apache.tika.parser.AutoDetectParser.parse(AutoDetectParser.java:120)
+	at org.apache.tika.Tika.parseToString(Tika.java:421)
+	at org.index.mapper.attachment.AttachmentMapper.parse(AttachmentMapper.java:441)
+	... 30 more
+Caused by: org.apache.pdfbox.exceptions.WrappedIOException: Error decrypting document, details: 
+	at org.apache.pdfbox.util.PDFTextStripper.writeText(PDFTextStripper.java:327)
+	at org.apache.tika.parser.pdf.PDF2XHTML.process(PDF2XHTML.java:72)
+	... 36 more
+Caused by: org.apache.pdfbox.exceptions.CryptographyException: Error: The supplied password does not match either the owner or user password in the document.
+	at org.apache.pdfbox.pdmodel.encryption.StandardSecurityHandler.prepareForDecryption(StandardSecurityHandler.java:262)
+	at org.apache.pdfbox.pdmodel.encryption.StandardSecurityHandler.decryptDocument(StandardSecurityHandler.java:154)
+	at org.apache.pdfbox.pdmodel.PDDocument.openProtection(PDDocument.java:1504)
+	at org.apache.pdfbox.pdmodel.PDDocument.decrypt(PDDocument.java:914)
+	at org.apache.pdfbox.util.PDFTextStripper.writeText(PDFTextStripper.java:323)
+	... 37 more
 </pre></div></td>
 <td>0</td>
-<td>org.elasticsearch.index.mapper.xcontent.MetadataMapperTest@60e86e8a</td></tr>
-<tr>
-<td title='org.elasticsearch.index.mapper.xcontent.MetadataMapperTest.testWithoutDate()'><b>testWithoutDate</b><br>Test class: org.elasticsearch.index.mapper.xcontent.MetadataMapperTest</td>
-<td></td>
-<td>0</td>
-<td>org.elasticsearch.index.mapper.xcontent.MetadataMapperTest@60e86e8a</td></tr>
+<td>org.index.mapper.xcontent.test.EncryptedDocMapperTest@238a47</td></tr>
 </table><p>
 </body>
 </html>

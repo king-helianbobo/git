@@ -82,15 +82,16 @@
 \chead{\leftmark}
 \fancyfoot[C]{\wuhao\thepage}
 
+
 \newenvironment{myitemize}[1][]{%%%%%定义新环境
-\begin{list}{{#1}} %%标签格式
+\begin{list}{{\bf #1}} %%标签格式
     {
-%%     \setlength{\leftmargin}{0cm}     %左边界
-%%     \setlength{\parsep}{0ex}         %段落间距
-%%     \setlength{\topsep}{0bp}         %列表到上下文的垂直距离
-%%     \setlength{\itemsep}{0ex}        %标签间距
-%%     \setlength{\labelsep}{0.3em}     %标号和列表项之间的距离,默认0.5emanation
-     \setlength{\itemindent}{0pt}    %标签缩进量
-%%     \setlength{\listparindent}{2em} %段落缩进量
+     \setlength{\leftmargin}{0cm}     %左边界
+     \setlength{\parsep}{0ex}         %段落间距
+     \setlength{\topsep}{0bp}         %列表到上下文的垂直距离
+     \setlength{\itemsep}{0ex}        %标签间距
+     \setlength{\labelsep}{0.3em}     %标号和列表项之间的距离,默认0.5em
+     \setlength{\itemindent}{3em}    %标签缩进量
+     \setlength{\listparindent}{2em} %段落缩进量
     }}
 {\end{list}}%%%%%

@@ -17,14 +17,17 @@
  * under the License.
  */
 
-package org.elasticsearch.index.mapper.xcontent;
+package org.index.mapper.xcontent.test;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
-import org.elasticsearch.index.mapper.attachment.AttachmentMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
+import org.index.mapper.attachment.AttachmentMapper;
+import org.lionsoul.jcseg.ASegment;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -37,7 +40,7 @@ import static org.hamcrest.Matchers.instanceOf;
  */
 @Test
 public class DateAttachmentMapperTests {
-
+	private static Log log = LogFactory.getLog(DateAttachmentMapperTests.class);
 	private DocumentMapperParser mapperParser;
 
 	@BeforeClass
@@ -46,14 +49,17 @@ public class DateAttachmentMapperTests {
 				new AnalysisService(new Index("test")), null, null);
 		mapperParser.putTypeParser(AttachmentMapper.CONTENT_TYPE,
 				new AttachmentMapper.TypeParser());
+		// add another typeParser
 	}
 
 	@Test
 	public void testSimpleMappings() throws Exception {
 		String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/date/date-mapping.json");
+
 		DocumentMapper docMapper = mapperParser.parse(mapping);
-		
+		log.info("***********" + mapping);
 		// Our mapping should be kept as a String
+		// mappers()函数获得每个域的mapper,每个mapper有indexName，fullName和name
 		assertThat(docMapper.mappers().fullName("file.date").mapper(),
 				instanceOf(StringFieldMapper.class));
 	}

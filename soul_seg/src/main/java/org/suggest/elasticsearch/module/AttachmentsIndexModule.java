@@ -1,7 +1,7 @@
 package org.suggest.elasticsearch.module;
 
 import org.elasticsearch.common.inject.AbstractModule;
-import org.elasticsearch.index.mapper.attachment.RegisterAttachmentTypeParser;
+import org.index.mapper.attachment.RegisterAttachmentTypeParser;
 
 public class AttachmentsIndexModule extends AbstractModule {
 

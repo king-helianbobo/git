@@ -17,8 +17,10 @@
  * under the License.
  */
 
-package org.elasticsearch.index.mapper.attachment;
+package org.index.mapper.attachment;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tika.metadata.Metadata;
 import org.elasticsearch.common.io.stream.BytesStreamInput;
 import org.elasticsearch.common.logging.ESLogger;
@@ -30,13 +32,14 @@ import org.elasticsearch.index.mapper.core.DateFieldMapper;
 import org.elasticsearch.index.mapper.core.IntegerFieldMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
 import org.elasticsearch.index.mapper.multifield.MultiFieldMapper;
+import org.index.mapper.xcontent.test.EncryptedDocMapperTest;
 
 import java.io.IOException;
 import java.util.Map;
 
 import static org.elasticsearch.index.mapper.MapperBuilders.*;
 import static org.elasticsearch.index.mapper.core.TypeParsers.parsePathType;
-import static org.elasticsearch.plugin.mapper.attachments.tika.TikaInstance.tika;
+import static org.soul.utility.TikaInstance.tika;
 
 /**
  * 
@@ -58,6 +61,8 @@ import static org.elasticsearch.plugin.mapper.attachments.tika.TikaInstance.tika
  */
 public class AttachmentMapper implements Mapper {
 
+	private static Log log = LogFactory.getLog(AttachmentMapper.class);
+
 	private static ESLogger logger = ESLoggerFactory
 			.getLogger(AttachmentMapper.class.getName());
 
@@ -67,9 +72,8 @@ public class AttachmentMapper implements Mapper {
 		public static final ContentPath.Type PATH_TYPE = ContentPath.Type.FULL;
 	}
 
-	public static class Builder
-			extends
-				Mapper.Builder<Builder, AttachmentMapper> {
+	public static class Builder extends
+			Mapper.Builder<Builder, AttachmentMapper> {
 
 		private ContentPath.Type pathType = Defaults.PATH_TYPE;
 
@@ -94,13 +98,14 @@ public class AttachmentMapper implements Mapper {
 		private Mapper.Builder contentLengthBuilder = integerField("content_length");
 
 		public Builder(String name) {
+			// name is the document fieldName
 			super(name);
 			this.builder = this;
 			this.contentBuilder = stringField(name);
 		}
 
 		public Builder pathType(ContentPath.Type pathType) {
-			this.pathType = pathType;
+			this.pathType = pathType; // 设置path Type
 			return this;
 		}
 
@@ -181,6 +186,7 @@ public class AttachmentMapper implements Mapper {
 				ignoreErrors = Boolean.TRUE;
 			}
 
+			// name is fieldName
 			return new AttachmentMapper(name, pathType, defaultIndexedChars,
 					ignoreErrors, contentMapper, dateMapper, titleMapper,
 					nameMapper, authorMapper, keywordsMapper,
@@ -213,111 +219,109 @@ public class AttachmentMapper implements Mapper {
 	 */
 	public static class TypeParser implements Mapper.TypeParser {
 
-		@SuppressWarnings({"unchecked"})
+		@SuppressWarnings({ "unchecked" })
 		@Override
-		public Mapper.Builder parse(String name, Map<String, Object> node,
+		public Mapper.Builder parse(String fieldName, Map<String, Object> node,
 				ParserContext parserContext) throws MapperParsingException {
 			AttachmentMapper.Builder builder = new AttachmentMapper.Builder(
-					name);
+					fieldName);
+
+			if (!node.containsKey("type")
+					|| !(node.get("type").equals("attachment"))) {
+				throw new MapperParsingException(
+						"field type must be attachment!");
+			}
 
 			for (Map.Entry<String, Object> entry : node.entrySet()) {
-				String fieldName = entry.getKey();
-				Object fieldNode = entry.getValue();
-				if (fieldName.equals("path")) {
-					builder.pathType(parsePathType(name, fieldNode.toString()));
-				} else if (fieldName.equals("fields")) {
-					Map<String, Object> fieldsNode = (Map<String, Object>) fieldNode;
-					for (Map.Entry<String, Object> entry1 : fieldsNode
-							.entrySet()) {
-						String propName = entry1.getKey();
-						Object propNode = entry1.getValue();
-
-						// Check if we have a multifield here
-						boolean isMultifield = false;
+				String mapKey = entry.getKey();
+				Object mapValue = entry.getValue();
+				if (mapKey.equals("path")) { // whether is is fullPath or not
+					builder.pathType(parsePathType(fieldName,
+							mapValue.toString()));
+				} else if (mapKey.equals("fields")) {
+					// fields中不再允许出现multi-field
+					Map<String, Object> innerMap = (Map<String, Object>) mapValue;
+					for (Map.Entry<String, Object> entry1 : innerMap.entrySet()) {
+						String _FieldName = entry1.getKey();
+						Object _FieldDescription = entry1.getValue();
 						boolean isString = false;
-						if (propNode != null && propNode instanceof Map) {
-							Object oType = ((Map<String, Object>) propNode)
+						if (_FieldDescription != null
+								&& _FieldDescription instanceof Map) {
+							Object oType = ((Map<String, Object>) _FieldDescription)
 									.get("type");
 							if (oType != null
 									&& oType.equals(MultiFieldMapper.CONTENT_TYPE)) {
-								isMultifield = true;
-							}
-							if (oType != null
+								throw new MapperParsingException(
+										"multi-field type is not allowed in attachMent type!");
+								// isMultifield = true;
+							} else if (oType != null
 									&& oType.equals(StringFieldMapper.CONTENT_TYPE)) {
 								isString = true;
+							} else {
+								isString = false;
 							}
 						}
-
-						if (name.equals(propName)) {
-							// that is the content
+						if (fieldName.equals(_FieldName)) {
 							builder.content(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: StringFieldMapper.CONTENT_TYPE)
-									.parse(name,
-											(Map<String, Object>) propNode,
-											parserContext));
-						} else if ("date".equals(propName)) {
+									StringFieldMapper.CONTENT_TYPE).parse(
+									fieldName,
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
+						} else if ("date".equals(_FieldName)) {
 							// If a specific format is already defined here, we
 							// should use it
+							// builder.date(parserContext
+							// .typeParser(
+							// isMultifield ? MultiFieldMapper.CONTENT_TYPE
+							// : isString ? StringFieldMapper.CONTENT_TYPE
+							// : DateFieldMapper.CONTENT_TYPE)
+							// .parse("date",
+							// (Map<String, Object>) propNode,
+							// parserContext));
+
 							builder.date(parserContext
 									.typeParser(
-											isMultifield
-													? MultiFieldMapper.CONTENT_TYPE
-													: isString
-															? StringFieldMapper.CONTENT_TYPE
-															: DateFieldMapper.CONTENT_TYPE)
+											isString ? StringFieldMapper.CONTENT_TYPE
+													: DateFieldMapper.CONTENT_TYPE)
 									.parse("date",
-											(Map<String, Object>) propNode,
+											(Map<String, Object>) _FieldDescription,
 											parserContext));
-						} else if ("title".equals(propName)) {
+						} else if ("title".equals(_FieldName)) {
 							builder.title(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: StringFieldMapper.CONTENT_TYPE)
-									.parse("title",
-											(Map<String, Object>) propNode,
-											parserContext));
-						} else if ("name".equals(propName)) {
+									StringFieldMapper.CONTENT_TYPE).parse(
+									"title",
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
+						} else if ("name".equals(_FieldName)) {
 							builder.name(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: StringFieldMapper.CONTENT_TYPE)
-									.parse("name",
-											(Map<String, Object>) propNode,
-											parserContext));
-						} else if ("author".equals(propName)) {
+									StringFieldMapper.CONTENT_TYPE).parse(
+									"name",
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
+						} else if ("author".equals(_FieldName)) {
 							builder.author(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: StringFieldMapper.CONTENT_TYPE)
-									.parse("author",
-											(Map<String, Object>) propNode,
-											parserContext));
-						} else if ("keywords".equals(propName)) {
+									StringFieldMapper.CONTENT_TYPE).parse(
+									"author",
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
+						} else if ("keywords".equals(_FieldName)) {
 							builder.keywords(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: StringFieldMapper.CONTENT_TYPE)
-									.parse("keywords",
-											(Map<String, Object>) propNode,
-											parserContext));
-						} else if ("content_type".equals(propName)) {
+									StringFieldMapper.CONTENT_TYPE).parse(
+									"keywords",
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
+						} else if ("content_type".equals(_FieldName)) {
 							builder.contentType(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: StringFieldMapper.CONTENT_TYPE)
-									.parse("content_type",
-											(Map<String, Object>) propNode,
-											parserContext));
-						} else if ("content_length".equals(propName)) {
+									StringFieldMapper.CONTENT_TYPE).parse(
+									"content_type",
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
+						} else if ("content_length".equals(_FieldName)) {
 							builder.contentLength(parserContext.typeParser(
-									isMultifield
-											? MultiFieldMapper.CONTENT_TYPE
-											: IntegerFieldMapper.CONTENT_TYPE)
-									.parse("content_length",
-											(Map<String, Object>) propNode,
-											parserContext));
+									IntegerFieldMapper.CONTENT_TYPE).parse(
+									"content_length",
+									(Map<String, Object>) _FieldDescription,
+									parserContext));
 						}
 					}
 				}
@@ -386,11 +390,13 @@ public class AttachmentMapper implements Mapper {
 		XContentParser.Token token = parser.currentToken();
 		if (token == XContentParser.Token.VALUE_STRING) {
 			content = parser.binaryValue();
+			log.info("VALUE_STRING is got!" + content);
 		} else {
 			String currentFieldName = null;
 			while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
 				if (token == XContentParser.Token.FIELD_NAME) {
 					currentFieldName = parser.currentName();
+					log.info("currentFieldName " + currentFieldName);
 				} else if (token == XContentParser.Token.VALUE_STRING) {
 					if ("content".equals(currentFieldName)) {
 						content = parser.binaryValue();
@@ -428,6 +434,8 @@ public class AttachmentMapper implements Mapper {
 			parsedContent = tika().parseToString(
 					new BytesStreamInput(content, false), metadata,
 					indexedChars);
+			// if (parsedContent != null)
+			// log.info(parsedContent);
 		} catch (Throwable e) {
 			// #18: we could ignore errors when Tika does not parse data
 			if (!ignoreErrors)
