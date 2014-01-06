@@ -32,7 +32,6 @@ import org.elasticsearch.index.mapper.core.DateFieldMapper;
 import org.elasticsearch.index.mapper.core.IntegerFieldMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
 import org.elasticsearch.index.mapper.multifield.MultiFieldMapper;
-import org.index.mapper.xcontent.test.EncryptedDocMapperTest;
 
 import java.io.IOException;
 import java.util.Map;

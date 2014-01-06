@@ -50,5 +50,7 @@ _region_.tex
 
 ## ignore below directories
 soul_seg/target/
+soul_seg/test-output/
 ESMapReduce/lib/
 elasticsearch/target/
+elasticsearch/test-output/
