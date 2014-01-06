@@ -39,39 +39,56 @@ import static org.hamcrest.Matchers.instanceOf;
 @Test
 public class MultifieldAttachmentMapperTests {
 
-    private DocumentMapperParser mapperParser;
+	// 这个不必测试，因为已经屏蔽了multi_field
+	private DocumentMapperParser mapperParser;
 
-    @BeforeClass
-    public void setupMapperParser() {
-        mapperParser = new DocumentMapperParser(new Index("test"), new AnalysisService(new Index("test")), null, null);
-        mapperParser.putTypeParser(AttachmentMapper.CONTENT_TYPE, new AttachmentMapper.TypeParser());
-    }
+	@BeforeClass
+	public void setupMapperParser() {
+		mapperParser = new DocumentMapperParser(new Index("test"),
+				new AnalysisService(new Index("test")), null, null);
+		mapperParser.putTypeParser(AttachmentMapper.CONTENT_TYPE,
+				new AttachmentMapper.TypeParser());
+	}
 
-    @Test
-    public void testSimpleMappings() throws Exception {
-        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/multifield/multifield-mapping.json");
-        DocumentMapper docMapper = mapperParser.parse(mapping);
+	@Test
+	public void testSimpleMappings() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/multifield/multifield-mapping.json");
+		DocumentMapper docMapper = mapperParser.parse(mapping);
 
+		assertThat(docMapper.mappers().fullName("file").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
 
-        assertThat(docMapper.mappers().fullName("file").mapper(), instanceOf(StringFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.suggest").mapper(), instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.date").mapper(),
+				instanceOf(DateFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.date.string").mapper(),
+				instanceOf(StringFieldMapper.class));
 
-        assertThat(docMapper.mappers().fullName("file.date").mapper(), instanceOf(DateFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.date.string").mapper(), instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.title").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.title.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
 
-        assertThat(docMapper.mappers().fullName("file.title").mapper(), instanceOf(StringFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.title.suggest").mapper(), instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.name").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.name.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
 
-        assertThat(docMapper.mappers().fullName("file.name").mapper(), instanceOf(StringFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.name.suggest").mapper(), instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.author").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(
+				docMapper.mappers().fullName("file.author.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
 
-        assertThat(docMapper.mappers().fullName("file.author").mapper(), instanceOf(StringFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.author.suggest").mapper(), instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.keywords").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.keywords.suggest")
+				.mapper(), instanceOf(StringFieldMapper.class));
 
-        assertThat(docMapper.mappers().fullName("file.keywords").mapper(), instanceOf(StringFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.keywords.suggest").mapper(), instanceOf(StringFieldMapper.class));
-
-        assertThat(docMapper.mappers().fullName("file.content_type").mapper(), instanceOf(StringFieldMapper.class));
-        assertThat(docMapper.mappers().fullName("file.content_type.suggest").mapper(), instanceOf(StringFieldMapper.class));
-    }
+		assertThat(docMapper.mappers().fullName("file.content_type").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.content_type.suggest")
+				.mapper(), instanceOf(StringFieldMapper.class));
+	}
 }

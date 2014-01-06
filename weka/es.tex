@@ -69,10 +69,9 @@ curl -XPOST "http://namenode:9200/_search" -d'
     }
 }'
 \end{verbatim}
-\par 却能输出结果，What's going on here?  We've obviously indexed two movies with "Francis Ford Coppola" as director and that's what we see in search results as well. Well, while ES has a JSON object with that data that it returns to us in search results in the form of the \_source property .
-\par When we index a document with ElasticSearch it (simplified) does two things: it stores the original data untouched for later retrieval in the form of \_source and it indexes each JSON property into one or more fields in a Lucene index. During the indexing it processes each field according to how the field is mapped. If it isn't mapped , default mappings depending on the fields type (string, number etc) is used.
+\par 却能输出结果，What's going on here? When we index a document with ElasticSearch it (simplified) does two things: it stores the original data untouched for later retrieval in the form of \_source and it indexes each JSON property into one or more fields in a Lucene index. During the indexing it processes each field according to how the field is mapped. If it isn't mapped , default mappings depending on the fields type (string, number etc) is used.
 \par As we haven't supplied any mappings for our index, ElasticSearch uses the default mappings for the director field. This means that in the index the director fields value isn't \textbf{"Francis Ford Coppola"}. Instead it's something like \textbf{["francis", "ford", "coppola"]}. We can verify that by modifying our filter to instead match "francis" (or "ford" or "coppola").
-\par So, what to do if we want to filter by the exact name of the director? We modify how it's mapped. There are a number of ways to add mappings to ElasticSearch, through a HTTP request that creates by calling the \_mapping endpoint. Using this approach, we could fix the above issue by adding a mapping for the "director" field , to instruct ElasticSearch not to analyze (tokenize etc.) the field at all.
+\par 如果想精确匹配整个Text，必须修改Text的映射方式（mapping）。There are a number of ways to add mappings to ElasticSearch, through a HTTP request that creates by calling the \_mapping endpoint. Using this approach, we could fix the above issue by adding a mapping for the "director" field , to instruct ElasticSearch not to analyze (tokenize etc.) the field at all.
 \begin{verbatim}
 curl -X PUT namenode:9200/movies/movie/_mapping -d'
 {
@@ -81,13 +80,13 @@ curl -X PUT namenode:9200/movies/movie/_mapping -d'
          "director": {
             "type": "string",
             "index": "not_analyzed"
+             ## 不分析director域
         }
       }
    }
 }'
 \end{verbatim}
-\par In many cases it's not possible to modify existing mappings. Often the easiest work around for that is to create a new index with the desired mappings and re-index all of the data into the new index. The second problem is that, even if we could add it, we would have limited our ability to search in the director field. That is, while a search for the exact value in the field would match we wouldn't be able to search for single words in the field.
-\par 幸运地是存在更简单的办法。We add a mapping that upgrades the field to a multi field. What that means is that we'll map the field multiple times for indexing. Given that one of the ways we map it match the existing mapping both by name and settings that will work fine and we won't have to create a new index.
+\par 有些时候无法修改索引的mapping，最简单的办法是删除原先的并重建索引，但这种方法无法同时满足两种查询（即精确匹配整个Text或仅仅匹配Text中的某个String），幸运地是可以设置director域的类型为"multi\_field"，也就是说，对文档中的同一个域可以生成多个别名域（每个别名域索引一次）。
 \begin{verbatim}
 curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
 {
@@ -98,6 +97,7 @@ curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
             "fields": {
                "director": {"type": "string's"},
                "original": {"type" : "string", "index" : "not_analyzed"}
+               ## 使用director.original访问这个域
             }
          }
       }

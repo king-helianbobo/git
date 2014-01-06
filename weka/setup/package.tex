@@ -1,7 +1,11 @@
 %\usepackage{algorithm2e}
 %\usepackage[linesnumbered]{algorithm2e}
 %\usepackage[linesnumbered,ruled]{algorithm2e}
-\usepackage{float} %%禁止浮动体四处浮动
+
+%% use the paralist package to set the default left margins of lists/enumerates/etc. Simply use the command \setdefaultleftmargin like so
+\usepackage{paralist}
+\setdefaultleftmargin{0pt}{}{}{}{}{}
+\usepackage{float} %%prohibit object float anywhere
 \usepackage[linesnumbered,ruled]{algorithm2e}
 \XeTeXlinebreaklocale "zh" %%以中文方式断行
 \XeTeXlinebreakskip = 0pt plus 1pt %%断行间设置字符间距
@@ -108,6 +112,7 @@
     breaklines=true, breakautoindent=true,breakindent=4em,
     escapeinside={/*@}{@*/},
 }
+%% \setlength{\parindent}{0pt}
 %%\setlength{\parindent}{2.3em}         %%%%
 \usepackage[top=1.1in,bottom=1.1in,left=1.2in,right=1.2in]{geometry}
 %%\usepackage[top=1.1in,bottom=1.1in,left=0.2in,right=0.2in]{geometry}
@@ -120,4 +125,5 @@
 \usepackage{pifont}
 \let\OldDing\ding
 \renewcommand{\ding}[1]{\OldDing{#1}~}
+
 

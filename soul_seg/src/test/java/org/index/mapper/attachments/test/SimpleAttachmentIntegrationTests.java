@@ -45,108 +45,173 @@ import static org.hamcrest.Matchers.equalTo;
 @Test
 public class SimpleAttachmentIntegrationTests {
 
-    private final ESLogger logger = Loggers.getLogger(getClass());
+	private final ESLogger logger = Loggers.getLogger(getClass());
+	private Node node;
 
-    private Node node;
+	@BeforeClass
+	public void setupServer() {
+		node = nodeBuilder()
+				.local(true)
+				.settings(
+						settingsBuilder()
+								.put("path.data", "target/data")
+								.put("cluster.name",
+										"test-cluster-"
+												+ NetworkUtils
+														.getLocalAddress())
+								.put("gateway.type", "none")).node();
+	}
 
-    @BeforeClass
-    public void setupServer() {
-        node = nodeBuilder().local(true).settings(settingsBuilder()
-                .put("path.data", "target/data")
-                .put("cluster.name", "test-cluster-" + NetworkUtils.getLocalAddress())
-                .put("gateway.type", "none")).node();
-    }
+	@AfterClass
+	public void closeServer() {
+		node.close();
+	}
 
-    @AfterClass
-    public void closeServer() {
-        node.close();
-    }
+	@BeforeMethod
+	public void createIndex() {
+		logger.info("creating index [test]");
+		node.client()
+				.admin()
+				.indices()
+				.create(createIndexRequest("test").settings(
+						settingsBuilder().put("index.numberOfReplicas", 0)))
+				.actionGet();
+		logger.info("Running Cluster Health");
+		ClusterHealthResponse clusterHealth = node.client().admin().cluster()
+				.health(clusterHealthRequest().waitForGreenStatus())
+				.actionGet();
+		logger.info("Done Cluster Health, status " + clusterHealth.getStatus());
+		assertThat(clusterHealth.isTimedOut(), equalTo(false));
+		assertThat(clusterHealth.getStatus(),
+				equalTo(ClusterHealthStatus.GREEN));
+	}
 
-    @BeforeMethod
-    public void createIndex() {
-        logger.info("creating index [test]");
-        node.client().admin().indices().create(createIndexRequest("test").settings(settingsBuilder().put("index.numberOfReplicas", 0))).actionGet();
-        logger.info("Running Cluster Health");
-        ClusterHealthResponse clusterHealth = node.client().admin().cluster().health(clusterHealthRequest().waitForGreenStatus()).actionGet();
-        logger.info("Done Cluster Health, status " + clusterHealth.getStatus());
-        assertThat(clusterHealth.isTimedOut(), equalTo(false));
-        assertThat(clusterHealth.getStatus(), equalTo(ClusterHealthStatus.GREEN));
-    }
+	@AfterMethod
+	public void deleteIndex() {
+		logger.info("deleting index [test]");
+		node.client().admin().indices().delete(deleteIndexRequest("test"))
+				.actionGet();
+	}
 
-    @AfterMethod
-    public void deleteIndex() {
-        logger.info("deleting index [test]");
-        node.client().admin().indices().delete(deleteIndexRequest("test")).actionGet();
-    }
+	@Test
+	public void testSimpleAttachment() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
+		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/testXHTML.html");
 
-    @Test
-    public void testSimpleAttachment() throws Exception {
-        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/xcontent/test-mapping.json");
-        byte[] html = copyToBytesFromClasspath("/org/elasticsearch/index/mapper/xcontent/testXHTML.html");
+		node.client()
+				.admin()
+				.indices()
+				.putMapping(
+						putMappingRequest("test").type("person")
+								.source(mapping)).actionGet();
 
-        node.client().admin().indices().putMapping(putMappingRequest("test").type("person").source(mapping)).actionGet();
+		node.client()
+				.index(indexRequest("test").type("person").source(
+						jsonBuilder().startObject().field("file", html)
+								.endObject())).actionGet();
+		node.client().admin().indices().refresh(refreshRequest()).actionGet();
 
-        node.client().index(indexRequest("test").type("person")
-                .source(jsonBuilder().startObject().field("file", html).endObject())).actionGet();
-        node.client().admin().indices().refresh(refreshRequest()).actionGet();
+		CountResponse countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file.title", "test document"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
 
-        CountResponse countResponse = node.client().count(countRequest("test").query(fieldQuery("file.title", "test document"))).actionGet();
-        assertThat(countResponse.getCount(), equalTo(1l));
+		countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file", "tests the ability"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
+	}
 
-        countResponse = node.client().count(countRequest("test").query(fieldQuery("file", "tests the ability"))).actionGet();
-        assertThat(countResponse.getCount(), equalTo(1l));
-    }
+	@Test
+	public void testSimpleAttachmentContentLengthLimit() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
+		byte[] txt = copyToBytesFromClasspath("/mapper/xcontent/testContentLength.txt");
+		final int CONTENT_LENGTH_LIMIT = 20;
 
-    @Test
-    public void testSimpleAttachmentContentLengthLimit() throws Exception {
-        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/xcontent/test-mapping.json");
-        byte[] txt = copyToBytesFromClasspath("/org/elasticsearch/index/mapper/xcontent/testContentLength.txt");
-        final int CONTENT_LENGTH_LIMIT = 20;
+		node.client()
+				.admin()
+				.indices()
+				.putMapping(
+						putMappingRequest("test").type("person")
+								.source(mapping)).actionGet();
 
-        node.client().admin().indices().putMapping(putMappingRequest("test").type("person").source(mapping)).actionGet();
+		node.client()
+				.index(indexRequest("test").type("person").source(
+						jsonBuilder().startObject().field("file").startObject()
+								.field("content", txt)
+								.field("_indexed_chars", CONTENT_LENGTH_LIMIT)
+								.endObject())).actionGet();
+		node.client().admin().indices().refresh(refreshRequest()).actionGet();
 
-        node.client().index(indexRequest("test").type("person")
-                .source(jsonBuilder().startObject().field("file").startObject().field("content", txt).field("_indexed_chars", CONTENT_LENGTH_LIMIT).endObject())).actionGet();
-        node.client().admin().indices().refresh(refreshRequest()).actionGet();
+		CountResponse countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file", "BeforeLimit"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
 
-        CountResponse countResponse = node.client().count(countRequest("test").query(fieldQuery("file", "BeforeLimit"))).actionGet();
-        assertThat(countResponse.getCount(), equalTo(1l));
+		countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file", "AfterLimit"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(0l));
+	}
 
-        countResponse = node.client().count(countRequest("test").query(fieldQuery("file", "AfterLimit"))).actionGet();
-        assertThat(countResponse.getCount(), equalTo(0l));
-    }
+	@Test
+	public void testSimpleAttachmentNoContentLengthLimit() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
+		byte[] txt = copyToBytesFromClasspath("/mapper/xcontent/testContentLength.txt");
+		final int CONTENT_LENGTH_LIMIT = -1;
 
-    @Test
-    public void testSimpleAttachmentNoContentLengthLimit() throws Exception {
-        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/xcontent/test-mapping.json");
-        byte[] txt = copyToBytesFromClasspath("/org/elasticsearch/index/mapper/xcontent/testContentLength.txt");
-        final int CONTENT_LENGTH_LIMIT = -1;
+		node.client()
+				.admin()
+				.indices()
+				.putMapping(
+						putMappingRequest("test").type("person")
+								.source(mapping)).actionGet();
 
-        node.client().admin().indices().putMapping(putMappingRequest("test").type("person").source(mapping)).actionGet();
+		node.client()
+				.index(indexRequest("test").type("person").source(
+						jsonBuilder().startObject().field("file").startObject()
+								.field("content", txt)
+								.field("_indexed_chars", CONTENT_LENGTH_LIMIT)
+								.endObject())).actionGet();
+		node.client().admin().indices().refresh(refreshRequest()).actionGet();
 
-        node.client().index(indexRequest("test").type("person")
-                .source(jsonBuilder().startObject().field("file").startObject().field("content", txt).field("_indexed_chars", CONTENT_LENGTH_LIMIT).endObject())).actionGet();
-        node.client().admin().indices().refresh(refreshRequest()).actionGet();
+		CountResponse countResponse = node.client()
+				.count(countRequest("test").query(fieldQuery("file", "Begin")))
+				.actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
 
-        CountResponse countResponse = node.client().count(countRequest("test").query(fieldQuery("file", "Begin"))).actionGet();
-        assertThat(countResponse.getCount(), equalTo(1l));
+		countResponse = node.client()
+				.count(countRequest("test").query(fieldQuery("file", "End")))
+				.actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
+	}
 
-        countResponse = node.client().count(countRequest("test").query(fieldQuery("file", "End"))).actionGet();
-        assertThat(countResponse.getCount(), equalTo(1l));
-    }
+	/**
+	 * Test case for issue
+	 * https://github.com/elasticsearch/elasticsearch-mapper-
+	 * attachments/issues/23 <br/>
+	 * We throw a nicer exception when no content is provided
+	 * 
+	 * @throws Exception
+	 */
+	@Test(expectedExceptions = MapperParsingException.class)
+	public void testNoContent() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
 
-    /**
-     * Test case for issue https://github.com/elasticsearch/elasticsearch-mapper-attachments/issues/23
-     * <br/>We throw a nicer exception when no content is provided
-     * @throws Exception
-     */
-    @Test(expectedExceptions = MapperParsingException.class)
-    public void testNoContent() throws Exception {
-        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/xcontent/test-mapping.json");
+		node.client()
+				.admin()
+				.indices()
+				.putMapping(
+						putMappingRequest("test").type("person")
+								.source(mapping)).actionGet();
 
-        node.client().admin().indices().putMapping(putMappingRequest("test").type("person").source(mapping)).actionGet();
-
-        node.client().index(indexRequest("test").type("person")
-                .source(jsonBuilder().startObject().field("file").startObject().endObject())).actionGet();
-    }
+		node.client()
+				.index(indexRequest("test").type("person").source(
+						jsonBuilder().startObject().field("file").startObject()
+								.endObject())).actionGet();
+	}
 }

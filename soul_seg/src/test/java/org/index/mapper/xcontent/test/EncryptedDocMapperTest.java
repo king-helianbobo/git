@@ -10,6 +10,7 @@ import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.MapperParsingException;
+import org.elasticsearch.index.mapper.core.StringFieldMapper;
 import org.index.mapper.attachment.AttachmentMapper;
 import org.testng.annotations.Test;
 
@@ -40,16 +41,22 @@ public class EncryptedDocMapperTest {
 		DocumentMapper docMapper = mapperParser.parse(mapping);
 		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/htmlWithValidDateMeta.html");
 		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/encrypted.pdf");
-		//byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
+		// byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
 
 		BytesReference json = jsonBuilder().startObject().field("_id", 1)
 				.field("file1", html).field("file2", pdf).endObject().bytes();
 
-		log.info(docMapper.type());
+		// DocumentMapper's type must by provided by mapping
 		Document doc = docMapper.parse(json).rootDoc();
+		// parse json to generate document,this document has id,file1,file2
+		assertThat(docMapper.mappers().smartName("file1").mapper(),
+				instanceOf(StringFieldMapper.class));
 		assertThat(
 				doc.get(docMapper.mappers().smartName("file1").mapper().names()
-						.indexName()), containsString("World"));
+						.indexName()), equalTo("World"));
+
+		// log.info(docMapper.mappers().smartName("file1").mapper().names()
+		// .indexName());
 		assertThat(
 				doc.get(docMapper.mappers().smartName("file1.title").mapper()
 						.names().indexName()), equalTo("Hello"));
