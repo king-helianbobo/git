@@ -22,6 +22,7 @@ package org.index.mapper.attachments.test;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.count.CountResponse;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.network.NetworkUtils;
@@ -44,15 +45,10 @@ import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-/**
- * Test case for issue
- * https://github.com/elasticsearch/elasticsearch-mapper-attachments/issues/18
- */
 @Test
 public class MultipleAttachmentIntegrationTests {
 
 	private final ESLogger logger = Loggers.getLogger(getClass());
-
 	private Node node;
 
 	@BeforeClass
@@ -92,6 +88,7 @@ public class MultipleAttachmentIntegrationTests {
 				equalTo(ClusterHealthStatus.GREEN));
 	}
 
+	// The annotated method will be run after each test method
 	@AfterMethod
 	public void deleteIndex() {
 		logger.info("deleting index [test]");
@@ -105,9 +102,13 @@ public class MultipleAttachmentIntegrationTests {
 	@Test
 	public void testMultipleAttachmentsWithEncryptedDoc() throws Exception {
 		createIndex(ImmutableSettings.builder().build());
+		/*
+		 * { "person":{ "properties":{ "file1":{ "type":"attachment" },
+		 * "file2":{ "type":"attachment" } } } }
+		 */
 		String mapping = copyToStringFromClasspath("/mapper/multipledocs/test-mapping.json");
 		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/htmlWithValidDateMeta.html");
-		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/encrypted.pdf");
+		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
 
 		node.client()
 				.admin()
@@ -116,11 +117,20 @@ public class MultipleAttachmentIntegrationTests {
 						putMappingRequest("test").type("person")
 								.source(mapping)).actionGet();
 
-		node.client()
+		IndexResponse indexResponse = node
+				.client()
 				.index(indexRequest("test").type("person").source(
 						jsonBuilder().startObject().field("file1", html)
-								.field("file2", pdf).field("hello", "world")
+								.field("file2", pdf).field("hello", "club")
 								.endObject())).actionGet();
+
+		// IndexResponse indexResponse = node
+		// .client()
+		// .index(indexRequest("test").type("person").source(
+		// jsonBuilder().startObject().field("file1", html)
+		// .field("file2", pdf).field("hello", "world")
+		// .endObject())).actionGet();
+		logger.info(indexResponse.getId() + "," + indexResponse.getIndex());
 		node.client().admin().indices().refresh(refreshRequest()).actionGet();
 
 		CountResponse countResponse = node
@@ -129,9 +139,8 @@ public class MultipleAttachmentIntegrationTests {
 				.actionGet();
 		assertThat(countResponse.getCount(), equalTo(1l));
 
-		countResponse = node
-				.client()
-				.count(countRequest("test").query(fieldQuery("hello", "World")))
+		countResponse = node.client()
+				.count(countRequest("test").query(fieldQuery("hello", "club")))
 				.actionGet();
 		assertThat(countResponse.getCount(), equalTo(1l));
 	}
@@ -147,6 +156,7 @@ public class MultipleAttachmentIntegrationTests {
 		String mapping = copyToStringFromClasspath("/mapper/multipledocs/test-mapping.json");
 		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/htmlWithValidDateMeta.html");
 		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/encrypted.pdf");
+		// byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
 
 		node.client()
 				.admin()

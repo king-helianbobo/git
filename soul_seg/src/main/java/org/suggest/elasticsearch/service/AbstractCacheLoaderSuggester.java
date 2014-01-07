@@ -15,8 +15,9 @@ import org.elasticsearch.index.analysis.NamedAnalyzer;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.mapper.MapperService;
 
-public abstract class AbstractCacheLoaderSuggester<T> extends
-		CacheLoader<ShardSuggestService.FieldType, T> {
+public abstract class AbstractCacheLoaderSuggester<T>
+		extends
+			CacheLoader<ShardSuggestService.FieldType, T> {
 
 	private MapperService mapperService;
 	private AnalysisService analysisService;
@@ -70,8 +71,9 @@ public abstract class AbstractCacheLoaderSuggester<T> extends
 			Analyzer queryAnalyzer, ShardSuggestService.FieldType fieldType)
 			throws Exception; // this method must be override
 
-	public static class CacheLoaderAnalyzingSuggester extends
-			AbstractCacheLoaderSuggester<AnalyzingSuggester> {
+	public static class CacheLoaderAnalyzingSuggester
+			extends
+				AbstractCacheLoaderSuggester<AnalyzingSuggester> {
 
 		public CacheLoaderAnalyzingSuggester(MapperService mapperService,
 				AnalysisService analysisService,
@@ -85,16 +87,16 @@ public abstract class AbstractCacheLoaderSuggester<T> extends
 				throws Exception {
 			AnalyzingSuggester analyzingSuggester = new AnalyzingSuggester(
 					indexAnalyzer, queryAnalyzer,
-					AnalyzingSuggester.EXACT_FIRST, 256, -1);
-			analyzingSuggester.setPreservePositionIncrements(fieldType
-					.preservePositionIncrements());
+					AnalyzingSuggester.EXACT_FIRST, 256, -1,
+					fieldType.preservePositionIncrements());
 			analyzingSuggester.build(dictCache.getUnchecked(fieldType.field()));
 			return analyzingSuggester;
 		}
 	}
 
-	public static class CacheLoaderFuzzySuggester extends
-			AbstractCacheLoaderSuggester<FuzzySuggester> {
+	public static class CacheLoaderFuzzySuggester
+			extends
+				AbstractCacheLoaderSuggester<FuzzySuggester> {
 
 		public CacheLoaderFuzzySuggester(MapperService mapperService,
 				AnalysisService analysisService,
@@ -108,8 +110,8 @@ public abstract class AbstractCacheLoaderSuggester<T> extends
 				throws Exception {
 			FuzzySuggester fuzzySuggester = new FuzzySuggester(indexAnalyzer,
 					queryAnalyzer);
-			fuzzySuggester.setPreservePositionIncrements(fieldType
-					.preservePositionIncrements());
+			// fuzzySuggester.setPreservePositionIncrements(fieldType
+			// .preservePositionIncrements());
 			fuzzySuggester.build(dictCache.getUnchecked(fieldType.field()));
 			return fuzzySuggester;
 		}

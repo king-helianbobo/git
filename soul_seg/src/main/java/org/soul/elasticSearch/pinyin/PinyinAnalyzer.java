@@ -42,11 +42,10 @@ public class PinyinAnalyzer extends Analyzer {
 		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
 				tokenizer);
 		result = new PinyinTokenFilter(result);
-		// // result = new SoulEdgeNGramTokenFilter(result,
-		// // SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
+		// result = new SoulEdgeNGramTokenFilter(result,
+		// SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
 		result = new SoulEdgeNGramTokenFilter(result,
 				SoulEdgeNGramTokenFilter.Side.TWOSIDE, 1);
-		// log.info("another time , we get " + fieldName);
 		return new TokenStreamComponents(tokenizer, result);
 	}
 }

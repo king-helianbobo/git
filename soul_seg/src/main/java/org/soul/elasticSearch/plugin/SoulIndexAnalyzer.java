@@ -4,7 +4,14 @@ import java.io.Reader;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.util.Version;
+import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
+import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;
 import org.soul.splitWord.BasicAnalysis;
 
 public class SoulIndexAnalyzer extends Analyzer {
@@ -30,7 +37,9 @@ public class SoulIndexAnalyzer extends Analyzer {
 			final Reader reader) {
 		Tokenizer tokenizer = new SoulTokenizer(new BasicAnalysis(reader),
 				reader, filter, pstemming);
-		return new TokenStreamComponents(tokenizer);
+		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
+				tokenizer);
+		return new TokenStreamComponents(tokenizer, result);
 	}
 
 }

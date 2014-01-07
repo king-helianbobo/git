@@ -39,9 +39,6 @@ import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-/**
- *
- */
 @Test
 public class SimpleAttachmentIntegrationTests {
 

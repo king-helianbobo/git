@@ -13,8 +13,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <github.global.server>github</github.global.server>
-    <elasticsearch.version>0.90.7</elasticsearch.version>
-    <lucene.version>4.5.1</lucene.version>
+    <elasticsearch.version>0.90.9</elasticsearch.version>
+    <lucene.version>4.6.0</lucene.version>
   </properties>
 
   <repositories>
@@ -38,11 +38,25 @@
 
   <dependencies>
 
-<!-- <dependency> -->
-<!-- 	<groupId>commons-codec</groupId> -->
-<!-- 	<artifactId>commons-codec</artifactId> -->
-<!-- 	<version>1.5</version> -->
-<!-- </dependency> -->
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>${elasticsearch.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.3</version>
+    </dependency>
+
+    <!-- <dependency> -->
+    <!-- 	<groupId>commons-codec</groupId> -->
+    <!-- 	<artifactId>commons-codec</artifactId> -->
+    <!-- 	<version>1.5</version> -->
+    <!-- </dependency> -->
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
@@ -72,11 +86,11 @@
     </dependency>
 
     <dependency>
-    	<groupId>com.ning</groupId>
-    	<artifactId>async-http-client</artifactId>
-    	<version>1.7.22</version>
+      <groupId>com.ning</groupId>
+      <artifactId>async-http-client</artifactId>
+      <version>1.7.22</version>
     </dependency>
-            
+    
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
@@ -99,20 +113,44 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <version>${elasticsearch.version}</version>
-      <optional>false</optional>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${lucene.version}</version>
+      <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <version>${lucene.version}</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-analyzers-icu</artifactId>
+      <artifactId>lucene-analyzers-common</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-codecs</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queries</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+      <exclusions>
+	<exclusion>
+	  <groupId>jakarta-regexp</groupId>
+	  <artifactId>jakarta-regexp</artifactId>
+	</exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-memory</artifactId>
       <version>${lucene.version}</version>
       <scope>compile</scope>
     </dependency>
@@ -120,7 +158,56 @@
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-highlighter</artifactId>
       <version>${lucene.version}</version>
+      <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queryparser</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+      <exclusions>
+	<exclusion>
+	  <groupId>jakarta-regexp</groupId>
+	  <artifactId>jakarta-regexp</artifactId>
+	</exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-suggest</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-join</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <!-- Lucene spatial, make sure when upgrading to work with latest version of jts/spatial4j dependencies -->
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-spatial</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>${elasticsearch.version}</version>
+      <optional>false</optional>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers-icu</artifactId>
+      <version>${lucene.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
 
     <dependency>
       <groupId>log4j</groupId>

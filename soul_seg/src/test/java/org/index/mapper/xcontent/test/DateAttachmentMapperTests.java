@@ -26,6 +26,7 @@ import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
+import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
 import org.index.mapper.attachment.AttachmentMapper;
 import org.lionsoul.jcseg.ASegment;
 import org.testng.annotations.BeforeClass;
@@ -54,7 +55,7 @@ public class DateAttachmentMapperTests {
 
 	@Test
 	public void testSimpleMappings() throws Exception {
-		String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/date/date-mapping.json");
+		String mapping = copyToStringFromClasspath("/mapper/date/date-mapping.json");
 
 		DocumentMapper docMapper = mapperParser.parse(mapping);
 		log.info("***********" + mapping);
@@ -62,5 +63,8 @@ public class DateAttachmentMapperTests {
 		// mappers()函数获得每个域的mapper,每个mapper有indexName，fullName和name
 		assertThat(docMapper.mappers().fullName("file.date").mapper(),
 				instanceOf(StringFieldMapper.class));
+		log.info(docMapper.mappers().indexName("_type").mapper().names().indexName());
+		assertThat(docMapper.mappers().fullName("_type").mapper(),
+				instanceOf(TypeFieldMapper.class));
 	}
 }

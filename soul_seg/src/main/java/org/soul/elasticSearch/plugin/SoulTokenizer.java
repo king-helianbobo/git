@@ -35,7 +35,7 @@ public class SoulTokenizer extends Tokenizer {
 	}
 
 	@Override
-	public boolean incrementToken() throws IOException {
+	public final boolean incrementToken() throws IOException {
 		clearAttributes();
 		int position = 0;
 		Term term = null;
@@ -72,7 +72,7 @@ public class SoulTokenizer extends Tokenizer {
 		}
 	}
 
-	// 必须重载的方法，否则在批量索引文件时将会导致文件索引失败
+	// 必须重载的方法，否则批量索引文件时将失败
 	@Override
 	public void reset() throws IOException {
 		super.reset();

@@ -18,7 +18,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	public static final int DEFAULT_MAX_GRAM_SIZE = 1;
 	public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
-	public static int offset = 0;// temp offset
+	public static int offset = 0;
 	public static boolean isFront = true;
 
 	/** Specifies which side of the input the n-gram should be generated from */

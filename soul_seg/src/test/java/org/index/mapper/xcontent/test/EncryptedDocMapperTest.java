@@ -39,6 +39,7 @@ public class EncryptedDocMapperTest {
 
 		String mapping = copyToStringFromClasspath("/mapper/multipledocs/test-mapping.json");
 		DocumentMapper docMapper = mapperParser.parse(mapping);
+
 		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/htmlWithValidDateMeta.html");
 		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/encrypted.pdf");
 		// byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
@@ -55,8 +56,8 @@ public class EncryptedDocMapperTest {
 				doc.get(docMapper.mappers().smartName("file1").mapper().names()
 						.indexName()), equalTo("World"));
 
-		// log.info(docMapper.mappers().smartName("file1").mapper().names()
-		// .indexName());
+		assertThat(doc.get(docMapper.mappers().smartName("_type").mapper()
+				.names().indexName()),equalTo("person"));
 		assertThat(
 				doc.get(docMapper.mappers().smartName("file1.title").mapper()
 						.names().indexName()), equalTo("Hello"));

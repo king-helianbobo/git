@@ -49,7 +49,7 @@
   </category>  
 
   <root>
-    <level value="DEBUG"/> 
+    <level value="INFO"/> 
     <appender-ref ref="log4jLogDebug"/>
     <!-- <level value="WARN"/> -->
     <appender-ref ref="log4jTerminal"/>

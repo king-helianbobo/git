@@ -102,6 +102,10 @@ public class MetadataMapperTest {
 						.build(), null, 300L);
 	}
 
+	// we can assure this method throw exception
+	// The list of exceptions that a test method is expected to throw. If no
+	// exception or a different than one on this list is thrown, this test will
+	// be marked a failure.
 	@Test(expectedExceptions = MapperParsingException.class)
 	public void testWithEmptyDate() throws Exception {
 		checkMeta("htmlWithEmptyDateMeta.html", ImmutableSettings.builder()
