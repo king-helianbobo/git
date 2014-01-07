@@ -1,0 +1,35 @@
+\subsection{ElasticSearch源码分析}
+\par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
+\begin{multicols}{2}
+\begin{itemize}
+\item PluginsModule：插件模块
+\item SettingsModule：参数设置模块
+\item NodeModule：节点管理模块
+\item NetworkModule：网络管理模块
+\item NodeCacheModule：分布式缓存模块
+\item ScriptModule：脚本处理模块
+\item JmxModule：Java管理扩展模块
+\item EnvironmentModule：环境模块
+\item NodeEnvironmentModule：节点环境模块
+\item ClusterNameModule：集群名模块
+\item ThreadPoolModule：线程池模块
+\item DiscoveryModule：节点自动发现模块
+\item ClusterModule：集群模块
+\item RestModule：rest模块
+\item TransportModule：tcp模块
+\item HttpServerModule：http模块
+\item RiversModule：river模块
+\item IndicesModule：索引模块
+\item SearchModule：搜索模块
+\item ActionModule：行为模块
+\item MonitorModule：监控模块
+\item GatewayModule：持久化模块
+\item NodeClientModule：客户端模块
+\end{itemize}
+\end{multicols}
+\begin{enumerate}[(1)]
+\item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class)，因此请求将由TransportAnalyzeAction类处理。
+\item "/\{index\}/\_close"，只接受POST方法，在org/elasticsearch/rest/action/admin/indices/close/RestCloseIndexAction.java中被处理；
+\item  创建一个新的索引，json参数中包括settings和mappings（\textbf{注意并非endpoint中的\_mapping}），只有"/\{index\}"一种操作，接受POST和PUT两种方法，在org/elasticsearch/rest/action/admin/indices/create/RestCreateIndexAction.java中处理；
+\item rest.action目录负责接受，解释Rest请求。client.node负责管理节点客户端请求。action.admin.indices目录负责处理Rest请求中的动作。
+\end{enumerate}

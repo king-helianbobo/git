@@ -1,8 +1,7 @@
 \section{ElasticSearch}
-\par Elasticsearch是个开源分布式搜索引擎，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
-\par Index names are different indices. Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc.目前, Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type).
-\par Then you build a query and in the field (any query that acces a field to execute on), you can specify type1.field1, and in this case, it will be automatically detected, and the query will be wrapped to only be executed match on docs with \_type:type1 (in an efficient manner), on field1. This does mean that across types, having the same field name with different mappings types (for example, type1 has field1 of type numeric, and type2 also has field1 but of type string) should not be done (working on automatically detecting that...).
-\par So, the type prefix when you define the field name should allow to only search on a field against that specific type. (At the end of the day, it is wrapped in a filtered query with a \_type:type1 term filter).
+\par Elasticsearch是一个开源分布式搜索引擎，可以看作一个分布式Key-Value数据库，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
+\par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type名将赋给每个Document的\textbf{\_type}域。
+\par 当index为cars，type为car时，ElasticSearch将自动为每个查询添加一个额外条件，只有\textbf{\_type}域的值为car的Document才能匹配到查询，更新索引也是如此。This does mean that across types, having the same field name with different mappings types (for example, \textbf{'car'} has field \textbf{'Seat'} of type numeric, and 'bus' also has field \textbf{'Seat'} but of type string) should not be done (working on automatically detecting that...). The type prefix when you define the field name should allow to only search on a field against that specific type. (At the end of the day, it is wrapped in a filtered query with a \_type:type1 term filter).
 \subsection{What's a mapping?}
 \par A mapping not only tells ES what is in a field…it tells ES what terms are indexed and searchable.
 \par A mapping is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
@@ -401,8 +400,11 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \par 搜索时可使用name来访问name域的默认版本，或者使用name.autocomplete访问另外一个版本。
 \subsection{ElasticSearch源码分析}
 \par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
-\begin{multicols}{2}
+
 \begin{itemize}
+\item NodeEnvironmentModule:节点环境模块
+\item DiscoveryModule：节点自动发现模块
+\begin{multicols}{2}
 \item PluginsModule：插件模块
 \item SettingsModule：参数设置模块
 \item NodeModule：节点管理模块
@@ -411,10 +413,8 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \item ScriptModule：脚本处理模块
 \item JmxModule：Java管理扩展模块
 \item EnvironmentModule：环境模块
-\item NodeEnvironmentModule：节点环境模块
 \item ClusterNameModule：集群名模块
 \item ThreadPoolModule：线程池模块
-\item DiscoveryModule：节点自动发现模块
 \item ClusterModule：集群模块
 \item RestModule：rest模块
 \item TransportModule：tcp模块
@@ -426,8 +426,9 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \item MonitorModule：监控模块
 \item GatewayModule：持久化模块
 \item NodeClientModule：客户端模块
-\end{itemize}
 \end{multicols}
+\end{itemize}
+
 \begin{enumerate}[(1)]
 \item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class)，因此请求将由TransportAnalyzeAction类处理。
 \item "/\{index\}/\_close"，只接受POST方法，在org/elasticsearch/rest/action/admin/indices/close/RestCloseIndexAction.java中被处理；
