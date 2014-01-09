@@ -6,6 +6,7 @@
   <classpathentry kind="src" path="src/main/resources" excluding="**/*.java"/>
   <classpathentry kind="output" path="target/classes"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="var" path="M2_REPO/com/google/guava/guava/15.0/guava-15.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/elasticsearch/elasticsearch/0.90.9/elasticsearch-0.90.9-tests.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-core/4.6.0/lucene-core-4.6.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-analyzers-common/4.6.0/lucene-analyzers-common-4.6.0.jar"/>
