@@ -13,6 +13,8 @@ import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -22,10 +24,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.Response;
 
 public class RestGetSuggestActionTest {
+
+	private final Log log = LogFactory.getLog(RestGetSuggestActionTest.class);
 
 	private final AsyncHttpClient httpClient = new AsyncHttpClient();
 	private Node node;
@@ -39,12 +44,12 @@ public class RestGetSuggestActionTest {
 				.prepareNodesInfo().setHttp(true).execute().actionGet();
 		port = ((InetSocketTransportAddress) response.getNodes()[0].getHttp()
 				.address().boundAddress()).address().getPort();
-
+		log.info(port);
 		List<Map<String, Object>> products = ProductTestHelper
 				.createProducts(4);
 		products.get(0).put("ProductName", "foo");
-		products.get(1).put("ProductName", "foob");
-		products.get(2).put("ProductName", "foobar");
+		products.get(1).put("ProductName", "foOb");
+		products.get(2).put("ProductName", "fooBar");
 		NodeTestHelper.createIndexWithMapping("products", node);
 		ProductTestHelper.indexProducts(products, node);
 		refreshAllSuggesters();
@@ -57,7 +62,7 @@ public class RestGetSuggestActionTest {
 		node.close();
 	}
 
-	@Ignore("AsyncHttpClient does not allow body in GET requests - need to change")
+	@Ignore("AsyncHttpClient does not allow body in GET requests - need to modify")
 	@Test
 	public void testThatSuggestionsShouldWorkWithGetRequestBody()
 			throws Exception {
@@ -65,8 +70,9 @@ public class RestGetSuggestActionTest {
 				.prepareGet(
 						"http://localhost:" + port
 								+ "/products/product/__suggest")
-				.setBody(createJSONQuery("ProductName.suggest", "foo"))
+				.setBody(createJSONQuery("ProductName.suggest", "foo", null))
 				.execute().get().getResponseBody();
+		// log.info(response);
 		List<String> suggestions = getSuggestionsFromResponse(response);
 		assertThat(suggestions, containsInAnyOrder("foo", "foob", "foobar"));
 	}
@@ -74,17 +80,25 @@ public class RestGetSuggestActionTest {
 	@Test
 	public void testThatSuggestionsShouldWorkWithCallbackAndGetRequestParameter()
 			throws Exception {
+		// String query = URLEncoder.encode(
+		// createJSONQuery("ProductName.suggest", "foobar"), "UTF8");
 		String query = URLEncoder.encode(
-				createJSONQuery("ProductName.suggest", "foobar"), "UTF8");
-		String queryString = "callback=mycallback&source=" + query;
+				createJSONQuery("ProductName.lowercase", "foo", "fuzzy"),
+				"UTF8");
+		// String queryString = "callback=mycallback&source=" + query;
+		String queryString = "pretty=true&source=" + query;
+		log.info(queryString);
 		String response = httpClient
 				.prepareGet(
 						"http://localhost:" + port
 								+ "/products/product/__suggest?" + queryString)
 				.execute().get().getResponseBody();
-		assertThat(
-				response,
-				is("mycallback({\"_shards\":{\"total\":1,\"successful\":1,\"failed\":0},\"suggestions\":[\"foobar\"]});"));
+		List<String> suggestions = getSuggestionsFromResponse(response);
+		assertThat(suggestions, containsInAnyOrder("foo", "foob", "foobar"));
+		log.info(response);
+		// assertThat(
+		// response,
+		// is("mycallback({\"_shards\":{\"total\":1,\"successful\":1,\"failed\":0},\"suggestions\":[\"foobar\"]});"));
 	}
 
 	private void refreshAllSuggesters() throws Exception {
@@ -95,9 +109,14 @@ public class RestGetSuggestActionTest {
 		assertThat(r.getStatusCode(), is(200));
 	}
 
-	private String createJSONQuery(String field, String term) {
-		return String.format("{ \"field\": \"%s\", \"term\": \"%s\" }", field,
-				term);
+	private String createJSONQuery(String field, String term, String type) {
+		if (type == null)
+			return String.format("{ \"field\": \"%s\", \"term\": \"%s\" }",
+					field, term);
+		else
+			return String
+					.format("{ \"field\": \"%s\", \"term\": \"%s\" , \"type\": \"%s\" }",
+							field, term, type);
 	}
 
 	@SuppressWarnings("unchecked")

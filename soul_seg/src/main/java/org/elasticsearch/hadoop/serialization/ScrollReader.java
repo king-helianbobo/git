@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.elasticsearch.hadoop.rest.dto.mapping.Field;
+import org.elasticsearch.hadoop.rest.dto.Field;
 import org.elasticsearch.hadoop.serialization.Parser.NumberType;
 import org.elasticsearch.hadoop.serialization.Parser.Token;
 import org.elasticsearch.hadoop.serialization.json.JacksonJsonParser;

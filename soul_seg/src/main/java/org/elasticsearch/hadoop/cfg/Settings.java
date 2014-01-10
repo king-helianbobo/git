@@ -22,10 +22,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.hadoop.hive.ESStorageHandler;
 import org.elasticsearch.hadoop.util.Assert;
+import org.elasticsearch.hadoop.util.Booleans;
+import org.elasticsearch.hadoop.util.ByteSizeValue;
 import org.elasticsearch.hadoop.util.StringUtils;
-import org.elasticsearch.hadoop.util.unit.Booleans;
-import org.elasticsearch.hadoop.util.unit.ByteSizeValue;
-import org.elasticsearch.hadoop.util.unit.TimeValue;
+import org.elasticsearch.hadoop.util.TimeValue;
 
 /**
  * Holder class containing the various configuration bits used by ElasticSearch

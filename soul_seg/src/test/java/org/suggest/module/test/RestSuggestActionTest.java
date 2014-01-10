@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.*;
 
 @RunWith(value = Parameterized.class)
+// we use parameters
 public class RestSuggestActionTest extends AbstractSuggestTest {
 
 	private final AsyncHttpClient httpClient = new AsyncHttpClient();
@@ -53,10 +54,6 @@ public class RestSuggestActionTest extends AbstractSuggestTest {
 		Response r = httpClient.preparePost(url).setBody(json).execute().get();
 		assertThat(r.getStatusCode(), is(200));
 		assertThatResponseHasNoShardFailures(r);
-
-		// System.out.println("REQ : " + json);
-		// System.out.println("RESP: " + r.getResponseBody());
-
 		return getSuggestionsFromResponse(r.getResponseBody());
 	}
 
@@ -122,7 +119,10 @@ public class RestSuggestActionTest extends AbstractSuggestTest {
 
 			if (fstStatsNodeEntry.isObject()) {
 				ShardId shardId = new ShardId(fstStatsNodeEntry.get("index")
-						.asText(), fstStatsNodeEntry.get("id").asInt());
+						.getValueAsText(), fstStatsNodeEntry.get("id")
+						.getValueAsInt());
+				// ShardId shardId = new ShardId(fstStatsNodeEntry.get("index")
+				// .asText(), fstStatsNodeEntry.get("id").asInt());
 				FstStats.FstIndexShardStats fstIndexShardStats = new FstStats.FstIndexShardStats(
 						shardId, null, null, fstStatsNodeEntry.get(
 								"sizeInBytes").getLongValue());

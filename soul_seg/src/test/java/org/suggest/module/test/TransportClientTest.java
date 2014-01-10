@@ -3,10 +3,8 @@ package org.suggest.module.test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.util.List;
-
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -27,8 +25,8 @@ public class TransportClientTest extends AbstractSuggestTest {
 
 	public TransportClientTest(int shards, int nodeCount) throws Exception {
 		super(shards, nodeCount);
+		// number of shards and number of node
 	}
-
 	private TransportClient client;
 
 	@Before
@@ -36,9 +34,13 @@ public class TransportClientTest extends AbstractSuggestTest {
 		Settings settings = ImmutableSettings.settingsBuilder()
 				.put("cluster.name", clusterName).put("node.client", true)
 				.build();
+		// Settings settings = ImmutableSettings.settingsBuilder()
+		// .put("cluster.name", "elasticSearch").put("node.client", true)
+		// .build();
 		client = new TransportClient(settings)
 				.addTransportAddress(new InetSocketTransportAddress(
 						"localhost", 9300));
+		// connect to http://localhost:9300
 	}
 
 	@After

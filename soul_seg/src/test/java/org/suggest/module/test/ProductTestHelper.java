@@ -28,12 +28,14 @@ public class ProductTestHelper {
 
 	static void indexProducts(List<Map<String, Object>> products, String index,
 			Node node) throws Exception {
+		// routing is null
 		indexProducts(products, index, null, node);
 	}
 
 	static void indexProducts(List<Map<String, Object>> products, String index,
 			String routing, Node node) throws Exception {
 		long currentCount = getCurrentDocumentCount(index, node);
+		// get total number of documents in index
 		BulkRequest bulkRequest = new BulkRequest();
 		for (Map<String, Object> product : products) {
 			IndexRequest indexRequest = new IndexRequest(index, "product",
@@ -42,7 +44,7 @@ public class ProductTestHelper {
 			if (Strings.hasLength(routing)) {
 				indexRequest.routing(routing);
 			}
-			bulkRequest.add(indexRequest);
+			bulkRequest.add(indexRequest); // put each indexRequest in batch
 		}
 		bulkRequest.refresh(true);
 		BulkResponse response = node.client().bulk(bulkRequest).actionGet();
@@ -50,14 +52,12 @@ public class ProductTestHelper {
 			fail("Error in creating products: "
 					+ response.buildFailureMessage());
 		}
-
 		assertDocumentCountAfterIndexing(index, products.size() + currentCount,
 				node);
 	}
 
 	public static List<Map<String, Object>> createProducts(int count) {
 		List<Map<String, Object>> products = Lists.newArrayList();
-
 		for (int i = 0; i < count; i++) {
 			Map<String, Object> product = Maps.newHashMap();
 			product.put("ProductName", RandomStringUtils.randomAlphabetic(10));
@@ -65,18 +65,15 @@ public class ProductTestHelper {
 					i + "_" + RandomStringUtils.randomAlphabetic(10));
 			products.add(product);
 		}
-
 		return products;
 	}
 
 	public static List<Map<String, Object>> createProducts(String fieldName,
 			String... fields) {
 		List<Map<String, Object>> products = createProducts(fields.length);
-
 		for (int i = 0; i < fields.length; i++) {
 			products.get(i).put(fieldName, fields[i]);
 		}
-
 		return products;
 	}
 
@@ -96,6 +93,7 @@ public class ProductTestHelper {
 		return node.client().prepareCount(index)
 				.setQuery(QueryBuilders.matchAllQuery()).execute()
 				.actionGet(2000).getCount();
+		// 2000 is timeout value , milliseconds
 	}
 
 }

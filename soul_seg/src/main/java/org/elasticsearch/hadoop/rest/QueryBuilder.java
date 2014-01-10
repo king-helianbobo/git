@@ -21,7 +21,7 @@ import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.serialization.ScrollReader;
 import org.elasticsearch.hadoop.util.Assert;
 import org.elasticsearch.hadoop.util.StringUtils;
-import org.elasticsearch.hadoop.util.unit.TimeValue;
+import org.elasticsearch.hadoop.util.TimeValue;
 
 public class QueryBuilder {
 

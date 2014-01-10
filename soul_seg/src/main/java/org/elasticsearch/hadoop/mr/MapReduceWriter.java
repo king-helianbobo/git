@@ -97,7 +97,6 @@ public class MapReduceWriter implements ValueWriter<Writable> {
 
 		else if (writable instanceof AbstractMapWritable) {
 			Map<Writable, Writable> map = (Map<Writable, Writable>) writable;
-
 			generator.writeBeginObject();
 			// ignore handling sets (which are just maps with null values)
 			for (Entry<Writable, Writable> entry : map.entrySet()) {

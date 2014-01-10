@@ -9,7 +9,7 @@ public class HttpClientResponse {
     private Map<String, List<String>> headers;
     private final Throwable e;
 
-    public HttpClientResponse(String response, int errorCode, Map<String, List<String>> headers,  Throwable e) {
+	public HttpClientResponse(String response, int errorCode, Map<String, List<String>> headers,  Throwable e) {
         this.response = response;
         this.errorCode = errorCode;
         this.headers = headers;

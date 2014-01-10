@@ -50,7 +50,6 @@ public abstract class InitializationUtils {
 				client = new BufferedRestClient(settings);
 			}
 			if (!client.indexExists()) {
-
 				client.close();
 				throw new IllegalArgumentException(
 						String.format(

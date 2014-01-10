@@ -31,11 +31,12 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
+
 import org.suggest.elasticsearch.action.statistics.FstStats;
 
 public abstract class AbstractSuggestTest {
 
-	protected String clusterName;
+	protected String clusterName; // random generate one name
 	protected Node node;
 	protected List<Node> nodes = Lists.newArrayList();
 	protected ExecutorService executor;
@@ -45,9 +46,8 @@ public abstract class AbstractSuggestTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		// first argument: number of shards, second argument: number of nodes
-		// Object[][] data = new Object[][] { { 1,1 } };
-		Object[][] data = new Object[][] { { 1, 1 }, { 4, 1 }, { 10, 1 },
-				{ 4, 4 } };
+		Object[][] data = new Object[][]{{2, 1}};
+		//Object[][] data = new Object[][]{{1, 1}, {4, 1}, {10, 1}, {4, 4}};
 		return Arrays.asList(data);
 	}
 
@@ -67,7 +67,7 @@ public abstract class AbstractSuggestTest {
 			nodes.add(nodeFuture.get());
 		}
 
-		node = nodes.get(0);
+		node = nodes.get(0); // get first node,then use index mapping
 		createIndexWithMapping("products", node);
 	}
 
@@ -80,9 +80,8 @@ public abstract class AbstractSuggestTest {
 			executor.submit(stopNode(nodeToStop));
 		}
 		executor.shutdown();
-		executor.awaitTermination(1, TimeUnit.MINUTES); // maybe there are
-														// freaky long gc runs,
-														// so wait
+		executor.awaitTermination(1, TimeUnit.MINUTES);
+		// maybe there are freaky long garbage collection runs, so wait
 	}
 
 	abstract public List<String> getSuggestions(SuggestionQuery suggestionQuery)
@@ -102,7 +101,6 @@ public abstract class AbstractSuggestTest {
 		List<Map<String, Object>> products = createProducts("ProductName",
 				"foo", "foob", "foobar", "boof");
 		indexProducts(products, node);
-
 		List<String> suggestions = getSuggestions("ProductName.suggest", "foo",
 				10);
 		assertSuggestions(suggestions, "foo", "foob", "foobar");

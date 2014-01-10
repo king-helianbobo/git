@@ -24,6 +24,7 @@ public class TransportSuggestActionTest extends AbstractSuggestTest {
 	public TransportSuggestActionTest(int shards, int nodeCount)
 			throws Exception {
 		super(shards, nodeCount);
+		// value come from AbstractSuggestTest
 	}
 
 	@Override
