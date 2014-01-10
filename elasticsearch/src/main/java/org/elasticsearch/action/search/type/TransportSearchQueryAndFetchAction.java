@@ -46,7 +46,7 @@ public class TransportSearchQueryAndFetchAction extends TransportSearchTypeActio
 
     @Inject
     public TransportSearchQueryAndFetchAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
-                                              SearchServiceTransportAction searchService, SearchPhaseController searchPhaseController) {
+            SearchServiceTransportAction searchService, SearchPhaseController searchPhaseController) {
         super(settings, threadPool, clusterService, searchService, searchPhaseController);
     }
 
@@ -67,7 +67,8 @@ public class TransportSearchQueryAndFetchAction extends TransportSearchTypeActio
         }
 
         @Override
-        protected void sendExecuteFirstPhase(DiscoveryNode node, ShardSearchRequest request, SearchServiceListener<QueryFetchSearchResult> listener) {
+        protected void sendExecuteFirstPhase(DiscoveryNode node, ShardSearchRequest request,
+                SearchServiceListener<QueryFetchSearchResult> listener) {
             searchService.sendExecuteFetch(node, request, listener);
         }
 
@@ -91,7 +92,8 @@ public class TransportSearchQueryAndFetchAction extends TransportSearchTypeActio
             if (request.scroll() != null) {
                 scrollId = buildScrollId(request.searchType(), firstResults, null);
             }
-            listener.onResponse(new SearchResponse(internalResponse, scrollId, expectedSuccessfulOps, successulOps.get(), buildTookInMillis(), buildShardFailures()));
+            listener.onResponse(new SearchResponse(internalResponse, scrollId, expectedSuccessfulOps, successulOps.get(),
+                    buildTookInMillis(), buildShardFailures()));
         }
     }
 }

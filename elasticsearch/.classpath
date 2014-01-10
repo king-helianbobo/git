@@ -15,7 +15,7 @@
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-queries/4.6.0/lucene-queries-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-memory/4.6.0/lucene-memory-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-highlighter/4.6.0/lucene-highlighter-4.6.0.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-queryparser/4.6.0/lucene-queryparser-4.6.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-queryparser/4.6.0/lucene-queryparser-4.6.0.jar" sourcepath="/Lucene_Source"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-sandbox/4.6.0/lucene-sandbox-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-suggest/4.6.0/lucene-suggest-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-misc/4.6.0/lucene-misc-4.6.0.jar"/>
