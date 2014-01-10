@@ -12,6 +12,9 @@ public class SuggestRequestBuilder
 		extends
 			ActionRequestBuilder<SuggestRequest, SuggestResponse, SuggestRequestBuilder> {
 
+	// 每个ActionRequestBuilder有个client和request
+	// 通过execute().actionGet()可执行doExecute函数
+
 	public SuggestRequestBuilder(Client client) {
 		super((InternalClient) client, new SuggestRequest());
 	}

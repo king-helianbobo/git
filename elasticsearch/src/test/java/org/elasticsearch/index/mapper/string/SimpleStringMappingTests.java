@@ -22,8 +22,8 @@ package org.elasticsearch.index.mapper.string;
 import org.apache.lucene.index.FieldInfo;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.mapper.DocumentMapper;
-import org.elasticsearch.index.mapper.ParsedDocument;
 import org.elasticsearch.index.mapper.MapperTestUtils;
+import org.elasticsearch.index.mapper.ParsedDocument;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,50 +35,34 @@ public class SimpleStringMappingTests {
 
     @Test
     public void testLimit() throws Exception {
-        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type")
-                .startObject("properties").startObject("field").field("type", "string").field("ignore_above", 5).endObject().endObject()
-                .endObject().endObject().string();
+        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type").startObject("properties").startObject("field")
+                .field("type", "string").field("ignore_above", 5).endObject().endObject().endObject().endObject().string();
 
         DocumentMapper defaultMapper = MapperTestUtils.newParser().parse(mapping);
 
-        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field", "1234")
-                .endObject()
-                .bytes());
+        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder().startObject().field("field", "1234")
+                .endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field"), notNullValue());
 
-        doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field", "12345")
-                .endObject()
-                .bytes());
+        doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder().startObject().field("field", "12345").endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field"), notNullValue());
 
-        doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field", "123456")
-                .endObject()
-                .bytes());
+        doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder().startObject().field("field", "123456").endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field"), nullValue());
     }
 
     @Test
     public void testDefaultsForAnalyzed() throws Exception {
-        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type")
-                .startObject("properties").startObject("field").field("type", "string").endObject().endObject()
-                .endObject().endObject().string();
+        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type").startObject("properties").startObject("field")
+                .field("type", "string").endObject().endObject().endObject().endObject().string();
 
         DocumentMapper defaultMapper = MapperTestUtils.newParser().parse(mapping);
 
-        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field", "1234")
-                .endObject()
-                .bytes());
+        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder().startObject().field("field", "1234")
+                .endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field").fieldType().omitNorms(), equalTo(false));
         assertThat(doc.rootDoc().getField("field").fieldType().indexOptions(), equalTo(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS));
@@ -90,17 +74,13 @@ public class SimpleStringMappingTests {
 
     @Test
     public void testDefaultsForNotAnalyzed() throws Exception {
-        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type")
-                .startObject("properties").startObject("field").field("type", "string").field("index", "not_analyzed").endObject().endObject()
-                .endObject().endObject().string();
+        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type").startObject("properties").startObject("field")
+                .field("type", "string").field("index", "not_analyzed").endObject().endObject().endObject().endObject().string();
 
         DocumentMapper defaultMapper = MapperTestUtils.newParser().parse(mapping);
 
-        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field", "1234")
-                .endObject()
-                .bytes());
+        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder().startObject().field("field", "1234")
+                .endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field").fieldType().omitNorms(), equalTo(true));
         assertThat(doc.rootDoc().getField("field").fieldType().indexOptions(), equalTo(FieldInfo.IndexOptions.DOCS_ONLY));
@@ -111,17 +91,13 @@ public class SimpleStringMappingTests {
 
         // now test it explicitly set
 
-        mapping = XContentFactory.jsonBuilder().startObject().startObject("type")
-                .startObject("properties").startObject("field").field("type", "string").field("index", "not_analyzed").field("omit_norms", false).field("index_options", "freqs").endObject().endObject()
-                .endObject().endObject().string();
+        mapping = XContentFactory.jsonBuilder().startObject().startObject("type").startObject("properties").startObject("field")
+                .field("type", "string").field("index", "not_analyzed").field("omit_norms", false).field("index_options", "freqs")
+                .endObject().endObject().endObject().endObject().string();
 
         defaultMapper = MapperTestUtils.newParser().parse(mapping);
 
-        doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field", "1234")
-                .endObject()
-                .bytes());
+        doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder().startObject().field("field", "1234").endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field").fieldType().omitNorms(), equalTo(false));
         assertThat(doc.rootDoc().getField("field").fieldType().indexOptions(), equalTo(FieldInfo.IndexOptions.DOCS_AND_FREQS));
@@ -133,47 +109,21 @@ public class SimpleStringMappingTests {
 
     @Test
     public void testTermVectors() throws Exception {
-        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type")
-                .startObject("properties")
-                .startObject("field1")
-                    .field("type", "string")
-                    .field("term_vector", "no")
-                .endObject()
-                .startObject("field2")
-                    .field("type", "string")
-                    .field("term_vector", "yes")
-                .endObject()
-                .startObject("field3")
-                    .field("type", "string")
-                    .field("term_vector", "with_offsets")
-                .endObject()
-                .startObject("field4")
-                    .field("type", "string")
-                    .field("term_vector", "with_positions")
-                .endObject()
-                .startObject("field5")
-                    .field("type", "string")
-                    .field("term_vector", "with_positions_offsets")
-                .endObject()
-                .startObject("field6")
-                    .field("type", "string")
-                    .field("term_vector", "with_positions_offsets_payloads")
-                .endObject()
-                .endObject()
-                .endObject().endObject().string();
+        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type").startObject("properties").startObject("field1")
+                .field("type", "string").field("term_vector", "no").endObject().startObject("field2").field("type", "string")
+                .field("term_vector", "yes").endObject().startObject("field3").field("type", "string").field("term_vector", "with_offsets")
+                .endObject().startObject("field4").field("type", "string").field("term_vector", "with_positions").endObject()
+                .startObject("field5").field("type", "string").field("term_vector", "with_positions_offsets").endObject()
+                .startObject("field6").field("type", "string").field("term_vector", "with_positions_offsets_payloads").endObject()
+                .endObject().endObject().endObject().string();
 
         DocumentMapper defaultMapper = MapperTestUtils.newParser().parse(mapping);
 
-        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
-                .startObject()
-                .field("field1", "1234")
-                .field("field2", "1234")
-                .field("field3", "1234")
-                .field("field4", "1234")
-                .field("field5", "1234")
-                .field("field6", "1234")
-                .endObject()
-                .bytes());
+        ParsedDocument doc = defaultMapper.parse(
+                "type",
+                "1",
+                XContentFactory.jsonBuilder().startObject().field("field1", "1234").field("field2", "1234").field("field3", "1234")
+                        .field("field4", "1234").field("field5", "1234").field("field6", "1234").endObject().bytes());
 
         assertThat(doc.rootDoc().getField("field1").fieldType().storeTermVectors(), equalTo(false));
         assertThat(doc.rootDoc().getField("field1").fieldType().storeTermVectorOffsets(), equalTo(false));

@@ -107,8 +107,9 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
     private final ImmutableMap<String, SearchParseElement> elementParsers;
 
     @Inject
-    public SearchService(Settings settings, ClusterService clusterService, IndicesService indicesService, IndicesLifecycle indicesLifecycle, IndicesWarmer indicesWarmer, ThreadPool threadPool,
-                         ScriptService scriptService, CacheRecycler cacheRecycler, DfsPhase dfsPhase, QueryPhase queryPhase, FetchPhase fetchPhase) {
+    public SearchService(Settings settings, ClusterService clusterService, IndicesService indicesService,
+            IndicesLifecycle indicesLifecycle, IndicesWarmer indicesWarmer, ThreadPool threadPool, ScriptService scriptService,
+            CacheRecycler cacheRecycler, DfsPhase dfsPhase, QueryPhase queryPhase, FetchPhase fetchPhase) {
         super(settings);
         this.threadPool = threadPool;
         this.clusterService = clusterService;
@@ -121,7 +122,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
         this.fetchPhase = fetchPhase;
 
         TimeValue keepAliveInterval = componentSettings.getAsTime("keep_alive_interval", timeValueMinutes(1));
-        // we can have 5 minutes here, since we make sure to clean with search requests and when shard/index closes
+        // we can have 5 minutes here, since we make sure to clean with search
+        // requests and when shard/index closes
         this.defaultKeepAlive = componentSettings.getAsTime("default_keep_alive", timeValueMinutes(5)).millis();
 
         Map<String, SearchParseElement> elementParsers = new HashMap<String, SearchParseElement>();
@@ -173,7 +175,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
     public QuerySearchResult executeScan(ShardSearchRequest request) throws ElasticSearchException {
         SearchContext context = createAndPutContext(request);
         assert context.searchType() == SearchType.SCAN;
-        context.searchType(SearchType.COUNT); // move to COUNT, and then, when scrolling, move to SCAN
+        context.searchType(SearchType.COUNT); // move to COUNT, and then, when
+                                              // scrolling, move to SCAN
         assert context.searchType() == SearchType.COUNT;
         try {
             if (context.scroll() == null) {
@@ -210,7 +213,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
             } else {
                 contextProcessedSuccessfully(context);
             }
-            return new ScrollQueryFetchSearchResult(new QueryFetchSearchResult(context.queryResult(), context.fetchResult()), context.shardTarget());
+            return new ScrollQueryFetchSearchResult(new QueryFetchSearchResult(context.queryResult(), context.fetchResult()),
+                    context.shardTarget());
         } catch (Throwable e) {
             logger.trace("Scan phase failed", e);
             freeContext(context);
@@ -269,7 +273,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
         SearchContext context = findContext(request.id());
         contextProcessing(context);
         try {
-            context.searcher().dfSource(new CachedDfSource(context.searcher().getIndexReader(), request.dfs(), context.similarityService().similarity()));
+            context.searcher().dfSource(
+                    new CachedDfSource(context.searcher().getIndexReader(), request.dfs(), context.similarityService().similarity()));
         } catch (Throwable e) {
             freeContext(context);
             cleanContext(context);
@@ -334,7 +339,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
         SearchContext context = findContext(request.id());
         contextProcessing(context);
         try {
-            context.searcher().dfSource(new CachedDfSource(context.searcher().getIndexReader(), request.dfs(), context.similarityService().similarity()));
+            context.searcher().dfSource(
+                    new CachedDfSource(context.searcher().getIndexReader(), request.dfs(), context.similarityService().similarity()));
         } catch (Throwable e) {
             freeContext(context);
             cleanContext(context);
@@ -404,7 +410,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
                 throw ExceptionsHelper.convertToRuntime(e);
             }
             context.indexShard().searchService().onFetchPhase(context, System.nanoTime() - time2);
-            return new ScrollQueryFetchSearchResult(new QueryFetchSearchResult(context.queryResult(), context.fetchResult()), context.shardTarget());
+            return new ScrollQueryFetchSearchResult(new QueryFetchSearchResult(context.queryResult(), context.fetchResult()),
+                    context.shardTarget());
         } catch (Throwable e) {
             logger.trace("Fetch phase failed", e);
             freeContext(context);
@@ -432,7 +439,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
         } catch (Throwable e) {
             context.indexShard().searchService().onFailedFetchPhase(context);
             logger.trace("Fetch phase failed", e);
-            freeContext(context); // we just try to make sure this is freed - rethrow orig exception.
+            freeContext(context); // we just try to make sure this is freed -
+                                  // rethrow orig exception.
             throw ExceptionsHelper.convertToRuntime(e);
         } finally {
             cleanContext(context);
@@ -466,7 +474,9 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
         SearchShardTarget shardTarget = new SearchShardTarget(clusterService.localNode().id(), request.index(), request.shardId());
 
         Engine.Searcher engineSearcher = searcher == null ? indexShard.acquireSearcher("search") : searcher;
-        SearchContext context = new SearchContext(idGenerator.incrementAndGet(), request, shardTarget, engineSearcher, indexService, indexShard, scriptService, cacheRecycler);
+        //获得searcher
+        SearchContext context = new SearchContext(idGenerator.incrementAndGet(), request, shardTarget, engineSearcher, indexService,
+                indexShard, scriptService, cacheRecycler);
         SearchContext.setCurrent(context);
         try {
             context.scroll(request.scroll());
@@ -553,10 +563,11 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
                     String fieldName = parser.currentName();
                     parser.nextToken();
                     SearchParseElement element = elementParsers.get(fieldName);
+                    // fieldName 形如“query”,从SearchParseElement中获得queryParser
                     if (element == null) {
                         throw new SearchParseException(context, "No parser for element [" + fieldName + "]");
                     }
-                    element.parse(parser, context);
+                    element.parse(parser, context); //搜索上下文，将生成的Query赋值给context
                 } else if (token == null) {
                     break;
                 }
@@ -579,8 +590,9 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
     private static final int[] EMPTY_DOC_IDS = new int[0];
 
     /**
-     * Shortcut ids to load, we load only "from" and up to "size". The phase controller
-     * handles this as well since the result is always size * shards for Q_A_F
+     * Shortcut ids to load, we load only "from" and up to "size". The phase
+     * controller handles this as well since the result is always size * shards
+     * for Q_A_F
      */
     private void shortcutDocIdsToLoad(SearchContext context) {
         TopDocs topDocs = context.queryResult().topDocs();
@@ -666,10 +678,15 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
                                 final long start = System.nanoTime();
                                 indexFieldDataService.getForField(fieldMapper).load(ctx);
                                 if (indexShard.warmerService().logger().isTraceEnabled()) {
-                                    indexShard.warmerService().logger().trace("warmed fielddata for [{}], took [{}]", fieldMapper.names().name(), TimeValue.timeValueNanos(System.nanoTime() - start));
+                                    indexShard
+                                            .warmerService()
+                                            .logger()
+                                            .trace("warmed fielddata for [{}], took [{}]", fieldMapper.names().name(),
+                                                    TimeValue.timeValueNanos(System.nanoTime() - start));
                                 }
                             } catch (Throwable t) {
-                                indexShard.warmerService().logger().warn("failed to warm-up fielddata for [{}]", t, fieldMapper.names().name());
+                                indexShard.warmerService().logger()
+                                        .warn("failed to warm-up fielddata for [{}]", t, fieldMapper.names().name());
                             } finally {
                                 latch.countDown();
                             }
@@ -688,7 +705,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
                             final long start = System.nanoTime();
                             indexShard.indexService().cache().idCache().refresh(context.newSearcher().reader().leaves());
                             if (indexShard.warmerService().logger().isTraceEnabled()) {
-                                indexShard.warmerService().logger().trace("warmed id_cache, took [{}]", TimeValue.timeValueNanos(System.nanoTime() - start));
+                                indexShard.warmerService().logger()
+                                        .trace("warmed id_cache, took [{}]", TimeValue.timeValueNanos(System.nanoTime() - start));
                             }
                         } catch (Throwable t) {
                             indexShard.warmerService().logger().warn("failed to warm-up id cache", t);
@@ -712,7 +730,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
     class SearchWarmer extends IndicesWarmer.Listener {
 
         @Override
-        public void warm(final IndexShard indexShard, final IndexMetaData indexMetaData, final IndicesWarmer.WarmerContext warmerContext, ThreadPool threadPool) {
+        public void warm(final IndexShard indexShard, final IndexMetaData indexMetaData, final IndicesWarmer.WarmerContext warmerContext,
+                ThreadPool threadPool) {
             IndexWarmersMetaData custom = indexMetaData.custom(IndexWarmersMetaData.TYPE);
             if (custom == null) {
                 return;
@@ -726,15 +745,30 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
                         SearchContext context = null;
                         try {
                             long now = System.nanoTime();
-                            ShardSearchRequest request = new ShardSearchRequest(indexShard.shardId().index().name(), indexShard.shardId().id(), indexMetaData.numberOfShards(),
-                                    SearchType.QUERY_THEN_FETCH /* we don't use COUNT so sorting will also kick in whatever warming logic*/)
-                                    .source(entry.source())
-                                    .types(entry.types());
+                            ShardSearchRequest request = new ShardSearchRequest(indexShard.shardId().index().name(), indexShard.shardId()
+                                    .id(), indexMetaData.numberOfShards(), SearchType.QUERY_THEN_FETCH /*
+                                                                                                        * we
+                                                                                                        * don
+                                                                                                        * 't
+                                                                                                        * use
+                                                                                                        * COUNT
+                                                                                                        * so
+                                                                                                        * sorting
+                                                                                                        * will
+                                                                                                        * also
+                                                                                                        * kick
+                                                                                                        * in
+                                                                                                        * whatever
+                                                                                                        * warming
+                                                                                                        * logic
+                                                                                                        */).source(entry.source()).types(
+                                    entry.types());
                             context = createContext(request, warmerContext.newSearcher());
                             queryPhase.execute(context);
                             long took = System.nanoTime() - now;
                             if (indexShard.warmerService().logger().isTraceEnabled()) {
-                                indexShard.warmerService().logger().trace("warmed [{}], took [{}]", entry.name(), TimeValue.timeValueNanos(took));
+                                indexShard.warmerService().logger()
+                                        .trace("warmed [{}], took [{}]", entry.name(), TimeValue.timeValueNanos(took));
                             }
                         } catch (Throwable t) {
                             indexShard.warmerService().logger().warn("warmer [{}] failed", t, entry.name());
@@ -766,7 +800,8 @@ public class SearchService extends AbstractLifecycleComponent<SearchService> {
         public void run() {
             long time = threadPool.estimatedTimeInMillis();
             for (SearchContext context : activeContexts.values()) {
-                if (context.lastAccessTime() == -1) { // its being processed or timeout is disabled
+                if (context.lastAccessTime() == -1) { // its being processed or
+                                                      // timeout is disabled
                     continue;
                 }
                 if ((time - context.lastAccessTime() > context.keepAlive())) {

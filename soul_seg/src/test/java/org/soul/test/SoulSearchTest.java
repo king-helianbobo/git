@@ -1,5 +1,7 @@
 package org.soul.test;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.util.English;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
@@ -17,6 +19,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.facet.FacetBuilders;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
+import org.index.mapper.xcontent.test.EncryptedDocMapperTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
@@ -34,10 +37,11 @@ import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders.scriptFunction;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class SoulSearchTest extends ElasticsearchIntegrationTest {
-
+	private static Log log = LogFactory.getLog(SoulSearchTest.class);
 	@Test
 	// see https://github.com/elasticsearch/elasticsearch/issues/3177
 	public void testIssue3177() {
@@ -2836,7 +2840,11 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		client().prepareIndex("test", "customer", "1")
 				.setSource("desc", "one two three").get();
 		client().prepareIndex("test", "product", "2")
-				.setSource("desc", "one two three").get();
+				.setSource("desc", "one two three").execute().actionGet();
+
+		// assertThat(
+		// doc.get(docMapper.mappers().smartName("file1").mapper().names()
+		// .indexName()), nullValue());
 		refresh();
 		{
 			SearchResponse searchResponse = client()
@@ -2845,6 +2853,7 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 							QueryBuilders.queryString("\"one two\"")
 									.defaultField("desc")).get();
 			assertHitCount(searchResponse, 2);
+			log.info(searchResponse.getHits().getAt(1).getMatchedQueries());
 		}
 		{
 			SearchResponse searchResponse = client()
@@ -2942,7 +2951,7 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		searchResponse = client()
 				.prepareSearch()
 				.setQuery(
-						simpleQueryString("spaghetti").field("body", 10.0f)
+						simpleQueryString("spaghetti").field("body", 20.0f)
 								.field("otherbody", 2.0f)).get();
 		assertHitCount(searchResponse, 2l);
 		assertFirstHit(searchResponse, hasId("5"));

@@ -58,7 +58,6 @@ curl -XPUT "localhost:9200/test?pretty" -d' {
       "analyzer": "soul_pinyin"
   }
 }}'
-
 curl -XPOST "http://localhost:9200/test/test1?pretty" -d '{"content": "沈阳"}'
 curl -XPOST "http://localhost:9200/test/test1?pretty" -d '{"content": "沈从文"}'
 curl -XPOST "http://localhost:9200/test/test1?pretty" -d '{"content": "小沈阳"}'

@@ -1,9 +1,6 @@
 package org.soul.elasticSearch.plugin;
 
-import static org.elasticsearch.common.collect.Lists.newArrayList;
-
 import java.util.Collection;
-
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionModule;

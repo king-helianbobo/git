@@ -52,11 +52,6 @@
       <version>2.3</version>
     </dependency>
 
-    <!-- <dependency> -->
-    <!-- 	<groupId>commons-codec</groupId> -->
-    <!-- 	<artifactId>commons-codec</artifactId> -->
-    <!-- 	<version>1.5</version> -->
-    <!-- </dependency> -->
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
@@ -118,6 +113,7 @@
       <version>${lucene.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
@@ -184,22 +180,18 @@
       <version>${lucene.version}</version>
       <scope>compile</scope>
     </dependency>
-    <!-- Lucene spatial, make sure when upgrading to work with latest version of jts/spatial4j dependencies -->
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-spatial</artifactId>
       <version>${lucene.version}</version>
       <scope>compile</scope>
     </dependency>
-
-
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
       <version>${elasticsearch.version}</version>
       <optional>false</optional>
     </dependency>
-
 
     <dependency>
       <groupId>org.apache.lucene</groupId>

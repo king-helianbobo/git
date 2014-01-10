@@ -78,7 +78,7 @@ public class AnalyzerMapper implements Mapper, InternalMapper, RootMapper {
         }
     }
 
-    private final String path;
+    private final String path; // 路径名
 
     public AnalyzerMapper() {
         this(Defaults.PATH);

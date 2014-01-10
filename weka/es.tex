@@ -1,7 +1,7 @@
 \section{ElasticSearch}
 \par Elasticsearch是一个开源分布式搜索引擎，可以看作一个分布式Key-Value数据库，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
-\par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type名将赋给每个Document的\textbf{\_type}域。
-\par 当index为cars，type为car时，ElasticSearch将自动为每个查询添加一个额外条件，只有\textbf{\_type}域的值为car的Document才能匹配到查询，更新索引也是如此。This does mean that across types, having the same field name with different mappings types (for example, \textbf{'car'} has field \textbf{'Seat'} of type numeric, and 'bus' also has field \textbf{'Seat'} but of type string) should not be done (working on automatically detecting that...). The type prefix when you define the field name should allow to only search on a field against that specific type. (At the end of the day, it is wrapped in a filtered query with a \_type:type1 term filter).
+\par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type的值将赋给每个Document的\textbf{\_type}域。
+\par 当index为cars，type为car时，ElasticSearch将自动为每个查询添加一个必须满足的条件（只有\textbf{\_type}域的值为car的Document才能匹配到查询），更新索引也是如此。This does mean that across types, having the same field name with different mappings types (for example, \textbf{'car'} has field \textbf{'Seat'} of type numeric, and 'bus' also has field \textbf{'Seat'} but of type string) should not be done (\textbf{car}和\textbf{bus}分别作为\textbf{type}的值). The type prefix when you define the field name should allow to only search on a field against that specific type.
 \subsection{What's a mapping?}
 \par A mapping not only tells ES what is in a field…it tells ES what terms are indexed and searchable.
 \par A mapping is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
@@ -399,8 +399,8 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \end{verbatim}
 \par 搜索时可使用name来访问name域的默认版本，或者使用name.autocomplete访问另外一个版本。
 \subsection{ElasticSearch源码分析}
+\subsubsection{ES模块}
 \par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
-
 \begin{itemize}
 \item NodeEnvironmentModule:节点环境模块
 \item DiscoveryModule：节点自动发现模块
@@ -435,3 +435,21 @@ INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2
 \item  创建一个新的索引，json参数中包括settings和mappings（\textbf{注意并非endpoint中的\_mapping}），只有"/\{index\}"一种操作，接受POST和PUT两种方法，在org/elasticsearch/rest/action/admin/indices/create/RestCreateIndexAction.java中处理；
 \item rest.action目录负责接受，解释Rest请求。client.node负责管理节点客户端请求。action.admin.indices目录负责处理Rest请求中的动作。
 \end{enumerate}
+\subsubsection{ES客户端}
+Client有如下两种：InternalNode.client（可以看成与Node直接关联，毫无疑问，对应的是NodeClient）和TransportClient（最重要的函数是addTransportAddress，可以看成将连接请求转发到别的Node）。在NodeClientModule中，存在如下代码：
+\begin{small}
+\begin{verbatim}
+bind(ClusterAdminClient.class).to(NodeClusterAdminClient.class).asEagerSingleton();
+bind(IndicesAdminClient.class).to(NodeIndicesAdminClient.class).asEagerSingleton();
+bind(AdminClient.class).to(NodeAdminClient.class).asEagerSingleton();
+bind(Client.class).to(NodeClient.class).asEagerSingleton();
+\end{verbatim}
+\end{small}
+而在InternalNode.java中有如下代码：
+\begin{verbatim}
+injector = modules.createInjector();
+client = injector.getInstance(Client.class);
+\end{verbatim}
+\par 因此，InternalNode.client对应类是NodeClient.class。client.admin()函数返回client的管理类AdminClient，用于管理集群（通过cluster()函数获得）和索引（通过indices()函数获得客户端）。AdminClient有两种：NodeAdminClient$\in$NodeClient和InternalTransportAdminClient $\in$ InternalTransportClient $\in$ TransportClient。
+
+
