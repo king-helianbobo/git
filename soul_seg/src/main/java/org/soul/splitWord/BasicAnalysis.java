@@ -34,7 +34,7 @@ public class BasicAnalysis extends Analysis {
 					new ForeignNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 				}
-				log.info(getResult());
+				// log.info(getResult());
 				if (graph.hasNum) { // recognize consecutive number
 					NumberRecognition.recognition(graph.terms);
 				}

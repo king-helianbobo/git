@@ -54,7 +54,7 @@ public abstract class InitializationUtils {
 				throw new IllegalArgumentException(
 						String.format(
 								"Target index [%s] does not exist and auto-creation is disabled [setting '%s' is '%s']",
-								settings.getTargetResource(),
+								settings.getIndexType(),
 								ConfigurationOptions.ES_INDEX_AUTO_CREATE,
 								settings.getIndexAutoCreate()));
 			}
@@ -87,11 +87,11 @@ public abstract class InitializationUtils {
 				if (schemaWriter == null) {
 					log.warn(String
 							.format("No mapping found [%s] and no schema found; letting Elasticsearch perform auto-mapping...",
-									settings.getTargetResource()));
+									settings.getIndexType()));
 				} else {
 					log.info(String
 							.format("No mapping found [%s], creating one based on given schema",
-									settings.getTargetResource()));
+									settings.getIndexType()));
 					ContentBuilder builder = ContentBuilder
 							.generate(schemaWriter).value(schema).flush();
 					BytesArray content = ((FastByteArrayOutputStream) builder

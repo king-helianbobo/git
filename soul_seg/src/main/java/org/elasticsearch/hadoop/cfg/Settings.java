@@ -142,9 +142,9 @@ public abstract class Settings implements InternalConfigurationOptions {
 		return this;
 	}
 
-	public String getTargetResource() {
+	public String getIndexType() {
 		String resource = getProperty(INTERNAL_ES_TARGET_RESOURCE);
-		log.info("get target resource = " + getProperty(ES_RESOURCE));
+		// log.info("get target resource = " + getProperty(ES_RESOURCE));
 		return (StringUtils.hasText(targetResource) ? targetResource
 				: StringUtils.hasText(resource) ? resource
 						: getProperty(ES_RESOURCE));
@@ -166,7 +166,7 @@ public abstract class Settings implements InternalConfigurationOptions {
 	 */
 	public void save() {
 		String targetUri = getTargetUri();
-		String resource = getTargetResource();
+		String resource = getIndexType();
 
 		Assert.hasText(targetUri, "No address specified");
 		Assert.hasText(resource, String.format(

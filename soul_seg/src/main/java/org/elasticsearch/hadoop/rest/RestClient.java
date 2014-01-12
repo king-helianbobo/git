@@ -90,15 +90,15 @@ public class RestClient implements Closeable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void bulk(String index, byte[] buffer, int bufferSize)
+	public void bulk(String indexType, byte[] buffer, int bufferSize)
 			throws IOException {
 		// empty buffer, ignore
 		if (bufferSize == 0) {
 			return;
 		}
 
-		PostMethod post = new PostMethod(index + "/_bulk");
-		log.info("index = " + index);
+		PostMethod post = new PostMethod(indexType + "/_bulk");
+		// log.info("index = " + indexType);
 		post.setRequestEntity(new JsonByteArrayRequestEntity(buffer, bufferSize));
 		post.setContentChunked(false);
 
@@ -122,7 +122,7 @@ public class RestClient implements Closeable {
 				throw new IllegalStateException(
 						String.format(
 								"Bulk request on index [%s] failed; at least one error reported [%s]",
-								index, message));
+								indexType, message));
 			}
 		}
 

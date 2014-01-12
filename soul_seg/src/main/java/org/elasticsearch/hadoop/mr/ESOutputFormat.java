@@ -186,7 +186,7 @@ public class ESOutputFormat extends OutputFormat implements
 			InitializationUtils.setIdExtractorIfNotSet(settings,
 					MapWritableIdExtractor.class, log);
 			client = new BufferedRestClient(settings);
-			resource = settings.getTargetResource();
+			resource = settings.getIndexType();
 			// log.info("before set ,resource = " + resource);
 			String suffix = cfg.get("elasticsearch.suffix.name");
 			if (suffix != null) {
@@ -344,7 +344,7 @@ public class ESOutputFormat extends OutputFormat implements
 
 	private void init(Configuration cfg) throws IOException {
 		Settings settings = SettingsManager.loadFrom(cfg);
-		Assert.hasText(settings.getTargetResource(), String.format(
+		Assert.hasText(settings.getIndexType(), String.format(
 				"No resource ['%s'] (index/query/location) specified",
 				ES_RESOURCE));
 
@@ -365,6 +365,6 @@ public class ESOutputFormat extends OutputFormat implements
 		}
 
 		log.info(String.format("Preparing to write/index to [%s][%s]",
-				settings.getTargetUri(), settings.getTargetResource()));
+				settings.getTargetUri(), settings.getIndexType()));
 	}
 }

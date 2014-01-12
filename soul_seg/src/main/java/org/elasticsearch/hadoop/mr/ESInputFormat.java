@@ -356,13 +356,13 @@ public class ESInputFormat<K, V> extends InputFormat<K, V> implements org.apache
             Field mapping = client.getMapping();
             //TODO: implement this more efficiently
             savedMapping = IOUtils.serializeToBase64(mapping);
-            log.info(String.format("Discovered mapping {%s} for [%s]", mapping, settings.getTargetResource()));
+            log.info(String.format("Discovered mapping {%s} for [%s]", mapping, settings.getIndexType()));
         }
 
         client.close();
 
         if (settings.getIndexReadMissingAsEmpty() && targetShards.isEmpty()) {
-            log.info(String.format("Index [%s] missing - treating it as empty", settings.getTargetResource()));
+            log.info(String.format("Index [%s] missing - treating it as empty", settings.getIndexType()));
         }
 
         else if (log.isTraceEnabled()) {

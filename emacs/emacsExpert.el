@@ -1,4 +1,4 @@
-;;Last Modified: 2013-11-25 10:31:27.
+;;Last Modified: 2014-01-12 22:29:18.
 (add-hook  'before-save-hook  (lambda ()  (set-lastmodified-tag)))
 (defun set-lastmodified-tag ()  (interactive) 
   (let ((tostr (concat ";;Last Modified: " 
@@ -208,3 +208,8 @@
 ;; 	     '("\\`host2\\.com\\'" nil "/ssh:labrador@host3.com:"))  
 ;; (add-to-list 'tramp-default-method-alist  
 ;; 	     '("192\\.168\\.50\\.75" nil "ssh"))  
+
+(defun json-format ()
+  (interactive)
+  (save-excursion
+    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)))

@@ -28,8 +28,8 @@ abstract class AbstractCommand implements Command {
 	AbstractCommand(Settings settings) {
 		this.valueWriter = ObjectUtils.instantiate(
 				settings.getSerializerValueWriterClassName(), settings);
-		this.idExtractor = (StringUtils.hasText(settings.getMappingId())
-				? ObjectUtils.<IdExtractor> instantiate(
+		this.idExtractor = (StringUtils.hasText(settings.getMappingId()) ? ObjectUtils
+				.<IdExtractor> instantiate(
 						settings.getMappingIdExtractorClassName(), settings)
 				: null);
 		if (log.isTraceEnabled()) {
@@ -48,7 +48,7 @@ abstract class AbstractCommand implements Command {
 		if (object instanceof SerializedObject) {
 			SerializedObject so = ((SerializedObject) object);
 			idAsBytes = so.id;
-		} else {
+		} else { // when is WriteAble object
 			String id = extractId(object);
 			if (StringUtils.hasText(id)) {
 				idAsBytes = id.getBytes(StringUtils.UTF_8);
@@ -72,16 +72,17 @@ abstract class AbstractCommand implements Command {
 			if (object instanceof SerializedObject) {
 				entrySize += ((SerializedObject) object).size;
 			} else {
-				String str = idExtractor.getIdFieldName();
-				Text key = new Text(str.getBytes());
+				String fieldName = idExtractor.getIdFieldName();
+				Text key = new Text(fieldName.getBytes());
 				if ((key != null) && (object instanceof Map)) {
+					// we pay special attention to Map
 					Map<?, ?> map = (Map<?, ?>) object;
 					map.remove(key);
 				}
 				serialize(object);
 				entrySize += scratchPad.size();
 			}
-			entrySize++;
+			entrySize++; // add newline char length
 		}
 		return entrySize;
 	}
@@ -91,7 +92,7 @@ abstract class AbstractCommand implements Command {
 		writeActionAndMetadata(object, buffer);
 		if (isSourceRequired()) {
 			writeSource(object, buffer);
-			writeTrailingReturn(buffer);
+			writeTrailingReturn(buffer); // write newline character
 		}
 	}
 
