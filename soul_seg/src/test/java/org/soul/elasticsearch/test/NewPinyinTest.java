@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import opensource.jpinyin.PinyinFormat;
-import opensource.jpinyin.PinyinHelper;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
@@ -16,6 +13,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.Version;
 import org.elasticsearch.common.Strings;
+import org.lionsoul.jcseg.pinyin.PinyinFormat;
+import org.lionsoul.jcseg.pinyin.PinyinHelper;
 import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
 import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
 import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;

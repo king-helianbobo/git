@@ -26,6 +26,7 @@ public class BasicAnalysis extends Analysis {
 		Merger merger = new Merger() {
 			@Override
 			public List<Term> merge() {
+				// 先进行人名识别，然后再数字识别，因为某些姓名中含有数字（例如三本五十六）
 				graph.walkPath();// construct optimal path
 				if (graph.hasPerson && StaticVariable.allowNameRecognize) {
 					new AsianNameRecognition(graph.terms).recognition();
@@ -34,17 +35,17 @@ public class BasicAnalysis extends Analysis {
 					new ForeignNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 				}
-				// log.info(getResult());
-				if (graph.hasNum) { // recognize consecutive number
+				if (graph.hasNum) { // recognize consecutive numbers
 					NumberRecognition.recognition(graph.terms);
 				}
-
 				if (forests == null) {
 					userDefineRecognize(graph, null);
 				} else {
 					for (Forest forest : forests) {
 						if (forest == null)
 							continue;
+						// 识别用户自定义词，对于部分自定义词(如拳皇ova)，放在ambiguityLibrary
+						// 因为对[漂亮mm打拳皇ova很厉害]这胡话，[拳皇ova]根本分不出来
 						userDefineRecognize(graph, forest);
 					}
 				}
@@ -72,12 +73,12 @@ public class BasicAnalysis extends Analysis {
 		return merger.merge();
 	}
 
-	private BasicAnalysis() {
+	public BasicAnalysis() {
 	};
 
 	public BasicAnalysis(Forest[] forests) {
 		if (forests == null) {
-			forests = new Forest[] { UserDefineLibrary.FOREST };
+			forests = new Forest[]{UserDefineLibrary.userDefineForest};
 		}
 		this.forests = forests;
 	}
@@ -89,7 +90,7 @@ public class BasicAnalysis extends Analysis {
 	public BasicAnalysis(Reader reader, Forest[] forests) {
 		super(reader);
 		if (forests == null) {
-			forests = new Forest[] { UserDefineLibrary.FOREST };
+			forests = new Forest[]{UserDefineLibrary.userDefineForest};
 		}
 		this.forests = forests;
 	}

@@ -1,14 +1,7 @@
 package org.soul.utility;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.*;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.treeSplit.*;
@@ -16,25 +9,17 @@ import org.soul.treeSplit.*;
 import static org.soul.utility.StaticVariable.LibraryLog;
 
 public class UserDefineLibrary {
-
-	// public static final String DEFAULT_NATURE = ;
 	private static Log log = LogFactory.getLog(UserDefineLibrary.class);
 	public static final Integer DEFAULT_FREQ = 1000;
-
 	public static final String DEFAULT_FREQ_STR = "1000";
-
-	public static Forest FOREST = null;
-
+	public static Forest userDefineForest = null;
 	public static Forest ambiguityForest = null;
-
 	static {
 		initUserLibrary();
 		initAmbiguityLibrary();
 	}
 
 	/**
-	 * 关键词增加
-	 * 
 	 * @param keyWord
 	 *            需要增加的关键词
 	 * @param nature
@@ -47,7 +32,7 @@ public class UserDefineLibrary {
 		paramers[0] = nature;
 		paramers[1] = String.valueOf(freq);
 		Value value = new Value(keyword, paramers);
-		Library.insertWord(FOREST, value);
+		Library.insertWord(userDefineForest, value);
 	}
 
 	private static boolean isOverlap(String str1, String str2) {
@@ -66,19 +51,19 @@ public class UserDefineLibrary {
 	private static void checkAmbiguity(File file) throws Exception {
 		FileInputStream fs = new FileInputStream(file);
 		BufferedReader br = IOUtil.getReader(fs, "UTF-8");
-		TreeMap<Integer, String> array = new TreeMap<Integer, String>();
+		TreeMap<Integer, String> tree = new TreeMap<Integer, String>();
 		int i = 0;
 		String temp = null;
 		while ((temp = br.readLine()) != null) {
 			String[] param = temp.split("\t");
-			array.put(i, param[0]);
+			tree.put(i, param[0]);
 			++i;
 		}
 		int size = i;
 		for (i = 0; i < size; i++) {
-			String stri = array.get(i);
+			String stri = tree.get(i);
 			for (int j = i + 1; j < size; j++) {
-				String strj = array.get(j);
+				String strj = tree.get(j);
 				if (isOverlap(stri, strj)) {
 					log.error("word " + stri + " conflict with " + strj);
 				}
@@ -102,22 +87,22 @@ public class UserDefineLibrary {
 				checkAmbiguity(file);// 检查文件是否合法，它不应该再引入歧义
 				ambiguityForest = Library.makeForest(ambiguityLibrary);
 			} catch (Exception e) {
-				LibraryLog.error("init ambiguity  error :" + ambiguityLibrary
-						+ " because : not find that file or can not to read !");
+				LibraryLog.error("init ambiguity error :" + ambiguityLibrary
+						+ " because : not find file or can not be read!");
 				e.printStackTrace();
 			}
 		} else {
 			LibraryLog.warn("init ambiguity  waring :" + ambiguityLibrary
-					+ " because : not find that file or can not to read !");
+					+ " because : not find file or can not be read!");
 		}
 	}
 
 	// 加载用户自定义词典和补充词典
 	private static void initUserLibrary() {
 		try {
-			FOREST = new Forest();
+			userDefineForest = new Forest();
 			String userLibrary = StaticVariable.userLibrary;
-			loadLibrary(FOREST, userLibrary);
+			loadLibrary(userDefineForest, userLibrary);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -127,7 +112,7 @@ public class UserDefineLibrary {
 	private static void loadFile(Forest forest, File file) {
 		if (!file.canRead()) {
 			LibraryLog.warn("file in path " + file.getAbsolutePath()
-					+ " can not to read!");
+					+ " can not be read!");
 			return;
 		}
 		String temp = null;
@@ -142,6 +127,7 @@ public class UserDefineLibrary {
 				} else {
 					strs = temp.split("\t");
 					if (strs.length != 3) {
+						// "userDefine" will be termNature
 						value = new Value(strs[0], "userDefine", "1000");
 					} else {
 						value = new Value(strs[0], strs[1], strs[2]);
@@ -149,7 +135,7 @@ public class UserDefineLibrary {
 					Library.insertWord(forest, value);
 				}
 			}
-			LibraryLog.info("init user userLibrary ok path is : "
+			LibraryLog.info("init userLibrary ok,path is : "
 					+ file.getAbsolutePath());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -164,7 +150,7 @@ public class UserDefineLibrary {
 		File file = new File(path);
 		if (!file.canRead() || file.isHidden()) {
 			LibraryLog.warn("init userLibrary  waring :" + path
-					+ " because : not find that file or can not to read !");
+					+ " because : not find file or can not be read!");
 			return;
 		}
 		if (file.isFile()) {
@@ -178,17 +164,17 @@ public class UserDefineLibrary {
 			}
 		} else {
 			LibraryLog.warn("init user library  error :" + path
-					+ " because : not find that file !");
+					+ " because : not find file!");
 		}
 	}
 
 	// remove key word
 	public static void removeWord(String word) {
-		Library.removeWord(FOREST, word);
+		Library.removeWord(userDefineForest, word);
 	}
 
 	public static void clear() {
-		FOREST.clear();
+		userDefineForest.clear();
 	}
 
 }

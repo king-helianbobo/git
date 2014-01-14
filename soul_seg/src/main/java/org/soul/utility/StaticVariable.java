@@ -24,8 +24,6 @@ public class StaticVariable {
 	public static boolean allowNumRecognize = true;
 	public static boolean allowQuantifierRecognize = true;
 
-	// public static String userLibrary = "library/default.dic";
-	// public static String ambiguityLibrary = "library/ambiguity.dic";
 	public static String userLibrary;
 	public static String ambiguityLibrary;
 

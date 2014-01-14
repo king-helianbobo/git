@@ -22,7 +22,7 @@ public class SoulTokenizer extends Tokenizer {
 	private final PositionIncrementAttribute positionAttr = addAttribute(PositionIncrementAttribute.class);
 
 	protected Analysis analysis = null;
-	private Set<String> filter;
+	private Set<String> filter; // stop words
 	private boolean pstemming;
 	private final PorterStemmer stemmer = new PorterStemmer(); // 用于英文词干分析
 

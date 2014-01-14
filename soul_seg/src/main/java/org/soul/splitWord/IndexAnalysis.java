@@ -36,7 +36,6 @@ public class IndexAnalysis extends Analysis {
 				graph.walkPath();
 				if (StaticVariable.allowNumRecognize)
 					NumberRecognition.recognition(graph.terms);
-				
 
 				if (StaticVariable.allowNameRecognize)
 					new AsianNameRecognition(graph.terms).recognition();

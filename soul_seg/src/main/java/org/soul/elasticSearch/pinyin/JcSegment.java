@@ -2,8 +2,6 @@ package org.soul.elasticSearch.pinyin;
 
 import java.io.*;
 
-import opensource.jpinyin.PinyinFormat;
-import opensource.jpinyin.PinyinHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.lionsoul.jcseg.core.ADictionary;
@@ -13,6 +11,8 @@ import org.lionsoul.jcseg.core.IWord;
 import org.lionsoul.jcseg.core.JcsegException;
 import org.lionsoul.jcseg.core.JcsegTaskConfig;
 import org.lionsoul.jcseg.core.SegmentFactory;
+import org.lionsoul.jcseg.pinyin.PinyinFormat;
+import org.lionsoul.jcseg.pinyin.PinyinHelper;
 import org.lionsoul.jcseg.util.IStringBuffer;
 
 public class JcSegment {

@@ -19,7 +19,7 @@ public class UserDefineRecognition {
 
 	private Term[] terms = null;
 
-	private WoodInterface forest = UserDefineLibrary.FOREST;
+	private WoodInterface forest = UserDefineLibrary.userDefineForest;
 
 	private WoodInterface branch = forest;
 
@@ -38,7 +38,6 @@ public class UserDefineRecognition {
 			this.forest = forest;
 			branch = this.forest;
 		}
-
 	}
 
 	public void recognition() { // 识别用户自定义词典中的词
@@ -61,7 +60,7 @@ public class UserDefineRecognition {
 					i = offe;
 				}
 				reset();
-			} else if (branch.getStatus() == 3) { // term 存在于用户词典中
+			} else if (branch.getStatus() == 3) { // term 存在于用户词典
 				endOffe = i;
 				tempNature = branch.getParams()[0];
 				tempFreq = ObjectBean.getInt(branch.getParams()[1], 50);
@@ -109,12 +108,8 @@ public class UserDefineRecognition {
 		term.setNature(termNatures.termNatures[0].nature);
 		term.selfScore = -1 * tempFreq;
 		TermUtil.insertTerm(terms, term);
-		// reset();
 	}
 
-	/**
-	 * 重置
-	 */
 	private void reset() {
 		offe = -1;
 		endOffe = -1;

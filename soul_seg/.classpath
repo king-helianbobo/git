@@ -14,7 +14,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/hadoop/hadoop-common/2.0.5-alpha/hadoop-common-2.0.5-alpha.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/hadoop/hadoop-annotations/2.0.5-alpha/hadoop-annotations-2.0.5-alpha.jar"/>
-	<classpathentry kind="lib" path="/usr/lib/jvm/jdk1.6.0_45/lib/tools.jar"/>
+	<classpathentry kind="lib" path="/usr/lib/jvm/java-7-openjdk-amd64/lib/tools.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/guava/guava/15.0/guava-15.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-cli/commons-cli/1.2/commons-cli-1.2.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-math/2.1/commons-math-2.1.jar"/>
@@ -133,7 +133,7 @@
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-grouping/4.6.0/lucene-grouping-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-spatial/4.6.0/lucene-spatial-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/spatial4j/spatial4j/0.3/spatial4j-0.3.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/elasticsearch/elasticsearch/0.90.9/elasticsearch-0.90.9.jar" sourcepath="/ElasticSearch_Source"/>
+	<classpathentry kind="var" path="M2_REPO/org/elasticsearch/elasticsearch/0.90.9/elasticsearch-0.90.9.jar" sourcepath="/ElasticSearch_PATH"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-test-framework/4.6.0/lucene-test-framework-4.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.0.13/randomizedtesting-runner-2.0.13.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/lucene/lucene-analyzers-icu/4.6.0/lucene-analyzers-icu-4.6.0.jar"/>

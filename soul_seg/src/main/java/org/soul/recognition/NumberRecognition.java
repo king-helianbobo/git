@@ -13,8 +13,14 @@ public class NumberRecognition {
 	private static Log log = LogFactory.getLog(NumberRecognition.class);
 	private static String tmpStr = "百分之,仨,伍,第,七百,双百,十之八九,百分,七五,千千万万,上万,零,九五,双,亿,十几,七,九,百,六,千,八,十,首,五,万,二,四,几,三,两,一,第一,第二,第三,第四,第五,第六,第七,第八,第九,半,伍,俩,七百,双百,百分,仟,佰,卅,叁,壹,廿,捌,柒,玖,贰,,丙丑,丁亥,丙亥,乙丑,万代,乙亥,丁午,丙午,丁卯,丙卯,乙午,乙卯,壬丑,壬亥,丙子,丁寅,丙寅,乙子,乙寅,壬午,壬卯,丁巳,丙巳,庚丑,乙巳,庚亥,丁戌,丙戌,乙戌,庚午,庚卯,壬子,壬寅,丁未,丙未,壬巳,乙未,壬戌,庚子,庚寅,庚巳,壬未,庚戌,戊丑,戊亥,丁申,丙申,乙申,庚未,戊午,戊卯,八成,壬申,戊子,戊巳,庚申,戊戌,己丑,己亥,戊未,己午,己卯,丁辰,丙辰,乙辰,丁酉,丙酉,乙酉,己子,己寅,壬辰,戊申,己巳,壬酉,己戌,癸丑,癸亥,庚辰,庚酉,己未,癸午,癸卯,半世,癸子,癸寅,癸巳,己申,癸戌,戊辰,戊酉,癸未,分之,五十八,癸申,己辰,己酉,癸辰,癸酉,辛丑,辛亥,辛午,辛卯,甲丑,辛子,辛寅,甲亥,辛巳,挂零,甲午,甲卯,辛戌,辛未,甲子,甲寅,甲巳,甲戌,甲未,辛申,甲申,辛辰,辛酉,甲辰,甲酉";
 
-
-	// 合并连续数词,合并数词和量词，比如将“三”，“年”合并为“三年”
+	/**
+	 * 合并连续数词,合并数词和量词，比如将[三/年]合并为[三年] 但目前尚未实现将[3/年]合并成[3年]
+	 * 
+	 * @author LiuBo
+	 * @since 2014年1月14日
+	 * @param terms
+	 *            void
+	 */
 	public static void recognition(Term[] terms) {
 		Map<String, Integer> tree = new HashMap<String, Integer>();
 		String arrays[] = tmpStr.split(",");
@@ -46,7 +52,6 @@ public class NumberRecognition {
 			} else if (terms[i].getTermNatures().numNature.flag
 					&& (tree.get(terms[i].getName()) == null)) {
 				continue;
-
 			} else {
 				Term temp = terms[i];
 				// 合并数字，比如“万”也是个数字，两万年
@@ -61,18 +66,12 @@ public class NumberRecognition {
 					terms[i].setName(terms[i].getName() + temp.getName());
 					temp = temp.getTo();
 				}
-				// 重设置term的词性
+				// 重新设置term的词性
 				if (InitDictionary.isInSystemDic(terms[i].getName())) {
 					int id = InitDictionary.getWordId(terms[i].getName());
 					TermNatures termNatures = InitDictionary.termNatures[id];
 					terms[i].setTermNatures(termNatures);
 				}
-				// terms[i].getTermNatures().setPersonNatureAttr(
-				// PersonNatureAttr.NULL);
-				// terms[i].getTermNatures()
-				// .setCompanyAttr(CompanyNatureAttr.NULL);
-				// terms[i].getTermNatures()
-				// .setNewWordAttr(NewWordNatureAttr.NULL);
 				if (terms[i].getTo() != temp) {
 					TermUtil.termLink(terms[i], temp);
 					for (int j = i + 1; j < temp.getOffe(); j++)

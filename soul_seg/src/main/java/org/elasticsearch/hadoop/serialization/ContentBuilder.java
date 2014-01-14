@@ -17,9 +17,9 @@ package org.elasticsearch.hadoop.serialization;
 
 import java.io.OutputStream;
 
-import org.elasticsearch.hadoop.serialization.json.JacksonJsonGenerator;
 import org.elasticsearch.hadoop.util.Assert;
 import org.elasticsearch.hadoop.util.FastByteArrayOutputStream;
+import org.elasticsearch.hadoop.util.JacksonJsonGenerator;
 
 @SuppressWarnings("rawtypes")
 public class ContentBuilder {

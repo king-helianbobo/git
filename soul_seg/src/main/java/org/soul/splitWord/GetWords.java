@@ -34,43 +34,42 @@ public class GetWords {
 	public int i = 0;
 	private String str = null;
 
-	public String allWords() {
+	public String fetchOneWord() {
 		for (; i < charsLength; i++) {
-			int charHashCode = TraditionalToSimplified(chars.charAt(i));// 简体转繁体
+			int charHashCode = TraditionalToSimplified(chars.charAt(i));
 			switch (getStatement(charHashCode)) {
-			case 0: // 不在词典中
-				if (baseValue == chars.charAt(i)) {
-					str = String.valueOf(chars.charAt(i));
-					offe = i;
-					start = ++i;
-					baseValue = 0;
+				case 0 : // not in dictionary
+					if (baseValue == chars.charAt(i)) {
+						str = String.valueOf(chars.charAt(i));
+						offe = i;
+						start = ++i;
+						baseValue = 0;
+						tmpBaseValue = baseValue;
+						return str;
+					} else {
+						i = start;
+						start++;
+						baseValue = 0;
+						break; // break current switch
+					}
+				case 2 : // continue
+					i++;
+					offe = start;
 					tmpBaseValue = baseValue;
-					return str;
-				} else {
-					i = start;
+					return words[tmpBaseValue];
+				case 3 : // form one word,break
+					offe = start;
 					start++;
-					// System.out.println("start = " + start + ", i = " + i);
+					i = start;
+					tmpBaseValue = baseValue;
 					baseValue = 0;
-					break; // break current switch
-				}
-			case 2: // 是个词，但能继续成词
-				i++;
-				offe = start;
-				tmpBaseValue = baseValue;
-				return words[tmpBaseValue];
-			case 3: // 已经是一个词了
-				offe = start;
-				start++;
-				i = start;
-				tmpBaseValue = baseValue;
-				baseValue = 0;
-				return words[tmpBaseValue];
+					return words[tmpBaseValue];
 			}
 		}
 		if (start++ != charsLength) {
 			i = start;
 			baseValue = 0;
-			return allWords();
+			return fetchOneWord();
 		}
 		start = 0;
 		baseValue = 0;
@@ -79,10 +78,12 @@ public class GetWords {
 	}
 
 	/**
-	 * 根据用户传入的c得到单词的状态. 0.代表这个字不在词典中 1.继续 2.是个词但是还可以继续 3.停止已经是个词了
+	 * 获得单词的状态. 0.代表单词不在词典中 1.继续 2.单词是个词但是可以继续 3.已经是个词了,stop
 	 * 
-	 * @param c
-	 * @return
+	 * @author LiuBo
+	 * @since 2014年1月14日
+	 * @param charHashCode
+	 * @return int 单词编码
 	 */
 	private int getStatement(int charHashCode) {
 		int tmp = baseValue;
@@ -101,6 +102,13 @@ public class GetWords {
 	 * 获得当前词的词性
 	 * 
 	 * @return
+	 */
+	/**
+	 * get current word's natures, Term have multiple natures
+	 * 
+	 * @author LiuBo
+	 * @since 2014年1月14日
+	 * @return TermNatures
 	 */
 	public TermNatures getTermNatures() {
 		TermNatures tns = termNatures[tmpBaseValue];

@@ -16,8 +16,8 @@ import org.soul.utility.NgramLibrary;
 public class AsianNameRecognition {
 
 	// private static Log log = LogFactory.getLog(AsianNameRecognition.class);
-	private static final double[] FACTORY = { 0.16271366224044456,
-			0.8060521860870434, 0.031234151672511947 };
+	private static final double[] FACTORY = {0.16271366224044456,
+			0.8060521860870434, 0.031234151672511947};
 	private boolean skip = false;
 	private Term[] terms;
 
@@ -153,7 +153,12 @@ public class AsianNameRecognition {
 	}
 
 	/**
-	 * 人名消歧,比如.邓颖超生前->邓颖 超生 前 fix to 邓颖超 生 前!
+	 * 人名消歧,[邓颖超生前]->[邓颖/超生/前] modify to [邓颖超/生/前]
+	 * 
+	 * @author LiuBo
+	 * @since 2014年1月14日
+	 * @param terms
+	 *            来自于Graph的Terms列表 void
 	 */
 	public static void nameAmbiguity(Term[] terms) {
 		Term term = null;

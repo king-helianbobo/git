@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import org.elasticsearch.hadoop.rest.dto.Field;
+import org.elasticsearch.hadoop.rest.Field;
 import org.elasticsearch.hadoop.serialization.Parser.Token;
 import org.elasticsearch.hadoop.util.StringUtils;
 

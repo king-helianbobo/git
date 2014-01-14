@@ -7,9 +7,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 public class GetTrieWords {
-	private static final String EMPTYSTRING = "";
+	private static final String EMPTY_STRING = "";
 	private static Log log = LogFactory.getLog(GetTrieWords.class);
-
 	private Forest forest;
 	private char[] chars;
 	private String str;
@@ -30,9 +29,9 @@ public class GetTrieWords {
 		this.branch = forest;
 	}
 
-	public String getAllWords() {
+	public String getOneWord() {
 		String temp = this.allWords();
-		while (EMPTYSTRING.equals(temp)) {
+		while (EMPTY_STRING.equals(temp)) {
 			temp = this.allWords();
 		}
 		return temp;
@@ -40,7 +39,7 @@ public class GetTrieWords {
 
 	public String getFrontWords() {
 		String temp = this.frontWords();
-		while (EMPTYSTRING.equals(temp)) {
+		while (EMPTY_STRING.equals(temp)) {
 			temp = this.frontWords();
 		}
 		return temp;
@@ -56,25 +55,25 @@ public class GetTrieWords {
 				this.root += 1;
 				this.branch = this.forest;
 				this.i = (this.root - 1);
-				this.isBack = false; // 在Trie的第一层
+				this.isBack = false; // 在Trie树的第一层
 			} else {
 				switch (this.branch.getStatus()) {
-				case 2:
-					this.isBack = true;// 不是Trie的第一层
-					this.offe = (this.tempOffe + this.root);
-					this.param = this.branch.getParams();
-					return new String(this.chars, this.root, this.i - this.root
-							+ 1);
-				case 3:
-					this.offe = (this.tempOffe + this.root);
-					this.str = new String(this.chars, this.root, this.i
-							- this.root + 1);
-					this.param = this.branch.getParams();
-					this.branch = this.forest;
-					this.isBack = false;// 在Trie的第一层
-					// this.root += 1;
-					this.root = this.i + 1;
-					return this.str;
+					case 2 :
+						this.isBack = true;// 不是Trie树的第一层
+						this.offe = (this.tempOffe + this.root);
+						this.param = this.branch.getParams();
+						return new String(this.chars, this.root, this.i
+								- this.root + 1);
+					case 3 :
+						this.offe = (this.tempOffe + this.root);
+						this.str = new String(this.chars, this.root, this.i
+								- this.root + 1);
+						this.param = this.branch.getParams();
+						this.branch = this.forest;
+						this.isBack = false;// 在Trie树的第一层
+						// this.root += 1;
+						this.root = this.i + 1;
+						return this.str;
 				}
 			}
 		}
@@ -91,14 +90,14 @@ public class GetTrieWords {
 					this.str = new String(this.chars, this.root, this.tempOffe);
 					if ((this.root > 0) && (isE(this.chars[(this.root - 1)]))
 							&& (isE(this.str.charAt(0)))) {
-						this.str = EMPTYSTRING;
+						this.str = EMPTY_STRING;
 					}
 
 					if ((this.str.length() != 0)
 							&& (this.root + this.tempOffe < this.chars.length)
 							&& (isE(this.str.charAt(this.str.length() - 1)))
 							&& (isE(this.chars[(this.root + this.tempOffe)]))) {
-						this.str = EMPTYSTRING;
+						this.str = EMPTY_STRING;
 					}
 					if (this.str.length() == 0) {
 						this.root += 1;
@@ -109,8 +108,8 @@ public class GetTrieWords {
 						this.root = this.i;
 					}
 					this.isBack = false;
-					if (EMPTYSTRING.equals(this.str)) {
-						return EMPTYSTRING;
+					if (EMPTY_STRING.equals(this.str)) {
+						return EMPTY_STRING;
 					}
 					return this.str;
 				}
@@ -118,41 +117,42 @@ public class GetTrieWords {
 				this.root += 1;
 			} else {
 				switch (this.branch.getStatus()) {
-				case 2:
-					this.isBack = true;
-					this.tempOffe = (this.i - this.root + 1);
-					this.param = this.branch.getParams();
-					break;
-				case 3:
-					this.offe = (this.tempOffe + this.root);
-					this.str = new String(this.chars, this.root, this.i
-							- this.root + 1);
-					String temp = this.str;
+					case 2 :
+						this.isBack = true;
+						this.tempOffe = (this.i - this.root + 1);
+						this.param = this.branch.getParams();
+						break;
+					case 3 :
+						this.offe = (this.tempOffe + this.root);
+						this.str = new String(this.chars, this.root, this.i
+								- this.root + 1);
+						String temp = this.str;
 
-					if ((this.root > 0) && (isE(this.chars[(this.root - 1)]))
-							&& (isE(this.str.charAt(0)))) {
-						this.str = EMPTYSTRING;
-					}
+						if ((this.root > 0)
+								&& (isE(this.chars[(this.root - 1)]))
+								&& (isE(this.str.charAt(0)))) {
+							this.str = EMPTY_STRING;
+						}
 
-					if ((this.str.length() != 0)
-							&& (this.i + 1 < this.chars.length)
-							&& (isE(this.str.charAt(this.str.length() - 1)))
-							&& (isE(this.chars[(this.i + 1)]))) {
-						this.str = EMPTYSTRING;
-					}
-					this.param = this.branch.getParams();
-					this.branch = this.forest;
-					this.isBack = false;
-					if (temp.length() > 0) {
-						this.i += 1;
-						this.root = this.i;
-					} else {
-						this.i = (this.root + 1);
-					}
-					if (EMPTYSTRING.equals(this.str)) {
-						return EMPTYSTRING;
-					}
-					return this.str;
+						if ((this.str.length() != 0)
+								&& (this.i + 1 < this.chars.length)
+								&& (isE(this.str.charAt(this.str.length() - 1)))
+								&& (isE(this.chars[(this.i + 1)]))) {
+							this.str = EMPTY_STRING;
+						}
+						this.param = this.branch.getParams();
+						this.branch = this.forest;
+						this.isBack = false;
+						if (temp.length() > 0) {
+							this.i += 1;
+							this.root = this.i;
+						} else {
+							this.i = (this.root + 1);
+						}
+						if (EMPTY_STRING.equals(this.str)) {
+							return EMPTY_STRING;
+						}
+						return this.str;
 				}
 			}
 		}
@@ -165,16 +165,16 @@ public class GetTrieWords {
 			return true;
 		}
 		switch (c) {
-		case '.':
-			return true;
-			// case '-':
-			// return true;
-			// case '/':
-			// return true;
-			// case '#':
-			// return true;
-			// case '?':
-			// return true;
+			case '.' :
+				return true;
+				// case '-':
+				// return true;
+				// case '/':
+				// return true;
+				// case '#':
+				// return true;
+				// case '?':
+				// return true;
 		}
 		return false;
 	}
@@ -197,44 +197,7 @@ public class GetTrieWords {
 		return this.param[i];
 	}
 
-	/**
-	 * 得到全部参数
-	 * 
-	 * @return
-	 */
 	public String[] getParams() {
 		return this.param;
 	}
-
-	// public static void main(String[] args) throws Exception {
-	// /**
-	// * 词典的构造.一行一个词后面是参数.可以从文件读取.可以是read流.
-	// */
-	// long start = System.currentTimeMillis();
-	// String dic = "android\t10\nc\t100\nC++\t10\nc++\t5\nc#\t100\nVC++\t100"
-	// .toLowerCase();
-	// Forest forest = Library.makeForest(new BufferedReader(new StringReader(
-	// dic)));
-	// /**
-	// * 删除一个单词
-	// */
-	// Library.removeWord(forest, "中国");
-	// /**
-	// * 增加一个新词
-	// */
-	// Library.insertWord(forest, "中国人");
-	// String content = "Android--中国";
-	// content = StringUtil.rmHtmlTag(content);
-	//
-	// for (int i = 0; i < 1; i++) {
-	// GetWord udg = forest.getWord(content.toLowerCase());
-	//
-	// String temp = null;
-	// while ((temp = udg.getFrontWords()) != null) {
-	// System.out.println(temp + "\t\t" + udg.getParam(0) + "\t\t"
-	// + udg.getParam(2));
-	// }
-	// }
-	// System.out.println(System.currentTimeMillis() - start);
-	// }
 }

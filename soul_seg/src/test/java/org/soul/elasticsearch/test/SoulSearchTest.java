@@ -252,7 +252,6 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 	}
 
 	@Test
-	// see #3521
 	public void testAllDocsQueryString() throws InterruptedException,
 			ExecutionException {
 		assertAcked(client().admin().indices().prepareCreate("test")

@@ -39,14 +39,12 @@ public abstract class Analysis {
 	};
 
 	public Term next() throws IOException {
-
 		if (!terms.isEmpty()) {
 			term = terms.poll();
 			term.updateOffe(offe);
 			return term;
 		}
-		// read next line
-		String temp = br.readLine();
+		String temp = br.readLine(); // read next line
 		while (StringUtil.isBlank(temp)) {
 			if (temp == null) {
 				return null;
@@ -55,10 +53,8 @@ public abstract class Analysis {
 				temp = br.readLine();
 			}
 		}
-
 		offe += tempLength;
 		analysisSentence(temp); // analysis string
-
 		if (!terms.isEmpty()) {
 			term = terms.poll();
 			term.updateOffe(offe); // term's offset in document
@@ -67,7 +63,9 @@ public abstract class Analysis {
 		return null;
 	}
 
-	private void analysisSentence(String sentence) {
+	private void analysisSentence(String tmpStr) {
+		String sentence = WordAlert.alertEnglishAndNumber(tmpStr, 0,
+				tmpStr.length());
 		Graph gp = new Graph(sentence);
 		int startOffe = 0;
 		if (UserDefineLibrary.ambiguityForest != null) {
@@ -75,7 +73,7 @@ public abstract class Analysis {
 			GetTrieWords getTrieWords = new GetTrieWords(
 					UserDefineLibrary.ambiguityForest, sentence);
 			String[] params = null;
-			while ((getTrieWords.getAllWords()) != null) {
+			while ((getTrieWords.getOneWord()) != null) {
 				if (getTrieWords.offe > startOffe) {
 					String str = sentence.substring(startOffe,
 							getTrieWords.offe);
@@ -85,7 +83,8 @@ public abstract class Analysis {
 				startOffe = getTrieWords.offe;
 				for (int i = 0; i < params.length; i += 2) {
 					Term term = new Term(params[i], startOffe, new TermNatures(
-							new TermNature(params[i + 1], 1))); // 词频按照1来算？
+							new TermNature(params[i + 1], 1)));
+					// 词频按照1来算，词频意义不大，歧义词的优先权最高
 					gp.addTerm(term);
 					startOffe += params[i].length();
 				}
@@ -112,60 +111,61 @@ public abstract class Analysis {
 		char c = 0;
 		for (int i = 0; i < length; i++) {
 			switch (status[TraditionalToSimplified(sentence.charAt(i))]) {
-			case 0: // particular symbol
-				gp.addTerm(new Term(sentence.charAt(i) + "", startOffe + i,
-						TermNatures.NULL));
-				break;
-			case 4: // consecutive alpha
-				start = i;
-				end = 1;
-				while (++i < length && status[sentence.charAt(i)] == 4) {
-					end++;
-				}
-				str = WordAlert.alertEnglish(sentence, start, end);
-				gp.addTerm(new Term(str, start + startOffe, TermNatures.EN));
-				// English words use TermNatures.EN
-				i--;
-				break;
-			case 5: // consecutive number
-				start = i;
-				end = 1;
-				while (++i < length && status[sentence.charAt(i)] == 5) {
-					end++;
-				}
-				str = WordAlert.alertNumber(sentence, start, end);
-				gp.addTerm(new Term(str, start + startOffe, TermNatures.NB));
-				// decimal number use TermNatures.NB
-				i--;
-				break;
-			default:
-				start = i;
-				end = i;
-				c = sentence.charAt(start);
-				while (IN_SYSTEM[c] > 0) {
-					end++;
-					if (++i >= length)
-						break;
-					c = sentence.charAt(i);
-				}
-				if (start == end) {
-					gp.addTerm(new Term(String.valueOf(c), i + startOffe,
-							TermNatures.NULL)); // couldn't determine termNature
-				}
-				str = sentence.substring(start, end);
-				gwi.setStr(str);
-				while ((str = gwi.allWords()) != null) {
-					gp.addTerm(new Term(str, gwi.offe + start + startOffe, gwi
-							.getTermNatures()));
-				}
-				// 如果未分出词.以未知字符加入到graph中，未知字符不能确定词性
-				if (IN_SYSTEM[c] > 0 || status[c] > 3) {
-					i -= 1;
-				} else {
-					gp.addTerm(new Term(String.valueOf(c), i + startOffe,
+				case 0 : // particular symbol
+					gp.addTerm(new Term(sentence.charAt(i) + "", startOffe + i,
 							TermNatures.NULL));
-				}
-				break;
+					break;
+				case 4 : // consecutive alpha
+					start = i;
+					end = 1;
+					while (++i < length && status[sentence.charAt(i)] == 4) {
+						end++;
+					}
+					str = WordAlert.alertEnglish(sentence, start, end);
+					gp.addTerm(new Term(str, start + startOffe, TermNatures.EN));
+					// English words use TermNatures.EN
+					i--;
+					break;
+				case 5 : // consecutive number
+					start = i;
+					end = 1;
+					while (++i < length && status[sentence.charAt(i)] == 5) {
+						end++;
+					}
+					str = WordAlert.alertNumber(sentence, start, end);
+					gp.addTerm(new Term(str, start + startOffe, TermNatures.NB));
+					// decimal number use TermNatures.NB
+					i--;
+					break;
+				default :
+					start = i;
+					end = i;
+					c = sentence.charAt(start);
+					while (IN_SYSTEM[c] > 0) {
+						end++;
+						if (++i >= length)
+							break;
+						c = sentence.charAt(i);
+					}
+					if (start == end) {
+						gp.addTerm(new Term(String.valueOf(c), i + startOffe,
+								TermNatures.NULL)); // couldn't determine
+													// termNature
+					} else {
+						str = sentence.substring(start, end);
+						gwi.setStr(str);
+						while ((str = gwi.fetchOneWord()) != null) {
+							gp.addTerm(new Term(str, gwi.offe + start
+									+ startOffe, gwi.getTermNatures()));
+						}
+					}
+					if (IN_SYSTEM[c] > 0 || status[c] > 3) {
+						i -= 1;
+					} else { // 以未知字符加入到graph中，未知字符不能确定词性
+						gp.addTerm(new Term(String.valueOf(c), i + startOffe,
+								TermNatures.NULL));
+					}
+					break;
 			}
 		}
 	}
