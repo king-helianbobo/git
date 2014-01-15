@@ -1,14 +1,27 @@
 #!/bin/bash
-# curl -X GET "http://namenode:9200/_search?pretty=true" -d'
-# {
-#     "query": {
-#         "query_string": {
-#             "query": "drama",
-#             "fields": ["genres"]
-#         }
-#     },
-#     "filter" : { "term": {"year":1979} }
-# }'
+curl -X GET "http://namenode:9200/_search?pretty=true" -d'
+{
+    "query": {
+        "query_string": {
+            "query": "drama",
+            "fields": ["genres"]
+        }
+    },
+    "filter" : { "term": {"year":1979} }
+}'
+
+curl -X GET "http://namenode:9200/_search?pretty=true" -d'
+{
+    "query": {
+        "query_string": {
+            "query": "drama",
+            "fields": ["genres"]
+        }
+    },
+    "filter" : { "term": {"year":1979} }
+}'
+
+
 curl -XGET 'http://localhost:9200/hivetest/hive1/_count' -d '
 {
 "query": {

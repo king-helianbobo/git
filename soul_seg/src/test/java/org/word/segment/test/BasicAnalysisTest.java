@@ -42,7 +42,7 @@ public class BasicAnalysisTest {
 			}
 		}
 	}
-	@Ignore()
+//	@Ignore()
 	@Test
 	public void foreignNameRecongnitionTest() {
 		String str = "巴洛斯说俞志龙和陈举亚是南京维数公司的,协会主席亚拉·巴洛斯说他们开始寻找野生金刚鹦鹉";

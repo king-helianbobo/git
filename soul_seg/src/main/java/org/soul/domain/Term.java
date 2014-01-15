@@ -74,7 +74,6 @@ public class Term implements Comparable<Term> {
 		this.score = score;
 	}
 
-
 	public Term merge(Term to) {
 		this.name = this.name + to.getName();
 		return this;
@@ -117,7 +116,6 @@ public class Term implements Comparable<Term> {
 		return termNatures;
 	}
 
-
 	public void setTermNatures(TermNatures termNatures) {
 		this.termNatures = termNatures;
 	}
@@ -146,9 +144,9 @@ public class Term implements Comparable<Term> {
 	@Override
 	public String toString() {
 		if (nature != null && !"null".equals(nature.natureStr)) {
-			return this.name + "/" + nature.natureStr;
+			return "[" + this.name + "/" + nature.natureStr + "]";
 		} else {
-			return this.name;
+			return "[" + this.name + "]";
 		}
 	}
 

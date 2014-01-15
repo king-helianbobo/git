@@ -50,7 +50,6 @@ public class SoulElasticStaticValue {
 		// 用户自定义辞典
 		StaticVariable.ambiguityLibrary = getPath(settings.get(
 				"soul_ambiguity", StaticVariable.ambiguityLibrary));
-
 	}
 
 	private static String getPath(String path) {
@@ -113,7 +112,7 @@ public class SoulElasticStaticValue {
 		SoulElasticStaticValue.loaded = loaded;
 	}
 
-	// reload config file
+	// reload configuration file
 	public void reload() {
 		init();
 	}

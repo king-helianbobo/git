@@ -66,7 +66,7 @@ public abstract class Analysis {
 	private void analysisSentence(String tmpStr) {
 		String sentence = WordAlert.alertAlphaAndNumber(tmpStr, 0,
 				tmpStr.length());
-		// 将部分全角字母和数字变成相应的ascii char
+		// 将部分全角字母和数字变成相应的ASCII char
 		Graph gp = new Graph(sentence);
 		int startOffe = 0;
 		if (UserDefineLibrary.ambiguityForest != null) {
