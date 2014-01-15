@@ -9,7 +9,6 @@ import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
-
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
@@ -38,14 +37,9 @@ public class SoulElasticStaticValue {
 				.prepareSettings(Builder.EMPTY_SETTINGS, true);
 		environment = tuple.v2();
 		initConfigPath(tuple.v1());
-		loadFilter(tuple.v1()); // 加载停用词表
-		// preheat();
+		loadFilter(tuple.v1()); // load stop vocabulary
 		setLoaded(true);
 	}
-
-	// private static void preheat() {
-	// BasicAnalysis.parse("一个词");
-	// }
 
 	private static void initConfigPath(Settings settings) {
 		// 是否提取词干
@@ -77,10 +71,10 @@ public class SoulElasticStaticValue {
 	private static void loadFilter(Settings settings) {
 		Set<String> filters = new HashSet<String>();
 		String stopLibraryPath = settings.get("stop_path");
-		if (stopLibraryPath == null) {
-			return;
+		if (stopLibraryPath == null) { // now set default stopLibraryPath
+			stopLibraryPath = StaticVariable.stopLibrary;
+			// return;
 		}
-
 		File stopLibrary = new File(environment.configFile(), stopLibraryPath);
 		if (!stopLibrary.isFile()) {
 			logger.info("Can't find file:" + stopLibraryPath
@@ -89,7 +83,6 @@ public class SoulElasticStaticValue {
 			setLoaded(true);
 			return;
 		}
-
 		BufferedReader br;
 		try {
 			br = IOUtil.getReader(stopLibrary.getAbsolutePath(), "UTF-8");
@@ -120,9 +113,7 @@ public class SoulElasticStaticValue {
 		SoulElasticStaticValue.loaded = loaded;
 	}
 
-	/**
-	 * 重新加载配置文件
-	 */
+	// reload config file
 	public void reload() {
 		init();
 	}

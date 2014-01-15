@@ -222,4 +222,16 @@ public class InitDictionary {
 		return value;
 	}
 
+	public static String TraditionalToSimplified(String str) {
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < str.length(); i++) {
+			char c = str.charAt(i);
+			char value = IN_SYSTEM[c];
+			if (value == 0) {
+				builder.append(c);
+			} else
+				builder.append(value);
+		}
+		return builder.toString();
+	}
 }

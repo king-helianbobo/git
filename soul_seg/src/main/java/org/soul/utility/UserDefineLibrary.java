@@ -20,19 +20,21 @@ public class UserDefineLibrary {
 	}
 
 	/**
-	 * @param keyWord
-	 *            需要增加的关键词
+	 * 
+	 * @author LiuBo
+	 * @since 2014年1月15日
+	 * @param key
 	 * @param nature
-	 *            关键词的词性
 	 * @param freq
-	 *            关键词的词频
+	 *            void
 	 */
-	public static void insertWord(String keyword, String nature, int freq) {
+	public static void insertWordToUserDefineLibrary(String key, String nature,
+			int freq) {
 		String[] paramers = new String[2];
-		paramers[0] = nature;
+		paramers[0] = WordAlert.alertAlphaAndNumber(nature);
 		paramers[1] = String.valueOf(freq);
-		Value value = new Value(keyword, paramers);
-		Library.insertWord(userDefineForest, value);
+		Value value = new Value(WordAlert.alertAlphaAndNumber(key), paramers);
+		LibraryToForest.insertWord(userDefineForest, value);
 	}
 
 	private static boolean isOverlap(String str1, String str2) {
@@ -84,8 +86,9 @@ public class UserDefineLibrary {
 		File file = new File(ambiguityLibrary);
 		if (file.isFile() && file.canRead()) {
 			try {
-				checkAmbiguity(file);// 检查文件是否合法，它不应该再引入歧义
-				ambiguityForest = Library.makeForest(ambiguityLibrary);
+				checkAmbiguity(file);
+				// 检查文件是否合法，它不应该再引入歧义，任意两个词之间不应该有重叠部分
+				ambiguityForest = LibraryToForest.makeForest(ambiguityLibrary);
 			} catch (Exception e) {
 				LibraryLog.error("init ambiguity error :" + ambiguityLibrary
 						+ " because : not find file or can not be read!");
@@ -108,8 +111,8 @@ public class UserDefineLibrary {
 		}
 	}
 
-	// 加载由单个文件构成的词典
 	private static void loadFile(Forest forest, File file) {
+		// 加载由单个文件构成的词典
 		if (!file.canRead()) {
 			LibraryLog.warn("file in path " + file.getAbsolutePath()
 					+ " can not be read!");
@@ -125,14 +128,14 @@ public class UserDefineLibrary {
 				if (StringUtil.isBlank(temp)) {
 					continue;
 				} else {
-					strs = temp.split("\t");
+					strs = WordAlert.alertAlphaAndNumber(temp).split("\t");
 					if (strs.length != 3) {
-						// "userDefine" will be termNature
+						// "userDefine" would be default termNature
 						value = new Value(strs[0], "userDefine", "1000");
 					} else {
 						value = new Value(strs[0], strs[1], strs[2]);
 					}
-					Library.insertWord(forest, value);
+					LibraryToForest.insertWord(forest, value);
 				}
 			}
 			LibraryLog.info("init userLibrary ok,path is : "
@@ -144,7 +147,6 @@ public class UserDefineLibrary {
 			br = null;
 		}
 	}
-
 	// 加载用户自定义词典
 	public static void loadLibrary(Forest forest, String path) {
 		File file = new File(path);
@@ -168,12 +170,11 @@ public class UserDefineLibrary {
 		}
 	}
 
-	// remove key word
-	public static void removeWord(String word) {
-		Library.removeWord(userDefineForest, word);
+	public static void removeWordInUserDefineLibrary(String word) {
+		LibraryToForest.removeWord(userDefineForest, word);
 	}
 
-	public static void clear() {
+	public static void clearUserDefineLibrary() {
 		userDefineForest.clear();
 	}
 

@@ -1,4 +1,4 @@
-package org.index.mapper.attachment.test;
+package org.mapper.attachment.test;
 
 import org.apache.lucene.document.Document;
 import org.elasticsearch.common.bytes.BytesReference;

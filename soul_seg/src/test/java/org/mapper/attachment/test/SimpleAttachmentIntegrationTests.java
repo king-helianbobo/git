@@ -17,23 +17,17 @@
  * under the License.
  */
 
-package org.index.mapper.attachment.test;
+package org.mapper.attachment.test;
 
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.count.CountResponse;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.network.NetworkUtils;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.mapper.MapperParsingException;
 import org.elasticsearch.node.Node;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import static org.elasticsearch.client.Requests.*;
 import static org.elasticsearch.common.io.Streams.copyToBytesFromClasspath;
@@ -46,7 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 @Test
-public class MultipleAttachmentIntegrationTests {
+public class SimpleAttachmentIntegrationTests {
 
 	private final ESLogger logger = Loggers.getLogger(getClass());
 	private Node node;
@@ -70,14 +64,15 @@ public class MultipleAttachmentIntegrationTests {
 		node.close();
 	}
 
-	private void createIndex(Settings settings) {
+	@BeforeMethod
+	public void createIndex() {
 		logger.info("creating index [test]");
 		node.client()
 				.admin()
 				.indices()
 				.create(createIndexRequest("test").settings(
-						settingsBuilder().put("index.numberOfReplicas", 0).put(
-								settings))).actionGet();
+						settingsBuilder().put("index.numberOfReplicas", 0)))
+				.actionGet();
 		logger.info("Running Cluster Health");
 		ClusterHealthResponse clusterHealth = node.client().admin().cluster()
 				.health(clusterHealthRequest().waitForGreenStatus())
@@ -88,7 +83,6 @@ public class MultipleAttachmentIntegrationTests {
 				equalTo(ClusterHealthStatus.GREEN));
 	}
 
-	// The annotated method will be run after each test method
 	@AfterMethod
 	public void deleteIndex() {
 		logger.info("deleting index [test]");
@@ -96,19 +90,10 @@ public class MultipleAttachmentIntegrationTests {
 				.actionGet();
 	}
 
-	/**
-	 * When we want to ignore errors (default)
-	 */
 	@Test
-	public void testMultipleAttachmentsWithEncryptedDoc() throws Exception {
-		createIndex(ImmutableSettings.builder().build());
-		/*
-		 * { "person":{ "properties":{ "file1":{ "type":"attachment" },
-		 * "file2":{ "type":"attachment" } } } }
-		 */
-		String mapping = copyToStringFromClasspath("/mapper/multipledocs/test-mapping.json");
-		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/htmlWithValidDateMeta.html");
-		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
+	public void testSimpleAttachment() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
+		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/testXHTML.html");
 
 		node.client()
 				.admin()
@@ -117,46 +102,102 @@ public class MultipleAttachmentIntegrationTests {
 						putMappingRequest("test").type("person")
 								.source(mapping)).actionGet();
 
-		IndexResponse indexResponse = node
-				.client()
+		node.client()
 				.index(indexRequest("test").type("person").source(
-						jsonBuilder().startObject().field("file1", html)
-								.field("file2", pdf).field("hello", "club")
+						jsonBuilder().startObject().field("file", html)
 								.endObject())).actionGet();
-
-		// IndexResponse indexResponse = node
-		// .client()
-		// .index(indexRequest("test").type("person").source(
-		// jsonBuilder().startObject().field("file1", html)
-		// .field("file2", pdf).field("hello", "world")
-		// .endObject())).actionGet();
-		logger.info(indexResponse.getId() + "," + indexResponse.getIndex());
 		node.client().admin().indices().refresh(refreshRequest()).actionGet();
 
 		CountResponse countResponse = node
 				.client()
-				.count(countRequest("test").query(fieldQuery("file1", "World")))
+				.count(countRequest("test").query(
+						fieldQuery("file.title", "test document"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
+
+		countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file", "tests the ability"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
+	}
+
+	@Test
+	public void testSimpleAttachmentContentLengthLimit() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
+		byte[] txt = copyToBytesFromClasspath("/mapper/xcontent/testContentLength.txt");
+		final int CONTENT_LENGTH_LIMIT = 20;
+
+		node.client()
+				.admin()
+				.indices()
+				.putMapping(
+						putMappingRequest("test").type("person")
+								.source(mapping)).actionGet();
+
+		node.client()
+				.index(indexRequest("test").type("person").source(
+						jsonBuilder().startObject().field("file").startObject()
+								.field("content", txt)
+								.field("_indexed_chars", CONTENT_LENGTH_LIMIT)
+								.endObject())).actionGet();
+		node.client().admin().indices().refresh(refreshRequest()).actionGet();
+
+		CountResponse countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file", "BeforeLimit"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(1l));
+
+		countResponse = node
+				.client()
+				.count(countRequest("test").query(
+						fieldQuery("file", "AfterLimit"))).actionGet();
+		assertThat(countResponse.getCount(), equalTo(0l));
+	}
+
+	@Test
+	public void testSimpleAttachmentNoContentLengthLimit() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
+		byte[] txt = copyToBytesFromClasspath("/mapper/xcontent/testContentLength.txt");
+		final int CONTENT_LENGTH_LIMIT = -1;
+
+		node.client()
+				.admin()
+				.indices()
+				.putMapping(
+						putMappingRequest("test").type("person")
+								.source(mapping)).actionGet();
+
+		node.client()
+				.index(indexRequest("test").type("person").source(
+						jsonBuilder().startObject().field("file").startObject()
+								.field("content", txt)
+								.field("_indexed_chars", CONTENT_LENGTH_LIMIT)
+								.endObject())).actionGet();
+		node.client().admin().indices().refresh(refreshRequest()).actionGet();
+
+		CountResponse countResponse = node.client()
+				.count(countRequest("test").query(fieldQuery("file", "Begin")))
 				.actionGet();
 		assertThat(countResponse.getCount(), equalTo(1l));
 
 		countResponse = node.client()
-				.count(countRequest("test").query(fieldQuery("hello", "club")))
+				.count(countRequest("test").query(fieldQuery("file", "End")))
 				.actionGet();
 		assertThat(countResponse.getCount(), equalTo(1l));
 	}
 
 	/**
-	 * When we don't want to ignore errors
+	 * Test case for issue
+	 * https://github.com/elasticsearch/elasticsearch-mapper-
+	 * attachments/issues/23 <br/>
+	 * We throw a nicer exception when no content is provided
+	 * 
+	 * @throws Exception
 	 */
 	@Test(expectedExceptions = MapperParsingException.class)
-	public void testMultipleAttachmentsWithEncryptedDocNotIgnoringErrors()
-			throws Exception {
-		createIndex(ImmutableSettings.builder()
-				.put("index.mapping.attachment.ignore_errors", false).build());
-		String mapping = copyToStringFromClasspath("/mapper/multipledocs/test-mapping.json");
-		byte[] html = copyToBytesFromClasspath("/mapper/xcontent/htmlWithValidDateMeta.html");
-		byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/encrypted.pdf");
-		// byte[] pdf = copyToBytesFromClasspath("/mapper/xcontent/weka.pdf");
+	public void testNoContent() throws Exception {
+		String mapping = copyToStringFromClasspath("/mapper/xcontent/test-mapping.json");
 
 		node.client()
 				.admin()
@@ -167,8 +208,7 @@ public class MultipleAttachmentIntegrationTests {
 
 		node.client()
 				.index(indexRequest("test").type("person").source(
-						jsonBuilder().startObject().field("file1", html)
-								.field("file2", pdf).field("hello", "world")
+						jsonBuilder().startObject().field("file").startObject()
 								.endObject())).actionGet();
 	}
 }

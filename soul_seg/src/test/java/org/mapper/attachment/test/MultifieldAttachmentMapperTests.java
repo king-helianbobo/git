@@ -17,18 +17,15 @@
  * under the License.
  */
 
-package org.index.mapper.attachment.test;
+package org.mapper.attachment.test;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
+import org.elasticsearch.index.mapper.core.DateFieldMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
-import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
 import org.index.mapper.attachment.AttachmentMapper;
-import org.lionsoul.jcseg.ASegment;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -40,8 +37,9 @@ import static org.hamcrest.Matchers.instanceOf;
  *
  */
 @Test
-public class DateAttachmentMapperTests {
-	private static Log log = LogFactory.getLog(DateAttachmentMapperTests.class);
+public class MultifieldAttachmentMapperTests {
+
+	// 这个不必测试，因为已经屏蔽了multi_field
 	private DocumentMapperParser mapperParser;
 
 	@BeforeClass
@@ -50,21 +48,47 @@ public class DateAttachmentMapperTests {
 				new AnalysisService(new Index("test")), null, null);
 		mapperParser.putTypeParser(AttachmentMapper.CONTENT_TYPE,
 				new AttachmentMapper.TypeParser());
-		// add another typeParser
 	}
 
 	@Test
 	public void testSimpleMappings() throws Exception {
-		String mapping = copyToStringFromClasspath("/mapper/date/date-mapping.json");
-
+		String mapping = copyToStringFromClasspath("/mapper/multifield/multifield-mapping.json");
 		DocumentMapper docMapper = mapperParser.parse(mapping);
-		log.info("***********" + mapping);
-		// Our mapping should be kept as a String
-		// mappers()函数获得每个域的mapper,每个mapper有indexName，fullName和name
-		assertThat(docMapper.mappers().fullName("file.date").mapper(),
+
+		assertThat(docMapper.mappers().fullName("file").mapper(),
 				instanceOf(StringFieldMapper.class));
-		log.info(docMapper.mappers().indexName("_type").mapper().names().indexName());
-		assertThat(docMapper.mappers().fullName("_type").mapper(),
-				instanceOf(TypeFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
+
+		assertThat(docMapper.mappers().fullName("file.date").mapper(),
+				instanceOf(DateFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.date.string").mapper(),
+				instanceOf(StringFieldMapper.class));
+
+		assertThat(docMapper.mappers().fullName("file.title").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.title.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
+
+		assertThat(docMapper.mappers().fullName("file.name").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.name.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
+
+		assertThat(docMapper.mappers().fullName("file.author").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(
+				docMapper.mappers().fullName("file.author.suggest").mapper(),
+				instanceOf(StringFieldMapper.class));
+
+		assertThat(docMapper.mappers().fullName("file.keywords").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.keywords.suggest")
+				.mapper(), instanceOf(StringFieldMapper.class));
+
+		assertThat(docMapper.mappers().fullName("file.content_type").mapper(),
+				instanceOf(StringFieldMapper.class));
+		assertThat(docMapper.mappers().fullName("file.content_type.suggest")
+				.mapper(), instanceOf(StringFieldMapper.class));
 	}
 }

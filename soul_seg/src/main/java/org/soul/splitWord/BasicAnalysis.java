@@ -44,8 +44,8 @@ public class BasicAnalysis extends Analysis {
 					for (Forest forest : forests) {
 						if (forest == null)
 							continue;
-						// 识别用户自定义词，对于部分自定义词(如拳皇ova)，放在ambiguityLibrary
-						// 因为对[漂亮mm打拳皇ova很厉害]这胡话，[拳皇ova]根本分不出来
+						// 识别自定义词，对于部分自定义词(如拳皇ova)，放在ambiguityLibrary里无效
+						// 因为对[漂亮mm打拳皇ova很厉害]这句话，由于[打拳]使得[拳皇ova]分不出来
 						userDefineRecognize(graph, forest);
 					}
 				}

@@ -1,4 +1,4 @@
-package org.ansj.demo;
+package org.word.segment.test;
 
 import java.io.IOException;
 import java.util.ArrayList;

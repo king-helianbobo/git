@@ -64,8 +64,9 @@ public abstract class Analysis {
 	}
 
 	private void analysisSentence(String tmpStr) {
-		String sentence = WordAlert.alertEnglishAndNumber(tmpStr, 0,
+		String sentence = WordAlert.alertAlphaAndNumber(tmpStr, 0,
 				tmpStr.length());
+		// 将部分全角字母和数字变成相应的ascii char
 		Graph gp = new Graph(sentence);
 		int startOffe = 0;
 		if (UserDefineLibrary.ambiguityForest != null) {
@@ -121,7 +122,7 @@ public abstract class Analysis {
 					while (++i < length && status[sentence.charAt(i)] == 4) {
 						end++;
 					}
-					str = WordAlert.alertEnglish(sentence, start, end);
+					str = WordAlert.alertAlpha(sentence, start, end);
 					gp.addTerm(new Term(str, start + startOffe, TermNatures.EN));
 					// English words use TermNatures.EN
 					i--;

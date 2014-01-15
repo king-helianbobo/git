@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.soul.utility.WordAlert;
 
-public class Library {
+public class LibraryToForest {
 
 	public static Forest makeForest(String path) throws Exception {
 		return makeForest(new FileInputStream(path));
@@ -64,7 +64,7 @@ public class Library {
 	}
 
 	public static void insertWord(Forest forest, Value value) {
-		insertWord(forest, value.getKeyword(), value.getParamers());
+		_insertWord_(forest, value.getKeyword(), value.getParamers());
 	}
 
 	/**
@@ -76,16 +76,16 @@ public class Library {
 	public static void insertWord(WoodInterface forest, String tmp) {
 		String[] param = tmp.split("\t");
 		for (int i = 0; i < param.length; i++)
-			param[i] = WordAlert.alertEnglishAndNumber(param[i], 0,
+			param[i] = WordAlert.alertAlphaAndNumber(param[i], 0,
 					param[i].length());
 		String[] resultParams = new String[param.length - 1];
 		for (int j = 1; j < param.length; j++) {
 			resultParams[j - 1] = param[j];
 		}
-		insertWord(forest, param[0], resultParams);
+		_insertWord_(forest, param[0], resultParams);
 	}
 
-	private static void insertWord(WoodInterface forest, String key,
+	private static void _insertWord_(WoodInterface forest, String key,
 			String[] param) {
 		WoodInterface branch = forest;
 		char[] chars = key.toCharArray();
@@ -108,7 +108,7 @@ public class Library {
 	 */
 	public static void removeWord(Forest forest, String word) {
 		WoodInterface branch = forest;
-		char[] chars = word.toCharArray();
+		char[] chars = WordAlert.alertAlphaAndNumber(word).toCharArray();
 		for (int i = 0; i < chars.length; i++) {
 			if (branch == null)
 				return;

@@ -1,4 +1,4 @@
-package org.ansj.demo;
+package org.word.segment.test;
 
 import java.util.HashMap;
 import java.util.List;

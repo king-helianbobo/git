@@ -1,4 +1,4 @@
-package org.ansj.test;
+package org.word.segment.test;
 
 import java.io.BufferedReader;
 import java.io.IOException;

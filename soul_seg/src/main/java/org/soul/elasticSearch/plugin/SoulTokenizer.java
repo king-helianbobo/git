@@ -9,6 +9,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.mortbay.log.Log;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.splitWord.Analysis;
@@ -53,8 +54,12 @@ public class SoulTokenizer extends Tokenizer {
 					&& term.getTermNatures().termNatures[0] == TermNature.EN) {
 				name = stemmer.stem(name);// 对英语进行词干分析
 				term.setName(name);
+			} else {
+				// do nothing
 			}
 			if (filter != null && filter.contains(name)) {
+				Log.info("name " + name + " is filtered!");
+				position++; // must keep its position
 				continue;
 			} else {
 				position++;
@@ -72,7 +77,8 @@ public class SoulTokenizer extends Tokenizer {
 		}
 	}
 
-	// 必须重载的方法，否则批量索引文件时将失败
+	// must override this method, otherwise it will be fail when batch
+	// processing index
 	@Override
 	public void reset() throws IOException {
 		super.reset();

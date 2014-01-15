@@ -19,11 +19,11 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.facet.FacetBuilders;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
-import org.index.mapper.attachment.test.EncryptedDocMapperTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.Test;
+import org.mapper.attachment.test.EncryptedDocMapperTest;
 
 import java.io.IOException;
 import java.util.Random;

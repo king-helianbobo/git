@@ -62,7 +62,7 @@ public class HttpClientTest {
 	private Settings settings;
 	TransportClient transportClient;
 
-	private String indexName = "http_test";
+	private String indexName = "soul_test";
 	private String typeName = "test1";
 
 	// private final AsyncHttpClient httpClient = new AsyncHttpClient();
@@ -161,7 +161,7 @@ public class HttpClientTest {
 		}
 		client.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
-	// @Ignore("Test Query")
+	@Ignore("Test Query")
 	@Test
 	public void testQueryStringOperation() {
 		// 词组后面跟随~10,表示词组中的多个词之间的距离之和不超过10,则满足查询
@@ -178,7 +178,28 @@ public class HttpClientTest {
 									.defaultOperator(
 											QueryStringQueryBuilder.Operator.AND))
 					.get();
-			log.info("********* " + str + "***********  "
+			log.info("QueryStringTest[" + str + "] ***********"
+					+ searchResponse.toString());
+		}
+	}
+	// @Ignore
+	@Test
+	public void testStopWordHaveEffectOperation() {
+		// 词组后面跟随~10,表示词组中的多个词之间的距离之和不超过10,则满足查询
+		// 词之间的距离,即查询词组中词为满足和目标词组相同的最小移动次数
+		String queryStr[] = {"\"香港的网站为主，占\"", "\"香港的网站为主占\"", "\"香港的网站为主(占\"",
+				"\"香港的网站为主()占\""};
+		for (String str : queryStr) {
+			SearchResponse searchResponse = transportClient
+					.prepareSearch(indexName)
+					.setQuery(
+							QueryBuilders
+									.queryString(str)
+									.defaultField("content")
+									.defaultOperator(
+											QueryStringQueryBuilder.Operator.AND))
+					.get();
+			log.info("StopWordHaveEffectTest[" + str + "] ***********"
 					+ searchResponse.toString());
 		}
 	}
@@ -198,7 +219,7 @@ public class HttpClientTest {
 											SimpleQueryStringBuilder.Operator.AND))
 					.get();
 
-			log.info("********* " + queryStr + " ***********  "
+			log.info("SimpleQueryStringTest: [" + queryStr + "] ***********"
 					+ searchResponse.toString());
 		}
 	}

@@ -23,7 +23,7 @@ public class WordAlert {
 	 * @param end
 	 * @return
 	 */
-	public static String alertEnglish(char[] chars, int start, int end) {
+	public static String alertAlpha(char[] chars, int start, int end) {
 		for (int i = start; i < start + end; i++) {
 			if (chars[i] >= MIN_LOWER && chars[i] <= MAX_LOWER) {
 				chars[i] = (char) (chars[i] - LOWER_GAP);
@@ -38,7 +38,7 @@ public class WordAlert {
 		return new String(chars, start, end);
 	}
 
-	public static String alertEnglish(String temp, int start, int end) {
+	public static String alertAlpha(String temp, int start, int end) {
 		char c = 0;
 		StringBuilder sb = new StringBuilder();
 		for (int i = start; i < start + end; i++) {
@@ -65,7 +65,11 @@ public class WordAlert {
 		return new String(chars, start, end);
 	}
 
-	public static String alertEnglishAndNumber(String temp, int start, int end) {
+	public static String alertAlphaAndNumber(String temp) {
+		return alertAlphaAndNumber(temp, 0, temp.length());
+	}
+
+	public static String alertAlphaAndNumber(String temp, int start, int end) {
 		char c = 0;
 		StringBuilder sb = new StringBuilder();
 		for (int i = start; i < start + end; i++) {

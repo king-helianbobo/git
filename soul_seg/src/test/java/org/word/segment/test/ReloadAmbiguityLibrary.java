@@ -1,9 +1,9 @@
-package org.ansj.demo;
+package org.word.segment.test;
 
 import java.io.File;
 
 import org.soul.treeSplit.Forest;
-import org.soul.treeSplit.Library;
+import org.soul.treeSplit.LibraryToForest;
 import org.soul.treeSplit.Value;
 import org.soul.utility.UserDefineLibrary;
 
@@ -24,11 +24,11 @@ public class ReloadAmbiguityLibrary {
         //歧义辞典增加新词
         
         Value value = new Value("三个和尚","三个","m","和尚","n") ;
-        Library.insertWord(UserDefineLibrary.ambiguityForest, value) ;
+        LibraryToForest.insertWord(UserDefineLibrary.ambiguityForest, value) ;
         
         
         //歧义辞典删除词
-        Library.removeWord(UserDefineLibrary.ambiguityForest, "三个和尚") ;
+        LibraryToForest.removeWord(UserDefineLibrary.ambiguityForest, "三个和尚") ;
         
     }
 
@@ -37,7 +37,7 @@ public class ReloadAmbiguityLibrary {
         Forest forest = new Forest() ;
         
         Value value = new Value("三个和尚","三个","m","和尚","n") ;
-        Library.insertWord(forest, value) ;
+        LibraryToForest.insertWord(forest, value) ;
       //将新构建的辞典树替换掉旧的。
         UserDefineLibrary.ambiguityForest = forest ;
     }
@@ -45,7 +45,7 @@ public class ReloadAmbiguityLibrary {
     private static void loadFormFile() throws Exception {
         // TODO Auto-generated method stub
         //make new forest
-        Forest forest = Library.makeForest("new_Library_Path") ;
+        Forest forest = LibraryToForest.makeForest("new_Library_Path") ;
 
         //将新构建的辞典树替换掉舊的。
         UserDefineLibrary.ambiguityForest = forest;

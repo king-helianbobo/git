@@ -8,7 +8,6 @@ import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AbstractIndexAnalyzerProvider;
 import org.elasticsearch.index.settings.IndexSettings;
-
 import static org.soul.elasticSearch.plugin.SoulElasticStaticValue.*;
 
 public class SoulIndexAnalyzerProvider

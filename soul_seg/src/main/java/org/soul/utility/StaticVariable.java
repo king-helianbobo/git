@@ -26,6 +26,7 @@ public class StaticVariable {
 
 	public static String userLibrary;
 	public static String ambiguityLibrary;
+	public static String stopLibrary;
 
 	static {
 		try {
@@ -35,6 +36,8 @@ public class StaticVariable {
 				userLibrary = rb.getString("userLibrary");
 			if (rb.containsKey("ambiguityLibrary"))
 				ambiguityLibrary = rb.getString("ambiguityLibrary");
+			if (rb.containsKey("stopLibrary"))
+				stopLibrary = rb.getString("stopLibrary");
 		} catch (Exception e) {
 			LibraryLog.warn("can't find library.properties in classpath!");
 		}
