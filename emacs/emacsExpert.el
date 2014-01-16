@@ -1,4 +1,4 @@
-;;Last Modified: 2014-01-12 22:29:18.
+;;Last Modified: 2014-01-13 09:49:52.
 (add-hook  'before-save-hook  (lambda ()  (set-lastmodified-tag)))
 (defun set-lastmodified-tag ()  (interactive) 
   (let ((tostr (concat ";;Last Modified: " 
@@ -211,5 +211,7 @@
 
 (defun json-format ()
   (interactive)
+  "format json string"
   (save-excursion
-    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)))
+    (shell-command-on-region (mark) (point) "python -m json.tool" (buffer-name) t)
+    ))

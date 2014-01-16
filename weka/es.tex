@@ -450,6 +450,10 @@ bind(Client.class).to(NodeClient.class).asEagerSingleton();
 injector = modules.createInjector();
 client = injector.getInstance(Client.class);
 \end{verbatim}
-\par 因此，InternalNode.client对应类是NodeClient.class。client.admin()函数返回client的管理类AdminClient，用于管理集群（通过cluster()函数获得）和索引（通过indices()函数获得客户端）。AdminClient有两种：NodeAdminClient$\in$NodeClient和InternalTransportAdminClient $\in$ InternalTransportClient $\in$ TransportClient。
-
-
+\par 因此，InternalNode.client对应类是NodeClient.class。client.admin()函数返回client的管理类AdminClient，用于管理集群（通过cluster()函数获得）和索引（通过indices()函数获得客户端）。AdminClient有两种：NodeAdminClient$\in$NodeClient和InternalTransportAdminClient $\in$ InternalTransportClient $\in$ TransportClient。下面代码是在JUnit中连接本地主机的9300端口（ElasticSearch默认端口），这种方式可以直接与ElasticSearch源码交互。
+\begin{verbatim}
+transportClient = new TransportClient()
+              .addTransportAddress(new InetSocketTransportAddress(
+						"localhost", 9300));
+\end{verbatim}
+使用transportClient.admin().cluster()可对集群（元数据）进行操作，使用transportClient.admin().indices()可对索引（元数据）进行管理，普通操作可通过类似transportClient.prepareSearch(indexName)等方式操作。还有一种直接使用http协议（即Restful）与ElasticSearch通信，这种方式借力于HttpClient（来自于org.apache.commons.httpclient.HttpClient包）。

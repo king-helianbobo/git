@@ -47,10 +47,11 @@ _region_.tex
 *.jar
 *.war
 *.ear
+.project
+.classpath
 
 ## ignore below directories
 soul_seg/target/
 soul_seg/test-output/
-ESMapReduce/lib/
 elasticsearch/target/
 elasticsearch/test-output/
