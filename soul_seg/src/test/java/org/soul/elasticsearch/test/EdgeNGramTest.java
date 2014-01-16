@@ -30,17 +30,12 @@ public class EdgeNGramTest {
 
 	@Before
 	public void startClient() throws Exception {
-
 		transportClient = new TransportClient()
 				.addTransportAddress(new InetSocketTransportAddress(
 						"localhost", port));
-
 	}
 	@After
 	public void closeClient() {
-		// DeleteIndexResponse deleteIndexResponse = transportClient.admin()
-		// .indices().prepareDelete(indexName).execute().actionGet();
-		// assertThat(deleteIndexResponse.isAcknowledged(), is(true));
 		transportClient.close();
 	}
 	@Ignore

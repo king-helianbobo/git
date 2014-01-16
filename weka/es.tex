@@ -457,3 +457,6 @@ transportClient = new TransportClient()
 						"localhost", 9300));
 \end{verbatim}
 使用transportClient.admin().cluster()可对集群（元数据）进行操作，使用transportClient.admin().indices()可对索引（元数据）进行管理，普通操作可通过类似transportClient.prepareSearch(indexName)等方式操作。还有一种直接使用http协议（即Restful）与ElasticSearch通信，这种方式借力于HttpClient（来自于org.apache.commons.httpclient.HttpClient包）。
+\subsection{Nutch与ElasticSearch}
+
+

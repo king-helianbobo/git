@@ -1,4 +1,4 @@
-## 使用这种方法来测试自动提示无效，可能需要看下ES源代码
+## 使用这种mapping来测试自动提示无效，可能需要看下ES源码
 curl -XPUT "localhost:9200/test?pretty" -d'{
     "settings": {
         "analysis": {
@@ -7,7 +7,7 @@ curl -XPUT "localhost:9200/test?pretty" -d'{
     }
 }'
 
-## 使用这种设置有效，索引时指定indexer为soul_pinyin，查询时指定searcher为whitespace"，去除空格
+## 使用这种mapping有效，索引时指定indexer为soul_pinyin，查询时指定searcher为whitespace，去除空格
 curl -XPUT "localhost:9200/test?pretty" -d '{
     "mappings": {
         "test1": {
@@ -21,7 +21,7 @@ curl -XPUT "localhost:9200/test?pretty" -d '{
         }
     }
 }'
-## 下面是插入若干条记录
+## 插入若干条记录
 curl -XPOST "http://localhost:9200/test/test1?pretty" -d '{"content": "沈阳"}'
 curl -XPOST "http://localhost:9200/test/test1?pretty" -d '{"content": "沈从文"}'
 curl -XPOST "http://localhost:9200/test/test1?pretty" -d '{"content": "小沈阳"}'
@@ -44,5 +44,3 @@ curl -XPOST http://localhost:9200/test/_search?pretty=true  -d '{
         }
     }
 }'
-
-
