@@ -142,6 +142,7 @@ public class IndexWriters {
 		for (int i = 0; i < this.indexWriters.length; i++) {
 			buffer.append(this.indexWriters[i].describe()).append("\n");
 		}
+		buffer.append("**********************************************\n");
 		return buffer.toString();
 	}
 

@@ -82,6 +82,20 @@
     </copy>
   </target>
 
+
+  <target name="run" depends="runtime">
+    <!-- <exec executable="${basedir}/settings.sh" failonerror="true"> -->
+    <!-- </exec> -->
+    <exec executable="${runtime.local}/bin/nutch">
+      <arg value="crawl" />
+      <arg value="-dir" />
+      <arg value="crawl" />
+      <arg value="-depth 5" />
+      <arg value="-topN 5000" />
+      <arg value="urls/" />
+    </exec>
+  </target>
+
   <!-- ====================================================== -->
   <!-- Compile the Java files                                 -->
   <!-- ====================================================== -->
@@ -292,7 +306,7 @@
     </jar>
   </target>
 
-  <target name="runtime" depends="jar, job" description="--> default target for running Nutch">
+  <target name="runtime" depends="jar, job" description="default target for running Nutch">
     <mkdir dir="${runtime.dir}"/>
     <mkdir dir="${runtime.local}"/>
     <mkdir dir="${runtime.deploy}"/>
@@ -905,9 +919,7 @@
                  exported="false" />
         <library path="${basedir}/build/plugins/feed/rome-0.9.jar" 
                  exported="false" />
-        <library path="${basedir}/build/plugins/lib-nekohtml/nekohtml-0.9.5.jar" 
-                 exported="false" />
-        <library path="${basedir}/build/plugins/lib-nekohtml/nekohtml-0.9.5.jar" 
+        <library path="${basedir}/build/plugins/lib-nekohtml/nekohtml-1.9.12.jar" 
                  exported="false" />
         <library path="${basedir}/build/plugins/parse-html/tagsoup-1.2.1.jar" 
                  exported="false" />
@@ -924,6 +936,7 @@
         <source path="${basedir}/src/plugin/index-basic/src/java/" />
         <source path="${basedir}/src/plugin/index-basic/src/test/" />
         <source path="${basedir}/src/plugin/indexer-solr/src/java/" />
+        <source path="${basedir}/src/plugin/indexer-elastic/src/java/" />
         <source path="${basedir}/src/plugin/index-metadata/src/java/" />
         <source path="${basedir}/src/plugin/index-more/src/java/" />
         <source path="${basedir}/src/plugin/index-more/src/test/" />
@@ -984,7 +997,6 @@
         <source path="${basedir}/src/plugin/urlnormalizer-pass/src/test/" />
         <source path="${basedir}/src/plugin/urlnormalizer-regex/src/java/" />
         <source path="${basedir}/src/plugin/urlnormalizer-regex/src/test/" />
-
         <output path="${basedir}/build/classes" />
       </classpath>
     </eclipse>

@@ -458,5 +458,169 @@ transportClient = new TransportClient()
 \end{verbatim}
 使用transportClient.admin().cluster()可对集群（元数据）进行操作，使用transportClient.admin().indices()可对索引（元数据）进行管理，普通操作可通过类似transportClient.prepareSearch(indexName)等方式操作。还有一种直接使用http协议（即Restful）与ElasticSearch通信，这种方式借力于HttpClient（来自于org.apache.commons.httpclient.HttpClient包）。
 \subsection{Nutch与ElasticSearch}
+\begin{enumerate}[(1)]
+\item 下载apache-nutch-1.7-src.tar.gz，并解压;
+\item 进入apache-nutch-1.7目录后，使用\textbf{ant runtime}命令（命令等同于ant，因为默认的target是runtime），生成runtime目录树内容如下，其中deploy运行在Hadoop集群上，local运行在本地机器。使用\textbf{ant eclipse}命令，可生成Eclipse工程文件，方便导入Nutch工程。
+\begin{verbatim}
+runtime
+|── deploy
+|──|── bin
+|── local
+     |── bin
+     |── conf
+     |── lib
+     |── logs
+     |── plugins
+     |── test
+\end{verbatim}
+\item 在hadoop集群上运行crawl命令时，碰到如下错误：\textsl{NoClassDefFoundError: org/cyberneko/html/parsers/DOMFragmentParser}，经调查发现是lib-nekohtml版本的问题，原src.tar.gz包中的nekohtml版本是0.9.5，将其版本修改为1.9.12(注意src/plugin/lib-nekohtml/ivy.xml中的修改)。
+\item nutch的配置文件为conf/nutch-site.xml，将其修改成如下：
+\begin{verbatim}
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>plugin.includes</name>
+    <value>protocol-(http|httpclient)|urlfilter-regex|parse-(html|js|tika)|index-(basic|anchor)|indexer-elastic|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
+    <description>用indexer-elastic替换掉默认的indexer-solr，parse-(html|js|tika)注意括号中的顺序</description>
+  </property>
 
+  <!-- Elasticsearch properties -->
+  <property>
+    <name>elastic.host</name>
+    <value>192.168.2.212</value>
+    <description>配置ES主机为localhost或者192.168.50.75，此时target主机必须已经开启了ES服务。</description>
+  </property>
+  
+  <property>
+    <name>elastic.port</name>
+    <value>9300</value>
+    <description>web端口为9200,内部端口为9300</description>
+  </property>
+  
+  <property>
+    <name>elastic.cluster</name>
+    <value>elasticsearch</value>
+    <description>新添加一个ES节点时，须告知集群名，否则它找不到集群中的其它兄弟，或者其它兄弟节点找不到它。</description>
+  </property>
+  <property>
+    <name>elastic.index</name>
+    <value>nutch</value>
+    <description>index名，type名默认为doc</description>
+  </property>
+  <property>
+    <name>elastic.max.bulk.docs</name>
+    <value>250</value>
+    <description>_bulk/ endpoint一次可以处理的最大文档数目</description>
+  </property>
+  <property>
+    <name>elastic.max.bulk.size</name>
+    <value>2500500</value>
+    <description>_bulk/ endpoint一次可以处理的最大字节数</description>
+  </property>
 
+  <property>
+    <name>http.agent.name</name>
+    <value>soul_seg</value>
+    <description></description>
+  </property>
+
+  <property>
+    <name>http.robots.agents</name>
+    <value>soul_seg,*</value>
+    <description></description>
+  </property>
+
+  <property>
+    <name>http.content.limit</name>
+    <value>-1</value>
+    <description>设置content长度为无穷大，用于设置http协议，还有个file.content.limit用于设置本地文件的最大allow长度。</description>
+  </property>
+
+  <property>
+    <name>http.verbose</name>
+    <value>true</value>
+    <description>If true, HTTP will log more verbosely</description>
+  </property>
+  <property>
+    <name>parser.timeout</name>
+    <value>-1</value>
+  </property>
+</configuration>
+\end{verbatim}
+\item 使用如下命令，建立索引文件并配置mapping，属性域中的boost应该是数值类型，tstamp应该是日期类型（暂时不管，以后优化）：
+\begin{verbatim}
+curl -XPOST "localhost:9200/nutch?pretty"
+curl -XPUT "localhost:9200/nutch/doc/_mapping?pretty" -d' {
+   "doc": {
+      "properties": {
+         "host" : {
+            "type": "string",
+            "index": "not_analyzed"           
+         },
+         "segment" : {
+            "type": "string",
+            "index": "not_analyzed"           
+         },
+         "digest" : {
+            "type": "string",
+            "index": "not_analyzed"           
+         },
+         "boost" : {
+            "type": "string",
+            "index": "not_analyzed"           
+         },
+         "tstamp" : {
+            "type": "string",
+            "index": "not_analyzed"           
+         },
+         "url" : {
+            "type": "string",
+            "index": "not_analyzed"           
+         },
+         "title": {
+            "type": "string",
+            "index_analyzer": "soul_index",
+            "search_analyzer": "soul_query"
+         },
+         "content": {
+            "type": "string",
+            "index_analyzer": "soul_index",
+            "search_analyzer": "soul_query"
+         }
+      }
+   }
+}'
+\end{verbatim}
+\item 使用如下命令，将抓取到的数据发送给ElasticSearch，由ES建立索引，\textsl{/tmp/crawl/}目录位于本地文件系统（伪分布模式）。
+\begin{verbatim}
+./runtime/local/bin/nutch index /tmp/crawl/crawldb/ -linkdb /tmp/crawl/linkdb/ -dir /tmp/crawl/segments/
+\end{verbatim}
+使用hadoop集群时，配置成hdfs上的文件路径。在测试环境中使用nutch的分布式爬取功能时，无法爬到网页，原因在于hdfs上的\textsl{/crawl/}目录没有删除（nutch为避免从头至尾的爬取，忽略了已经爬取过的网页，这点在开发时应该注意）。
+\begin{verbatim}
+./runtime/deploy/bin/nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ -dir /crawl/segments/
+\end{verbatim}
+\item 使用简单的查询命令：
+\begin{verbatim}
+curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
+    "query" : { "term" : { "content" : "黄莉新" }},
+     "highlight" : {
+        "pre_tags" : ["<tag1>", "<tag2>"],
+        "post_tags" : ["</tag1>", "</tag2>"],
+        "fields" : {
+            "content" : {}
+        }
+     }
+}'
+curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
+    "query" : { "term" : { "title" : "代市长" }},
+     "highlight" : {
+        "pre_tags" : ["<tag1>", "<tag2>"],
+        "post_tags" : ["</tag1>", "</tag2>"],
+        "fields" : {
+            "title" : {}
+        }
+     }
+}'
+\end{verbatim}
+\end{enumerate}
