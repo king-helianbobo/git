@@ -1,6 +1,7 @@
 package org.soul.elasticSearch.plugin;
 
 import java.util.Collection;
+
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionModule;
@@ -31,19 +32,14 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 	@Inject
 	public SoulAnalysisPlugin(Settings settings) {
 		this.settings = settings;
-
-		// Check if the plugin is newer than elasticsearch
-		// First failure, if the versions don't match
-		// Second failure: if the Version specified in before() does not yet
-		// exist, therefore catching Throwable
 		try {
 			if (Version.CURRENT.before(Version.V_0_90_3)) {
 				throw new Exception();
 			}
 		} catch (Throwable e) {
-			String error = String
-					.format("The elasticsearch suggest plugin needs a newer version of elasticsearch than %s",
-							Version.CURRENT);
+			String error = String.format(
+					"Plugin needs a newer version of elasticsearch than %s",
+					Version.CURRENT);
 			throw new ElasticSearchException(error);
 		}
 	}
@@ -69,14 +65,9 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 		if (module instanceof AnalysisModule) {
 			AnalysisModule analysisModule = (AnalysisModule) module;
 			analysisModule.addProcessor(new SoulAnalysisBinderProcessor());
+			analysisModule.addTokenFilter("file_watcher_synonym",
+					SynonymTokenFilterFactory.class);
 		}
-
-		// if (module instanceof RestModule) {
-		// RestModule restModule = (RestModule) module;
-		// restModule.addRestAction(RestSuggestAction.class);
-		// restModule.addRestAction(RestRefreshSuggestAction.class);
-		// restModule.addRestAction(RestStatisticsAction.class);
-		// }
 
 	}
 

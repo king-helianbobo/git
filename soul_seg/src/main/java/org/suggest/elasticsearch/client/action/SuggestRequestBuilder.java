@@ -24,12 +24,12 @@ public class SuggestRequestBuilder
 		((Client) client).execute(SuggestAction.INSTANCE, request, listener);
 	}
 
-	public SuggestRequestBuilder term(String term) {
+	public SuggestRequestBuilder term(String term) { // 待检查的字符串
 		request.term(term);
 		return this;
 	}
 
-	public SuggestRequestBuilder field(String field) {
+	public SuggestRequestBuilder field(String field) { // 哪个域
 		request.field(field);
 		return this;
 	}

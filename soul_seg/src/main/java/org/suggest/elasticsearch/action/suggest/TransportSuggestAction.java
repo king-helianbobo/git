@@ -28,7 +28,7 @@ import org.suggest.elasticsearch.service.ShardSuggestService;
 
 public class TransportSuggestAction
 		extends
-		TransportBroadcastOperationAction<SuggestRequest, SuggestResponse, ShardSuggestRequest, ShardSuggestResponse> {
+			TransportBroadcastOperationAction<SuggestRequest, SuggestResponse, ShardSuggestRequest, ShardSuggestResponse> {
 
 	private final IndicesService indicesService; // we need indicesService
 
@@ -42,7 +42,7 @@ public class TransportSuggestAction
 
 	@Override
 	protected String transportAction() {
-		return SuggestAction.NAME; // in fact,we use TransportSuggestAction
+		return SuggestAction.NAME; // use TransportSuggestAction
 	}
 
 	@Override
@@ -59,8 +59,8 @@ public class TransportSuggestAction
 	protected SuggestResponse newResponse(SuggestRequest request,
 			AtomicReferenceArray shardsResponses, ClusterState clusterState) {
 		logger.trace("Entered TransportSuggestAction.newResponse()");
-		int successfulShards = 0; // number of Shard which is successful
-		int failedShards = 0; // number of failed shard
+		int successfulShards = 0; // number of Shards which is successful
+		int failedShards = 0; // number of failed Shards
 		List<ShardOperationFailedException> shardFailures = null;
 		List<String> items = Lists.newArrayList();
 		for (int i = 0; i < shardsResponses.length(); i++) {
@@ -76,10 +76,8 @@ public class TransportSuggestAction
 						.add(new DefaultShardOperationFailedException(
 								(BroadcastShardOperationFailedException) shardResponse));
 			} else if (shardResponse instanceof ShardSuggestResponse) {
-				// get response from Shard
 				ShardSuggestResponse shardSuggestResponse = (ShardSuggestResponse) shardResponse;
 				List<String> shardItems = shardSuggestResponse.suggestions();
-				// get result string
 				items.addAll(shardItems);
 				successfulShards++;
 			} else {

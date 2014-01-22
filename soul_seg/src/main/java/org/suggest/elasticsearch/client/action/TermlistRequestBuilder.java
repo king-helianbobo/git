@@ -4,6 +4,7 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.internal.InternalGenericClient;
+import org.suggest.elasticsearch.action.termlist.TermlistAction;
 import org.suggest.elasticsearch.action.termlist.TermlistRequest;
 import org.suggest.elasticsearch.action.termlist.TermlistResponse;
 
@@ -31,7 +32,6 @@ public class TermlistRequestBuilder
 
 	@Override
 	protected void doExecute(ActionListener<TermlistResponse> listener) {
-		// ((Client) client).execute(TermlistAction.INSTANCE, request,
-		// listener);
+		((Client) client).execute(TermlistAction.INSTANCE, request, listener);
 	}
 }

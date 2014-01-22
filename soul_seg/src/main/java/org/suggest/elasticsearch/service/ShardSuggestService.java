@@ -346,8 +346,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		if (indexShard.state() == IndexShardState.STARTED) {
 			Engine.Searcher currentIndexSearcher = indexShard
 					.acquireSearcher("suggest");
-			// Engine.Searcher currentIndexSearcher =
-			// indexShard.acquireSearcher();
 			currentIndexReader = currentIndexSearcher.reader();
 			currentIndexSearcher.release();
 		}
@@ -403,12 +401,10 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 					// indexReader.getRefCount());
 					Engine.Searcher indexSearcher = indexShard
 							.acquireSearcher("suggest");
-					// Engine.Searcher indexSearcher = indexShard
-					// .acquireSearcher();
 					indexReader = indexSearcher.reader();
 					indexSearcher.release();
-					// If an indexreader closes, we have to refresh all our data
-					// structures!
+					// If an index reader closes, we have to refresh all our
+					// data structures!
 					indexReader
 							.addReaderClosedListener(new IndexReader.ReaderClosedListener() {
 								@Override

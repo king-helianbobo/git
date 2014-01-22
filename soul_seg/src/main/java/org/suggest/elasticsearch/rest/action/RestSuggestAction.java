@@ -14,7 +14,6 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.rest.*;
 import org.elasticsearch.rest.action.support.RestXContentBuilder;
-import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
 import org.suggest.elasticsearch.action.suggest.SuggestAction;
 import org.suggest.elasticsearch.action.suggest.SuggestRequest;
 import org.suggest.elasticsearch.action.suggest.SuggestResponse;
