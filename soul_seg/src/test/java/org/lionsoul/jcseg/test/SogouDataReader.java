@@ -1,0 +1,265 @@
+package org.lionsoul.jcseg.test;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.MapWritable;
+import org.elasticsearch.common.collect.Lists;
+import org.elasticsearch.hadoop.util.WritableUtils;
+import org.soul.treeSplit.StringUtil;
+public class SogouDataReader {
+
+	private static Log log = LogFactory.getLog(SogouDataReader.class);
+	private InputStream in = null;
+	private BufferedReader br = null;
+	List<String> paths; // file path list
+	private String CHAR_CODING = "gbk";
+	// private LinkedList<Map<String, String>> elements = new
+	// LinkedList<Map<String, String>>();
+
+	public SogouDataReader(List<String> paths) {
+		this.paths = paths;
+	}
+
+	public SogouDataReader(String directory) {
+		paths = new LinkedList<String>();
+		File file = new File(directory);
+		if (file.isFile()) {
+			paths.add(directory);
+		} else if (file.isDirectory()) {
+			File[] files = file.listFiles();
+			for (int i = 0; i < files.length; i++) {
+				if (files[i].getName().trim().endsWith(".txt")
+						&& files[i].isFile()) {
+					paths.add(files[i].getAbsolutePath());
+					log.info(files[i].getAbsolutePath());
+				}
+			}
+		} else {
+			log.error(directory + " is not legal!");
+		}
+	}
+
+	public void convertToHdfsFormat(String outputDir) throws IOException {
+		if (outputDir.endsWith("/"))
+			outputDir = outputDir.substring(0, outputDir.length() - 1);
+		FileWriter fw = null;
+		BufferedWriter bw = null;
+		while (true) {
+			if (br == null) {
+				if (paths.isEmpty())
+					break;
+				else {
+					String path = paths.get(0);
+					int lastIndex = path.lastIndexOf("/");
+					String fileName = path.substring(lastIndex);
+					log.info(path + " " + (outputDir + fileName));
+					paths.remove(0);
+					in = new FileInputStream(path);
+					br = new BufferedReader(new InputStreamReader(in,
+							CHAR_CODING));
+					fw = new FileWriter(outputDir + fileName, true);
+					bw = new BufferedWriter(fw);
+				}
+			}
+			while (br != null) {
+				final int number = 10;
+				List<HashMap<String, String>> products = getMapData(number);
+				for (int i = 0; i < products.size(); i++) {
+					HashMap<String, String> map = products.get(i);
+					StringBuilder builder = new StringBuilder();
+					builder.append(map.get("url") + "[$$$$]");
+					builder.append(map.get("docno") + "[$$$$]");
+					builder.append(map.get("contenttitle") + "[$$$$]");
+					builder.append(map.get("content") + "[$$$$]");
+					builder.append(map.get("postTime"));
+					bw.write(builder.toString());
+					bw.newLine();
+				}
+			}
+			bw.close();
+			fw.close();
+			if (paths.size() > 0) {
+				String path = paths.get(0);
+				int lastIndex = path.lastIndexOf("/");
+				String fileName = path.substring(lastIndex);
+				log.info(path + " " + (outputDir + fileName));
+				paths.remove(0);
+				in = new FileInputStream(path);
+				br = new BufferedReader(new InputStreamReader(in, CHAR_CODING));
+				fw = new FileWriter(outputDir + fileName, true);
+				bw = new BufferedWriter(fw);
+			} else {
+				break;
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<HashMap<String, String>> next() throws IOException {
+		if (br == null) {
+			if (paths.isEmpty())
+				return null; // no more data
+			else {
+				String path = paths.get(0);
+				log.info(path);
+				paths.remove(0);
+				in = new FileInputStream(path);
+				br = new BufferedReader(new InputStreamReader(in, CHAR_CODING));
+			}
+		}
+		final int number = 10;
+		List<HashMap<String, String>> products = getMapData(number);
+		while (products.size() < number) {
+			int size = products.size();
+			if (paths.size() > 0) {
+				String path = paths.get(0);
+				log.info(path);
+				paths.remove(0);
+				in = new FileInputStream(path);
+				br = new BufferedReader(new InputStreamReader(in, CHAR_CODING));
+				products.addAll(getMapData(number - size));
+			} else {
+				if (products.size() > 0)
+					return products;
+				else
+					return null;
+			}
+		}
+		return products;
+	}
+	private List<HashMap<String, String>> getMapData(int number)
+			throws IOException {
+		List<HashMap<String, String>> products = Lists.newArrayList();
+		String temp = null;
+		boolean isFirstElement = true;
+		int n = 0;
+		HashMap<String, String> tmpMap = new HashMap<String, String>();
+		while ((temp = br.readLine()) != null) {
+			temp = temp.trim();
+			if (StringUtil.isBlank(temp))
+				continue;
+			if (isFirstElement) {
+				tmpMap.clear();
+				if (temp.startsWith("<doc>"))
+					isFirstElement = false;
+				continue;
+			} else if (temp.startsWith("<contenttitle>")) {
+				int end = temp.lastIndexOf("</contenttitle>");
+				if (end >= 0) {
+					String content = temp.substring("<contenttitle>".length(),
+							end);
+					if (content.length() > 0)
+						tmpMap.put("contenttitle", content);
+					else
+						tmpMap.put("contenttitle", "null");
+				}
+			} else if (temp.startsWith("<content>")) {
+				int end = temp.lastIndexOf("</content>");
+				if (end >= 0) {
+					String content = temp.substring("<content>".length(), end);
+					if (content.length() > 0)
+						tmpMap.put("content", content);
+					else
+						tmpMap.put("content", "null");
+				}
+			} else if (temp.startsWith("<url>")) {
+				int end = temp.lastIndexOf("</url>");
+				if (end >= 0) {
+					String content = temp.substring("<url>".length(), end);
+					if (content.length() > 0)
+						tmpMap.put("url", content);
+					else
+						tmpMap.put("url", "null");
+				}
+			} else if (temp.startsWith("<docno>")) {
+				int end = temp.lastIndexOf("</docno>");
+				if (end >= 0) {
+					String content = temp.substring("<docno>".length(), end);
+					if (content.length() > 0)
+						tmpMap.put("docno", content);
+					else
+						tmpMap.put("docno", "null");
+				}
+			} else { // (temp.startsWith("</doc>"))
+				HashMap<String, String> result = convertMap(tmpMap);
+				if (result != null) {
+					products.add(result);
+					n++;
+				}
+				isFirstElement = true;
+				if (n == number)
+					break;
+			}
+		}
+		if (temp == null)
+			br = null;
+		return products;
+	}
+	private HashMap<String, String> convertMap(
+			HashMap<String, String> strBetweenDoc) {
+		for (String str : strBetweenDoc.values()) {
+			if (str.equals("null"))
+				return null;
+		}
+		HashMap<String, String> element = new HashMap<String, String>();
+		element.put("url", strBetweenDoc.get("url"));
+		// log.info(strBetweenDoc.get("url"));
+		// log.info(strBetweenDoc.get("docno"));
+		// log.info(strBetweenDoc.get("content"));
+		// log.info(strBetweenDoc.get("contenttitle"));
+		element.put("docno", strBetweenDoc.get("docno"));
+		element.put("contenttitle", strBetweenDoc.get("contenttitle"));
+		element.put("content", strBetweenDoc.get("content"));
+		element.put("postTime", generateRandomDate());
+		return element;
+	}
+
+	private String generateRandomDate() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("2013-");
+		// get month
+		String str1 = RandomStringUtils.random(1, "01");
+		if (str1.equals("1"))
+			builder.append(str1 + RandomStringUtils.random(1, "12"));
+		else
+			builder.append(str1 + RandomStringUtils.random(1, "123456789"));
+		// get day
+		builder.append("-");
+		str1 = RandomStringUtils.random(1, "012");
+		if (str1.equals("0"))
+			builder.append(str1 + RandomStringUtils.random(1, "123456789"));
+		else
+			builder.append(str1 + RandomStringUtils.random(1, "0123456789"));
+		builder.append(" ");
+		// get hours
+		str1 = RandomStringUtils.random(1, "012");
+		if (str1.equals("2"))
+			builder.append(str1 + RandomStringUtils.random(1, "0123"));
+		else
+			builder.append(str1 + RandomStringUtils.random(1, "0123456789"));
+		builder.append(":");
+		// get minutes
+		str1 = RandomStringUtils.random(1, "012345");
+		builder.append(str1 + RandomStringUtils.random(1, "0123456789"));
+		builder.append(":");
+		// get seconds
+		str1 = RandomStringUtils.random(1, "012345");
+		builder.append(str1 + RandomStringUtils.random(1, "0123456789"));
+		return builder.toString();
+	}
+}

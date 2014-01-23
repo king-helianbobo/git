@@ -80,10 +80,6 @@ public class ESFileSplit extends InputSplit implements Writable {
 				+ count;
 	}
 
-	// //////////////////////////////////////////
-	// Writable methods
-	// //////////////////////////////////////////
-
 	@Override
 	public void write(DataOutput out) throws IOException {
 		Text.writeString(out, file.toString());

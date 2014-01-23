@@ -1,4 +1,4 @@
-package org.soul.elasticsearch.test;
+package org.lionsoul.jcseg.test;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -34,20 +34,18 @@ import org.elasticsearch.hadoop.serialization.SerializationUtils;
 import org.elasticsearch.hadoop.util.BytesArray;
 import org.elasticsearch.hadoop.util.WritableUtils;
 
-public class MapReduceSearch extends Configured implements Tool {
+public class MapReduceSogou extends Configured implements Tool {
 
-	private static final Log log = LogFactory.getLog(MapReduceSearch.class);
+	private static final Log log = LogFactory.getLog(MapReduceSogou.class);
 
 	public static class JsonMapper
 			extends
 				Mapper<LongWritable, Text, LongWritable, MapWritable> {
 
-		private int partition = 0;
-
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
 			Configuration conf = context.getConfiguration();
-			partition = conf.getInt("elasticsearch.partition.seqnumber", 0);
+			// partition = conf.getInt("elasticsearch.partition.seqnumber", 0);
 			FileAppender fa = new FileAppender();
 			fa.setName("FileLogger");
 			fa.setFile("/tmp/3.log");
@@ -63,16 +61,13 @@ public class MapReduceSearch extends Configured implements Tool {
 		protected void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 			String line = value.toString();
-			String[] splits = line.split(",");
+			String[] splits = line.split("[$$$$]");
 			// int len = splits.length;
 			Map<String, String> entry = new LinkedHashMap<String, String>();
-			String id = String.valueOf(partition + 1) + key.toString();
-			entry.put("number", id);
-			entry.put("cardid", splits[0]);
-			entry.put("playdate", splits[1]);
-			entry.put("playtime", splits[2]);
-			entry.put("channel", splits[3]);
-			entry.put("program", splits[4]);
+			entry.put("url", splits[0]);
+			entry.put("docno", splits[1]);
+			entry.put("contenttitle", splits[2]);
+			entry.put("content", splits[3]);
 			context.write(key, (MapWritable) WritableUtils.toWritable(entry));
 		}
 	}
@@ -83,7 +78,7 @@ public class MapReduceSearch extends Configured implements Tool {
 		// conf.set("fs.default.name", "192.168.50.75:9000");
 		// conf.set("mapred.job.tracker", "192.168.50.75:9001");
 		conf.set(ConfigurationOptions.ES_WRITE_OPERATION, "index");
-		conf.set(ConfigurationOptions.ES_MAPPING_ID, "number");
+		conf.set(ConfigurationOptions.ES_MAPPING_ID, "docno");
 		conf.set(ConfigurationOptions.ES_RESOURCE, "eshive/table");
 		// conf.set(ConfigurationOptions.ES_RESOURCE, "args[1]");
 		conf.set(ConfigurationOptions.ES_UPSERT_DOC, "false");
@@ -100,54 +95,51 @@ public class MapReduceSearch extends Configured implements Tool {
 		// Path("/liubo_output_2/part-00015"));
 		ESTextInputFormat.addInputPath(job, new Path("/liubo_output_2"));
 		// ESTextInputFormat.addInputPath(job,new Path(args[0]));
-		job.setJarByClass(MapReduceSearch.class);
+		job.setJarByClass(MapReduceSogou.class);
 		job.setJobName("MapReduceSearch");
 		boolean success = job.waitForCompletion(true);
 		return success ? 0 : 1;
 	}
 
-	public static int init() {
-		Configuration conf = new Configuration();
-		conf.set(ConfigurationOptions.ES_WRITE_OPERATION, "index");
-		conf.set(ConfigurationOptions.ES_MAPPING_ID, "number");
-		conf.set(ConfigurationOptions.ES_RESOURCE, "mrtest/table1");
-		conf.set(ConfigurationOptions.ES_UPSERT_DOC, "false");
-
-		Settings settings = SettingsManager.loadFrom(conf);
-		SerializationUtils.setValueWriterIfNotSet(settings,
-				MapReduceWriter.class, log);
-		InitializationUtils.setIdExtractorIfNotSet(settings,
-				MapWritableIdExtractor.class, log);
-
-		log.info(settings.getBatchSizeInBytes());
-
-		IndexCommand command = new IndexCommand(settings);
-
-		Map<String, String> entry = new LinkedHashMap<String, String>();
-		entry.put("number", "1");
-		entry.put("cardid", "2");
-		entry.put("playdate", "3");
-		entry.put("playtime", "4");
-		entry.put("channel", "5");
-		entry.put("program", "6");
-		MapWritable wr = (MapWritable) WritableUtils.toWritable(entry);
-		int size = command.prepare(wr);
-		BytesArray data = new BytesArray(1024);
-		command.write(wr, data);
-		log.info("this time ,size = " + size + ", " + data.toString());
-		// System.out.println(data.toString());
-
-		return 0;
-
-	}
+	// public static int init() {
+	// Configuration conf = new Configuration();
+	// conf.set(ConfigurationOptions.ES_WRITE_OPERATION, "index");
+	// conf.set(ConfigurationOptions.ES_MAPPING_ID, "number");
+	// conf.set(ConfigurationOptions.ES_RESOURCE, "mrtest/table1");
+	// conf.set(ConfigurationOptions.ES_UPSERT_DOC, "false");
+	//
+	// Settings settings = SettingsManager.loadFrom(conf);
+	// SerializationUtils.setValueWriterIfNotSet(settings,
+	// MapReduceWriter.class, log);
+	// InitializationUtils.setIdExtractorIfNotSet(settings,
+	// MapWritableIdExtractor.class, log);
+	//
+	// log.info(settings.getBatchSizeInBytes());
+	//
+	// IndexCommand command = new IndexCommand(settings);
+	//
+	// Map<String, String> entry = new LinkedHashMap<String, String>();
+	// entry.put("number", "1");
+	// entry.put("cardid", "2");
+	// entry.put("playdate", "3");
+	// entry.put("playtime", "4");
+	// entry.put("channel", "5");
+	// entry.put("program", "6");
+	// MapWritable wr = (MapWritable) WritableUtils.toWritable(entry);
+	// int size = command.prepare(wr);
+	// BytesArray data = new BytesArray(1024);
+	// command.write(wr, data);
+	// log.info("this time ,size = " + size + ", " + data.toString());
+	// // System.out.println(data.toString());
+	//
+	// return 0;
+	//
+	// }
 
 	public static void main(String[] args) throws Exception {
 
 		// DOMConfigurator.configure("conf/log4j.xml");
-		int ret = ToolRunner.run(new MapReduceSearch(), args);
-
-		// log.info("");
-		// int ret = init();
+		int ret = ToolRunner.run(new MapReduceSogou(), args);
 		System.exit(ret);
 	}
 

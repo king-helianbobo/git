@@ -87,7 +87,7 @@ public class UserDefineLibrary {
 		if (file.isFile() && file.canRead()) {
 			try {
 				checkAmbiguity(file);
-				// 检查文件是否合法，它不应该再引入歧义，任意两个词之间不应该有重叠部分
+				// 检查文件是否合法，它不应该再引入歧义，任意两个词之间不应该有重叠
 				ambiguityForest = LibraryToForest.makeForest(ambiguityLibrary);
 			} catch (Exception e) {
 				LibraryLog.error("init ambiguity error :" + ambiguityLibrary

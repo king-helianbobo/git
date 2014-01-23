@@ -3,6 +3,7 @@ package org.soul.elasticsearch.test;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 import java.io.*;
 import java.util.*;
@@ -11,18 +12,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.soul.domain.TermNature;
-import org.soul.domain.TermNatures;
 
 public class SynonymTest {
 	TransportClient client;
@@ -85,12 +81,12 @@ public class SynonymTest {
 		}
 	}
 
-	// @Ignore
+	@Ignore
 	@Test
 	public void extractTmp5() {
-		String paths[] = {"/mnt/f/tmp/1-1.txt", "/mnt/f/tmp/2-1.txt",
-				"/mnt/f/tmp/3-1.txt", "/mnt/f/tmp/4-1.txt",
-				"/mnt/f/tmp/5-1.txt"};
+		String paths[] = {"/mnt/f/seg/1-1.txt", "/mnt/f/seg/2-1.txt",
+				"/mnt/f/seg/3-1.txt", "/mnt/f/seg/4-1.txt",
+				"/mnt/f/seg/5-1.txt", "/mnt/f/seg/8-1.txt"};
 		List<Set<String>> tree = new ArrayList<Set<String>>();
 		InputStream in;
 		BufferedReader reader;
@@ -103,7 +99,7 @@ public class SynonymTest {
 				in = new FileInputStream(path);
 				reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 				while ((temp = reader.readLine()) != null) {
-					String[] strs = temp.split(" ");
+					String[] strs = temp.split("\\s+");
 					String str1 = strs[0].trim();
 					String str2 = strs[1].trim();
 					log.info(str1 + " " + str2);
@@ -142,7 +138,7 @@ public class SynonymTest {
 				boolean firstWord = true;
 				while (it.hasNext()) {
 					if (!firstWord)
-						bw.write(" ");
+						bw.write(",");
 					else
 						firstWord = false;
 					String str = it.next();
@@ -274,6 +270,52 @@ public class SynonymTest {
 			log.info("Total Word count is " + num);
 			bw.close();
 			fw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Ignore
+	@Test
+	public void extractTmp8() {
+		String paths[] = {"/mnt/f/tmp/8.txt"};
+		InputStream in;
+		BufferedReader reader;
+		String temp = null;
+		int num = 0;
+		try {
+			FileWriter fw = new FileWriter("/mnt/f/tmp/8-1.txt", true);
+			BufferedWriter bw = new BufferedWriter(fw);
+			for (String path : paths) {
+				in = new FileInputStream(path);
+				reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+				while ((temp = reader.readLine()) != null) {
+					String[] strs = temp.split("\\s+");
+					String str1 = "";
+					String str2 = "";
+					for (int i = 0; i < strs.length; i++) {
+						if (i % 3 == 0) {
+							assertNotNull(Integer.valueOf(strs[i].trim()));
+						} else if (i % 3 == 1) {
+							str1 = strs[i].trim();
+						} else {
+							str2 = strs[i].trim();
+							log.info(str1 + " " + str2);
+							bw.write(str1 + " " + str2 + "\n");
+							num++;
+						}
+					}
+				}
+			}
+			bw.close();
+			fw.close();
+			log.info("Total Word count is " + num);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (UnsupportedEncodingException e) {
