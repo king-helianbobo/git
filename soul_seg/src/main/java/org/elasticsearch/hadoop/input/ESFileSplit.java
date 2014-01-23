@@ -12,9 +12,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 
 /**
- * A section of an input file. Returned by
- * {@link InputFormat#getSplits(JobContext)} and passed to
- * {@link InputFormat#createRecordReader(InputSplit,TaskAttemptContext)}.
+ * 类存储了文件在全部文件序列中的编号，编号用于给ES记录提供一个惟一的ID
  */
 public class ESFileSplit extends InputSplit implements Writable {
 	private Path file;
@@ -22,24 +20,12 @@ public class ESFileSplit extends InputSplit implements Writable {
 	private long length;
 	private String[] hosts;
 
-	private int seqNumber;// add partition number to append ESearch table
-	private int count; // total input file number
+	private int seqNumber;// add partition number to generate ES id
+	private int count; // number of total files
 
 	ESFileSplit() {
 	}
 
-	/**
-	 * Constructs a split with host information
-	 * 
-	 * @param file
-	 *            the file name
-	 * @param start
-	 *            the position of the first byte in the file to process
-	 * @param length
-	 *            the number of bytes in the file to process
-	 * @param hosts
-	 *            the list of hosts containing the block, possibly null
-	 */
 	public ESFileSplit(Path file, long start, long length, String[] hosts,
 			int seq, int count) {
 		this.file = file;
@@ -48,6 +34,15 @@ public class ESFileSplit extends InputSplit implements Writable {
 		this.hosts = hosts;
 		this.seqNumber = seq;
 		this.count = count;
+	}
+
+	public ESFileSplit(Path file, long start, long length, String[] hosts) {
+		this.file = file;
+		this.start = start;
+		this.length = length;
+		this.hosts = hosts;
+		this.seqNumber = -1; // if value less than 0,we ignore it
+		this.count = -1;// if value less than 0,we ignore it
 	}
 
 	public int getSeqNumber() {
@@ -102,7 +97,7 @@ public class ESFileSplit extends InputSplit implements Writable {
 	@Override
 	public String[] getLocations() throws IOException {
 		if (this.hosts == null) {
-			return new String[]{};
+			return new String[] {};
 		} else {
 			return this.hosts;
 		}

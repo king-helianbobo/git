@@ -35,7 +35,7 @@ import org.elasticsearch.hadoop.mr.ESOutputFormat;
 public class ESHiveOutputFormat extends ESOutputFormat implements
 		HiveOutputFormat {
 
-	static class ESHiveRecordWriter extends ESOutputFormat.ESRecordWriter
+	static class ESHiveRecordWriter extends ESOutputFormat.ElasticSearchRecordWriter
 			implements RecordWriter {
 
 		public ESHiveRecordWriter(Configuration cfg) {

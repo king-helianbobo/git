@@ -107,7 +107,7 @@ public abstract class Settings implements InternalConfigurationOptions {
 				.toLowerCase();
 	}
 
-	public String getMappingId() {
+	public String getMappingId() { // id field must set
 		return getProperty(ES_MAPPING_ID, null);
 	}
 

@@ -16,7 +16,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
 
 /**
- * Treats keys as offset in file and value as line.
+ * Key视作行偏移值，Value视作行内容
  */
 public class ESLineRecordReader extends RecordReader<LongWritable, Text> {
 	private static final Log LOG = LogFactory.getLog(ESLineRecordReader.class);
@@ -43,18 +43,15 @@ public class ESLineRecordReader extends RecordReader<LongWritable, Text> {
 		count = split.getFileCount();
 
 		if (count == 1) {
-			job.set("elasticsearch.suffix.name", "");
+			// job.set("elasticsearch.suffix.name", "");
 			job.setInt("elasticsearch.partition.seqnumber", 0);
-		} else {
+		} else if (count > 1) {
 			job.setInt("elasticsearch.partition.seqnumber", seqNumber);
 			job.set("elasticsearch.suffix.name",
 					"-" + String.valueOf(seqNumber));
-			// job.set("elasticsearch.suffix.name", "");
+		} else {
+			// do nothing
 		}
-
-		// job.setInt("elasticsearch.seqnumber", seqNumber);
-		// job.setInt("elasticsearch.count", count);
-
 		final Path file = split.getPath();
 		// open the file and seek to the start of the split
 		FileSystem fs = file.getFileSystem(job);
@@ -66,7 +63,7 @@ public class ESLineRecordReader extends RecordReader<LongWritable, Text> {
 
 		// If this is not the first split, we always throw away first record
 		// because we always (except the last split) read one extra line in
-		// next() method.
+		// next() method
 		if (start != 0) {
 			start += in.readLine(new Text(), 0, maxBytesToConsume(start));
 		}

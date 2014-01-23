@@ -101,7 +101,6 @@ public class ESStorageHandler extends DefaultStorageHandler {
 				HiveValueReader.class, log);
 		InitializationUtils.setIdExtractorIfNotSet(settings,
 				HiveIdExtractor.class, log);
-
 		settings.save();
 
 		// replace the default committer when using the old API

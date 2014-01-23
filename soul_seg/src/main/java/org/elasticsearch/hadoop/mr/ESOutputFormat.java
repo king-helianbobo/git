@@ -1,18 +1,3 @@
-/*
- * Copyright 2013 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.elasticsearch.hadoop.mr;
 
 import java.io.IOException;
@@ -49,8 +34,7 @@ import org.elasticsearch.hadoop.serialization.SerializationUtils;
 import org.elasticsearch.hadoop.util.Assert;
 
 /**
- * ElasticSearch {@link OutputFormat} (old and new API) for adding data to an
- * index inside ElasticSearch.
+ * 写入内容到ElasticSearch中
  */
 @SuppressWarnings("rawtypes")
 // since this class implements two generic interfaces, to avoid dealing with 4
@@ -60,233 +44,121 @@ public class ESOutputFormat extends OutputFormat implements
 
 	protected static Log log = LogFactory.getLog(ESOutputFormat.class);
 
-	// don't use mapred.OutputCommitter as it performs mandatory casts to old
-	// API resulting in CCE
+	// 实现ESOutputCommiter，避免调用默认的FileOutputCommitter
 	public static class ESOutputCommitter extends
 			org.apache.hadoop.mapreduce.OutputCommitter {
-
 		@Override
 		public void setupJob(JobContext jobContext) throws IOException {
 		}
 
-		// compatibility check with Hadoop 0.20.2
 		@Deprecated
 		public void cleanupJob(JobContext jobContext) throws IOException {
 		}
 
 		@Override
-		public void setupTask(TaskAttemptContext taskContext)
-				throws IOException {
-			// no-op
+		public void setupTask(TaskAttemptContext context) throws IOException {
 		}
 
 		@Override
-		public boolean needsTaskCommit(TaskAttemptContext taskContext)
+		public boolean needsTaskCommit(TaskAttemptContext cxt)
 				throws IOException {
-			// no-op
 			return false;
 		}
 
 		@Override
 		public void commitTask(TaskAttemptContext taskContext)
 				throws IOException {
-			// no-op
 		}
 
 		@Override
 		public void abortTask(TaskAttemptContext taskContext)
 				throws IOException {
-			// no-op
 		}
-
 	}
 
-	public static class ESOldAPIOutputCommitter extends
+	// 实现ESOldAPIOutputCommitter，避免调用默认的FileOutputCommitter
+	public static class ESOldOutputCommitter extends
 			org.apache.hadoop.mapred.OutputCommitter {
-
 		@Override
-		public void setupJob(org.apache.hadoop.mapred.JobContext jobContext)
+		public void setupJob(org.apache.hadoop.mapred.JobContext jobCxt)
 				throws IOException {
-			// no-op
 		}
 
 		@Override
 		public void setupTask(
-				org.apache.hadoop.mapred.TaskAttemptContext taskContext)
+				org.apache.hadoop.mapred.TaskAttemptContext taskCxt)
 				throws IOException {
-			// no-op
 		}
 
 		@Override
 		public boolean needsTaskCommit(
-				org.apache.hadoop.mapred.TaskAttemptContext taskContext)
+				org.apache.hadoop.mapred.TaskAttemptContext taskCxt)
 				throws IOException {
-			// no-op
 			return false;
 		}
 
 		@Override
 		public void commitTask(
-				org.apache.hadoop.mapred.TaskAttemptContext taskContext)
+				org.apache.hadoop.mapred.TaskAttemptContext taskCxt)
 				throws IOException {
-			// no-op
 		}
 
 		@Override
 		public void abortTask(
-				org.apache.hadoop.mapred.TaskAttemptContext taskContext)
+				org.apache.hadoop.mapred.TaskAttemptContext taskCxt)
 				throws IOException {
-			// no-op
 		}
 
 		@Override
 		@Deprecated
-		public void cleanupJob(org.apache.hadoop.mapred.JobContext context)
+		public void cleanupJob(org.apache.hadoop.mapred.JobContext cxt)
 				throws IOException {
-			// no-op
-			// added for compatibility with hadoop 0.20.x (used by old tools,
-			// such as Cascalog)
 		}
 	}
 
-	protected static class ESRecordWriter extends RecordWriter implements
-			org.apache.hadoop.mapred.RecordWriter {
+	// new API ,转发给旧的API接口
+	@Override
+	public org.apache.hadoop.mapreduce.RecordWriter getRecordWriter(
+			TaskAttemptContext context) {
+		return (org.apache.hadoop.mapreduce.RecordWriter) getRecordWriter(null,
+				(JobConf) context.getConfiguration(), null, context);
+	}
+
+	@Override
+	public void checkOutputSpecs(JobContext context) throws IOException {
+		// careful as it seems the configuration saved is discarded
+		init(context.getConfiguration());
+	}
+
+	@Override
+	public org.apache.hadoop.mapreduce.OutputCommitter getOutputCommitter(
+			TaskAttemptContext context) {
+		return new ESOutputCommitter();
+	}
+
+	// old API
+	@Override
+	public org.apache.hadoop.mapred.RecordWriter getRecordWriter(
+			FileSystem ignored, JobConf job, String name, Progressable progress) {
+		return new ElasticSearchRecordWriter(job);
+	}
+
+	@Override
+	public void checkOutputSpecs(FileSystem ignored, JobConf cfg)
+			throws IOException {
+		init(cfg);
+	}
+
+	protected static class ElasticSearchRecordWriter extends RecordWriter
+			implements org.apache.hadoop.mapred.RecordWriter {
 
 		protected final Configuration cfg;
-		protected boolean initialized = false;
-
 		protected BufferedRestClient client;
 		private String uri, resource;
+		protected boolean initialized = false;
 
-		public ESRecordWriter(Configuration cfg) {
+		public ElasticSearchRecordWriter(Configuration cfg) {
 			this.cfg = cfg;
-		}
-
-		@Override
-		public void write(Object key, Object value) throws IOException {
-			// log.info("ESOutputFormat ,data is write! " + key.toString());
-			if (!initialized) {
-				initialized = true;
-				init();
-			}
-			client.writeToIndex(value);
-		}
-
-		protected void init() throws IOException {
-			// int instances = detectNumberOfInstances(cfg);
-			int currentInstance = detectCurrentInstance(cfg);
-			if (log.isTraceEnabled()) {
-				log.trace(String
-						.format("ESRecordWriter instance [%s] initiating discovery of target shard",
-								currentInstance));
-			}
-			Settings settings = SettingsManager.loadFrom(cfg);
-			SerializationUtils.setValueWriterIfNotSet(settings,
-					MapReduceWriter.class, log);
-			InitializationUtils.setIdExtractorIfNotSet(settings,
-					MapWritableIdExtractor.class, log);
-			client = new BufferedRestClient(settings);
-			resource = settings.getIndexType();
-			// log.info("before set ,resource = " + resource);
-			String suffix = cfg.get("elasticsearch.suffix.name");
-			if (suffix != null) {
-				settings.setResource(resource + suffix);
-			}
-			// settings.setResource(resource + suffix);
-			// log.info("after set ,resource = " +
-			// settings.getTargetResource());
-
-			// create the index if needed
-			if (client.touch()) {
-				if (client.waitForYellow()) {
-					log.warn(String
-							.format("Timed out waiting for index [%s] to reach yellow health",
-									resource));
-				}
-			}
-
-			Map<Shard, Node> targetShards = client.getTargetPrimaryShards();
-
-			List<Shard> orderedShards = new ArrayList<Shard>(
-					targetShards.keySet());
-			// make sure the order is strict
-			Collections.sort(orderedShards);
-			if (log.isTraceEnabled()) {
-				log.trace(String
-						.format("ESRecordWriter instance [%s] discovered %s primary shards %s",
-								currentInstance, orderedShards.size(),
-								orderedShards));
-			}
-
-			// int min = Math.min(instances, targetShards.size());
-			int bucket = currentInstance % targetShards.size();
-			Shard chosenShard = orderedShards.get(bucket);
-			Node targetNode = targetShards.get(chosenShard);
-
-			//log.info("target node name = " + targetNode.getName());
-
-			client.close();
-			// override the global settings to communicate directly with the
-			// target node
-			settings.cleanUri().setHost(targetNode.getIpAddress())
-					.setPort(targetNode.getHttpPort());
-			client = new BufferedRestClient(settings);
-			uri = settings.getTargetUri();
-
-			if (log.isDebugEnabled()) {
-				log.debug(String
-						.format("ESRecordWriter instance [%s] assigned to primary shard [%s] at address [%s]",
-								currentInstance, chosenShard.getName(), uri));
-			}
-		}
-
-		private static int detectNumberOfInstances(Configuration conf)
-				throws IOException {
-			int numReducers = conf.getInt("mapred.reduce.tasks", 1);
-			// no reducers
-			if (numReducers < 1) {
-				String dir = conf.get("mapreduce.job.dir");
-				Path path = JobSubmissionFiles
-						.getJobSplitMetaFile(new Path(dir));
-
-				FSDataInputStream in = path.getFileSystem(conf).open(path);
-
-				try {
-					// skip "META-SPL" in UTF-8
-					byte[] header = new byte[8];
-					in.readFully(header);
-					// skip version
-					WritableUtils.readVInt(in);
-					// read number of splits
-					return WritableUtils.readVInt(in);
-				} finally {
-					try {
-						in.close();
-					} catch (Exception ex) {
-						// ignore
-					}
-				}
-			}
-			return numReducers;
-		}
-
-		private int detectCurrentInstance(Configuration conf) {
-			TaskAttemptID attempt = TaskAttemptID.forName(conf
-					.get("mapred.task.id"));
-			Assert.notNull(
-					attempt,
-					"Unable to determine task id - please report your distro/setting through the issue tracker");
-
-			log.info("task number = " + attempt.getTaskID().getId());
-			try {
-				int nummaps = detectNumberOfInstances(conf);
-				log.info("number of maptasks = " + nummaps);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			return attempt.getTaskID().getId();
 		}
 
 		@Override
@@ -297,73 +169,139 @@ public class ESOutputFormat extends OutputFormat implements
 		@Override
 		public void close(Reporter reporter) throws IOException {
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("Closing RecordWriter [%s][%s]", uri,
+				log.trace(String.format("Close RecordWriter [%s][%s]", uri,
 						resource));
 			}
 			client.close();
 			initialized = false;
 		}
-	}
 
-	//
-	// new API - just delegates to the Old API
-	//
-	@Override
-	public org.apache.hadoop.mapreduce.RecordWriter getRecordWriter(
-			TaskAttemptContext context) {
-		return (org.apache.hadoop.mapreduce.RecordWriter) getRecordWriter(null,
-				(JobConf) context.getConfiguration(), null, context);
-	}
+		@Override
+		public void write(Object key, Object value) throws IOException {
+			if (!initialized) {
+				initialized = true;
+				init();
+			}
+			client.writeToIndex(value);
+		}
 
-	@Override
-	public void checkOutputSpecs(JobContext context) throws IOException {
-		// careful as it seems the info here saved by in the config is discarded
-		init(context.getConfiguration());
-	}
+		protected void init() throws IOException {
+			// this function is executed by each MapTask or ReduceTask
+			int seqNumber = detectTaskSeqNumber(cfg); // 获得任务序号
+			// this Task's seqNumber
+			if (log.isTraceEnabled()) {
+				log.trace(String.format(
+						"RecordWriter  [%s] initialize inputSplit", seqNumber));
+			}
+			Settings settings = SettingsManager.loadFrom(cfg);
+			SerializationUtils.setValueWriterIfNotSet(settings,
+					MapReduceWriter.class, log);
+			InitializationUtils.setIdExtractorIfNotSet(settings,
+					MapWritableIdExtractor.class, log);
+			client = new BufferedRestClient(settings);
+			resource = settings.getIndexType();
 
-	@Override
-	public org.apache.hadoop.mapreduce.OutputCommitter getOutputCommitter(
-			TaskAttemptContext context) {
-		return new ESOutputCommitter();
-	}
+			// 这个参数不一定必须设置，只有ESTextInputFormat设置了，才能读到
+			String suffix = cfg.get("elasticsearch.suffix.name", "");
+			if ((suffix != null) && (suffix.length() > 0)) {
+				settings.setResource(resource + suffix);
+			}
+			// create the index if needed
+			if (client.touch()) {
+				if (client.waitForYellow()) {
+					log.warn(String.format(
+							"Waiting for index [%s] to reach yellow health",
+							resource));
+				}
+			}
 
-	//
-	// old API
-	//
-	@Override
-	public org.apache.hadoop.mapred.RecordWriter getRecordWriter(
-			FileSystem ignored, JobConf job, String name, Progressable progress) {
-		return new ESRecordWriter(job);
-	}
+			// 获得分片以及每个分片所处节点信息
+			Map<Shard, Node> targetShards = client.getTargetPrimaryShards();
+			List<Shard> orderedShards = new ArrayList<Shard>(
+					targetShards.keySet());
+			// 对分片进行排序，确保有序
+			Collections.sort(orderedShards);
+			if (log.isTraceEnabled()) {
+				log.trace(String
+						.format("RecordWriter instance[%s] discovered %s primary shards %s",
+								seqNumber, orderedShards.size(), orderedShards));
+			}
+			int bucket = seqNumber % targetShards.size();
+			Shard chosenShard = orderedShards.get(bucket);
+			Node targetNode = targetShards.get(chosenShard);
+			client.close();
+			// 修改全局设置，使MapTask或ReduceTask直接与目标节点通信
+			settings.cleanUri().setHost(targetNode.getIpAddress())
+					.setPort(targetNode.getHttpPort());
+			client = new BufferedRestClient(settings);
+			uri = settings.getTargetUri();
+			if (log.isDebugEnabled()) {
+				log.debug(String
+						.format("RecordWriter instance[%s] assigned to primary shard [%s] at address [%s]",
+								seqNumber, chosenShard.getName(), uri));
+			}
+		}
 
-	@Override
-	public void checkOutputSpecs(FileSystem ignored, JobConf cfg)
-			throws IOException {
-		init(cfg);
+		private static int numberOfTaskAttempts(Configuration conf)
+				throws IOException {
+			int numReducers = conf.getInt("mapred.reduce.tasks", 1);
+			if (numReducers < 1) { // no reducers
+				String dir = conf.get("mapreduce.job.dir");
+				Path path = JobSubmissionFiles
+						.getJobSplitMetaFile(new Path(dir));
+				FSDataInputStream in = path.getFileSystem(conf).open(path);
+				try {
+					byte[] header = new byte[8]; // skip first "META-SPL"
+					in.readFully(header);
+					WritableUtils.readVInt(in); // skip version
+					return WritableUtils.readVInt(in); // read number of splits
+				} finally {
+					try {
+						in.close();
+					} catch (Exception ex) {
+					}
+				}
+			}
+			return numReducers;
+		}
+
+		private int detectTaskSeqNumber(Configuration conf) {
+			TaskAttemptID attempt = TaskAttemptID.forName(conf
+					.get("mapred.task.id"));
+			Assert.notNull(attempt,
+					"Unable to determine task id , check setting through the issue tracker");
+			log.info("task number = " + attempt.getTaskID().getId());
+			try {
+				int nummaps = numberOfTaskAttempts(conf);
+				log.info("number of maptasks = " + nummaps);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return attempt.getTaskID().getId();
+		}
 	}
 
 	private void init(Configuration cfg) throws IOException {
+		// this function is executed before each MapTask is launched
 		Settings settings = SettingsManager.loadFrom(cfg);
-		Assert.hasText(settings.getIndexType(), String.format(
-				"No resource ['%s'] (index/query/location) specified",
-				ES_RESOURCE));
-
+		Assert.hasText(settings.getIndexType(),
+				String.format("No resource ['%s'] specified", ES_RESOURCE));
 		BufferedRestClient client = null;
-
 		InitializationUtils.checkIdForOperation(settings);
-		InitializationUtils.checkIndexExistence(settings, client);
+		InitializationUtils.checkIndexExistence(settings, client); // 检查index是否存在
 
 		if (cfg.get("mapred.reduce.tasks") != null) {
 			if (cfg.getBoolean("mapred.reduce.tasks.speculative.execution",
 					true)) {
+				// 禁止ReduceTask猜测执行，因为ES是外部资源，不可控制
 				log.warn("Speculative execution enabled for reducer - consider disabling it to prevent data corruption");
 			}
 		} else {
+			// 因为ES存储在外部，推测执行时，失败的Task做出的改变无法删除，不允许推测执行
 			if (cfg.getBoolean("mapred.map.tasks.speculative.execution", true)) {
 				log.warn("Speculative execution enabled for mapper - consider disabling it to prevent data corruption");
 			}
 		}
-
 		log.info(String.format("Preparing to write/index to [%s][%s]",
 				settings.getTargetUri(), settings.getIndexType()));
 	}
