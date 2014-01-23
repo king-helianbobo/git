@@ -23,8 +23,8 @@ import org.suggest.elasticsearch.action.refresh.TransportSuggestRefreshAction;
 
 public class SuggestService extends AbstractLifecycleComponent<SuggestService> {
 
-	private final TimeValue suggestRefreshInterval;
-	private final boolean suggestRefreshDisabled;
+	private final TimeValue suggestRefreshInterval; // 更新间隔
+	private final boolean suggestRefreshDisabled; // 是否关闭更新
 	private volatile Thread suggestUpdaterThread;
 	private volatile boolean closed;
 	private final TransportSuggestRefreshAction suggestRefreshAction;
