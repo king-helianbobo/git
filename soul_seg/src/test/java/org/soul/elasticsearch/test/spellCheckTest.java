@@ -18,7 +18,6 @@ import org.soul.elasticSearch.plugin.SoulSpellChecker;
 public class spellCheckTest {
 	private static Log log = LogFactory.getLog(spellCheckTest.class);
 	private SoulSpellChecker spellChecker = null;
-
 	public spellCheckTest(String dictionary) {
 		Directory directory = null;
 		try {

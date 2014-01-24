@@ -363,12 +363,11 @@ public class SoulSpellChecker implements java.io.Closeable {
 							|| (word.equals("")))
 						continue;
 					// int len = word.length();
-
+					// log.info("index-phrase: [word = " + word + "]");
 					String pinyin = jcSeg.convertToPinyin(word);
 					int len = pinyin.length();
-					log.info("index-phrase: [word = " + word + "/pinyin ="
-							+ pinyin + "]");
-
+					// log.info("index-phrase: [word = " + word + "/pinyin ="
+					// + pinyin + "]");
 					if (len < 2) {
 						continue; // too short we bail but "too long" is
 									// fine...

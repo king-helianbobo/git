@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,13 @@ public class SogouDataReader {
 	public void convertToHdfsFormat(String outputDir) throws IOException {
 		if (outputDir.endsWith("/"))
 			outputDir = outputDir.substring(0, outputDir.length() - 1);
+		File dir = new File(outputDir);
+		if (!dir.exists())
+			dir.mkdir();
 		FileWriter fw = null;
 		BufferedWriter bw = null;
+		long totalDocNumber = 0;
+		HashSet<String> set = new HashSet<String>();
 		while (true) {
 			if (br == null) {
 				if (paths.isEmpty())
@@ -76,17 +82,24 @@ public class SogouDataReader {
 					bw = new BufferedWriter(fw);
 				}
 			}
+
 			while (br != null) {
 				final int number = 10;
 				List<HashMap<String, String>> products = getMapData(number);
+				if (products != null)
+					totalDocNumber += products.size();
 				for (int i = 0; i < products.size(); i++) {
 					HashMap<String, String> map = products.get(i);
 					StringBuilder builder = new StringBuilder();
-					builder.append(map.get("url") + "[$$$$]");
-					builder.append(map.get("docno") + "[$$$$]");
-					builder.append(map.get("contenttitle") + "[$$$$]");
-					builder.append(map.get("content") + "[$$$$]");
-					builder.append(map.get("postTime"));
+					String tag = "$$$$";
+					builder.append(map.get("url") + tag);
+					builder.append(map.get("docno") + tag);
+					String str = map.get("docno").trim();
+					if (!set.contains(str))
+						set.add(str);
+					builder.append(map.get("postTime") + tag);
+					builder.append(map.get("contenttitle") + tag);
+					builder.append(map.get("content"));
 					bw.write(builder.toString());
 					bw.newLine();
 				}
@@ -107,8 +120,9 @@ public class SogouDataReader {
 				break;
 			}
 		}
+		log.info("total Document number is " + totalDocNumber);
+		log.info("total unique Document number is " + set.size());
 	}
-
 	@SuppressWarnings("unchecked")
 	public List<HashMap<String, String>> next() throws IOException {
 		if (br == null) {
@@ -218,10 +232,6 @@ public class SogouDataReader {
 		}
 		HashMap<String, String> element = new HashMap<String, String>();
 		element.put("url", strBetweenDoc.get("url"));
-		// log.info(strBetweenDoc.get("url"));
-		// log.info(strBetweenDoc.get("docno"));
-		// log.info(strBetweenDoc.get("content"));
-		// log.info(strBetweenDoc.get("contenttitle"));
 		element.put("docno", strBetweenDoc.get("docno"));
 		element.put("contenttitle", strBetweenDoc.get("contenttitle"));
 		element.put("content", strBetweenDoc.get("content"));

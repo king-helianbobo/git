@@ -22,6 +22,32 @@ curl -XPUT 'namenode:9200/mrtest/_settings?pretty' -d '{
 }'
 curl -XPOST 'namenode:9200/mrtest/_open'
 
+curl -XPUT "localhost:9200/movies/movie/_mapping" -d'
+{
+   "movie1": {
+      "properties": {
+         "director": {
+            "type": "multi_field",
+            "fields": {
+                "director": {"type": "string"},
+                "original": {"type" : "string", "index" : "not_analyzed"}
+            }
+         }
+      }
+   },
+   "movie2": {
+      "properties": {
+         "director": {
+            "type": "multi_field",
+            "fields": {
+                "director": {"type": "numeric"},
+                "original": {"type" : "numeric", "index" : "not_analyzed"}
+            }
+         }
+      }
+   }
+}'
+
 # curl -XPOST 'namenode:9200/hivetest/_close' # close index hivetest
 # curl -XPUT 'namenode:9200/hivetest/_settings?pretty' -d '{
 #     "index" : {

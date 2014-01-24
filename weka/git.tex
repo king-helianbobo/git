@@ -114,3 +114,52 @@ mvn exec:java -Dexec.mainClass="org.ansj.liubo.test.test"
 \par exec-maven-plugin很好理解，顾名思义，它能让你运行任何本地的系统程序，在某些特定情况下，运行一个Maven外部的程序可能就是最简单的问题解决方案，这就是exec:exec的用途，当然，该插件还允许你配置相关的程序运行参数。除了exec目标之外，exec-maven-plugin还提供了一个java目标，该目标要求你提供一个mainClass参数，然后它能够利用当前项目的依赖作为classpath，在同一个JVM中运行该mainClass。有时候，为了简单的演示一个命令行Java程序，可以在pom.xml中配置好exec-maven-plugin的相关运行参数，然后直接在命令运行\textbf{mvn exec:java}以查看运行效果。
 \par 进行Web开发时，打开浏览器对应用进行手动的测试几乎是无法避免的，这种测试方法通常就是将项目打包成war文件，然后部署到Web容器中，再启动容器进行验证，这显然十分耗时。为了帮助开发者节省时间，jetty-maven-plugin应运而生，它完全兼容Maven项目的目录结构，能够周期性地检查源文件，一旦发现变更后自动更新到内置的Jetty Web容器中。做一些基本配置后（例如Web应用的contextPath和自动扫描变更的时间间隔），只要执行\textbf{mvn jetty:run}，然后在IDE中修改代码，代码经IDE自动编译后产生变更，再由jetty-maven-plugin侦测到后将更新写入到Jetty容器，这时就可以直接测试Web页面。需要注意的是，jetty-maven-plugin并不是宿主于Apache或Codehaus的官方插件，因此使用的时候需要额外的配置settings.xml的pluginGroups元素，将org.mortbay.jetty这个pluginGroup加入。
 \par 很多Maven用户遇到这样一个问题，当项目包含大量模块的时候，集体更新版本就变成一件烦人的事情，到底有没有自动化工具能帮助完成这件事情呢？（当然你可以使用sed之类的文本操作工具）答案是肯定的，versions-maven-plugin提供了很多目标帮助你管理Maven项目的各种版本信息。例如最常用的命令\textbf{mvn versions:set -DnewVersion=1.1-SNAPSHOT}就能帮助你把所有模块的版本更新到1.1-SNAPSHOT。该插件还提供了其他一些很有用的目标，display-dependency-updates能告诉你项目依赖有哪些可用的更新，类似的display-plugin-updates能告诉你可用的插件更新，use-latest-versions能自动帮你将所有依赖升级到最新版本。最后，如果对所做的更改满意，则可以使用\textbf{mvn versions:commit}提交，不满意的话也可以使用\textbf{mvn versions:revert}进行撤销操作。
+\subsection{Building a Self-Contained Hadoop Job}
+\par Non-trivial Hadoop jobs usually have dependencies that go beyond those provided by the Hadoop runtime environment. That means, if your job needs additional libraries you have to make sure they are on Hadoop’s classpath as soon as the job is executed. This article shows how you can build a self-contained job JAR that contains all your dependencies.
+\par The Hadoop runtime environment expects additional dependencies inside a lib directory. That’s where we need Maven’s Assembly plugin: Using the plugin, we create a JAR that contains the project’s resources (usually just your job’s class files) and a lib directory with all dependencies that are not on Hadoop’s classpath already.
+\par First of all, we create an assembly descriptor file (put it in \textsl{\large src/main/assembly/hadoop-job.xml}). Note that we collect all dependencies on the runtime scope but exclude the project’s artifact. Instead, we add the artifact unpacked which is a little surprising. If we didn’t do that, Hadoop would look for our dependencies inside the project’s artifact JAR and not inside the surrounding assembly JAR's lib directory. For the whole mechanism to work, the class you set in your job driver via Job.setJarByClass() must be from your project, not from your dependencies.
+\begin{verbatim}
+<assembly>
+  <id>job</id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <dependencySets>
+    <dependencySet>
+      <unpack>false</unpack>
+      <scope>runtime</scope>
+      <outputDirectory>lib</outputDirectory>
+      <excludes>
+        <exclude>${groupId}:${artifactId}</exclude>
+      </excludes>
+    </dependencySet>
+
+    <dependencySet>
+      <unpack>true</unpack>
+      <includes>
+        <include>${groupId}:${artifactId}</include>
+      </includes>
+    </dependencySet>
+  </dependencySets>
+</assembly>
+\end{verbatim}
+\par Inside the POM's dependency section, we set Hadoop to the \textsl{\large provided} scope，这样的话，Hadoop相关的jar包就不会包含进来了，但功能尚未经过测试。
+\begin{verbatim}
+<dependencies>
+  <dependency>
+    <groupId>org.apache.hadoop</groupId>
+    <artifactId>hadoop-core</artifactId>
+    <version>2.0.5-alpha</version>
+    <scope>provided</scope>
+  </dependency>
+</dependencies>
+\end{verbatim}
+\par Setting the assembly JAR's Main class is optional, but makes the job more user friendly because you don’t have to specify the class name explicitly for each run. You can now build your job JAR:
+\begin{verbatim}
+mvn clean package
+\end{verbatim}
+\par Your self-contained job JAR is the file in target ending with -job.jar. Run it using Hadoop’s jar sub-command: 
+\begin{verbatim}
+hadoop jar ./target/releases/soul_seg-0.2-job.jar /hdfs
+\end{verbatim}

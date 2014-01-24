@@ -1,4 +1,4 @@
-package org.soul.elasticsearch.test;
+package org.elasticsearch.main;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
@@ -172,7 +172,7 @@ public class ESearchTest {
 		conf.setBoolean("mapred.map.tasks.speculative.execution", false);
 		conf.setBoolean("mapred.reduce.tasks.speculative.execution", false);
 
-		Job job = new Job(conf, "ElasticSearch");
+		Job job = new Job(conf, "ESearchTest");
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(LongWritable.class);
 		job.setMapperClass(Map.class);
@@ -184,8 +184,7 @@ public class ESearchTest {
 		TextInputFormat.addInputPath(job, new Path(args[0]));
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(ESOutputFormat.class);
-
 		job.waitForCompletion(true);
-		log.info("ESearch");
+		log.info("ESearchTest");
 	}
 }

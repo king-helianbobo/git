@@ -36,6 +36,7 @@ public class JcSegment {
 	// turn Chinese chars to pinyin
 	public String convertToPinyin(String text) throws IOException {
 		Reader reader = new StringReader(text);
+		log.info(text);
 		return convertToPinyin(reader);
 	}
 
@@ -58,6 +59,10 @@ public class JcSegment {
 			while ((word = seg.next()) != null) {
 				String pinyin = word.getPinyin();
 				String origWord = word.getValue();
+				log.info("origWord = " + origWord + ",word = " + word
+						+ ", pinyin= " + pinyin);
+				if (origWord.equals("0"))
+					continue;
 				if (origWord.length() == 1) {
 					pinyin = PinyinHelper.convertToPinyinArray(
 							origWord.charAt(0), PinyinFormat.WITHOUT_TONE)[0];

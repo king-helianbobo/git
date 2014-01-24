@@ -95,5 +95,4 @@ public class EdgeNGramTest {
 					+ searchResponse.toString());
 		}
 	}
-
 }

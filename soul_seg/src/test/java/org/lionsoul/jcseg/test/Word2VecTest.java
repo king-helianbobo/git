@@ -1,4 +1,4 @@
-package org.soul.elasticsearch.test;
+package org.lionsoul.jcseg.test;
 
 import java.io.BufferedReader;
 import java.io.File;

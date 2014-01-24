@@ -16,12 +16,7 @@ public class WordAlert {
 	public static final int UPPER_GAP_N = 65248;
 
 	/**
-	 * 对全角的字符串,大写字母进行转译.如ｓｄｆｓｄｆ
-	 * 
-	 * @param chars
-	 * @param start
-	 * @param end
-	 * @return
+	 * 转译全角字符和大写字母.如ｓｄｆｓｄｆ
 	 */
 	public static String alertAlpha(char[] chars, int start, int end) {
 		for (int i = start; i < start + end; i++) {

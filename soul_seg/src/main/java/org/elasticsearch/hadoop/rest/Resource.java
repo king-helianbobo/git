@@ -13,16 +13,16 @@ public class Resource {
 
 	public Resource(String resource) {
 		this.resource = new StringBuilder(resource);
-		int location = resource.lastIndexOf("_");
-		if (location <= 0) {
-			location = resource.length();
+		// int location = resource.lastIndexOf("_");
+		// if (location <= 0) {
+		// location = resource.length();
+		// }
+		String _root = resource.substring(0, resource.length());
+		if (!_root.endsWith("/")) {
+			_root = _root + "/";
 		}
-		String localRoot = resource.substring(0, location);
-		if (!localRoot.endsWith("/")) {
-			localRoot = localRoot + "/";
-		}
-		root = localRoot;
-		location = localRoot.substring(0, root.length() - 1).lastIndexOf("/");
+		root = _root;
+		int location = _root.substring(0, root.length() - 1).lastIndexOf("/");
 		type = root.substring(location + 1, root.length() - 1);
 		index = root.substring(0, location);
 	}

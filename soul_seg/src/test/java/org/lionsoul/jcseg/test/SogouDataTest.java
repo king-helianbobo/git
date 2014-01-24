@@ -62,11 +62,11 @@ public class SogouDataTest {
 	private Settings settings;
 	TransportClient transportClient;
 
+	// private String indexName = "sogou_test";
+	// private String typeName = "test1";
 	private String indexName = "sogou_test";
-	private String typeName = "test1";
-
-	// private final AsyncHttpClient httpClient = new AsyncHttpClient();
-	// private Node node;
+	private String typeName = "table";
+	private String hostName = "192.168.50.75";
 	private int port = 9300;
 
 	@Before
@@ -78,7 +78,7 @@ public class SogouDataTest {
 		String resource = indexName + "/" + typeName;
 		properties.put(ConfigurationOptions.ES_RESOURCE, resource);
 		// properties.put(ConfigurationOptions.ES_UPSERT_DOC, "false");
-		properties.put("es.host", "localhost");
+		properties.put("es.host", hostName);
 		settings = SettingsManager.loadFrom(properties);
 		SerializationUtils.setValueWriterIfNotSet(settings,
 				MapReduceWriter.class, log);
@@ -86,8 +86,8 @@ public class SogouDataTest {
 				MapWritableIdExtractor.class, log);
 		restClient = new RestClient(settings);
 		transportClient = new TransportClient()
-				.addTransportAddress(new InetSocketTransportAddress(
-						"localhost", port));
+				.addTransportAddress(new InetSocketTransportAddress(hostName,
+						port));
 	}
 
 	@After
@@ -109,21 +109,9 @@ public class SogouDataTest {
 				transportClient.admin().indices().prepareDelete(indexName)
 						.execute().actionGet();
 			}
-			// XContentBuilder builder = (XContentBuilder) jsonBuilder()
-			// .startObject().startObject("mappings")
-			// .startObject(typeName).startObject("properties")
-			// .startObject("url").field("type", "string")
-			// .field("index", "not_analyzed").endObject()
 			// .startObject("postTime").field("type", "date")
 			// .field("format", "date_hour_minute_second")
 			// .field("index", "not_analyzed").endObject()
-			// .startObject("contenttitle").field("type", "string")
-			// .field("index_analyzer", "soul_index")
-			// .field("search_analyzer", "soul_query").endObject()
-			// .startObject("content").field("type", "string")
-			// .field("index_analyzer", "soul_index")
-			// .field("search_analyzer", "soul_query").endObject()
-			// .endObject().endObject().endObject().endObject();
 			XContentBuilder builder = (XContentBuilder) jsonBuilder()
 					.startObject().startObject("mappings")
 					.startObject(typeName).startObject("properties")
@@ -159,15 +147,6 @@ public class SogouDataTest {
 		List<HashMap<String, String>> result = null;
 		BytesArray data = new BytesArray(1024 * 1024);
 		while ((result = reader.next()) != null) {
-
-			// InputStream in =
-			// this.getClass().getResourceAsStream("/content2.txt");
-			// BufferedReader reader = new BufferedReader(new
-			// InputStreamReader(in,
-			// "UTF-8"));
-			// List<Map<String, String>> result = getTestData(reader, 100);
-
-			// data.bytes(new byte[settings.getBatchSizeInBytes()], 0);
 			log.info(result.size());
 			for (int i = 0; i < result.size(); i++) {
 				Map<String, String> entry = result.get(i);
@@ -185,82 +164,14 @@ public class SogouDataTest {
 		}
 		restClient.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
+	@Ignore("Convert Sogou Txt data to hdfs friendly format")
 	@Test
 	public void convertDataToHdfsFormat() {
 		SogouDataReader reader = new SogouDataReader("/mnt/f/Sogou/");
 		try {
-			reader.convertToHdfsFormat("/mnt/f/hdfs1/");
+			reader.convertToHdfsFormat("/mnt/f/hdfs2/");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private List<Map<String, String>> getTestData(BufferedReader reader,
-			int number) throws IOException {
-		List<Map<String, String>> products = Lists.newArrayList();
-		String temp = null;
-		boolean isTitle = true;
-		Map<String, String> entry = new HashMap<String, String>();
-		while ((temp = reader.readLine()) != null) {
-			temp = temp.trim();
-			if (isTitle) {
-				entry.clear();
-				if (temp.startsWith("<contenttitle>")) {
-					int end = temp.lastIndexOf("</contenttitle>");
-					if (end >= 0) {
-						String content = temp.substring(
-								"<contenttitle>".length(), end);
-						if (content.length() > 0)
-							entry.put("title", content);
-					}
-				}
-			} else {
-				if (temp.startsWith("<content>")) {
-					int end = temp.lastIndexOf("</content>");
-					if (end >= 0) {
-						String content = temp.substring("<content>".length(),
-								end);
-						if (content.length() > 0)
-							entry.put("content", content);
-					}
-				}
-			}
-			if (!isTitle) {
-				products.add((Map<String, String>) ((HashMap<String, String>) entry)
-						.clone());
-			}
-			isTitle = (!isTitle);
-		}
-		List<Map<String, String>> entryList = Lists.newArrayList();
-		for (int i = 0; i < products.size(); i++) {
-			Map<String, String> element = new LinkedHashMap<String, String>();
-			element.put("number", String.valueOf(i + 1)); // id start from 1
-			element.put("cardid", RandomStringUtils.randomAlphabetic(10));
-			element.put("date", "2014-01-10");
-			element.put("title", products.get(i).get("title"));
-			element.put("content", products.get(i).get("content"));
-			entryList.add(element);
-		}
-		return entryList;
-	}
-	private String createJSONQuery(String field, String term, String type) {
-		if (type == null)
-			return String.format("{ \"field\": \"%s\", \"term\": \"%s\" }",
-					field, term);
-		else
-			return String
-					.format("{ \"field\": \"%s\", \"term\": \"%s\" , \"type\": \"%s\" }",
-							field, term, type);
-	}
-
-	@SuppressWarnings("unchecked")
-	private List<String> getSuggestionsFromResponse(String response)
-			throws IOException {
-		XContentParser parser = JsonXContent.jsonXContent
-				.createParser(response);
-		Map<String, Object> jsonResponse = parser.map();
-		assertThat(jsonResponse, hasKey("suggestions"));
-		return (List<String>) jsonResponse.get("suggestions");
 	}
 }

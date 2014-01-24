@@ -1,4 +1,4 @@
-
+curl -XPOST "localhost:9200/http_test?pretty"
 curl -XPOST "localhost:9200/http_test?pretty"
 ## 修改soul_test的mapping，index过程使用soul_index的分析器，query过程使用soul_query
 curl -XPUT "localhost:9200/http_test/test1/_mapping?pretty" -d' {

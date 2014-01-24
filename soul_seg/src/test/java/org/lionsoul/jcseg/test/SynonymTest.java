@@ -1,4 +1,4 @@
-package org.soul.elasticsearch.test;
+package org.lionsoul.jcseg.test;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
