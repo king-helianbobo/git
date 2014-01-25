@@ -17,7 +17,7 @@ import org.lionsoul.jcseg.core.IWord;
 import org.lionsoul.jcseg.core.JcsegTaskConfig;
 import org.lionsoul.jcseg.filter.CNNMFilter;
 import org.lionsoul.jcseg.filter.ENSCFilter;
-import org.lionsoul.jcseg.filter.PPTFilter;
+import org.lionsoul.jcseg.filter.PairPunctuationFilter;
 import org.lionsoul.jcseg.util.IStringBuffer;
 import org.lionsoul.jcseg.util.IntArrayList;
 
@@ -165,7 +165,7 @@ public abstract class ASegment implements ISegment {
 					 * chars[cjkidx] is a Chinese numeric and it is not the last
 					 * word.
 					 */
-					if (CNNMFilter.isCNNumeric(chars[cjkidx]) > -1
+					if (CNNMFilter.convertCNToInteger(chars[cjkidx]) > -1
 							&& cjkidx + 1 < chars.length) {
 						String numStr = nextCNNumeric(chars, cjkidx);
 						if ((ctrlMask & ISegment.CHECK_CF_MASK) != 0) { // 如果出现了'分之'
@@ -180,17 +180,17 @@ public abstract class ASegment implements ISegment {
 							if (config.CNFRA_TO_ARABIC) {
 								String[] split = numStr.split("分之");
 								IWord wd = new Word(
-										CNNMFilter.cnNumericToArabic(split[1],
+										CNNMFilter.cnNumberToArabic(split[1],
 												true)
 												+ "/"
-												+ CNNMFilter.cnNumericToArabic(
+												+ CNNMFilter.cnNumberToArabic(
 														split[0], true),
 										IWord.T_CN_NUMERIC);
 								wd.setPosition(w.getPosition());
 								wd.setPartSpeech(IWord.NUMERIC_POSPEECH);
 								wordPool.add(wd);
 							}
-						} else if (CNNMFilter.isCNNumeric(chars[cjkidx + 1]) > -1
+						} else if (CNNMFilter.convertCNToInteger(chars[cjkidx + 1]) > -1
 								|| dic.match(ILexicon.CJK_UNITS,
 										chars[cjkidx + 1] + "")) {
 							/*
@@ -214,8 +214,10 @@ public abstract class ASegment implements ISegment {
 							IWord wd = null;
 							// find the numeric units
 							if (matched == false && config.CNNUM_TO_ARABIC) {
-								String arbic = CNNMFilter.cnNumericToArabic(
+								String arbic = CNNMFilter.cnNumberToArabic(
 										numStr, true) + "";
+								log.info("arbic = " + arbic + ",numStr = "
+										+ numStr);
 								if ((cjkidx + numStr.length()) < chars.length
 										&& dic.match(ILexicon.CJK_UNITS,
 												chars[cjkidx + numStr.length()]
@@ -441,7 +443,7 @@ public abstract class ASegment implements ISegment {
 						appendLatinSyn(w);
 				}
 				return w;
-			} else if (PPTFilter.isPairPunctuation((char) c)) {
+			} else if (PairPunctuationFilter.isPairPunctuation((char) c)) {
 				IWord w = null, w2 = null;
 				String text = getPairPunctuationText(c);
 				// handle the punctuation.
@@ -744,141 +746,137 @@ public abstract class ASegment implements ISegment {
 		if (chunk.getWords().length == 2) {
 			IWord w = chunk.getWords()[1];
 			switch (w.getLength()) {
-				case 1 :
-					if (dic.match(ILexicon.CN_SNAME, w.getValue())) {
-						isb.append(w.getValue());
+			case 1:
+				if (dic.match(ILexicon.CN_SNAME, w.getValue())) {
+					isb.append(w.getValue());
+					return isb.toString();
+				}
+				return null;
+			case 2:
+			case 3:
+				/*
+				 * there is only two IWords in the chunk. case 2: like: 这本书是陈高的,
+				 * chunk: 陈_高的 more: 瓜子和坚果,chunk: 和_坚果 (1.6.8前版本有歧义) case 3:
+				 * 1.double name: the two chars and char after it make up a
+				 * word. like: 这本书是陈美丽的, chunk: 陈_美丽的 2.single name: the char
+				 * and the two chars after it make up a word. -ignore
+				 */
+				String d1 = new String(w.getValue().charAt(0) + "");
+				String d2 = new String(w.getValue().charAt(1) + "");
+				if (dic.match(ILexicon.CN_DNAME_1, d1)
+						&& dic.match(ILexicon.CN_DNAME_2, d2)) {
+					isb.append(d1);
+					isb.append(d2);
+					return isb.toString();
+				} else if (dic.match(ILexicon.CN_SNAME, d1)) {
+					/*
+					 * the name char of the single name and the char after it
+					 * make up a word.
+					 */
+					IWord iw = dic.get(ILexicon.CJK_WORD, d2);
+					if (iw != null
+							&& iw.getFrequency() >= config.NAME_SINGLE_THRESHOLD) {
+						isb.append(d1);
 						return isb.toString();
 					}
+				} else
 					return null;
-				case 2 :
-				case 3 :
-					/*
-					 * there is only two IWords in the chunk. case 2: like:
-					 * 这本书是陈高的, chunk: 陈_高的 more: 瓜子和坚果,chunk: 和_坚果
-					 * (1.6.8前版本有歧义) case 3: 1.double name: the two chars and
-					 * char after it make up a word. like: 这本书是陈美丽的, chunk:
-					 * 陈_美丽的 2.single name: the char and the two chars after it
-					 * make up a word. -ignore
-					 */
-					String d1 = new String(w.getValue().charAt(0) + "");
-					String d2 = new String(w.getValue().charAt(1) + "");
-					if (dic.match(ILexicon.CN_DNAME_1, d1)
-							&& dic.match(ILexicon.CN_DNAME_2, d2)) {
-						isb.append(d1);
-						isb.append(d2);
-						return isb.toString();
-					} else if (dic.match(ILexicon.CN_SNAME, d1)) {
-						/*
-						 * the name char of the single name and the char after
-						 * it make up a word.
-						 */
-						IWord iw = dic.get(ILexicon.CJK_WORD, d2);
-						if (iw != null
-								&& iw.getFrequency() >= config.NAME_SINGLE_THRESHOLD) {
-							isb.append(d1);
-							return isb.toString();
-						}
-					} else
-						return null;
 			}
 		} else { /* three IWords in the chunk */
 			IWord w1 = chunk.getWords()[1];
 			IWord w2 = chunk.getWords()[2];
 			switch (w1.getLength()) {
-				case 1 :
-					/* check if it is a double name first. */
-					if (dic.match(ILexicon.CN_DNAME_1, w1.getValue())) {
-						if (w2.getLength() == 1) {
-							/* real double name? */
-							if (dic.match(ILexicon.CN_DNAME_2, w2.getValue())) {
-								isb.append(w1.getValue());
-								isb.append(w2.getValue());
-								return isb.toString();
-							} else if (dic.match(ILexicon.CN_SNAME,
-									w1.getValue())) {
-								/*
-								 * not a real double name, check if it is a
-								 * single name.
-								 */
-								isb.append(w1.getValue());
-								return isb.toString();
-							}
-						} else {
+			case 1:
+				/* check if it is a double name first. */
+				if (dic.match(ILexicon.CN_DNAME_1, w1.getValue())) {
+					if (w2.getLength() == 1) {
+						/* real double name? */
+						if (dic.match(ILexicon.CN_DNAME_2, w2.getValue())) {
+							isb.append(w1.getValue());
+							isb.append(w2.getValue());
+							return isb.toString();
+						} else if (dic.match(ILexicon.CN_SNAME, w1.getValue())) {
 							/*
-							 * double name: char 2 and the char after it make up
-							 * a word. like: 陈志高兴奋极了, chunk:陈_志_高兴 (兴和后面成词)
-							 * like: 陈志高的, chunk:陈_志_高的
-							 * ("的"的阕值Config.SINGLE_THRESHOLD) like: 陈高兴奋极了,
-							 * chunk:陈_高_兴奋 (single name)
+							 * not a real double name, check if it is a single
+							 * name.
 							 */
-							String d1 = new String(w2.getValue().charAt(0) + "");
-							int index_ = index
-									+ chunk.getWords()[0].getLength() + 2;
-							IWord[] ws = getNextMatch(chars, index_); // w2第一个字符后面的字符串
-							/* is it a double name? */
-							if (dic.match(ILexicon.CN_DNAME_2, d1)
-									&& (ws.length > 1 || ws[0].getFrequency() >= config.NAME_SINGLE_THRESHOLD)) {
-								isb.append(w1.getValue());
-								isb.append(d1);
-								return isb.toString();
-							} else if (dic.match(ILexicon.CN_SNAME,
-									w1.getValue())) {
-								/* check if it is a single name */
-								isb.append(w1.getValue());
-								return isb.toString();
-							}
+							isb.append(w1.getValue());
+							return isb.toString();
 						}
-					} else if (dic.match(ILexicon.CN_SNAME, w1.getValue())) {
-						/* check if it is a single name. */
-						isb.append(w1.getValue());
-						return isb.toString();
-					}
-					return null;
-				case 2 :
-					String d1 = new String(w1.getValue().charAt(0) + "");
-					String d2 = new String(w1.getValue().charAt(1) + "");
-					/*
-					 * it is a double name and char 1, char 2 make up a word.
-					 * like: 陈美丽是对的, chunk: 陈_美丽_是 more: 都成为高速公路,
-					 * chunk:都_成为_高速公路 (1.6.8以前的有歧义)
-					 */
-					if (dic.match(ILexicon.CN_DNAME_1, d1)
-							&& dic.match(ILexicon.CN_DNAME_2, d2)) {
-						isb.append(w1.getValue());
-						return isb.toString();
-					}
-					/*
-					 * it is a single name, char 1 and the char after it make up
-					 * a word.
-					 */
-					else if (dic.match(ILexicon.CN_SNAME, d1)) {
-						IWord iw = dic.get(ILexicon.CJK_WORD, d2);
-						if (iw != null
-								&& iw.getFrequency() >= config.NAME_SINGLE_THRESHOLD) {
+					} else {
+						/*
+						 * double name: char 2 and the char after it make up a
+						 * word. like: 陈志高兴奋极了, chunk:陈_志_高兴 (兴和后面成词) like:
+						 * 陈志高的, chunk:陈_志_高的 ("的"的阕值Config.SINGLE_THRESHOLD)
+						 * like: 陈高兴奋极了, chunk:陈_高_兴奋 (single name)
+						 */
+						String d1 = new String(w2.getValue().charAt(0) + "");
+						int index_ = index + chunk.getWords()[0].getLength()
+								+ 2;
+						IWord[] ws = getNextMatch(chars, index_); // w2第一个字符后面的字符串
+						/* is it a double name? */
+						if (dic.match(ILexicon.CN_DNAME_2, d1)
+								&& (ws.length > 1 || ws[0].getFrequency() >= config.NAME_SINGLE_THRESHOLD)) {
+							isb.append(w1.getValue());
 							isb.append(d1);
+							return isb.toString();
+						} else if (dic.match(ILexicon.CN_SNAME, w1.getValue())) {
+							/* check if it is a single name */
+							isb.append(w1.getValue());
 							return isb.toString();
 						}
 					}
-					return null;
-				case 3 : // 最重要的工作是检查单字成词的概率
-					/*
-					 * single name: - ignore mean the char and the two chars
-					 * after it make up a word.
-					 * 
-					 * it is a double name. like: 陈美丽的人生， chunk: 陈_美丽的_人生
-					 */
-					String c1 = new String(w1.getValue().charAt(0) + "");
-					String c2 = new String(w1.getValue().charAt(1) + "");
-					IWord w3 = dic.get(ILexicon.CJK_WORD,
-							w1.getValue().charAt(2) + "");
-					if (dic.match(ILexicon.CN_DNAME_1, c1)
-							&& dic.match(ILexicon.CN_DNAME_2, c2)
-							&& (w3 == null || w3.getFrequency() >= config.NAME_SINGLE_THRESHOLD)) {
-						isb.append(c1);
-						isb.append(c2);
+				} else if (dic.match(ILexicon.CN_SNAME, w1.getValue())) {
+					/* check if it is a single name. */
+					isb.append(w1.getValue());
+					return isb.toString();
+				}
+				return null;
+			case 2:
+				String d1 = new String(w1.getValue().charAt(0) + "");
+				String d2 = new String(w1.getValue().charAt(1) + "");
+				/*
+				 * it is a double name and char 1, char 2 make up a word. like:
+				 * 陈美丽是对的, chunk: 陈_美丽_是 more: 都成为高速公路, chunk:都_成为_高速公路
+				 * (1.6.8以前的有歧义)
+				 */
+				if (dic.match(ILexicon.CN_DNAME_1, d1)
+						&& dic.match(ILexicon.CN_DNAME_2, d2)) {
+					isb.append(w1.getValue());
+					return isb.toString();
+				}
+				/*
+				 * it is a single name, char 1 and the char after it make up a
+				 * word.
+				 */
+				else if (dic.match(ILexicon.CN_SNAME, d1)) {
+					IWord iw = dic.get(ILexicon.CJK_WORD, d2);
+					if (iw != null
+							&& iw.getFrequency() >= config.NAME_SINGLE_THRESHOLD) {
+						isb.append(d1);
 						return isb.toString();
 					}
-					return null;
+				}
+				return null;
+			case 3: // 最重要的工作是检查单字成词的概率
+				/*
+				 * single name: - ignore mean the char and the two chars after
+				 * it make up a word.
+				 * 
+				 * it is a double name. like: 陈美丽的人生， chunk: 陈_美丽的_人生
+				 */
+				String c1 = new String(w1.getValue().charAt(0) + "");
+				String c2 = new String(w1.getValue().charAt(1) + "");
+				IWord w3 = dic.get(ILexicon.CJK_WORD, w1.getValue().charAt(2)
+						+ "");
+				if (dic.match(ILexicon.CN_DNAME_1, c1)
+						&& dic.match(ILexicon.CN_DNAME_2, c2)
+						&& (w3 == null || w3.getFrequency() >= config.NAME_SINGLE_THRESHOLD)) {
+					isb.append(c1);
+					isb.append(c2);
+					return isb.toString();
+				}
+				return null;
 			}
 		}
 		return null;
@@ -1204,10 +1202,10 @@ public abstract class ASegment implements ISegment {
 			 * 
 			 * @added 2013-12-14
 			 */
-			if (CNNMFilter.isCNNumeric(chars[j]) == -1) {
+			if (CNNMFilter.convertCNToInteger(chars[j]) == -1) {
 				if (j + 2 < chars.length && chars[j] == '分'
 						&& chars[j + 1] == '之'
-						&& CNNMFilter.isCNNumeric(chars[j + 2]) != -1) {
+						&& CNNMFilter.convertCNToInteger(chars[j + 2]) != -1) {
 					/*
 					 * check and make sure chars[j+2] is a chinese numeric. or
 					 * error will happen on situation like '四六分之' .
@@ -1239,7 +1237,7 @@ public abstract class ASegment implements ISegment {
 	protected String getPairPunctuationText(int c) throws IOException {
 		// StringBuilder isb = new StringBuilder();
 		isb.clear();
-		char echar = PPTFilter.getPunctuationPair((char) c);
+		char echar = PairPunctuationFilter.getPunctuationPair((char) c);
 		boolean matched = false;
 		int j, ch;
 

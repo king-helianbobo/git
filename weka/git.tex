@@ -117,7 +117,7 @@ mvn exec:java -Dexec.mainClass="org.ansj.liubo.test.test"
 \subsection{Building a Self-Contained Hadoop Job}
 \par Non-trivial Hadoop jobs usually have dependencies that go beyond those provided by the Hadoop runtime environment. That means, if your job needs additional libraries you have to make sure they are on Hadoop’s classpath as soon as the job is executed. This article shows how you can build a self-contained job JAR that contains all your dependencies.
 \par The Hadoop runtime environment expects additional dependencies inside a lib directory. That’s where we need Maven’s Assembly plugin: Using the plugin, we create a JAR that contains the project’s resources (usually just your job’s class files) and a lib directory with all dependencies that are not on Hadoop’s classpath already.
-\par First of all, we create an assembly descriptor file (put it in \textsl{\large src/main/assembly/hadoop-job.xml}). Note that we collect all dependencies on the runtime scope but exclude the project’s artifact. Instead, we add the artifact unpacked which is a little surprising. If we didn’t do that, Hadoop would look for our dependencies inside the project’s artifact JAR and not inside the surrounding assembly JAR's lib directory. For the whole mechanism to work, the class you set in your job driver via Job.setJarByClass() must be from your project, not from your dependencies.
+\par First of all, we create an assembly descriptor file (put it in {\color{red}src/main/assembly/hadoop-job.xml}). Note that we collect all dependencies on the runtime scope but exclude the project’s artifact. Instead, we add the artifact unpacked which is a little surprising. If we didn’t do that, Hadoop would look for our dependencies inside the project’s artifact JAR and not inside the surrounding assembly JAR's lib directory. For the whole mechanism to work, the class you set in your job driver via Job.setJarByClass() must be from your project, not from your dependencies.
 \begin{verbatim}
 <assembly>
   <id>job</id>
@@ -144,7 +144,7 @@ mvn exec:java -Dexec.mainClass="org.ansj.liubo.test.test"
   </dependencySets>
 </assembly>
 \end{verbatim}
-\par Inside the POM's dependency section, we set Hadoop to the \textsl{\large provided} scope，这样的话，Hadoop相关的jar包就不会包含进来了，但功能尚未经过测试。
+\par Inside the POM's dependency section, we set Hadoop to the {\color{red}provided} scope，这样的话，Hadoop相关的jar包就不会被打包。
 \begin{verbatim}
 <dependencies>
   <dependency>

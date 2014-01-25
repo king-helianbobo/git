@@ -38,7 +38,8 @@ if (job.getNumReduceTasks() == 0) {
 \item InputFormat，包含了RecordReader<KEYIN,VALUEIN>，InputSplit等信息，其中reader负责给Mapper提供K/V对,InputSplit定义了MapTask的输入数据源;
 \item OutputFormat，包含了OutputCommitter，RecordWriter<KEYOUT,VALUEOUT>等信息，writer负责写入Mapper或Reducer的计算结果;
 \item StatusReporter,JobID，TaskAttemptID等信息，还包括OutputCommitter，committer负责Task的一些清理工作，可以更多地与MapReduce执行交互;
-\item 新API调用\textbf{inputFormat.createRecordReader(split,taskContext);}旧API调用\textbf{job.getInputFormat().getRecordReader(split,job,reporter)}函数。
+\item 调用不同的RecordReader，Old API调用getRecordReader(InputSplit split, JobConf job, Reporter reporter)，New API调用createRecordReader(InputSplit split, TaskAttemptContext context)函数。
+\item 调用不同的RecordWriter，旧API调用getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress)函数，新API调用getRecordWriter(TaskAttemptContext context)函数。
 \end{itemize}
 \subsection{Hadoop中配置log4j}
 开发MapReduce作业时，使用System.out.print()方式和将日志输出到本地文件中比较麻烦，因此使用log4j库打印日志。但使用Hadoop库时，自己写的log4j.xml(或log4j.properties)文件会被MapReduce框架覆盖掉，从而不起作用，此时只能使用Hadoop提供的log4j.properties文件。在自己写的类的main()函数中，可以显式地加载log4j.xml或log4j.properties文件，代码为：\textbf{DOMConfigurator.configure("src/log4j.xml");}或者\textbf{PropertyConfigurator.configure("src/log4j.properties");}
@@ -86,7 +87,8 @@ protected void setup(Context context)
 \begin{verbatim}
 %c 输出日志信息所属类的全名
 %d 输出日志时间点，默认格式为ISO8601，也可以指定格式，比如：%d{yyyy-MM-dd HH:mm:ss}，输出类似：2013-10-18 22:10:28
-%l 输出日志事件的发生位置，包括类名、发生的线程，以及在代码中的行数，形如org.ansj.library.UserDefineLibrary.loadFile(UserDefineLibrary.java:165)。
+%l 输出日志事件的发生位置，包括类名、发生的线程，以及在代码中的行数
+形如org.soul.library.UserDefineLib.loadFile(UserDefineLib.java:165)
 %L 输出日志事件在代码中的行数。
 %m 输出代码中指定的信息，如log.info(message)中的message;
 %n 输出一个回车换行符，Windows平台为'\r\n'，Unix平台为'\n';

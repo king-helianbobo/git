@@ -161,14 +161,13 @@ public class SoulSpellChecker implements java.io.Closeable {
 			// final int lengthWord = word.length();
 			final int freq = (ir != null && field != null) ? ir
 					.docFreq(new Term(field, word)) : 0;
-			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR
-					? freq
+			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR ? freq
 					: 0;
 			// if the word exists in the real index and we don't care for word
 			// frequency, return the word itself
 			if (suggestMode == SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX
 					&& freq > 0) {
-				return new String[]{word};
+				return new String[] { word };
 			}
 
 			BooleanQuery query = new BooleanQuery();
@@ -357,7 +356,7 @@ public class SoulSpellChecker implements java.io.Closeable {
 				BytesRefIterator iter = dict.getWordsIterator();
 				BytesRef currentTerm;
 
-				terms : while ((currentTerm = iter.next()) != null) {
+				terms: while ((currentTerm = iter.next()) != null) {
 					String word = currentTerm.utf8ToString();
 					if ((word == null) || (word.equals("null"))
 							|| (word.equals("")))

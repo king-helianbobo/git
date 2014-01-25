@@ -59,7 +59,7 @@ public class JcsegTaskConfig {
 	public boolean CLEAR_STOPWORD = false;
 
 	/** chinese numeric to Arabic . */
-	public boolean CNNUM_TO_ARABIC = true;
+	public boolean CNNUM_TO_ARABIC = false;
 
 	/** chinese fraction to arabic fraction . */
 	public boolean CNFRA_TO_ARABIC = true;

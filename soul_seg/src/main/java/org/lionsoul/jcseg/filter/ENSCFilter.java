@@ -1,10 +1,5 @@
 package org.lionsoul.jcseg.filter;
 
-/**
- * a class to deal with the english stop char like the english punctuation. <br />
- * 
- * @author chenxin<chenxin619315@gmail.com>
- */
 public class ENSCFilter {
 	// type constants
 	public static final int EN_LETTER = 0;

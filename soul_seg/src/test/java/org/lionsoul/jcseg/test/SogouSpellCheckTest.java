@@ -17,6 +17,7 @@ import org.apache.lucene.util.Version;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.soul.elasticSearch.pinyin.JcSegment;
 import org.soul.elasticSearch.plugin.SoulSpellChecker;
 
 @Test
@@ -26,18 +27,25 @@ public class SogouSpellCheckTest {
 	private String inPath = "/mnt/f/tmp/SogouLabDic.dic";
 	String outPath = "/mnt/f/tmp/Sogou.dic";
 	private float accuracy = 0.8f;
+
+	private static JcSegment jcSeg = new JcSegment();
+
 	@BeforeClass
 	public void start() throws IOException {
-		Directory directory = null;
-
-		directory = new RAMDirectory(); // use ram directory
+		Directory directory = new RAMDirectory(); // use ram directory
 		IndexWriterConfig iwConfig = new IndexWriterConfig(
 				Version.LUCENE_CURRENT, null);
 		iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND); // set open mode
 		spellChecker = new SoulSpellChecker(directory);
+		spellChecker.setAccuracy(accuracy);
 		spellChecker.indexDictionary(
 				new PlainTextDictionary(new File(outPath)), iwConfig, false);
-		spellChecker.setAccuracy(accuracy);
+
+		// String[] strs = { "拳皇oua", "c超", "山陬海噬", "漂亮mm", "绿色和平", "五零四散",
+		// "绿脓杆菌" };
+		// String[] strs = { "一二三四五个", "五零四散" };
+		// for (String str : strs)
+		// log.info(jcSeg.convertToPinyin(str));
 	}
 
 	@AfterClass
@@ -49,6 +57,7 @@ public class SogouSpellCheckTest {
 			e.printStackTrace();
 		}
 	}
+
 	// @IgnoreTest
 	// @Test
 	// public void extractData() {
@@ -125,12 +134,13 @@ public class SogouSpellCheckTest {
 	public void test1() throws IOException {
 		log.info("I don't know what you said: ");
 	}
+
 	// @Ignore
 	@Test
 	public void sogouSpellcheck() {
 
 		int number = 10;
-		String[] queStrs = {"麻la将", "种植呵大", "关羽字云长", "麻辣ji翅"};
+		String[] queStrs = { "麻la将", "种植呵大", "关羽字云长", "麻辣ji翅" };
 		try {
 			for (String str : queStrs) {
 				log.info("I don't know what you said: " + str);
