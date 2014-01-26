@@ -33,12 +33,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
-import org.soul.elasticSearch.pinyin.JcSegment;
+import org.lionsoul.jcseg.JcSegment;
+import org.soul.utility.JcsegInstance;
 
 public class SoulSpellChecker implements java.io.Closeable {
 
 	private static Log log = LogFactory.getLog(SoulSpellChecker.class);
-	private static JcSegment jcSeg = new JcSegment();
+	private static JcSegment jcSeg = JcsegInstance.instance();
 	private float accuracy = -0.5f;
 	private static final String F_WORD = "word";
 	private static final String F_PINYIN = "soulPinyin";
@@ -174,8 +175,7 @@ public class SoulSpellChecker implements java.io.Closeable {
 			final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR
 					? freq
 					: 0;
-			// if the word exists in the real index and we don't care for word
-			// frequency, return the word itself
+
 			if (suggestMode == SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX
 					&& freq > 0) {
 				return new String[]{word};
@@ -197,7 +197,7 @@ public class SoulSpellChecker implements java.io.Closeable {
 				if (sugWord.string.equals(word)) {
 					continue;
 				}
-				// 获得编辑距离
+				// 获得编辑距离，当前编辑距离只考虑到拼音，还没有对汉字字符串的考虑
 				sugWord.score = sd.getDistance(word, sugWord.string);
 				float score = sd.getDistance(pinyin, sugWordPinyin);
 				sugWord.score = Math.max(sugWord.score, score);
@@ -224,7 +224,6 @@ public class SoulSpellChecker implements java.io.Closeable {
 			for (int i = list.length - 1; i >= 0; i -= 2) {
 				float suggestScore = sugQueue.top().score;
 				String suggestWord = sugQueue.top().string;
-				log.info(sugQueue.top().score + "," + sugQueue.top().string);
 				list[i] = String.valueOf(suggestScore);
 				list[i - 1] = suggestWord;
 				sugQueue.pop();

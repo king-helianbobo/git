@@ -1,4 +1,4 @@
-package org.soul.elasticSearch.pinyin;
+package org.soul.elasticSearch.plugin;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.elasticsearch.common.inject.Inject;

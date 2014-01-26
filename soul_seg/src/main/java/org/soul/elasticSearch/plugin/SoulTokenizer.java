@@ -5,16 +5,21 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.mortbay.log.Log;
+import org.elasticsearch.hadoop.util.StringUtils;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.splitWord.Analysis;
+import org.soul.utility.UserDefineLibrary;
 
 public class SoulTokenizer extends Tokenizer {
+
+	private static Log log = LogFactory.getLog(SoulTokenizer.class);
 	// current word
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 	// offset of current word
@@ -58,7 +63,12 @@ public class SoulTokenizer extends Tokenizer {
 				// do nothing
 			}
 			if (filter != null && filter.contains(name)) {
-				Log.info("name " + name + " is filtered!");
+				log.info("name " + name + " is filtered!");
+				position++; // must keep its position
+				continue;
+			} else if (!StringUtils.hasText(name)) {
+				// 如果字符串为连续空白，则忽略,但保留位置信息
+				log.info("name " + name + " is whitespace!");
 				position++; // must keep its position
 				continue;
 			} else {
@@ -76,7 +86,6 @@ public class SoulTokenizer extends Tokenizer {
 			return false;
 		}
 	}
-
 	// must override this method, otherwise it will be fail when batch
 	// processing index
 	@Override

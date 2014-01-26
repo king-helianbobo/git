@@ -3,13 +3,11 @@ package org.soul.elasticSearch.plugin;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.index.analysis.AnalysisModule;
-import org.soul.elasticSearch.pinyin.PinyinAnalyzerProvider;
 
-public class SoulAnalysisBinderProcessor
+public class SoulAnalysisBindProcessor
 		extends
 			AnalysisModule.AnalysisBinderProcessor {
-	private static Log log = LogFactory
-			.getLog(SoulAnalysisBinderProcessor.class);
+	private static Log log = LogFactory.getLog(SoulAnalysisBindProcessor.class);
 	@Override
 	public void processAnalyzers(AnalyzersBindings analyzersBindings) {
 		analyzersBindings.processAnalyzer("soul_index",
@@ -17,7 +15,7 @@ public class SoulAnalysisBinderProcessor
 		analyzersBindings.processAnalyzer("soul_query",
 				SoulQueryAnalyzerProvider.class);
 		analyzersBindings.processAnalyzer("soul_pinyin",
-				PinyinAnalyzerProvider.class);
+				SoulPinyinAnalyzerProvider.class);
 		super.processAnalyzers(analyzersBindings);
 	}
 }

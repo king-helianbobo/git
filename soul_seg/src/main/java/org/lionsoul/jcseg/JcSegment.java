@@ -1,4 +1,4 @@
-package org.soul.elasticSearch.pinyin;
+package org.lionsoul.jcseg;
 
 import java.io.*;
 

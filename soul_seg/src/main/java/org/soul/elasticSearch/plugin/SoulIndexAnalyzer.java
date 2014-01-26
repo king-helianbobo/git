@@ -10,8 +10,6 @@ import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.util.Version;
-import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
-import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;
 import org.soul.splitWord.BasicAnalysis;
 
 public class SoulIndexAnalyzer extends Analyzer {

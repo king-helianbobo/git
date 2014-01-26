@@ -1,4 +1,4 @@
-package org.soul.elasticSearch.pinyin;
+package org.soul.elasticSearch.plugin;
 
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.assistedinject.Assisted;
@@ -10,21 +10,22 @@ import org.elasticsearch.index.settings.IndexSettings;
 
 /**
  */
-public class PinyinAnalyzerProvider extends
-		AbstractIndexAnalyzerProvider<PinyinAnalyzer> {
+public class SoulPinyinAnalyzerProvider
+		extends
+			AbstractIndexAnalyzerProvider<SoulPinyinAnalyzer> {
 
-	private final PinyinAnalyzer analyzer;
+	private final SoulPinyinAnalyzer analyzer;
 
 	@Inject
-	public PinyinAnalyzerProvider(Index index,
+	public SoulPinyinAnalyzerProvider(Index index,
 			@IndexSettings Settings indexSettings, Environment env,
 			@Assisted String name, @Assisted Settings settings) {
 		super(index, indexSettings, name, settings);
-		analyzer = new PinyinAnalyzer(settings);
+		analyzer = new SoulPinyinAnalyzer(settings);
 	}
 
 	@Override
-	public PinyinAnalyzer get() {
+	public SoulPinyinAnalyzer get() {
 		return this.analyzer;
 	}
 }

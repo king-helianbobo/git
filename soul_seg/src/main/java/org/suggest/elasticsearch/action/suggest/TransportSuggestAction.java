@@ -99,14 +99,10 @@ public class TransportSuggestAction
 			tree.put(Float.valueOf(resultItems.get(i + 1)), resultItems.get(i));
 		}
 
-		log.info("total number = " + resultItems.size() + "[" + resultItems
-				+ "]");
+		// log.info("total number = " + resultItems.size() + "[" + resultItems
+		// + "]");
 		List<String> result = new LinkedList<String>();
 		Iterator<Float> it = tree.keySet().iterator();
-		while (it.hasNext()) {
-			log.info(tree.get(it.next()));
-		}
-		it = tree.keySet().iterator();
 		for (int i = 0; i < Math.min(tree.size(), request.size()); i++) {
 			if (it.hasNext())
 				result.add(tree.get(it.next()));

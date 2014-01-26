@@ -1,5 +1,7 @@
 package org.soul.elasticSearch.plugin;
 
+import static org.soul.utility.StaticVariable.LibraryLog;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,9 +21,10 @@ import org.elasticsearch.env.FailedToResolveConfigException;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
 import org.soul.splitWord.BasicAnalysis;
 import org.soul.treeSplit.IOUtil;
+import org.soul.treeSplit.LibraryToForest;
 import org.soul.utility.StaticVariable;
 
-public class SoulElasticStaticValue {
+public class ElasticSearchStaticVariable {
 	public static ESLogger logger = Loggers.getLogger("soul-analyzer");
 	private static boolean loaded = false;
 	public static Set<String> filter;
@@ -76,11 +79,15 @@ public class SoulElasticStaticValue {
 		}
 		File stopLibrary = new File(environment.configFile(), stopLibraryPath);
 		if (!stopLibrary.isFile()) {
-			logger.info("Can't find file:" + stopLibraryPath
-					+ ", no such file or directory exists!");
-			emptyFilter();
-			setLoaded(true);
-			return;
+			// 首先在config目录下寻找,如果不能找到，在classPath下寻找
+			stopLibrary = new File(stopLibraryPath);
+			if (!stopLibrary.isFile() || !stopLibrary.canRead()) {
+				logger.info("Can't find file:" + stopLibraryPath
+						+ ", no such file or directory exists!");
+				emptyFilter();
+				setLoaded(true);
+				return;
+			}
 		}
 		BufferedReader br;
 		try {
@@ -109,7 +116,7 @@ public class SoulElasticStaticValue {
 	}
 
 	public static void setLoaded(boolean loaded) {
-		SoulElasticStaticValue.loaded = loaded;
+		ElasticSearchStaticVariable.loaded = loaded;
 	}
 
 	// reload configuration file

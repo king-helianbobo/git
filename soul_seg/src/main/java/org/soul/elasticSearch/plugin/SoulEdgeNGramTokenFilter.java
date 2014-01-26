@@ -1,4 +1,4 @@
-package org.soul.elasticSearch.pinyin;
+package org.soul.elasticSearch.plugin;
 
 import java.io.IOException;
 

@@ -40,7 +40,7 @@ import org.elasticsearch.index.shard.AbstractIndexShardComponent;
 import org.elasticsearch.index.shard.IndexShardState;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.shard.service.IndexShard;
-import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
+import org.soul.elasticSearch.plugin.PinyinTokenFilter;
 import org.soul.elasticSearch.plugin.SoulSpellChecker;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshRequest;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshResponse;

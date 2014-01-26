@@ -1,4 +1,4 @@
-package org.soul.elasticSearch.pinyin;
+package org.soul.elasticSearch.plugin;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

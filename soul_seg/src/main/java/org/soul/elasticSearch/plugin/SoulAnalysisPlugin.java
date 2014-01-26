@@ -64,7 +64,7 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 	public void processModule(Module module) {
 		if (module instanceof AnalysisModule) {
 			AnalysisModule analysisModule = (AnalysisModule) module;
-			analysisModule.addProcessor(new SoulAnalysisBinderProcessor());
+			analysisModule.addProcessor(new SoulAnalysisBindProcessor());
 			analysisModule.addTokenFilter("file_watcher_synonym",
 					SynonymTokenFilterFactory.class);
 		}

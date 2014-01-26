@@ -12,22 +12,14 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.Version;
-import org.elasticsearch.common.Strings;
 import org.lionsoul.jcseg.pinyin.PinyinFormat;
 import org.lionsoul.jcseg.pinyin.PinyinHelper;
-import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
-import org.soul.elasticSearch.pinyin.PinyinTokenFilter;
-import org.soul.elasticSearch.pinyin.SoulEdgeNGramTokenFilter;
+import org.soul.elasticSearch.plugin.PinyinAnalyzer;
+import org.soul.elasticSearch.plugin.SoulPinyinAnalyzer;
+import org.soul.elasticSearch.plugin.PinyinTokenFilter;
+import org.soul.elasticSearch.plugin.SoulEdgeNGramTokenFilter;
 import org.soul.elasticSearch.plugin.SoulIndexAnalyzer;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.AfterSuite;
+import org.testng.annotations.*;
 
 public class NewPinyinTest {
 
@@ -35,8 +27,7 @@ public class NewPinyinTest {
 
 	String[] stopWords = {"and", "of", "the", "to", "is", "their", "can",
 			"all", "i", "in"};
-	String text = "沈从文 厦门 长春 长大";
-	Reader reader = new StringReader(text);
+
 	TokenStream result = null;
 
 	@Test
@@ -73,15 +64,17 @@ public class NewPinyinTest {
 	@Test
 	public void TestPinyinAnalyzer() {
 		Analyzer analyzer = new PinyinAnalyzer();
-		String text4 = "沈从文 兴业银行 中华人民共和国";
+		String text4 = "沈从文 兴业银行 中华人民共和国 mm";
 		analyze(analyzer, text4);
 	}
 	@Test
 	public void TestAnalyzer() {
+		String text1 = "沈从文 厦门 长春 长大";
+		Reader reader = new StringReader(text1);
 		result = new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
 		result = new PinyinTokenFilter(result);
 		result = new SoulEdgeNGramTokenFilter(result,
-				SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
+				SoulEdgeNGramTokenFilter.Side.FRONT, 2, 20);
 		OffsetAttribute offsetAttribute = result
 				.addAttribute(OffsetAttribute.class);
 		CharTermAttribute charTermAttribute = result

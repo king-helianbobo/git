@@ -1,7 +1,7 @@
 package org.soul.elasticSearch.plugin;
 
-import static org.soul.elasticSearch.plugin.SoulElasticStaticValue.filter;
-import static org.soul.elasticSearch.plugin.SoulElasticStaticValue.pstemming;
+import static org.soul.elasticSearch.plugin.ElasticSearchStaticVariable.filter;
+import static org.soul.elasticSearch.plugin.ElasticSearchStaticVariable.pstemming;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.elasticsearch.common.inject.Inject;

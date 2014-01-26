@@ -18,7 +18,7 @@ import org.apache.lucene.util.Version;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.soul.elasticSearch.pinyin.JcSegment;
+import org.lionsoul.jcseg.JcSegment;
 import org.soul.elasticSearch.plugin.SoulSpellChecker;
 
 @Test

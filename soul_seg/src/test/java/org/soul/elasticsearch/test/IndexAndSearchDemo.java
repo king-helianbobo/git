@@ -6,6 +6,7 @@ import java.util.Map;
 
 //import opensource.analyzer.lucene.IKAnalyzer4PinYin;
 
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.document.Document;
@@ -30,7 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-import org.soul.elasticSearch.pinyin.PinyinAnalyzer;
+import org.soul.elasticSearch.plugin.SoulPinyinAnalyzer;
 import org.soul.elasticSearch.plugin.SoulIndexAnalyzer;
 
 public class IndexAndSearchDemo {
@@ -47,7 +48,7 @@ public class IndexAndSearchDemo {
 		// 实例化IKAnalyzer分词器
 		// 使用PerFieldAnalyzerWrapper可以对不同的field使用不同的分词器
 		Map<String, Analyzer> analyzerMap = new HashMap<String, Analyzer>();
-		analyzerMap.put(quanpin, new PinyinAnalyzer());
+		analyzerMap.put(quanpin, new SoulPinyinAnalyzer());
 		// analyzerMap.put(shouzimu, new IKAnalyzer4PinYin(false,
 		// IKAnalyzer4PinYin.PINYIN_SHOUZIMU));
 		PerFieldAnalyzerWrapper wrapper = new PerFieldAnalyzerWrapper(
