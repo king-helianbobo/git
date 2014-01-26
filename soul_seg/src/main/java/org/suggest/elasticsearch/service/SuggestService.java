@@ -2,6 +2,8 @@ package org.suggest.elasticsearch.service;
 
 import java.util.Iterator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -22,7 +24,7 @@ import org.suggest.elasticsearch.action.refresh.SuggestRefreshRequest;
 import org.suggest.elasticsearch.action.refresh.TransportSuggestRefreshAction;
 
 public class SuggestService extends AbstractLifecycleComponent<SuggestService> {
-
+	private static Log log = LogFactory.getLog(SuggestService.class);
 	private final TimeValue suggestRefreshInterval; // 更新间隔
 	private final boolean suggestRefreshDisabled; // 是否关闭更新
 	private volatile Thread suggestUpdaterThread;
@@ -42,7 +44,7 @@ public class SuggestService extends AbstractLifecycleComponent<SuggestService> {
 		suggestRefreshDisabled = settings.getAsBoolean(
 				"suggest.refresh_disabled", false);
 		suggestRefreshInterval = settings.getAsTime("suggest.refresh_interval",
-				TimeValue.timeValueMinutes(10));
+				TimeValue.timeValueMinutes(20));
 	}
 
 	@Override

@@ -61,7 +61,6 @@ public class HttpClientTest {
 	private RestClient client;
 	private Settings settings;
 	TransportClient transportClient;
-
 	private String indexName = "soul_test";
 	private String typeName = "test1";
 

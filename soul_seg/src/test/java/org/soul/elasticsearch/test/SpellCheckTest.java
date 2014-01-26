@@ -15,10 +15,10 @@ import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
 import org.soul.elasticSearch.plugin.SoulSpellChecker;
 
-public class spellCheckTest {
-	private static Log log = LogFactory.getLog(spellCheckTest.class);
+public class SpellCheckTest {
+	private static Log log = LogFactory.getLog(SpellCheckTest.class);
 	private SoulSpellChecker spellChecker = null;
-	public spellCheckTest(String dictionary) {
+	public SpellCheckTest(String dictionary) {
 		Directory directory = null;
 		try {
 			directory = new RAMDirectory(); // use ram directory
@@ -33,7 +33,7 @@ public class spellCheckTest {
 		}
 	}
 
-	public spellCheckTest(String spellCheckIndexPath, String dicPath) {
+	public SpellCheckTest(String spellCheckIndexPath, String dicPath) {
 		Directory directory;
 		try {
 			directory = FSDirectory.open(new File(spellCheckIndexPath));
@@ -92,7 +92,7 @@ public class spellCheckTest {
 		String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
 		scanDictionary(dictionaryPath);
 		// spellCheck checker = new spellCheck(spellIndexPath, dictionaryPath);
-		spellCheckTest checker = new spellCheckTest(dictionaryPath);
+		SpellCheckTest checker = new SpellCheckTest(dictionaryPath);
 		checker.setAccuracy(0.9f);
 		int suggestionsNumber = 15;
 		// String queryString = "麻辣将";

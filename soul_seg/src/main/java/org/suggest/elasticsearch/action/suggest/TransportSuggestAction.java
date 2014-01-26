@@ -2,9 +2,11 @@ package org.suggest.elasticsearch.action.suggest;
 
 import static org.elasticsearch.common.collect.Lists.*;
 
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
@@ -31,7 +33,7 @@ public class TransportSuggestAction
 			TransportBroadcastOperationAction<SuggestRequest, SuggestResponse, ShardSuggestRequest, ShardSuggestResponse> {
 
 	private final IndicesService indicesService; // we need indicesService
-
+	private static Log log = LogFactory.getLog(TransportSuggestAction.class);
 	@Inject
 	public TransportSuggestAction(Settings settings, ThreadPool threadPool,
 			ClusterService clusterService, TransportService transportService,
@@ -84,15 +86,35 @@ public class TransportSuggestAction
 				successfulShards++;
 			}
 		}
-		List<String> resultItems = ImmutableSortedSet.copyOf(items).asList();
+		List<String> resultItems = items;
+		// List<String> resultItems = ImmutableSortedSet.copyOf(items).asList();
+		TreeMap<Float, String> tree = new TreeMap<Float, String>(
+				new Comparator<Float>() {
+					public int compare(Float o1, Float o2) {
+						return o2.compareTo(o1);
+					}
+				});
 
+		for (int i = 0; i < resultItems.size(); i += 2) {
+			tree.put(Float.valueOf(resultItems.get(i + 1)), resultItems.get(i));
+		}
+
+		log.info("total number = " + resultItems.size() + "[" + resultItems
+				+ "]");
+		List<String> result = new LinkedList<String>();
+		Iterator<Float> it = tree.keySet().iterator();
+		while (it.hasNext()) {
+			log.info(tree.get(it.next()));
+		}
+		it = tree.keySet().iterator();
+		for (int i = 0; i < Math.min(tree.size(), request.size()); i++) {
+			if (it.hasNext())
+				result.add(tree.get(it.next()));
+		}
 		// number of items at most request.size()
-		return new SuggestResponse(resultItems.subList(0,
-				Math.min(resultItems.size(), request.size())),
-				shardsResponses.length(), successfulShards, failedShards,
-				shardFailures);
+		return new SuggestResponse(result, shardsResponses.length(),
+				successfulShards, failedShards, shardFailures);
 	}
-
 	@Override
 	protected ShardSuggestRequest newShardRequest() {
 		return new ShardSuggestRequest();

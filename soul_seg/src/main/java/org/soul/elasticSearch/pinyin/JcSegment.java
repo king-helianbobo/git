@@ -27,7 +27,7 @@ public class JcSegment {
 		ADictionary dic = DictionaryFactory.createDefaultDictionary(config);
 		try {
 			seg = SegmentFactory.createJcseg(JcsegTaskConfig.COMPLEX_MODE,
-					new Object[] { config, dic });
+					new Object[]{config, dic});
 		} catch (JcsegException e) {
 			e.printStackTrace();
 		}
@@ -36,7 +36,6 @@ public class JcSegment {
 
 	// turn Chinese chars to pinyin
 	public String convertToPinyin(String text) throws IOException {
-		// log.info("单词 = " + text);
 		Reader reader = new StringReader(text);
 		return convertToPinyin(reader, text);
 	}
@@ -57,7 +56,7 @@ public class JcSegment {
 	 */
 	public String convertToPinyin(Reader reader, String text)
 			throws IOException {
-		synchronized (this) {
+		synchronized (this) { // 同步一次，确保不同线程彼此隔离
 			StringBuffer sb = new StringBuffer();
 			IStringBuffer isb = new IStringBuffer();
 			IWord word = null;
@@ -92,8 +91,8 @@ public class JcSegment {
 				if (!str.equals(""))
 					isb.append(str);
 			}
-			log.info(text + " ,拼音= " + sb.toString() + "[" + isb.toString()
-					+ "]");
+			// log.info(text + " ,拼音= " + sb.toString() + "[" + isb.toString()
+			// + "]");
 			return isb.toString();
 		}
 	}

@@ -93,8 +93,8 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 						// return new HighFrequencyDictionary(
 						// createOrGetIndexReader(), field, 0.00001f);
 						return new HighFrequencyDictionary(
-								createOrGetIndexReader(), field, 0); // at least
-																		// once
+								createOrGetIndexReader(), field, 0);
+						// at least once
 					}
 				});
 
@@ -266,8 +266,10 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 	}
 
 	public ShardSuggestResponse suggest(ShardSuggestRequest shardSuggestRequest) {
-		List<String> suggestions = Lists
-				.newArrayList(getSuggestions(shardSuggestRequest));
+		// List<String> suggestions = Lists
+		// .newArrayList(getSuggestions(shardSuggestRequest));
+		List<String> suggestions = this.getSuggestionList(shardSuggestRequest);
+		log.info("At this shard , suggestions = " + suggestions);
 		return new ShardSuggestResponse(shardId.index().name(), shardId.id(),
 				suggestions);
 	}
@@ -278,18 +280,15 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		String term = shardSuggestRequest.term();
 		Integer limit = shardSuggestRequest.size();
 		Float similarity = shardSuggestRequest.similarity();
-
 		try {
 			String[] suggestSimilar = spellCheckerCache.getUnchecked(field)
 					.suggestSimilar(term, limit, similarity);
-
 			return Arrays.asList(suggestSimilar);
 		} catch (IOException e) {
 			logger.error(
 					"Error getting spellchecker suggestions for shard [{}] field [{}] term [{}] limit [{}] similarity [{}]",
 					e, shardId, field, term, limit, similarity);
 		}
-
 		return Collections.emptyList();
 	}
 
@@ -297,7 +296,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			ShardSuggestRequest shardSuggestRequest) {
 		List<LookupResult> lookupResults = Lists.newArrayList();
 		if ("full".equals(shardSuggestRequest.suggestType())) {
-			// full represent what?
 			AnalyzingSuggester analyzingSuggester = analyzingSuggesterCache
 					.getUnchecked(new FieldType(shardSuggestRequest));
 			lookupResults.addAll(analyzingSuggester.lookup(
@@ -305,12 +303,18 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 					shardSuggestRequest.size()));
 
 		} else if ("fuzzy".equals(shardSuggestRequest.suggestType())) {
-			// TODO: support for multiple types here
 			lookupResults.addAll(fuzzySuggesterCache.getUnchecked(
 					new FieldType(shardSuggestRequest)).lookup(
 					shardSuggestRequest.term(), false,
 					shardSuggestRequest.size()));
 
+		} else if ("soul".equals(shardSuggestRequest.suggestType())) {
+			Collection<String> suggestions = new ArrayList<String>();
+			float similarity = shardSuggestRequest.similarity();
+			if (similarity <= 1.0f) {
+				suggestions.addAll(getSimilarSuggestions(shardSuggestRequest));
+			}
+			return suggestions;
 		} else {
 			// lookupResults.addAll(lookupCache.getUnchecked(
 			// shardSuggestRequest.field()).lookup(
@@ -318,18 +322,25 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			// shardSuggestRequest.size() + 1));
 			// Collection<String> suggestions = Collections2.transform(
 			// lookupResults, new LookupResultToStringFunction());
-			Collection<String> suggestions = new ArrayList<String>();
-			float similarity = shardSuggestRequest.similarity();
-
-			if (similarity <= 1.0f) {
-				suggestions.addAll(getSimilarSuggestions(shardSuggestRequest));
-			}
-
-			return suggestions;
 		}
 
 		return Collections2.transform(lookupResults,
 				new LookupResultToStringFunction());
+	}
+
+	private List<String> getSuggestionList(
+			ShardSuggestRequest shardSuggestRequest) {
+		if ("soul".equals(shardSuggestRequest.suggestType())) {
+			List<String> suggestions = new ArrayList<String>();
+			float similarity = shardSuggestRequest.similarity();
+			if (similarity <= 1.0f) {
+				suggestions.addAll(getSimilarSuggestions(shardSuggestRequest));
+			}
+			return suggestions;
+		} else {
+			// do nothing
+		}
+		return null;
 	}
 
 	private class LookupResultToStringFunction
@@ -349,7 +360,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			currentIndexReader = currentIndexSearcher.reader();
 			currentIndexSearcher.release();
 		}
-
 		// if this index reader is not used in the current index searcher, we
 		// need to decrease the old refcount
 		if (indexReader != null && indexReader.getRefCount() > 0
