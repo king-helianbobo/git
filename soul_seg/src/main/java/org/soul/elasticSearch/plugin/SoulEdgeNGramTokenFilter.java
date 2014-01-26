@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * 
@@ -75,6 +76,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+	private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
 	/**
 	 * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of
@@ -161,7 +163,14 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 					tokStart = offsetAtt.startOffset();
 				}
 			}
-			if (curGramSize <= maxGram) { // current gram length
+			if (typeAtt.type().equalsIgnoreCase("SYNONYM")) {
+				clearAttributes();
+				offsetAtt.setOffset(tokStart + 0, tokStart + curTermLength);
+				termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
+				typeAtt.setType("SYNONYM");
+				curTermBuffer = null;
+				return true;
+			} else if (curGramSize <= maxGram) { // current gram length
 				if (curGramSize >= curTermLength) {
 					// if remaining input is too short, still generate
 					clearAttributes();
@@ -200,9 +209,11 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 					}
 				}
 			}
+
 			curTermBuffer = null;
 		}
 	}
+
 	@Override
 	public void reset() throws IOException {
 		super.reset();

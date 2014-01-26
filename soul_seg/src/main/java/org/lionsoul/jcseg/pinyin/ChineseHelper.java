@@ -98,4 +98,21 @@ public class ChineseHelper {
 		String regex = "[\\u4e00-\\u9fa5]";
 		return String.valueOf(c).matches(regex);
 	}
+
+	/**
+	 * 
+	 * 判断某个字符串是否包含汉字
+	 * 
+	 * @param c
+	 *            需要判断的字符
+	 * @return 是汉字返回true，否则返回false
+	 */
+	public static boolean containChineseChar(String str) {
+		for (int i = 0, len = str.length(); i < len; i++) {
+			char c = str.charAt(i);
+			if (isChinese(c))
+				return true;
+		}
+		return false;
+	}
 }

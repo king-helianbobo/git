@@ -252,7 +252,6 @@ public class PinyinHelper {
 		char[] charArray = new char[str.length()];
 		for (int i = 0, len = str.length(); i < len; i++) {
 			char c = str.charAt(i);
-
 			// 首先判断是否为汉字或者〇，不是的话直接将该字符返回
 			if (!ChineseHelper.isChinese(c) && c != '〇') {
 				charArray[i] = c;

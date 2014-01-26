@@ -31,14 +31,14 @@ public class SoulPinyinAnalyzer extends Analyzer {
 			Reader reader) {
 		Tokenizer tokenizer = new SoulTokenizer(new BasicAnalysis(reader),
 				reader, ElasticSearchStaticVariable.filter, false);
-		// 先进行soul分词，然后对每个Term再进行转换
+		// 先进行soul分词，然后对每个Term进行转换
 		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
 				tokenizer);
 		result = new PinyinTokenFilter(result);
-		// result = new SoulEdgeNGramTokenFilter(result,
-		// SoulEdgeNGramTokenFilter.Side.FRONT, 1, 20);
 		result = new SoulEdgeNGramTokenFilter(result,
-				SoulEdgeNGramTokenFilter.Side.TWOSIDE, 2);
+				SoulEdgeNGramTokenFilter.Side.FRONT, 2);
+		// result = new SoulEdgeNGramTokenFilter(result,
+		// SoulEdgeNGramTokenFilter.Side.TWOSIDE, 2);
 		return new TokenStreamComponents(tokenizer, result);
 	}
 }
