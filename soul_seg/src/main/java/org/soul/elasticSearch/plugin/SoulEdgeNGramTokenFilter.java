@@ -66,6 +66,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	private int curTermLength;
 	private int curGramSize;
 	private int tokStart;
+	private int tokenEnd;
 
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -152,6 +153,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 					System.arraycopy(termAtt.buffer(), 0, curTermBuffer, 0,
 							curTermLength);
 					tokStart = offsetAtt.startOffset();
+					tokenEnd = offsetAtt.endOffset();
 					if (typeAtt.type().equalsIgnoreCase(
 							PinyinTokenFilter.TYPE_HANZI)) {
 						curGramSize = 1;
@@ -170,7 +172,9 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 				if (curGramSize >= curTermLength) {
 					// if remaining input is too short, still generate
 					clearAttributes();
-					offsetAtt.setOffset(tokStart + 0, tokStart + curTermLength);
+					offsetAtt.setOffset(tokStart, tokenEnd);
+					// offsetAtt.setOffset(tokStart + 0, tokStart +
+					// curTermLength);
 					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
 					typeAtt.setType(type);
 					posAtt.setPositionIncrement(position);
@@ -182,7 +186,9 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 								- curGramSize;
 						int end = start + curGramSize;
 						clearAttributes();
-						offsetAtt.setOffset(tokStart + start, tokStart + end);
+						offsetAtt.setOffset(tokStart, tokenEnd);
+						// offsetAtt.setOffset(tokStart + start, tokStart +
+						// end);
 						termAtt.copyBuffer(curTermBuffer, start, curGramSize);
 						typeAtt.setType(type);
 						posAtt.setPositionIncrement(position);
@@ -193,15 +199,18 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 						int backEnd = backStart + curGramSize;
 						clearAttributes();
 						if (isFront) {
-							offsetAtt.setOffset(tokStart, tokStart
-									+ curGramSize);
+							// offsetAtt.setOffset(tokStart, tokStart
+							// + curGramSize);
+							offsetAtt.setOffset(tokStart, tokenEnd);
 							termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
 							typeAtt.setType(type);
 							posAtt.setPositionIncrement(position);
 							isFront = false;
 						} else {
-							offsetAtt.setOffset(tokStart + backStart, tokStart
-									+ backEnd);
+							offsetAtt.setOffset(tokStart, tokenEnd);
+							// offsetAtt.setOffset(tokStart + backStart,
+							// tokStart
+							// + backEnd);
 							termAtt.copyBuffer(curTermBuffer, backStart,
 									curGramSize);
 							typeAtt.setType(type);
@@ -216,6 +225,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 			curTermBuffer = null;
 		}
 	}
+
 	@Override
 	public void reset() throws IOException {
 		super.reset();

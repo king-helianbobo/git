@@ -31,6 +31,7 @@ public class SoulTokenizer extends Tokenizer {
 	private Set<String> filter = null; // stop words
 	private boolean bStem = false;
 	private final PorterStemmer stemmer = new PorterStemmer();
+
 	// English word stemming
 
 	public SoulTokenizer(Analysis ta, Reader input, Set<String> filter,
@@ -64,7 +65,7 @@ public class SoulTokenizer extends Tokenizer {
 				// do nothing
 			}
 			if (filter != null && filter.contains(name)) {
-				log.info("name " + name + " is filtered!");
+				// log.info("name " + name + " is filtered!");
 				if (numWhiteSpace > 0) {
 					position++;
 					numWhiteSpace = 0;
@@ -96,6 +97,7 @@ public class SoulTokenizer extends Tokenizer {
 			return false;
 		}
 	}
+
 	// must override this method, otherwise it will be fail when batch
 	// processing index
 	@Override

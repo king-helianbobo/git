@@ -20,6 +20,7 @@ public class PinyinTokenFilter extends TokenFilter {
 	private static Log log = LogFactory.getLog(PinyinTokenFilter.class);
 	private int totalNumber = 1; // number of to be convert
 	private int tokenStart;
+	private int tokenEnd;
 	private int position = 1;
 	private int curNumber = 0;
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -61,22 +62,22 @@ public class PinyinTokenFilter extends TokenFilter {
 							curTermLength);
 					originalToken = new String(curTermBuffer);
 					position = posAtt.getPositionIncrement();
-					log.info("position = " + position);
+					// log.info("position = " + position);
 					totalNumber = 1;
 					if (ChineseHelper.containChineseChar(originalToken)) {
 						// if not include Chinese chars, no need get Pinyin
 						Reader reader = new StringReader(originalToken);
 						pinyin = seg.convertToPinyin(reader);
 						totalNumber += 1;
-						log.info("text =  " + originalToken + ", pinyin = "
-								+ pinyin);
+						// log.info("text =  " + originalToken + ", pinyin = "
+						// + pinyin);
 					} else {
 						pinyin = null;
 					}
 					if (synonymTree != null) {
 						List<String> list = synonymTree.get(originalToken);
 						if (list != null) {
-							log.info("originalToken is " + originalToken);
+							// log.info("originalToken is " + originalToken);
 							// needSynonymConv = true;
 							totalNumber += (list.size());
 							synonymList = new LinkedList<String>();
@@ -88,14 +89,16 @@ public class PinyinTokenFilter extends TokenFilter {
 						synonymList = null;
 					}
 					tokenStart = offsetAtt.startOffset();
+					tokenEnd = offsetAtt.endOffset();
 					curNumber = 0; // first time we get equivalent Term
 				}
 			}
 			if (curNumber < totalNumber) {
 				if (curNumber == 0) {
 					clearAttributes();
-					offsetAtt.setOffset(tokenStart,
-							tokenStart + originalToken.length());
+					// offsetAtt.setOffset(tokenStart,
+					// tokenStart + originalToken.length());
+					offsetAtt.setOffset(tokenStart, tokenEnd);
 					termAtt.append(originalToken);
 					posAtt.setPositionIncrement(position);
 					if (pinyin == null)
@@ -104,8 +107,9 @@ public class PinyinTokenFilter extends TokenFilter {
 						typeAtt.setType(TYPE_HANZI);
 				} else if (pinyin != null) {
 					clearAttributes();
-					offsetAtt.setOffset(tokenStart,
-							tokenStart + originalToken.length());
+					// offsetAtt.setOffset(tokenStart,
+					// tokenStart + originalToken.length());
+					offsetAtt.setOffset(tokenStart, tokenEnd);
 					// log.info(text + "," + pinyin);
 					termAtt.copyBuffer(pinyin.toCharArray(), 0, pinyin.length());
 					typeAtt.setType(TYPE_PINYIN);
@@ -113,12 +117,14 @@ public class PinyinTokenFilter extends TokenFilter {
 					pinyin = null;
 				} else if (synonymList != null) {
 					clearAttributes();
-					offsetAtt.setOffset(tokenStart,
-							tokenStart + originalToken.length());
+					// offsetAtt.setOffset(tokenStart,
+					// tokenStart + originalToken.length());
+					offsetAtt.setOffset(tokenStart, tokenEnd);
 					String text = synonymList.remove(0);
 					termAtt.append(text);
 					typeAtt.setType(TYPE_SYNONYM);
 					posAtt.setPositionIncrement(position);
+					log.info("Synonym Token is [ " + text + " ]");
 
 					if (synonymList.size() == 0)
 						synonymList = null;
@@ -129,6 +135,7 @@ public class PinyinTokenFilter extends TokenFilter {
 				originalToken = null;
 		}
 	}
+
 	@Override
 	public void reset() throws IOException {
 		super.reset();

@@ -42,5 +42,41 @@ curl -XPOST http://localhost:9200/test/_search?pretty=true  -d '{
         "term": {
             "content": "沈从"
         }
-    }
+    },
+     "highlight" : {
+        "pre_tags" : ["<tag1>", "<tag2>"],
+        "post_tags" : ["</tag1>", "</tag2>"],
+        "fields" : {
+            "content" : {}
+        }
+     }
+}'
+
+
+
+curl -XPOST http://localhost:9200/soul_test/test1/_search?pretty  -d '{
+    "query" : { "term" : { "content" : "许文强" }},
+     "highlight" : {
+        "pre_tags" : ["<tag1>", "<tag2>"],
+        "post_tags" : ["</tag1>", "</tag2>"],
+        "fields" : {
+            "content" : {}
+        }
+     }
+}'
+
+
+curl -XPOST http://localhost:9200/pinyin_test/_search?pretty=true  -d '{
+    "query": {
+        "term": {
+            "title": "chao"
+        }
+    },
+     "highlight" : {
+        "pre_tags" : ["<tag1>"],
+        "post_tags" : ["</tag1>"],
+        "fields" : {
+            "title" : {}
+        }
+     }
 }'
