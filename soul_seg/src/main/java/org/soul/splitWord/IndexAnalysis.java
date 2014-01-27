@@ -10,7 +10,7 @@ import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
-import org.soul.utility.StaticVariable;
+import org.soul.utility.StaticVarForSegment;
 
 public class IndexAnalysis extends Analysis {
 
@@ -34,10 +34,10 @@ public class IndexAnalysis extends Analysis {
 			@Override
 			public List<Term> merge() {
 				graph.walkPath();
-				if (StaticVariable.allowNumRecognize)
+				if (StaticVarForSegment.allowNumRecognize)
 					NumberRecognition.recognition(graph.terms);
 
-				if (StaticVariable.allowNameRecognize)
+				if (StaticVarForSegment.allowNameRecognize)
 					new AsianNameRecognition(graph.terms).recognition();
 
 				if (forests == null) {

@@ -76,7 +76,6 @@ public class SoulTokenizer extends Tokenizer {
 				flag = false;
 			}
 		} while (flag);
-
 		if (term != null) {
 			positionAttr.setPositionIncrement(position);
 			termAtt.setEmpty().append(term.getName());

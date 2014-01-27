@@ -44,7 +44,7 @@ public class NatureLibrary {
 	private static void init() throws IOException {
 		String split = "\t";
 		// 加载词对照性表
-		BufferedReader reader = StaticVariable.getNatureMapReader();
+		BufferedReader reader = StaticVarForSegment.getNatureMapReader();
 		String temp = null;
 		String[] strs = null;
 		int maxLength = 0;
@@ -66,7 +66,7 @@ public class NatureLibrary {
 
 		// 加载词性关系，词性关系是做什么的？
 		NATURETABLE = new int[maxLength + 1][maxLength + 1];
-		reader = StaticVariable.getNatureTableReader();
+		reader = StaticVarForSegment.getNatureTableReader();
 		int j = 0;
 		while ((temp = reader.readLine()) != null) {
 			if (StringUtil.isBlank(temp))

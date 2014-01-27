@@ -13,7 +13,7 @@ import org.soul.recognition.ForeignNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
-import org.soul.utility.StaticVariable;
+import org.soul.utility.StaticVarForSegment;
 import org.soul.utility.UserDefineLibrary;
 
 public class BasicAnalysis extends Analysis {
@@ -28,7 +28,7 @@ public class BasicAnalysis extends Analysis {
 			public List<Term> merge() {
 				// 先进行人名识别，然后再数字识别，因为某些姓名中含有数字（例如三本五十六）
 				graph.walkPath();// construct optimal path
-				if (graph.hasPerson && StaticVariable.allowNameRecognize) {
+				if (graph.hasPerson && StaticVarForSegment.allowNameRecognize) {
 					new AsianNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 					AsianNameRecognition.nameAmbiguity(graph.terms);

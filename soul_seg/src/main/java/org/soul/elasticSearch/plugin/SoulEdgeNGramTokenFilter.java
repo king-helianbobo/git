@@ -1,19 +1,12 @@
 package org.soul.elasticSearch.plugin;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-/**
- * 
- * This {@link org.apache.lucene.analysis.Tokenizer} is copied and modified from
- * {@link org.apache.lucene.analysis.EdgeNGramTokenFilter} to accept term with
- * length less then minimum-gram
- */
 public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	public static final Side DEFAULT_SIDE = Side.FRONT;
 	public static final int DEFAULT_MAX_GRAM_SIZE = 1;
@@ -119,14 +112,12 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 			throw new IllegalArgumentException(
 					"sideLabel must be either front or back");
 		}
-
 		if (minGram < 1) {
 			throw new IllegalArgumentException(
 					"minGram must be greater than zero");
 		}
-
 		this.minGram = minGram;
-		this.maxGram = 1000 * 100 * 100;
+		this.maxGram = 1000 * 1000 * 100; // no limit
 		this.side = side;
 	}
 
@@ -159,23 +150,27 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 					curTermBuffer = new char[curTermLength];
 					System.arraycopy(termAtt.buffer(), 0, curTermBuffer, 0,
 							curTermLength);
-					curGramSize = minGram;
 					tokStart = offsetAtt.startOffset();
+					if (typeAtt.type().equalsIgnoreCase(
+							PinyinTokenFilter.TYPE_HANZI)) {
+						curGramSize = 1;
+						// set minimum Chinese characters to 1
+					} else if (typeAtt.type().equalsIgnoreCase(
+							PinyinTokenFilter.TYPE_SYNONYM)) {
+						curGramSize = curTermLength;
+						// synonym word not convert to EdgeNGram format
+					} else
+						curGramSize = minGram;
 				}
 			}
-			if (typeAtt.type().equalsIgnoreCase("SYNONYM")) {
-				clearAttributes();
-				offsetAtt.setOffset(tokStart + 0, tokStart + curTermLength);
-				termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
-				typeAtt.setType("SYNONYM");
-				curTermBuffer = null;
-				return true;
-			} else if (curGramSize <= maxGram) { // current gram length
+			if (curGramSize <= maxGram) { // current gram length
+				String type = typeAtt.type();
 				if (curGramSize >= curTermLength) {
 					// if remaining input is too short, still generate
 					clearAttributes();
 					offsetAtt.setOffset(tokStart + 0, tokStart + curTermLength);
 					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
+					typeAtt.setType(type);
 					curTermBuffer = null;
 					return true;
 				} else {
@@ -186,6 +181,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 						clearAttributes();
 						offsetAtt.setOffset(tokStart + start, tokStart + end);
 						termAtt.copyBuffer(curTermBuffer, start, curGramSize);
+						typeAtt.setType(type);
 						curGramSize++;
 						return true;
 					} else {
@@ -196,12 +192,14 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 							offsetAtt.setOffset(tokStart, tokStart
 									+ curGramSize);
 							termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
+							typeAtt.setType(type);
 							isFront = false;
 						} else {
 							offsetAtt.setOffset(tokStart + backStart, tokStart
 									+ backEnd);
 							termAtt.copyBuffer(curTermBuffer, backStart,
 									curGramSize);
+							typeAtt.setType(type);
 							isFront = true;
 							curGramSize++;
 						}
@@ -209,11 +207,9 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 					}
 				}
 			}
-
 			curTermBuffer = null;
 		}
 	}
-
 	@Override
 	public void reset() throws IOException {
 		super.reset();

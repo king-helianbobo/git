@@ -6,7 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.treeSplit.*;
 
-import static org.soul.utility.StaticVariable.LibraryLog;
+import static org.soul.utility.StaticVarForSegment.LibraryLog;
 
 public class UserDefineLibrary {
 	private static Log log = LogFactory.getLog(UserDefineLibrary.class);
@@ -77,7 +77,7 @@ public class UserDefineLibrary {
 	 * load ambiguity sentence library
 	 */
 	private static void initAmbiguityLibrary() {
-		String ambiguityLibrary = StaticVariable.ambiguityLibrary;
+		String ambiguityLibrary = StaticVarForSegment.ambiguityLibrary;
 		if (StringUtil.isBlank(ambiguityLibrary)) {
 			LibraryLog.warn("init ambiguity  waring :" + ambiguityLibrary
 					+ " because : not find that file or can not to read !");
@@ -104,7 +104,7 @@ public class UserDefineLibrary {
 	private static void initUserLibrary() {
 		try {
 			userDefineForest = new Forest();
-			String userLibrary = StaticVariable.userLibrary;
+			String userLibrary = StaticVarForSegment.userLibrary;
 			loadLibrary(userDefineForest, userLibrary);
 		} catch (Exception e) {
 			e.printStackTrace();

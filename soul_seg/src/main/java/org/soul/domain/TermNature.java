@@ -1,7 +1,7 @@
 package org.soul.domain;
 
 import org.soul.utility.NatureLibrary;
-import org.soul.utility.StaticVariable;
+import org.soul.utility.StaticVarForSegment;
 
 public class TermNature {
 

@@ -28,7 +28,7 @@ public class NewWordAttrLib {
 		BufferedReader br = null;
 		try {
 			nwMap = new HashMap<String, NewWordNature>();
-			br = StaticVariable.getNewWordReader();
+			br = StaticVarForSegment.getNewWordReader();
 			String temp = null;
 			String[] strs = null;
 			NewWordNature nna = null;

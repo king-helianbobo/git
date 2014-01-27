@@ -1,8 +1,7 @@
 package org.soul.elasticSearch.plugin;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
+import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -13,52 +12,78 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.lionsoul.jcseg.JcSegment;
 import org.lionsoul.jcseg.pinyin.ChineseHelper;
-import org.soul.splitWord.BasicAnalysis;
 import org.soul.utility.JcsegInstance;
 
 public class PinyinTokenFilter extends TokenFilter {
 
 	private static Log log = LogFactory.getLog(PinyinTokenFilter.class);
-
-	private char[] curTermBuffer;
-	private int curTermLength;
-	private int curNumber = 0; // 0 is Chinese term,1 is Chinese pinyin
-	private int totalNumber = 3; // 需要转换几次，默认是3次
-	private boolean needPinyinConv = true;
-	private boolean needSynonymConv = true;
+	private int totalNumber = 1; // number of to be convert
+	// private boolean needPinyinConv = false;
+	// private boolean needSynonymConv = false;
 	private int tokenStart;
-	private static JcSegment seg = JcsegInstance.instance();
+	private int curNumber = 0; // 0 is Chinese term,1 is Chinese pinyin
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 	private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-	public static final String TYPE_SYNONYM = "SYNONYM";
+	public static final String TYPE_SYNONYM = "SOUL_SYNONYM";
+	public static final String TYPE_PINYIN = "SOUL_PINYIN";
+	public static final String TYPE_HANZI = "SOUL_HANZI";
+	public static final String TYPE_WORD = "SOUL_WORD";
+	private static JcSegment seg = JcsegInstance.instance();
+	private TreeMap<String, List<String>> synonymTree;
+	private List<String> synonymList = null;
+	private String pinyin = null;
+	private String originalToken = null;
 
 	public PinyinTokenFilter(TokenStream input) { // accept one token stream
 		super(input);
+		synonymTree = null;
 	}
 
-	/*
-	 * this will return Chinese word ant its corresponding pinyin
-	 */
+	public PinyinTokenFilter(TokenStream input,
+			TreeMap<String, List<String>> synonymTree) {
+		// accept one token stream and synonym tree
+		super(input);
+		this.synonymTree = synonymTree;
+	}
+
 	@Override
 	public final boolean incrementToken() throws IOException {
 		while (true) {
-			if (curTermBuffer == null) {
-				if (!input.incrementToken()) { // 如果流中已经没Token
+			if (originalToken == null) {
+				if (!input.incrementToken()) {// no more tokens
 					return false;
 				} else {
-					curTermLength = termAtt.length();
-					curTermBuffer = new char[curTermLength];
+					int curTermLength = termAtt.length();
+					char[] curTermBuffer = new char[curTermLength];
 					System.arraycopy(termAtt.buffer(), 0, curTermBuffer, 0,
 							curTermLength);
-					needPinyinConv = true;
-					needSynonymConv = true;
-					totalNumber = 3;
-					if (!ChineseHelper.containChineseChar(new String(
-							curTermBuffer))) {
-						// 如果不包含汉字，不需要转换拼音
-						needPinyinConv = false;
-						totalNumber--;
+					originalToken = new String(curTermBuffer);
+					totalNumber = 1;
+					if (ChineseHelper.containChineseChar(originalToken)) {
+						// if not consist of Chinese chars, no need to get
+						// Pinyin
+						Reader reader = new StringReader(originalToken);
+						pinyin = seg.convertToPinyin(reader);
+						totalNumber += 1;
+						log.info("text =  " + originalToken + ", pinyin = "
+								+ pinyin);
+					} else {
+						pinyin = null;
+					}
+					if (synonymTree != null) {
+						List<String> list = synonymTree.get(originalToken);
+						if (list != null) {
+							log.info("originalToken is " + originalToken);
+							// needSynonymConv = true;
+							totalNumber += (list.size());
+							synonymList = new LinkedList<String>();
+							synonymList.addAll(list);
+						} else {
+							synonymList = null;
+						}
+					} else {
+						synonymList = null;
 					}
 					tokenStart = offsetAtt.startOffset();
 					curNumber = 0; // first time we get equivalent Term
@@ -67,41 +92,41 @@ public class PinyinTokenFilter extends TokenFilter {
 			if (curNumber < totalNumber) {
 				if (curNumber == 0) {
 					clearAttributes();
-					offsetAtt.setOffset(tokenStart, tokenStart + curTermLength);
-					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
-				} else if (needPinyinConv) {
-					String text = new String(curTermBuffer);
-					Reader reader = new StringReader(text);
-					String pinyin = seg.convertToPinyin(reader);
+					offsetAtt.setOffset(tokenStart,
+							tokenStart + originalToken.length());
+					termAtt.append(originalToken);
+					if (pinyin == null)
+						typeAtt.setType(TYPE_WORD);
+					else
+						typeAtt.setType(TYPE_HANZI);
+				} else if (pinyin != null) {
 					clearAttributes();
-					offsetAtt.setOffset(tokenStart, tokenStart + curTermLength);
+					offsetAtt.setOffset(tokenStart,
+							tokenStart + originalToken.length());
 					// log.info(text + "," + pinyin);
 					termAtt.copyBuffer(pinyin.toCharArray(), 0, pinyin.length());
-					typeAtt.setType("PINYIN");
-					// curTermBuffer = null;
-					needPinyinConv = false;
-				} else if (needSynonymConv) {
-					String text = new String(curTermBuffer);
-					String synonym = "[长度" + String.valueOf(text.length())
-							+ text + "]";
+					typeAtt.setType(TYPE_PINYIN);
+					pinyin = null;
+				} else if (synonymList != null) {
 					clearAttributes();
-					offsetAtt.setOffset(tokenStart, tokenStart + curTermLength);
-					termAtt.copyBuffer(synonym.toCharArray(), 0,
-							synonym.length());
-					typeAtt.setType("SYNONYM");
-					// curTermBuffer = null;
-					needSynonymConv = false;
+					offsetAtt.setOffset(tokenStart,
+							tokenStart + originalToken.length());
+					String text = synonymList.remove(0);
+					termAtt.append(text);
+					typeAtt.setType(TYPE_SYNONYM);
+					if (synonymList.size() == 0)
+						synonymList = null;
+					// needSynonymConv = false;
 				}
 				curNumber++;
 				return true;
 			} else
-				curTermBuffer = null;
+				originalToken = null;
 		}
 	}
-
 	@Override
 	public void reset() throws IOException {
 		super.reset();
-		curTermBuffer = null;
+		originalToken = null;
 	}
 }

@@ -7,7 +7,7 @@ import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.domain.TermUtil;
 import org.soul.utility.InitDictionary;
-import org.soul.utility.StaticVariable;
+import org.soul.utility.StaticVarForSegment;
 
 public class NumberRecognition {
 	private static Log log = LogFactory.getLog(NumberRecognition.class);
@@ -61,7 +61,7 @@ public class NumberRecognition {
 				}
 				tree.put(terms[i].getName(), 1);
 				// 如果是量词，如‘年’，‘把’，‘倍’
-				if (StaticVariable.allowQuantifierRecognize
+				if (StaticVarForSegment.allowQuantifierRecognize
 						&& temp.getTermNatures().numNature.numEndFreq > 0) {
 					terms[i].setName(terms[i].getName() + temp.getName());
 					temp = temp.getTo();

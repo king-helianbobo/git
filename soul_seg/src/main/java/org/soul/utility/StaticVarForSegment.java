@@ -17,9 +17,9 @@ import org.soul.domain.BigramEntry;
 import org.soul.treeSplit.IOUtil;
 import org.soul.treeSplit.StringUtil;
 
-public class StaticVariable {
+public class StaticVarForSegment {
 
-	public static Log LibraryLog = LogFactory.getLog(StaticVariable.class);
+	public static Log LibraryLog = LogFactory.getLog(StaticVarForSegment.class);
 	public static boolean allowNameRecognize = true;
 	public static boolean allowNumRecognize = true;
 	public static boolean allowQuantifierRecognize = true;
@@ -27,6 +27,7 @@ public class StaticVariable {
 	public static String userLibrary;
 	public static String ambiguityLibrary;
 	public static String stopLibrary;
+	public static String synonymLibrary;
 
 	static {
 		try {
@@ -38,6 +39,8 @@ public class StaticVariable {
 				ambiguityLibrary = rb.getString("ambiguityLibrary");
 			if (rb.containsKey("stopLibrary"))
 				stopLibrary = rb.getString("stopLibrary");
+			if (rb.containsKey("synonymLibrary"))
+				synonymLibrary = rb.getString("synonymLibrary");
 		} catch (Exception e) {
 			LibraryLog.warn("can't find library.properties in classpath!");
 		}

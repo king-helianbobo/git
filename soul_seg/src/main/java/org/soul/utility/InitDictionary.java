@@ -33,7 +33,7 @@ public class InitDictionary {
 		long start = System.currentTimeMillis();
 		try {
 			initArrays();
-			StaticVariable.LibraryLog.info("init core library ok use time :"
+			StaticVarForSegment.LibraryLog.info("init core library ok use time :"
 					+ (System.currentTimeMillis() - start) + " milliseconds");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -46,10 +46,10 @@ public class InitDictionary {
 	 * @throws Exception
 	 */
 	public static void initArrays() throws Exception {
-		BufferedReader reader = StaticVariable.getBaseArrayReader();
+		BufferedReader reader = StaticVarForSegment.getBaseArrayReader();
 		initArraySize(reader);
 		reader.close();
-		reader = StaticVariable.getBaseArrayReader();
+		reader = StaticVarForSegment.getBaseArrayReader();
 		initArrays(reader);
 		reader.close();
 	}

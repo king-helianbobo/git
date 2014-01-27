@@ -30,7 +30,7 @@ public class CompanyAttrLib {
 		BufferedReader br = null;
 		try {
 			cnMap = new HashMap<String, CompanyNature>();
-			br = StaticVariable.getCompanyReader(); // company/company.data
+			br = StaticVarForSegment.getCompanyReader(); // company/company.data
 			String temp = null;
 			String[] strs = null;
 			CompanyNature cna = null;

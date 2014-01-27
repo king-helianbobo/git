@@ -20,7 +20,7 @@ import org.soul.splitWord.BasicAnalysis;
 import org.soul.splitWord.IndexAnalysis;
 import org.soul.treeSplit.IOUtil;
 import org.soul.utility.InitDictionary;
-import org.soul.utility.StaticVariable;
+import org.soul.utility.StaticVarForSegment;
 import org.soul.utility.UserDefineLibrary;
 import org.soul.utility.WordAlert;
 
@@ -57,7 +57,7 @@ public class BasicAnalysisTest {
 		HashSet<String> hs = new HashSet<String>();
 		try {
 			String temp = null;
-			BufferedReader br = IOUtil.getReader(StaticVariable.stopLibrary,
+			BufferedReader br = IOUtil.getReader(StaticVarForSegment.stopLibrary,
 					"UTF-8");
 			while ((temp = br.readLine()) != null) {
 				temp = temp.trim().toLowerCase();

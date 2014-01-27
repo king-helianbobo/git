@@ -10,8 +10,8 @@ public class NgramLibrary {
 	static {
 		try {
 			long start = System.currentTimeMillis();
-			bigramTable = StaticVariable.getBigramTables();
-			StaticVariable.LibraryLog.info("init bigramTable , use time :"
+			bigramTable = StaticVarForSegment.getBigramTables();
+			StaticVarForSegment.LibraryLog.info("init bigramTable , use time :"
 					+ (System.currentTimeMillis() - start) + " milliseconds");
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -34,9 +34,10 @@ public class SoulPinyinAnalyzer extends Analyzer {
 		// 先进行soul分词，然后对每个Term进行转换
 		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
 				tokenizer);
-		result = new PinyinTokenFilter(result);
+		result = new PinyinTokenFilter(result,
+				ElasticSearchStaticVariable.synonymTree);
 		result = new SoulEdgeNGramTokenFilter(result,
-				SoulEdgeNGramTokenFilter.Side.FRONT, 2);
+				SoulEdgeNGramTokenFilter.Side.FRONT, 3);
 		// result = new SoulEdgeNGramTokenFilter(result,
 		// SoulEdgeNGramTokenFilter.Side.TWOSIDE, 2);
 		return new TokenStreamComponents(tokenizer, result);
