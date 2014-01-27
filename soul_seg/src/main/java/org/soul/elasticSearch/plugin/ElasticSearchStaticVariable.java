@@ -80,7 +80,6 @@ public class ElasticSearchStaticVariable {
 	}
 
 	private static void loadFilter() {
-		log.info(StaticVarForSegment.stopLibrary);
 		File stopLibrary = new File(StaticVarForSegment.stopLibrary);
 		if (!stopLibrary.isFile() || !stopLibrary.canRead()) {
 			logger.info("Can't find file:" + StaticVarForSegment.stopLibrary
@@ -132,7 +131,18 @@ public class ElasticSearchStaticVariable {
 						LinkedList<String> newList = new LinkedList<String>(
 								list);
 						newList.remove(i);
-						synonymTree.put(strs[i], newList);
+						List<String> oldList = synonymTree.get(strs[i]);
+						if (oldList != null) {
+							// get common set
+							LinkedList<String> list3 = new LinkedList<String>();
+							for (int j = 0; j < oldList.size(); j++) {
+								if (newList.contains(oldList.get(j)))
+									list3.add(oldList.get(j));
+							}
+							if (list3.size() > 0)
+								synonymTree.put(strs[i], list3);
+						} else
+							synonymTree.put(strs[i], newList);
 					}
 				}
 			} catch (FileNotFoundException e) {

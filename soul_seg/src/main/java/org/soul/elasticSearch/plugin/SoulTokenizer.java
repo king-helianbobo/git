@@ -25,19 +25,20 @@ public class SoulTokenizer extends Tokenizer {
 	// offset of current word
 	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 	// word's number, 1st word,2nd word and so on
-	private final PositionIncrementAttribute positionAttr = addAttribute(PositionIncrementAttribute.class);
+	private final PositionIncrementAttribute posAttr = addAttribute(PositionIncrementAttribute.class);
 
 	protected Analysis analysis = null;
-	private Set<String> filter; // stop words
-	private boolean pstemming;
-	private final PorterStemmer stemmer = new PorterStemmer(); // 用于英文词干分析
+	private Set<String> filter = null; // stop words
+	private boolean bStem = false;
+	private final PorterStemmer stemmer = new PorterStemmer();
+	// English word stemming
 
 	public SoulTokenizer(Analysis ta, Reader input, Set<String> filter,
 			boolean pstemming) {
 		super(input);
 		this.analysis = ta;
 		this.filter = filter;
-		this.pstemming = pstemming;
+		this.bStem = pstemming;
 	}
 
 	@Override
@@ -48,6 +49,7 @@ public class SoulTokenizer extends Tokenizer {
 		String name = null;
 		int length = 0;
 		boolean flag = true;
+		int numWhiteSpace = 0;
 		do {
 			term = analysis.next();
 			if (term == null) {
@@ -55,29 +57,38 @@ public class SoulTokenizer extends Tokenizer {
 			}
 			name = term.getName();
 			length = name.length();
-			if (pstemming
-					&& term.getTermNatures().termNatures[0] == TermNature.EN) {
-				name = stemmer.stem(name);// 对英语进行词干分析
+			if (bStem && term.getTermNatures().termNatures[0] == TermNature.EN) {
+				name = stemmer.stem(name);// stemming
 				term.setName(name);
 			} else {
 				// do nothing
 			}
 			if (filter != null && filter.contains(name)) {
 				log.info("name " + name + " is filtered!");
-				position++; // must keep its position
+				if (numWhiteSpace > 0) {
+					position++;
+					numWhiteSpace = 0;
+				}
+				// see continuous blankSpace as blankSpace
+				position++; // keep its position
 				continue;
 			} else if (!StringUtils.hasText(name)) {
-				// 如果字符串为连续空白，则忽略,但保留位置信息
-				log.info("name " + name + " is whitespace!");
-				position++; // must keep its position
+				numWhiteSpace++;
+				// see continuous blankSpace as blankSpace ,keep its position
+				// log.info("name " + name + " is whitespace!");
+				// keep its position
 				continue;
 			} else {
+				if (numWhiteSpace > 0) {
+					position++;
+					numWhiteSpace = 0;
+				}
 				position++;
 				flag = false;
 			}
 		} while (flag);
 		if (term != null) {
-			positionAttr.setPositionIncrement(position);
+			posAttr.setPositionIncrement(position);
 			termAtt.setEmpty().append(term.getName());
 			offsetAtt.setOffset(term.getOffe(), term.getOffe() + length);
 			return true;

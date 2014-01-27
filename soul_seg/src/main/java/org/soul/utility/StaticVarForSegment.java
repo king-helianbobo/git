@@ -35,16 +35,23 @@ public class StaticVarForSegment {
 			// library.properties, must locate in classPath
 			if (rb.containsKey("userLibrary"))
 				userLibrary = rb.getString("userLibrary");
+			else
+				userLibrary = "library/default.dic";
 			if (rb.containsKey("ambiguityLibrary"))
 				ambiguityLibrary = rb.getString("ambiguityLibrary");
+			else
+				ambiguityLibrary = "library/ambiguity.dic";
 			if (rb.containsKey("stopLibrary"))
 				stopLibrary = rb.getString("stopLibrary");
+			else
+				stopLibrary = "library/stopWord.dic";
 			if (rb.containsKey("synonymLibrary"))
 				synonymLibrary = rb.getString("synonymLibrary");
+			else
+				synonymLibrary = "library/synonym.txt";
 		} catch (Exception e) {
 			LibraryLog.warn("can't find library.properties in classpath!");
 		}
-
 	}
 
 	public static BufferedReader getPersonReader() {

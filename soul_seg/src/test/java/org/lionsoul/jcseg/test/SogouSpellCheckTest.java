@@ -30,8 +30,6 @@ public class SogouSpellCheckTest {
 	private String indexPath = "/mnt/f/tmp/Lucene-1";
 	private float accuracy = -0.8f;
 
-	// private static JcSegment jcSeg = new JcSegment();
-
 	@BeforeClass
 	public void start() throws IOException {
 		Directory directory = FSDirectory.open(new File(indexPath));
@@ -129,7 +127,7 @@ public class SogouSpellCheckTest {
 	}
 
 	@Test(enabled = true)
-	public void sogouSpellcheck() {
+	public void sogouSpellcheckTest() {
 
 		int number = 10;
 		// String[] queStrs = {"麻la将", "种植呵大", "关羽字云长", "麻辣ji翅"};

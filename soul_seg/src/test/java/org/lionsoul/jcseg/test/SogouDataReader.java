@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -239,7 +240,7 @@ public class SogouDataReader {
 		return element;
 	}
 
-	private String generateRandomDate() {
+	private static String generateRandomDate() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("2013-");
 		// get month
@@ -271,5 +272,55 @@ public class SogouDataReader {
 		str1 = RandomStringUtils.random(1, "012345");
 		builder.append(str1 + RandomStringUtils.random(1, "0123456789"));
 		return builder.toString();
+	}
+
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, String>> getTestData(BufferedReader reader)
+			throws IOException {
+		List<Map<String, String>> products = Lists.newArrayList();
+		String temp = null;
+		boolean isTitle = true;
+		Map<String, String> entry = new HashMap<String, String>();
+		while ((temp = reader.readLine()) != null) {
+			temp = temp.trim();
+			if (isTitle) {
+				entry.clear();
+				if (temp.startsWith("<contenttitle>")) {
+					int end = temp.lastIndexOf("</contenttitle>");
+					if (end >= 0) {
+						String content = temp.substring(
+								"<contenttitle>".length(), end);
+						if (content.length() > 0)
+							entry.put("title", content);
+					}
+				}
+			} else {
+				if (temp.startsWith("<content>")) {
+					int end = temp.lastIndexOf("</content>");
+					if (end >= 0) {
+						String content = temp.substring("<content>".length(),
+								end);
+						if (content.length() > 0)
+							entry.put("content", content);
+					}
+				}
+			}
+			if (!isTitle) {
+				products.add((Map<String, String>) ((HashMap<String, String>) entry)
+						.clone());
+			}
+			isTitle = (!isTitle);
+		}
+		List<Map<String, String>> entryList = Lists.newArrayList();
+		for (int i = 0; i < products.size(); i++) {
+			Map<String, String> element = new LinkedHashMap<String, String>();
+			element.put("number", String.valueOf(i + 1)); // id start from 1
+			element.put("cardid", RandomStringUtils.randomAlphabetic(10));
+			element.put("date", generateRandomDate());
+			element.put("title", products.get(i).get("title"));
+			element.put("content", products.get(i).get("content"));
+			entryList.add(element);
+		}
+		return entryList;
 	}
 }

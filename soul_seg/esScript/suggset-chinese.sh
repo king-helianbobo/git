@@ -46,3 +46,8 @@ curl -X POST localhost:9200/bus/__suggest?pretty -d '{ "field" : "name", "type":
 
 ## 输出所有的Term，field为'name'
 curl -XGET 'localhost:9200/bus/_termlist?pretty&totalfreq=true&docfreq=true&field=name'
+
+
+
+curl -X POST localhost:9200/sogou_spellcheck/table/__suggest?pretty -d '{ "field" : "content", "type": "soul", "term" : "发该伟", "similarity":"0.9" }'
+curl -X POST 192.168.2.212:9200/sogou_spellcheck/table/__suggest?pretty -d '{ "field" : "content", "type": "soul", "term" : "发该伟", "similarity":"0.9" }'

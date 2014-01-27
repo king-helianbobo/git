@@ -1,16 +1,16 @@
 package org.soul.elasticSearch.plugin;
 
 import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	public static final Side DEFAULT_SIDE = Side.FRONT;
-	public static final int DEFAULT_MAX_GRAM_SIZE = 1;
-	public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
 	public static int offset = 0;
 	public static boolean isFront = true;
@@ -70,6 +70,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 	private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+	private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
 	/**
 	 * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of
@@ -165,12 +166,14 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 			}
 			if (curGramSize <= maxGram) { // current gram length
 				String type = typeAtt.type();
+				int position = posAtt.getPositionIncrement();
 				if (curGramSize >= curTermLength) {
 					// if remaining input is too short, still generate
 					clearAttributes();
 					offsetAtt.setOffset(tokStart + 0, tokStart + curTermLength);
 					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
 					typeAtt.setType(type);
+					posAtt.setPositionIncrement(position);
 					curTermBuffer = null;
 					return true;
 				} else {
@@ -182,6 +185,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 						offsetAtt.setOffset(tokStart + start, tokStart + end);
 						termAtt.copyBuffer(curTermBuffer, start, curGramSize);
 						typeAtt.setType(type);
+						posAtt.setPositionIncrement(position);
 						curGramSize++;
 						return true;
 					} else {
@@ -193,6 +197,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 									+ curGramSize);
 							termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
 							typeAtt.setType(type);
+							posAtt.setPositionIncrement(position);
 							isFront = false;
 						} else {
 							offsetAtt.setOffset(tokStart + backStart, tokStart
@@ -200,6 +205,7 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 							termAtt.copyBuffer(curTermBuffer, backStart,
 									curGramSize);
 							typeAtt.setType(type);
+							posAtt.setPositionIncrement(position);
 							isFront = true;
 							curGramSize++;
 						}

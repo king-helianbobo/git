@@ -31,7 +31,7 @@ public class SoulPinyinAnalyzer extends Analyzer {
 			Reader reader) {
 		Tokenizer tokenizer = new SoulTokenizer(new BasicAnalysis(reader),
 				reader, ElasticSearchStaticVariable.filter, false);
-		// 先进行soul分词，然后对每个Term进行转换
+		// first split this sentence ,then for each term use filter to convert
 		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
 				tokenizer);
 		result = new PinyinTokenFilter(result,

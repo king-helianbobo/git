@@ -24,9 +24,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class ElasticSearchSpellCheckTest {
-	private final Log log = LogFactory
-			.getLog(ElasticSearchSpellCheckTest.class);
+public class ESSpellCheckTest {
+	private final Log log = LogFactory.getLog(ESSpellCheckTest.class);
 	private RestClient client;
 	private Settings settings;
 	TransportClient transportClient;
