@@ -37,13 +37,16 @@ public class JcSegment {
 	// turn Chinese chars to pinyin
 	public String convertToPinyin(String text) throws IOException {
 		Reader reader = new StringReader(text);
-		return convertToPinyin(reader, text);
+		return convertToPinyin(reader, text, false);
 	}
 
 	public String convertToPinyin(Reader reader) throws IOException {
-		return convertToPinyin(reader, null);
+		return convertToPinyin(reader, null, false);
 	}
-
+	public String convertToPinyin(Reader reader, boolean bSeperate)
+			throws IOException {
+		return convertToPinyin(reader, null, bSeperate);
+	}
 	/**
 	 * convert Chinese characters to pinyin
 	 * 
@@ -54,7 +57,7 @@ public class JcSegment {
 	 * @throws IOException
 	 *             String
 	 */
-	public String convertToPinyin(Reader reader, String text)
+	private String convertToPinyin(Reader reader, String text, boolean bSeperate)
 			throws IOException {
 		synchronized (this) { // 同步一次，确保不同线程彼此隔离
 			StringBuffer sb = new StringBuffer();
@@ -85,15 +88,22 @@ public class JcSegment {
 				word = null;
 				i++;
 			}
-			String[] strs = sb.toString().split(" ");
-			for (String str : strs) {
+			if (bSeperate) {
+				String str = sb.toString();
 				str = str.replaceAll("u:", "v"); // 将拼音中的ü替换为v
-				if (!str.equals(""))
-					isb.append(str);
+				return str;
+			} else {
+				String[] strs = sb.toString().split(" ");
+				for (String str : strs) {
+					str = str.replaceAll("u:", "v"); // 将拼音中的ü替换为v
+					if (!str.equals(""))
+						isb.append(str);
+				}
+				// log.info(text + " ,拼音= " + sb.toString() + "[" +
+				// isb.toString()
+				// + "]");
+				return isb.toString();
 			}
-			// log.info(text + " ,拼音= " + sb.toString() + "[" + isb.toString()
-			// + "]");
-			return isb.toString();
 		}
 	}
 }

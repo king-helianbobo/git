@@ -78,16 +78,16 @@ public class PorterStemmer {
 
 	private final boolean cons(int i) {
 		switch (b[i]) {
-		case 'a':
-		case 'e':
-		case 'i':
-		case 'o':
-		case 'u':
-			return false;
-		case 'y':
-			return (i == k0) ? true : !cons(i - 1);
-		default:
-			return true;
+			case 'a' :
+			case 'e' :
+			case 'i' :
+			case 'o' :
+			case 'u' :
+				return false;
+			case 'y' :
+				return (i == k0) ? true : !cons(i - 1);
+			default :
+				return true;
 		}
 	}
 
@@ -265,105 +265,105 @@ public class PorterStemmer {
 		if (k == k0)
 			return; /* For Bug 1 */
 		switch (b[k - 1]) {
-		case 'a':
-			if (ends("ational")) {
-				r("ate");
+			case 'a' :
+				if (ends("ational")) {
+					r("ate");
+					break;
+				}
+				if (ends("tional")) {
+					r("tion");
+					break;
+				}
 				break;
-			}
-			if (ends("tional")) {
-				r("tion");
+			case 'c' :
+				if (ends("enci")) {
+					r("ence");
+					break;
+				}
+				if (ends("anci")) {
+					r("ance");
+					break;
+				}
 				break;
-			}
-			break;
-		case 'c':
-			if (ends("enci")) {
-				r("ence");
+			case 'e' :
+				if (ends("izer")) {
+					r("ize");
+					break;
+				}
 				break;
-			}
-			if (ends("anci")) {
-				r("ance");
+			case 'l' :
+				if (ends("bli")) {
+					r("ble");
+					break;
+				}
+				if (ends("alli")) {
+					r("al");
+					break;
+				}
+				if (ends("entli")) {
+					r("ent");
+					break;
+				}
+				if (ends("eli")) {
+					r("e");
+					break;
+				}
+				if (ends("ousli")) {
+					r("ous");
+					break;
+				}
 				break;
-			}
-			break;
-		case 'e':
-			if (ends("izer")) {
-				r("ize");
+			case 'o' :
+				if (ends("ization")) {
+					r("ize");
+					break;
+				}
+				if (ends("ation")) {
+					r("ate");
+					break;
+				}
+				if (ends("ator")) {
+					r("ate");
+					break;
+				}
 				break;
-			}
-			break;
-		case 'l':
-			if (ends("bli")) {
-				r("ble");
+			case 's' :
+				if (ends("alism")) {
+					r("al");
+					break;
+				}
+				if (ends("iveness")) {
+					r("ive");
+					break;
+				}
+				if (ends("fulness")) {
+					r("ful");
+					break;
+				}
+				if (ends("ousness")) {
+					r("ous");
+					break;
+				}
 				break;
-			}
-			if (ends("alli")) {
-				r("al");
+			case 't' :
+				if (ends("aliti")) {
+					r("al");
+					break;
+				}
+				if (ends("iviti")) {
+					r("ive");
+					break;
+				}
+				if (ends("biliti")) {
+					r("ble");
+					break;
+				}
 				break;
-			}
-			if (ends("entli")) {
-				r("ent");
-				break;
-			}
-			if (ends("eli")) {
-				r("e");
-				break;
-			}
-			if (ends("ousli")) {
-				r("ous");
-				break;
-			}
-			break;
-		case 'o':
-			if (ends("ization")) {
-				r("ize");
-				break;
-			}
-			if (ends("ation")) {
-				r("ate");
-				break;
-			}
-			if (ends("ator")) {
-				r("ate");
-				break;
-			}
-			break;
-		case 's':
-			if (ends("alism")) {
-				r("al");
-				break;
-			}
-			if (ends("iveness")) {
-				r("ive");
-				break;
-			}
-			if (ends("fulness")) {
-				r("ful");
-				break;
-			}
-			if (ends("ousness")) {
-				r("ous");
-				break;
-			}
-			break;
-		case 't':
-			if (ends("aliti")) {
-				r("al");
-				break;
-			}
-			if (ends("iviti")) {
-				r("ive");
-				break;
-			}
-			if (ends("biliti")) {
-				r("ble");
-				break;
-			}
-			break;
-		case 'g':
-			if (ends("logi")) {
-				r("log");
-				break;
-			}
+			case 'g' :
+				if (ends("logi")) {
+					r("log");
+					break;
+				}
 		}
 	}
 
@@ -371,42 +371,42 @@ public class PorterStemmer {
 
 	private final void step4() {
 		switch (b[k]) {
-		case 'e':
-			if (ends("icate")) {
-				r("ic");
+			case 'e' :
+				if (ends("icate")) {
+					r("ic");
+					break;
+				}
+				if (ends("ative")) {
+					r("");
+					break;
+				}
+				if (ends("alize")) {
+					r("al");
+					break;
+				}
 				break;
-			}
-			if (ends("ative")) {
-				r("");
+			case 'i' :
+				if (ends("iciti")) {
+					r("ic");
+					break;
+				}
 				break;
-			}
-			if (ends("alize")) {
-				r("al");
+			case 'l' :
+				if (ends("ical")) {
+					r("ic");
+					break;
+				}
+				if (ends("ful")) {
+					r("");
+					break;
+				}
 				break;
-			}
-			break;
-		case 'i':
-			if (ends("iciti")) {
-				r("ic");
+			case 's' :
+				if (ends("ness")) {
+					r("");
+					break;
+				}
 				break;
-			}
-			break;
-		case 'l':
-			if (ends("ical")) {
-				r("ic");
-				break;
-			}
-			if (ends("ful")) {
-				r("");
-				break;
-			}
-			break;
-		case 's':
-			if (ends("ness")) {
-				r("");
-				break;
-			}
-			break;
 		}
 	}
 
@@ -416,73 +416,73 @@ public class PorterStemmer {
 		if (k == k0)
 			return; /* for Bug 1 */
 		switch (b[k - 1]) {
-		case 'a':
-			if (ends("al"))
-				break;
-			return;
-		case 'c':
-			if (ends("ance"))
-				break;
-			if (ends("ence"))
-				break;
-			return;
-		case 'e':
-			if (ends("er"))
-				break;
-			return;
-		case 'i':
-			if (ends("ic"))
-				break;
-			return;
-		case 'l':
-			if (ends("able"))
-				break;
-			if (ends("ible"))
-				break;
-			return;
-		case 'n':
-			if (ends("ant"))
-				break;
-			if (ends("ement"))
-				break;
-			if (ends("ment"))
-				break;
-			/* element etc. not stripped before the m */
-			if (ends("ent"))
-				break;
-			return;
-		case 'o':
-			if (ends("ion") && j >= 0 && (b[j] == 's' || b[j] == 't'))
-				break;
-			/* j >= 0 fixes Bug 2 */
-			if (ends("ou"))
-				break;
-			return;
-			/* takes care of -ous */
-		case 's':
-			if (ends("ism"))
-				break;
-			return;
-		case 't':
-			if (ends("ate"))
-				break;
-			if (ends("iti"))
-				break;
-			return;
-		case 'u':
-			if (ends("ous"))
-				break;
-			return;
-		case 'v':
-			if (ends("ive"))
-				break;
-			return;
-		case 'z':
-			if (ends("ize"))
-				break;
-			return;
-		default:
-			return;
+			case 'a' :
+				if (ends("al"))
+					break;
+				return;
+			case 'c' :
+				if (ends("ance"))
+					break;
+				if (ends("ence"))
+					break;
+				return;
+			case 'e' :
+				if (ends("er"))
+					break;
+				return;
+			case 'i' :
+				if (ends("ic"))
+					break;
+				return;
+			case 'l' :
+				if (ends("able"))
+					break;
+				if (ends("ible"))
+					break;
+				return;
+			case 'n' :
+				if (ends("ant"))
+					break;
+				if (ends("ement"))
+					break;
+				if (ends("ment"))
+					break;
+				/* element etc. not stripped before the m */
+				if (ends("ent"))
+					break;
+				return;
+			case 'o' :
+				if (ends("ion") && j >= 0 && (b[j] == 's' || b[j] == 't'))
+					break;
+				/* j >= 0 fixes Bug 2 */
+				if (ends("ou"))
+					break;
+				return;
+				/* takes care of -ous */
+			case 's' :
+				if (ends("ism"))
+					break;
+				return;
+			case 't' :
+				if (ends("ate"))
+					break;
+				if (ends("iti"))
+					break;
+				return;
+			case 'u' :
+				if (ends("ous"))
+					break;
+				return;
+			case 'v' :
+				if (ends("ive"))
+					break;
+				return;
+			case 'z' :
+				if (ends("ize"))
+					break;
+				return;
+			default :
+				return;
 		}
 		if (m() > 1)
 			k = j;
@@ -574,54 +574,4 @@ public class PorterStemmer {
 		i = k + 1;
 		return dirty;
 	}
-
-	/**
-	 * Test program for demonstrating the Stemmer. It reads a file and stems
-	 * each word, writing the result to standard out. Usage: Stemmer file-name
-	 */
-	public static void main(String[] args) {
-		PorterStemmer s = new PorterStemmer();
-		for (int i = 0; i < args.length; i++) {
-			try {
-				InputStream in = new FileInputStream(args[i]);
-				byte[] buffer = new byte[1024];
-				int bufferLen, offset, ch;
-
-				bufferLen = in.read(buffer);
-				offset = 0;
-				s.reset();
-
-				while (true) {
-					if (offset < bufferLen)
-						ch = buffer[offset++];
-					else {
-						bufferLen = in.read(buffer);
-						offset = 0;
-						if (bufferLen < 0)
-							ch = -1;
-						else
-							ch = buffer[offset++];
-					}
-
-					if (Character.isLetter((char) ch)) {
-						s.add(Character.toLowerCase((char) ch));
-					} else {
-						s.stem();
-						System.out.print(s.toString());
-						s.reset();
-						if (ch < 0)
-							break;
-						else {
-							System.out.print((char) ch);
-						}
-					}
-				}
-
-				in.close();
-			} catch (IOException e) {
-				System.out.println("error reading " + args[i]);
-			}
-		}
-	}
-
 }

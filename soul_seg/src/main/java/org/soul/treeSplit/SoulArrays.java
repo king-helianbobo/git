@@ -3,7 +3,7 @@ package org.soul.treeSplit;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
-public class AnsjArrays {
+public class SoulArrays {
 	private static final int INSERTIONSORT_THRESHOLD = 7;
 
 	public static int binarySearch(WoodInterface[] branches, char c) {
@@ -15,7 +15,6 @@ public class AnsjArrays {
 		while (low <= high) {
 			int mid = (low + high) >>> 1;
 			int cmp = branches[mid].compareTo(c);
-
 			if (cmp < 0)
 				low = mid + 1;
 			else if (cmp > 0)
@@ -24,16 +23,6 @@ public class AnsjArrays {
 				return mid; // key found
 		}
 		return -(low + 1); // key not found.
-	}
-
-	public static void main(String[] args) {
-
-		int[] chars = { 1, 2, 3, 4, 5, 6, 8, 7 };
-		chars = Arrays.copyOf(chars, 100);
-		System.out.println(chars.length);
-		for (int i = 0; i < chars.length; i++) {
-			System.out.println(chars[i]);
-		}
 	}
 
 	public static void sort(WoodInterface[] a) {
@@ -115,7 +104,8 @@ public class AnsjArrays {
 		if (newLength < 0)
 			throw new IllegalArgumentException(from + " > " + to);
 		@SuppressWarnings("unchecked")
-		T[] copy = ((Object) newType == (Object) Object[].class) ? (T[]) new Object[newLength]
+		T[] copy = ((Object) newType == (Object) Object[].class)
+				? (T[]) new Object[newLength]
 				: (T[]) Array
 						.newInstance(newType.getComponentType(), newLength);
 		System.arraycopy(original, from, copy, 0,

@@ -8,34 +8,17 @@ import org.soul.domain.Nature;
 import org.soul.domain.Term;
 import org.soul.treeSplit.StringUtil;
 
-/**
- * 这里封装了词性和词性之间的关系.以及词性的索引.这是个好东西. 里面数组是从ict里面找来的. 不是很新.没有预料无法训练
- * 
- * @author ansj
- * 
- */
 public class NatureLibrary {
 
 	private static final int YI = 1;
 	private static final int FYI = -1;
-	/**
-	 * 词性的字符串对照索引位的hashmap(我发现我又效率狂了.不能这样啊)
-	 */
 	private static final HashMap<String, Nature> NATUREMAP = new HashMap<String, Nature>();
-
-	/**
-	 * 词与词之间的关系.对照natureARRAY,natureMap
-	 */
 	private static int[][] NATURETABLE = null;
 
-	/**
-	 * 初始化对照表
-	 */
 	static {
 		try {
 			init();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new RuntimeException("词性列表加载失败!");
 		}
@@ -43,7 +26,6 @@ public class NatureLibrary {
 
 	private static void init() throws IOException {
 		String split = "\t";
-		// 加载词对照性表
 		BufferedReader reader = StaticVarForSegment.getNatureMapReader();
 		String temp = null;
 		String[] strs = null;
@@ -55,7 +37,6 @@ public class NatureLibrary {
 			strs = temp.split(split);
 			if (strs.length != 4)
 				continue;
-
 			p0 = Integer.parseInt(strs[0]);
 			p1 = Integer.parseInt(strs[1]);
 			p2 = Integer.parseInt(strs[3]);
@@ -64,7 +45,7 @@ public class NatureLibrary {
 		}
 		reader.close();
 
-		// 加载词性关系，词性关系是做什么的？
+		// 加载词性关系
 		NATURETABLE = new int[maxLength + 1][maxLength + 1];
 		reader = StaticVarForSegment.getNatureTableReader();
 		int j = 0;

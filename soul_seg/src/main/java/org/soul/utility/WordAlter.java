@@ -1,6 +1,6 @@
 package org.soul.utility;
 
-public class WordAlert {
+public class WordAlter {
 
 	public static final int MIN_LOWER = 65345;
 	public static final int MAX_LOWER = 65370;

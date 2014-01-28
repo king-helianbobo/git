@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -19,10 +20,11 @@ import org.soul.splitWord.Analysis;
 import org.soul.splitWord.BasicAnalysis;
 import org.soul.splitWord.IndexAnalysis;
 import org.soul.treeSplit.IOUtil;
+import org.soul.utility.FilterModifyWord;
 import org.soul.utility.InitDictionary;
 import org.soul.utility.StaticVarForSegment;
 import org.soul.utility.UserDefineLibrary;
-import org.soul.utility.WordAlert;
+import org.soul.utility.WordAlter;
 
 public class BasicAnalysisTest {
 	private final Log log = LogFactory.getLog(BasicAnalysisTest.class);
@@ -42,7 +44,7 @@ public class BasicAnalysisTest {
 			}
 		}
 	}
-//	@Ignore()
+	// @Ignore()
 	@Test
 	public void foreignNameRecongnitionTest() {
 		String str = "巴洛斯说俞志龙和陈举亚是南京维数公司的,协会主席亚拉·巴洛斯说他们开始寻找野生金刚鹦鹉";
@@ -57,8 +59,8 @@ public class BasicAnalysisTest {
 		HashSet<String> hs = new HashSet<String>();
 		try {
 			String temp = null;
-			BufferedReader br = IOUtil.getReader(StaticVarForSegment.stopLibrary,
-					"UTF-8");
+			BufferedReader br = IOUtil.getReader(
+					StaticVarForSegment.stopLibrary, "UTF-8");
 			while ((temp = br.readLine()) != null) {
 				temp = temp.trim().toLowerCase();
 				hs.add(temp);
@@ -102,11 +104,26 @@ public class BasicAnalysisTest {
 		terms = BasicAnalysis.parse(str);
 		log.info(terms);
 	}
+	@Test
+	public void FilterAndUpdateNatureTest() {
+		HashMap<String, String> updateDic = new HashMap<String, String>();
+		updateDic.put("停用词", "userDefine"); // userDefine TermNature
+		updateDic.put("并且", "_stop");// use termNature _stop
+		updateDic.put("14345", "number");// 数字
+		updateDic.put("但是", FilterModifyWord._stop);
+		updateDic.put("，", FilterModifyWord._stop);
+		FilterModifyWord.setUpdateDic(updateDic);
+		List<Term> parse = BasicAnalysis
+				.parse("过滤停用词，并且修正词14345为用户自定义词性，但是必须设置停用词词典");
+		// log.info(parse);
+		parse = FilterModifyWord.modifResult(parse);
+		log.info(parse);
+	}
 	@Ignore()
 	@Test
 	public void wordAlertTest() {
 		String str = "。，、”ｓｄｆｓｄｆ多啦哆啦Ａａ梦１";
-		String result = WordAlert.alertAlphaAndNumber(str, 0, str.length());
+		String result = WordAlter.alertAlphaAndNumber(str, 0, str.length());
 		log.info(countChineseChars(str));
 		log.info(result);
 	}

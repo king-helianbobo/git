@@ -47,19 +47,19 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 		if (bs > -1) {
 			this.branch = this.branches[bs];
 			switch (branch.getStatus()) {
-			case -1:
-				this.branch.setStatus(1);
-				break;
-			case 1:
-				if (this.branch.getStatus() == 3) {
-					this.branch.setStatus(2);
-				}
-				break;
-			case 3:
-				if (this.branch.getStatus() != 3) {
-					this.branch.setStatus(2);
-				}
-				this.branch.setParam(branch.getParam());
+				case -1 :
+					this.branch.setStatus(1);
+					break;
+				case 1 :
+					if (this.branch.getStatus() == 3) {
+						this.branch.setStatus(2);
+					}
+					break;
+				case 3 :
+					if (this.branch.getStatus() != 3) {
+						this.branch.setStatus(2);
+					}
+					this.branch.setParam(branch.getParam());
 			}
 			return this.branch;
 		}
@@ -184,17 +184,4 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 		}
 		return tempBranch;
 	}
-
-	public static void main(String[] args) {
-		SmartForest<Integer> sf = new SmartForest<Integer>();
-		sf.add("java", 1);
-		sf.add("php", 2);
-		sf.add("python", 3);
-		sf.add("ruby", 4);
-		sf.add(".net", 5);
-
-		SmartForest<Integer> branch2 = sf.getBranch("java");
-		System.out.println(branch2.getParam());
-	}
-
 }

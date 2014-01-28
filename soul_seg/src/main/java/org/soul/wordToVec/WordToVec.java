@@ -20,27 +20,6 @@ public class WordToVec {
 
 	private static final int MAX_SIZE = 50;
 
-	// public static void main(String[] args) throws IOException {
-	//
-	// VectorLearn learn = new VectorLearn();
-	// learn.learnFile(new File("library/xh.txt"));
-	// learn.saveModel(new File("library/javaSkip1"));
-	//
-	// WordToVec vec = new WordToVec();
-	// vec.loadJavaModel("library/javaSkip1");
-	//
-	// WordToVec vec2 = new WordToVec();
-	// vec2.loadGoogleModel("library/vectors.bin");
-	//
-	// String str = "毛泽东";
-	// System.out.println(vec.distance(str));
-	// System.out.println(vec2.distance(str));
-	//
-	// // 男人 国王 女人
-	// System.out.println(vec.analogy("邓小平", "毛泽东思想", "毛泽东"));
-	// System.out.println(vec2.analogy("毛泽东", "毛泽东思想", "邓小平"));
-	// }
-
 	private HashMap<String, float[]> wordMap = new HashMap<String, float[]>();
 
 	private int words;

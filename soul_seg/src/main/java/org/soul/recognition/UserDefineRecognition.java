@@ -9,20 +9,11 @@ import org.soul.treeSplit.ObjectBean;
 import org.soul.treeSplit.WoodInterface;
 import org.soul.utility.UserDefineLibrary;
 
-/**
- * 用户自定义词典.又称补充词典
- * 
- * @author ansj
- * 
- */
 public class UserDefineRecognition {
 
 	private Term[] terms = null;
-
 	private WoodInterface forest = UserDefineLibrary.userDefineForest;
-
 	private WoodInterface branch = forest;
-
 	private int offe = -1;
 	private int endOffe = -1;
 	private int tempFreq = 50;

@@ -31,9 +31,9 @@ public class UserDefineLibrary {
 	public static void insertWordToUserDefineLibrary(String key, String nature,
 			int freq) {
 		String[] paramers = new String[2];
-		paramers[0] = WordAlert.alertAlphaAndNumber(nature);
+		paramers[0] = WordAlter.alertAlphaAndNumber(nature);
 		paramers[1] = String.valueOf(freq);
-		Value value = new Value(WordAlert.alertAlphaAndNumber(key), paramers);
+		Value value = new Value(WordAlter.alertAlphaAndNumber(key), paramers);
 		LibraryToForest.insertWord(userDefineForest, value);
 	}
 
@@ -128,7 +128,7 @@ public class UserDefineLibrary {
 				if (StringUtil.isBlank(temp)) {
 					continue;
 				} else {
-					strs = WordAlert.alertAlphaAndNumber(temp).split("\t");
+					strs = WordAlter.alertAlphaAndNumber(temp).split("\t");
 					if (strs.length != 3) {
 						// "userDefine" would be default termNature
 						value = new Value(strs[0], "userDefine", "1000");

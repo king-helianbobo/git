@@ -31,19 +31,17 @@ public class NewWordAttrLib {
 			br = StaticVarForSegment.getNewWordReader();
 			String temp = null;
 			String[] strs = null;
-			NewWordNature nna = null;
-
+			NewWordNature newNature = null;
 			int b = 0;
 			int m = 0;
 			int e = 0;
-
 			while ((temp = br.readLine()) != null) {
 				strs = temp.split("\t");
 				b = Integer.parseInt(strs[1]);
 				m = Integer.parseInt(strs[2]);
 				e = Integer.parseInt(strs[3]);
-				nna = new NewWordNature(b, m, e);
-				nwMap.put(strs[0], nna);
+				newNature = new NewWordNature(b, m, e);
+				nwMap.put(strs[0], newNature);
 			}
 		} finally {
 			if (br != null)

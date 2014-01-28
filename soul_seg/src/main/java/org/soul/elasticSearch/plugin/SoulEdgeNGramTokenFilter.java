@@ -2,6 +2,8 @@ package org.soul.elasticSearch.plugin;
 
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -11,10 +13,11 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	public static final Side DEFAULT_SIDE = Side.FRONT;
-
+	private static Log log = LogFactory.getLog(SoulEdgeNGramTokenFilter.class);
 	public static int offset = 0;
 	public static boolean isFront = true;
-
+	private String originalText = null;
+	private String convertedText = null;
 	/** Specifies which side of the input the n-gram should be generated from */
 	public static enum Side {
 
@@ -62,11 +65,12 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	private final int minGram;
 	private final int maxGram;
 	private Side side;
-	private char[] curTermBuffer;
-	private int curTermLength;
+	private String type;
+	private int position;
 	private int curGramSize;
 	private int tokStart;
 	private int tokenEnd;
+	private int tokenLength;
 
 	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -144,77 +148,74 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 	@Override
 	public final boolean incrementToken() throws IOException {
 		while (true) {
-			if (curTermBuffer == null) {
+			if (originalText == null) {
 				if (!input.incrementToken()) {
 					return false;
 				} else {
-					curTermLength = termAtt.length();
-					curTermBuffer = new char[curTermLength];
+					int curTermLength = termAtt.length();
+					char[] curTermBuffer = new char[curTermLength];
 					System.arraycopy(termAtt.buffer(), 0, curTermBuffer, 0,
 							curTermLength);
+					tokenLength = curTermLength;
+					originalText = new String(curTermBuffer);
 					tokStart = offsetAtt.startOffset();
 					tokenEnd = offsetAtt.endOffset();
-					if (typeAtt.type().equalsIgnoreCase(
-							PinyinTokenFilter.TYPE_HANZI)) {
+					type = typeAtt.type();
+					position = posAtt.getPositionIncrement();
+					if (type.equalsIgnoreCase(PinyinTokenFilter.TYPE_HANZI)) {
 						curGramSize = 1;
 						// set minimum Chinese characters to 1
-					} else if (typeAtt.type().equalsIgnoreCase(
-							PinyinTokenFilter.TYPE_SYNONYM)) {
+					} else if (type
+							.equalsIgnoreCase(PinyinTokenFilter.TYPE_SYNONYM)) {
 						curGramSize = curTermLength;
 						// synonym word not convert to EdgeNGram format
-					} else
+					} else if (type
+							.equalsIgnoreCase(PinyinTokenFilter.TYPE_PINYIN)) {
 						curGramSize = minGram;
+						convertedText = originalText.replaceAll(" ", "");
+						tokenLength = convertedText.length();
+					} else {
+						// English words and Hanyu pinyin need keep minGram
+						curGramSize = minGram;
+					}
 				}
 			}
 			if (curGramSize <= maxGram) { // current gram length
-				String type = typeAtt.type();
-				int position = posAtt.getPositionIncrement();
-				if (curGramSize >= curTermLength) {
+				if (curGramSize >= tokenLength) {
 					// if remaining input is too short, still generate
-					clearAttributes();
-					offsetAtt.setOffset(tokStart, tokenEnd);
-					// offsetAtt.setOffset(tokStart + 0, tokStart +
-					// curTermLength);
-					termAtt.copyBuffer(curTermBuffer, 0, curTermLength);
-					typeAtt.setType(type);
-					posAtt.setPositionIncrement(position);
-					curTermBuffer = null;
+					if (type.equals(PinyinTokenFilter.TYPE_PINYIN))
+						pinyinOperation(0, tokenLength);
+					else
+						commonOperation(0, tokenLength);
+					originalText = null;
 					return true;
 				} else {
 					if (side == Side.FRONT || side == Side.BACK) {
-						int start = side == Side.FRONT ? 0 : curTermLength
+						int start = side == Side.FRONT ? 0 : tokenLength
 								- curGramSize;
-						int end = start + curGramSize;
-						clearAttributes();
-						offsetAtt.setOffset(tokStart, tokenEnd);
-						// offsetAtt.setOffset(tokStart + start, tokStart +
-						// end);
-						termAtt.copyBuffer(curTermBuffer, start, curGramSize);
-						typeAtt.setType(type);
-						posAtt.setPositionIncrement(position);
+						if (type.equals(PinyinTokenFilter.TYPE_PINYIN))
+							pinyinOperation(start, curGramSize);
+
+						else
+							commonOperation(start, curGramSize);
 						curGramSize++;
 						return true;
 					} else {
-						int backStart = curTermLength - curGramSize;
-						int backEnd = backStart + curGramSize;
+						int backStart = tokenLength - curGramSize;
 						clearAttributes();
 						if (isFront) {
-							// offsetAtt.setOffset(tokStart, tokStart
-							// + curGramSize);
-							offsetAtt.setOffset(tokStart, tokenEnd);
-							termAtt.copyBuffer(curTermBuffer, 0, curGramSize);
-							typeAtt.setType(type);
-							posAtt.setPositionIncrement(position);
+							if (type.equals(PinyinTokenFilter.TYPE_PINYIN))
+								pinyinOperation(0, curGramSize);
+
+							else
+								commonOperation(0, curGramSize);
 							isFront = false;
 						} else {
-							offsetAtt.setOffset(tokStart, tokenEnd);
-							// offsetAtt.setOffset(tokStart + backStart,
-							// tokStart
-							// + backEnd);
-							termAtt.copyBuffer(curTermBuffer, backStart,
-									curGramSize);
-							typeAtt.setType(type);
-							posAtt.setPositionIncrement(position);
+							if (type.equals(PinyinTokenFilter.TYPE_PINYIN))
+								pinyinOperation(backStart, curGramSize);
+
+							else
+								commonOperation(backStart, curGramSize);
 							isFront = true;
 							curGramSize++;
 						}
@@ -222,13 +223,54 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 					}
 				}
 			}
-			curTermBuffer = null;
+			originalText = null;
 		}
 	}
+	private void commonOperation(int startOffset, int length) {
+		clearAttributes();
+		termAtt.append(originalText
+				.substring(startOffset, startOffset + length));
+		if ((tokStart + length) > tokenEnd)
+			log.error("tokenStart and tokenEnd error!");
+		offsetAtt.setOffset(tokStart, tokStart + length);
+		typeAtt.setType(type);
+		posAtt.setPositionIncrement(position);
+	}
+	private void pinyinOperation(int startOffset, int length) {
+		clearAttributes();
+		String subPinyin = convertedText.substring(startOffset, startOffset
+				+ length);
+		int j = 0;
+		int numSpace = 0;
+		for (int i = 0; i < originalText.length(); i++) {
+			if (j >= subPinyin.length())
+				break;
+			if (originalText.charAt(i) == subPinyin.charAt(j)) {
+				j++;
+				continue;
+			} else if (originalText.charAt(i) == ' ') {
+				numSpace++;
+			} else {
+				try {
+					throw new Exception("Pinyin " + originalText
+							+ " is unlegal!");
+				} catch (Exception e) {
+					log.error("Pinyin: " + originalText + " is unlegal!");
+					e.printStackTrace();
+				}
+			}
 
+		}
+		if ((tokStart + numSpace + 1) > tokenEnd)
+			log.error("tokenStart and tokenEnd error!");
+		offsetAtt.setOffset(tokStart, tokStart + numSpace + 1);
+		termAtt.append(subPinyin);
+		typeAtt.setType(type);
+		posAtt.setPositionIncrement(position);
+	}
 	@Override
 	public void reset() throws IOException {
 		super.reset();
-		curTermBuffer = null;
+		originalText = null;
 	}
 }

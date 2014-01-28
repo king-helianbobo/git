@@ -18,32 +18,14 @@ import java.util.Map.Entry;
  */
 public class WordKmeans {
 
-	public static void main(String[] args) throws IOException {
-		WordToVec vec = new WordToVec();
-		vec.loadGoogleModel("vectors.bin");
-		System.out.println("load model ok!");
-		WordKmeans wordKmeans = new WordKmeans(vec.getWordMap(), 50, 50);
-		Classes[] explain = wordKmeans.explain();
-
-		for (int i = 0; i < explain.length; i++) {
-			System.out.println("--------" + i + "---------");
-			System.out.println(explain[i].getTop(10));
-		}
-
-	}
-
 	private HashMap<String, float[]> wordMap = null;
-
 	private int iter;
-
 	private Classes[] cArray = null;
-
 	public WordKmeans(HashMap<String, float[]> wordMap, int clcn, int iter) {
 		this.wordMap = wordMap;
 		this.iter = iter;
 		cArray = new Classes[clcn];
 	}
-
 	public Classes[] explain() {
 		// first 取前clcn个点
 		Iterator<Entry<String, float[]>> iterator = wordMap.entrySet()

@@ -22,10 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * java 一个简单的io操作
- * 
- * @author ansj
- * 
+ * simple IO operation
  */
 public class IOUtil {
 	public static final String UTF8 = "utf-8";
@@ -51,7 +48,6 @@ public class IOUtil {
 
 	private static BufferedReader getReader(File file, String charEncoding)
 			throws FileNotFoundException, UnsupportedEncodingException {
-		// TODO Auto-generated method stub
 		InputStream is = new FileInputStream(file);
 		return new BufferedReader(new InputStreamReader(is, charEncoding));
 	}
@@ -160,41 +156,24 @@ public class IOUtil {
 		}
 	}
 
-	/**
-	 * 关闭字符流
-	 * 
-	 * @param reader
-	 */
 	public static void close(Reader reader) {
 		try {
 			if (reader != null)
 				reader.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	/**
-	 * 关闭字节流
-	 * 
-	 * @param is
-	 */
 	public static void close(InputStream is) {
 		try {
 			if (is != null)
 				is.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	/**
-	 * 关闭字节流
-	 * 
-	 * @param is
-	 */
 	public static void close(OutputStream os) {
 		try {
 			if (os != null) {
@@ -202,56 +181,8 @@ public class IOUtil {
 				os.close();
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-
-	public static FileIterator instanceFileIterator(String path,
-			String charEncoding) {
-		try {
-			return new FileIterator(path, charEncoding);
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	/**
-	 * 加载一个文件到hashMap
-	 * 
-	 * @param path
-	 * @param charEncoding
-	 * @param key
-	 * @param value
-	 * @return
-	 * @throws UnsupportedEncodingException
-	 */
-	@SuppressWarnings({ "unchecked" })
-	public static <K, V> HashMap<K, V> loadMap(String path,
-			String charEncoding, Class<K> key, Class<V> value)
-			throws UnsupportedEncodingException {
-
-		FileIterator iteartor = null;
-		HashMap<K, V> hm = null;
-		try {
-			iteartor = instanceFileIterator(path, charEncoding);
-			hm = new HashMap<K, V>();
-			String[] split = null;
-			while (iteartor.hasNext()) {
-				String readLine = iteartor.readLine();
-				split = readLine.split("\t");
-				hm.put((K) ReflectUtil.conversion(split[0], key),
-						(V) ReflectUtil.conversion(split[1], value));
-			}
-		} finally {
-			iteartor.close();
-		}
-		return hm;
 	}
 
 	public static <K, V> void writeMap(Map<K, V> hm, String path,
@@ -310,12 +241,5 @@ public class IOUtil {
 			}
 		}
 		return all;
-	}
-
-	public static void main(String[] args) throws UnsupportedEncodingException {
-		HashMap<String, Integer> loadMap = loadMap(
-				"/Users/ansj/git/ansj_seg/library/userLibrary/userLibrary.dic",
-				"utf-8", null, null);
-		System.out.println(loadMap.get("淘宝"));
 	}
 }

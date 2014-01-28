@@ -25,7 +25,7 @@ public class MathUtil {
 			return MAX_FREQUENCE;
 		}
 
-		int nTwoWordsFreq = NgramLibrary.getTwoWordFreq(from, to);
+		int nTwoWordsFreq = NGramLibrary.getTwoWordFreq(from, to);
 		double value = -Math.log(dSmoothingPara * frequency
 				/ (MAX_FREQUENCE + 80000) + (1 - dSmoothingPara)
 				* ((1 - dTemp) * nTwoWordsFreq / frequency + dTemp));
@@ -71,18 +71,18 @@ public class MathUtil {
 		Term begin = all.get(0);
 
 		// 查看左邻居
-		int twoWordFreq = NgramLibrary.getTwoWordFreq(begin.getFrom(), begin);
+		int twoWordFreq = NGramLibrary.getTwoWordFreq(begin.getFrom(), begin);
 		score -= twoWordFreq;
 
 		// 查看右邻居
 		int length = all.size() - 1;
 		Term end = all.get(all.size() - 1);
-		twoWordFreq = NgramLibrary.getTwoWordFreq(end, end.getTo());
+		twoWordFreq = NGramLibrary.getTwoWordFreq(end, end.getTo());
 		score -= twoWordFreq;
 
 		// 查看内部链接
 		for (int i = 0; i < length; i++) {
-			score -= NgramLibrary.getTwoWordFreq(all.get(i), all.get(i + 1));
+			score -= NGramLibrary.getTwoWordFreq(all.get(i), all.get(i + 1));
 		}
 		if (score < -3) {
 			return 0;

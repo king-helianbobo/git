@@ -67,7 +67,7 @@ public class PinyinTokenFilter extends TokenFilter {
 					if (ChineseHelper.containChineseChar(originalToken)) {
 						// if not include Chinese chars, no need get Pinyin
 						Reader reader = new StringReader(originalToken);
-						pinyin = seg.convertToPinyin(reader);
+						pinyin = seg.convertToPinyin(reader, true);
 						totalNumber += 1;
 						// log.info("text =  " + originalToken + ", pinyin = "
 						// + pinyin);

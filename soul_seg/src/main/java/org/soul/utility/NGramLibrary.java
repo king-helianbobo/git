@@ -5,7 +5,7 @@ import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
 
-public class NgramLibrary {
+public class NGramLibrary {
 	private static BigramEntry[][] bigramTable = null;
 	static {
 		try {
@@ -52,6 +52,6 @@ public class NgramLibrary {
 	}
 
 	public static void setBigramTables(BigramEntry[][] bigramTables) {
-		NgramLibrary.bigramTable = bigramTables;
+		NGramLibrary.bigramTable = bigramTables;
 	}
 }

@@ -371,9 +371,4 @@ public class VectorLearn {
 		this.isCbow = isCbow;
 	}
 
-	public static void main(String[] args) throws IOException {
-		VectorLearn learn = new VectorLearn();
-		learn.learnFile(new File("library/xh.txt"));
-		learn.saveModel(new File("library/javaVector"));
-	}
 }

@@ -14,7 +14,7 @@ public class Branch implements WoodInterface {
 		if (branches == null) {
 			branches = new WoodInterface[0];
 		}
-		int bs = AnsjArrays.binarySearch(branches, branch.getC());
+		int bs = SoulArrays.binarySearch(branches, branch.getC());
 		if (bs >= 0) {
 			this.branch = this.branches[bs];
 			switch (branch.getStatus()) {
@@ -55,7 +55,7 @@ public class Branch implements WoodInterface {
 		if (this.branches == null) {
 			return null;
 		}
-		int i = AnsjArrays.binarySearch(this.branches, c);
+		int i = SoulArrays.binarySearch(this.branches, c);
 		if (i < 0) {
 			return null;
 		}
@@ -66,7 +66,7 @@ public class Branch implements WoodInterface {
 		if (this.branches == null) {
 			return false;
 		}
-		return AnsjArrays.binarySearch(this.branches, c) > -1;
+		return SoulArrays.binarySearch(this.branches, c) > -1;
 	}
 
 	public int compareTo(char c) {

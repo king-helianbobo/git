@@ -11,7 +11,7 @@ import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.domain.TermUtil;
 import org.soul.splitWord.BasicAnalysis;
-import org.soul.utility.NgramLibrary;
+import org.soul.utility.NGramLibrary;
 
 public class AsianNameRecognition {
 

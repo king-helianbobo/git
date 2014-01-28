@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 
-import org.soul.utility.WordAlert;
+import org.soul.utility.WordAlter;
 
 public class LibraryToForest {
 
@@ -76,7 +76,7 @@ public class LibraryToForest {
 	public static void insertWord(WoodInterface forest, String tmp) {
 		String[] param = tmp.split("\t");
 		for (int i = 0; i < param.length; i++)
-			param[i] = WordAlert.alertAlphaAndNumber(param[i], 0,
+			param[i] = WordAlter.alertAlphaAndNumber(param[i], 0,
 					param[i].length());
 		String[] resultParams = new String[param.length - 1];
 		for (int j = 1; j < param.length; j++) {
@@ -108,7 +108,7 @@ public class LibraryToForest {
 	 */
 	public static void removeWord(Forest forest, String word) {
 		WoodInterface branch = forest;
-		char[] chars = WordAlert.alertAlphaAndNumber(word).toCharArray();
+		char[] chars = WordAlter.alertAlphaAndNumber(word).toCharArray();
 		for (int i = 0; i < chars.length; i++) {
 			if (branch == null)
 				return;

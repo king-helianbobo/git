@@ -1,6 +1,7 @@
 package org.soul.domain;
 
 public class NewWordNature {
+	// 莫非适用条件随机场
 	public static final NewWordNature NULL = new NewWordNature();
 	private int b;
 	private int m;

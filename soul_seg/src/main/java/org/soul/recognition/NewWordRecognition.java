@@ -9,9 +9,6 @@ import org.soul.treeSplit.SmartForest;
 
 /**
  * 新词识别
- * 
- * @author ansj
- * 
  */
 public class NewWordRecognition {
 
@@ -64,27 +61,27 @@ public class NewWordRecognition {
 					break;
 				}
 				switch (branch.getStatus()) {
-				case 1:
-					sb.append(term.getName());
-					continue;
-				case 2:
-					sb.append(term.getName());
-					score = branch.getParam().getScore();
-					tempNatures = branch.getParam().getNature();
-					to = term.getTo();
-					makeNewTerm();
-					continue;
-				case 3:
-					sb.append(term.getName());
-					score = branch.getParam().getScore();
-					tempNatures = branch.getParam().getNature();
-					to = term.getTo();
-					makeNewTerm();
-					flag = false;
-					break;
-				default:
-					System.out.println("怎么能出现0呢?");
-					break;
+					case 1 :
+						sb.append(term.getName());
+						continue;
+					case 2 :
+						sb.append(term.getName());
+						score = branch.getParam().getScore();
+						tempNatures = branch.getParam().getNature();
+						to = term.getTo();
+						makeNewTerm();
+						continue;
+					case 3 :
+						sb.append(term.getName());
+						score = branch.getParam().getScore();
+						tempNatures = branch.getParam().getNature();
+						to = term.getTo();
+						makeNewTerm();
+						flag = false;
+						break;
+					default :
+						System.out.println("怎么能出现0呢?");
+						break;
 				}
 			}
 			reset();
