@@ -230,9 +230,11 @@ public class SoulEdgeNGramTokenFilter extends TokenFilter {
 		clearAttributes();
 		termAtt.append(originalText
 				.substring(startOffset, startOffset + length));
-		if ((tokStart + length) > tokenEnd)
-			log.error("tokenStart and tokenEnd error!");
-		offsetAtt.setOffset(tokStart, tokStart + length);
+		if (type.equalsIgnoreCase(PinyinTokenFilter.TYPE_SYNONYM))
+			offsetAtt.setOffset(tokStart, tokenEnd);
+		else
+			offsetAtt.setOffset(tokStart, tokStart + length);
+		// log.info(offsetAtt.startOffset() + "," + offsetAtt.endOffset());
 		typeAtt.setType(type);
 		posAtt.setPositionIncrement(position);
 	}
