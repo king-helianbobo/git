@@ -18,7 +18,7 @@ public class WordAlter {
 	/**
 	 * 转译全角字符和大写字母.如ｓｄｆｓｄｆ
 	 */
-	public static String alertAlpha(char[] chars, int start, int end) {
+	public static String alterAlpha(char[] chars, int start, int end) {
 		for (int i = start; i < start + end; i++) {
 			if (chars[i] >= MIN_LOWER && chars[i] <= MAX_LOWER) {
 				chars[i] = (char) (chars[i] - LOWER_GAP);
@@ -33,7 +33,7 @@ public class WordAlter {
 		return new String(chars, start, end);
 	}
 
-	public static String alertAlpha(String temp, int start, int end) {
+	public static String alterAlpha(String temp, int start, int end) {
 		char c = 0;
 		StringBuilder sb = new StringBuilder();
 		for (int i = start; i < start + end; i++) {
@@ -51,7 +51,7 @@ public class WordAlter {
 		return sb.toString();
 	}
 
-	public static String alertNumber(char[] chars, int start, int end) {
+	public static String alterNumber(char[] chars, int start, int end) {
 		for (int i = start; i < start + end; i++) {
 			if (chars[i] >= MIN_UPPER_N && chars[i] <= MAX_UPPER_N) {
 				chars[i] = (char) (chars[i] - UPPER_GAP_N);
@@ -60,11 +60,11 @@ public class WordAlter {
 		return new String(chars, start, end);
 	}
 
-	public static String alertAlphaAndNumber(String temp) {
-		return alertAlphaAndNumber(temp, 0, temp.length());
+	public static String alterAlphaAndNumber(String temp) {
+		return alterAlphaAndNumber(temp, 0, temp.length());
 	}
 
-	public static String alertAlphaAndNumber(String temp, int start, int end) {
+	public static String alterAlphaAndNumber(String temp, int start, int end) {
 		char c = 0;
 		StringBuilder sb = new StringBuilder();
 		for (int i = start; i < start + end; i++) {
@@ -84,7 +84,7 @@ public class WordAlter {
 		return sb.toString();
 	}
 
-	public static String alertNumber(String temp, int start, int end) {
+	public static String alterNumber(String temp, int start, int end) {
 		char c = 0;
 		StringBuilder sb = new StringBuilder();
 		for (int i = start; i < start + end; i++) {

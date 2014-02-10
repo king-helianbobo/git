@@ -123,7 +123,7 @@ public class BasicAnalysisTest {
 	@Test
 	public void wordAlertTest() {
 		String str = "。，、”ｓｄｆｓｄｆ多啦哆啦Ａａ梦１";
-		String result = WordAlter.alertAlphaAndNumber(str, 0, str.length());
+		String result = WordAlter.alterAlphaAndNumber(str, 0, str.length());
 		log.info(countChineseChars(str));
 		log.info(result);
 	}

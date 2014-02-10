@@ -32,6 +32,8 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.soul.elasticSearch.plugin.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 public class LuceneOperationTest {
@@ -49,10 +51,15 @@ public class LuceneOperationTest {
 			"转任汝南太守，开始参与军事，曾参与赤壁之战。", "后关羽围攻樊城，满宠协助曹仁守城，劝阻了弃城而逃的计划，成功坚持到援军到来。",
 			"曹丕在位期间，满宠驻扎在新野，负责荆州侧的对吴作战。", "曹睿在位期间，满宠转任到扬州，接替曹休负责东线对吴作战，屡有功劳",
 			"后因年迈调回中央担任太尉，数年后病逝。"};
-	@Test
-	public void testMethod1() {
-		String hanzi = "hanzi";
-		String jcsegHanzi = "jcHanzi";
+
+	String hanzi = "hanzi";
+	String jcsegHanzi = "jcHanzi";
+	Directory directory = null;
+	IndexReader indexReader = null;
+	IndexSearcher indexSearcher = null;
+
+	@BeforeClass
+	public void beforeClass() {
 		// String shouzimu = "shouzimu";
 		// 使用PerFieldAnalyzerWrapper可以对不同的field使用不同的分词器
 		Map<String, Analyzer> analyzerMap = new HashMap<String, Analyzer>();
@@ -60,32 +67,52 @@ public class LuceneOperationTest {
 		analyzerMap.put(jcsegHanzi, new SoulJcsegAnalyzer());
 		PerFieldAnalyzerWrapper wrapper = new PerFieldAnalyzerWrapper(
 				new StandardAnalyzer(Version.LUCENE_CURRENT), analyzerMap);
-		Directory directory = null;
+
 		IndexWriter indexWriter = null;
-		IndexReader indexReader = null;
-		IndexSearcher indexSearcher = null;
+		directory = new RAMDirectory(); // this index will RAM resident
+		IndexWriterConfig iwConfig = new IndexWriterConfig(
+				Version.LUCENE_CURRENT, wrapper);
+		iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
 		try {
-			// 建立内存索引对象
-			directory = new RAMDirectory();
-			// 配置IndexWriterConfig
-			IndexWriterConfig iwConfig = new IndexWriterConfig(
-					Version.LUCENE_CURRENT, wrapper);
-			iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
 			indexWriter = new IndexWriter(directory, iwConfig);
 			for (int i = 0; i < texts.length; i++) {
 				Document doc = new Document();
 				doc.add(new StringField("ID", String.valueOf(i + 1),
 						Field.Store.YES));
-				doc.add(new TextField(hanzi, texts[i], Field.Store.YES));
+				// doc.add(new TextField(hanzi, texts[i], Field.Store.YES));
 				doc.add(new TextField(jcsegHanzi, texts[i], Field.Store.YES));
 				// doc.add(new TextField(shouzimu, text, Field.Store.YES));
 				indexWriter.addDocument(doc);
 			}
 			indexWriter.close();
-			// **********************************
 			indexReader = DirectoryReader.open(directory);
 			indexSearcher = new IndexSearcher(indexReader);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
+	@AfterClass
+	public void afterClass() {
+		if (indexReader != null) {
+			try {
+				indexReader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		if (directory != null) {
+			try {
+				directory.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	// @Test
+	public void testMethod1() {
+		try {
 			String[] keywords = {"厦门大学", "满宠", "guany"};
 			for (String keyword : keywords) {
 				// 使用QueryParser查询分析器构造Query对象
@@ -110,7 +137,6 @@ public class LuceneOperationTest {
 				// search the top 5 most relevant records
 				TopDocs topDocs = indexSearcher.search(innerbq, numDoc);
 				log.info("Hit: " + topDocs.totalHits);
-
 				ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 				if (topDocs == null || topDocs.totalHits <= 0)
 					continue;
@@ -127,22 +153,47 @@ public class LuceneOperationTest {
 			e.printStackTrace();
 		} catch (ParseException e) {
 			e.printStackTrace();
-		} finally {
-			if (indexReader != null) {
-				try {
-					indexReader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			if (directory != null) {
-				try {
-					directory.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
 		}
+	}
 
+	@Test
+	public void testMethodUseHanziField() {
+		try {
+			// String[] keywords = {"厦门大学", "满宠", "guany"};
+			String[] keywords = {"guany", "宠"};
+			for (String keyword : keywords) {
+				// 使用QueryParser查询分析器构造Query对象
+				Analyzer analyzer = new SoulIndexAnalyzer();
+				QueryParser qpHanzi = new QueryParser(Version.LUCENE_CURRENT,
+						hanzi, analyzer);
+				Query queryHanzi = qpHanzi.parse(keyword);
+				// Query queryShouzimu = qpShouzimu.parse(keyword);
+				//
+				BooleanQuery bq = new BooleanQuery();
+				// BooleanQuery innerbq = new BooleanQuery();
+				bq.add(queryHanzi, BooleanClause.Occur.MUST);
+				// bq.add(queryShouzimu, BooleanClause.Occur.SHOULD);
+				// innerbq.add(bq, BooleanClause.Occur.MUST);
+				int numDoc = 50;
+				// search the top 5 most relevant records
+				TopDocs topDocs = indexSearcher.search(bq, numDoc);
+				log.info("Hit: " + topDocs.totalHits);
+				ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+				if (topDocs == null || topDocs.totalHits <= 0)
+					continue;
+				for (int i = 0; i < Math.min(topDocs.totalHits, numDoc); i++) {
+					Document targetDoc = indexSearcher.doc(scoreDocs[i].doc);
+					log.info("Document content: " + targetDoc.toString());
+				}
+			}
+		} catch (CorruptIndexException e) {
+			e.printStackTrace();
+		} catch (LockObtainFailedException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
 	}
 }

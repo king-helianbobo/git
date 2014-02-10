@@ -40,3 +40,25 @@ curl -XPOST http://localhost:9200/soul_test/test1/_search?pretty  -d '{
         }
      }
 }'
+
+curl -XPOST http://localhost:9200/pinyin_test/test1/_search?pretty  -d '{
+    "highlight": {
+        "fields": {
+            "title": {}
+        }, 
+        "post_tags": [
+            "</tag1>", 
+            "</tag2>"
+        ], 
+        "pre_tags": [
+            "<tag1>", 
+            "<tag2>"
+        ]
+    }, 
+    "query": {
+        "term": {
+            "title": "\u6df1\u9083"
+        }
+    }
+}
+'

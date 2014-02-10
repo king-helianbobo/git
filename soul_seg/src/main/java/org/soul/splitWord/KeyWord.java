@@ -1,12 +1,12 @@
 package org.soul.splitWord;
 
-public class Keyword implements Comparable<Keyword> {
+public class KeyWord implements Comparable<KeyWord> {
 	private String name;
 	private double score;
 	private double idf;
 	private int freq;
 
-	public Keyword(String name, int docFreq, int weight) {
+	public KeyWord(String name, int docFreq, int weight) {
 		this.name = name;
 		this.idf = Math.log(10000 + 10000.0 / (docFreq + 1));
 		this.score = idf * weight;
@@ -23,7 +23,7 @@ public class Keyword implements Comparable<Keyword> {
 	}
 
 	@Override
-	public int compareTo(Keyword o) {
+	public int compareTo(KeyWord o) {
 		if (this.score < o.score) {
 			return 1;
 		} else {
@@ -34,9 +34,8 @@ public class Keyword implements Comparable<Keyword> {
 
 	@Override
 	public boolean equals(Object obj) {
-		// TODO Auto-generated method stub
-		if (obj instanceof Keyword) {
-			Keyword k = (Keyword) obj;
+		if (obj instanceof KeyWord) {
+			KeyWord k = (KeyWord) obj;
 			return k.name.equals(name);
 		} else {
 			return false;
@@ -45,7 +44,6 @@ public class Keyword implements Comparable<Keyword> {
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		return name;// "="+score+":"+freq+":"+idf;
 	}
 

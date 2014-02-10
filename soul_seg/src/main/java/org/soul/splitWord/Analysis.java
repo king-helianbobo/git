@@ -64,7 +64,7 @@ public abstract class Analysis {
 	}
 
 	private void analysisSentence(String tmpStr) {
-		String sentence = WordAlter.alertAlphaAndNumber(tmpStr, 0,
+		String sentence = WordAlter.alterAlphaAndNumber(tmpStr, 0,
 				tmpStr.length());
 		// 将部分全角字母和数字变成相应的ASCII char
 		Graph gp = new Graph(sentence);
@@ -122,7 +122,7 @@ public abstract class Analysis {
 					while (++i < length && status[sentence.charAt(i)] == 4) {
 						end++;
 					}
-					str = WordAlter.alertAlpha(sentence, start, end);
+					str = WordAlter.alterAlpha(sentence, start, end);
 					gp.addTerm(new Term(str, start + startOffe, TermNatures.EN));
 					// English words use TermNatures.EN
 					i--;
@@ -133,7 +133,7 @@ public abstract class Analysis {
 					while (++i < length && status[sentence.charAt(i)] == 5) {
 						end++;
 					}
-					str = WordAlter.alertNumber(sentence, start, end);
+					str = WordAlter.alterNumber(sentence, start, end);
 					gp.addTerm(new Term(str, start + startOffe, TermNatures.NB));
 					// decimal number use TermNatures.NB
 					i--;

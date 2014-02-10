@@ -9,6 +9,8 @@ import org.soul.domain.Term;
 import org.soul.splitWord.BasicAnalysis;
 import org.soul.splitWord.NlpAnalysis;
 import org.soul.treeSplit.IOUtil;
+import org.junit.Test;
+import org.junit.Ignore;
 
 public class SplitWordTest {
 
@@ -16,7 +18,8 @@ public class SplitWordTest {
 	public static final String TAG_START_CONTENT = "<content>";
 	public static final String TAG_END_CONTENT = "</content>";
 
-	public static void main(String[] args) {
+	@Test
+	public void test1() {
 		String temp = null;
 		BufferedReader reader = null;
 		PrintWriter pw = null;
