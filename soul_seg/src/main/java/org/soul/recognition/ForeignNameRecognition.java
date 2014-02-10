@@ -171,7 +171,7 @@ public class ForeignNameRecognition {
 					sb.append(temp.getName());
 				}
 				all.add(new NewWord(sb.toString(), TermNatures.NR, -1, 1));
-				// notice:word is new generated ,not one reference object
+				// notice:word is new generated ,not reference object
 				reset();
 			}
 		}

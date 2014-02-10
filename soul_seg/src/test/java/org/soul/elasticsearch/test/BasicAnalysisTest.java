@@ -1,4 +1,4 @@
-package org.word.segment.test;
+package org.soul.elasticsearch.test;
 
 import static org.junit.Assert.*;
 

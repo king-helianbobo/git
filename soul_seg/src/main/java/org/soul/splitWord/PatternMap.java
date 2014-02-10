@@ -11,7 +11,7 @@ public class PatternMap {
 
 	private HashMap<String, Node> map = new HashMap<String, Node>();
 
-	public void addList(List<Term> terms) {
+	public void addList(List<Term> terms) {// O(n^2) time complexity
 		int length = terms.size();
 		if (length < 2) { // one character is not considered as newWord
 			return;
@@ -23,6 +23,7 @@ public class PatternMap {
 				all.add(terms.get(j));
 				if (all.size() > 1) {
 					double leftRightEntropy = MathUtil.leftRightEntropy(all);
+
 					StringBuilder sb = new StringBuilder();
 					for (Term term : all) {
 						sb.append(term.getName());
@@ -57,7 +58,6 @@ public class PatternMap {
 	 * @return false 不合格.true 合格
 	 */
 	private boolean filter(Node node, double validate) {
-		// TODO Auto-generated method stub
 		if (node.freq < validate && node.score < 1) {
 			return false;
 		} else {

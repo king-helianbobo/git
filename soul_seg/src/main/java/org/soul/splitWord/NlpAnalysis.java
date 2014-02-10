@@ -14,8 +14,7 @@ import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 
 /**
- * 自然语言分词, Native language processing
- * 
+ * Native language processing
  */
 public class NlpAnalysis extends Analysis {
 	private static Log log = LogFactory.getLog(NlpAnalysis.class);
@@ -23,6 +22,10 @@ public class NlpAnalysis extends Analysis {
 
 	public NlpAnalysis(Reader reader, LearnTool learn) {
 		super(reader);
+		this.learn = learn;
+	}
+
+	private NlpAnalysis(LearnTool learn) {
 		this.learn = learn;
 	}
 
@@ -72,10 +75,6 @@ public class NlpAnalysis extends Analysis {
 		};
 		return merger.merge();
 	}
-
-	private NlpAnalysis(LearnTool learn) {
-		this.learn = learn;
-	};
 
 	public static List<Term> parse(String str, LearnTool learn) {
 		return new NlpAnalysis(learn).parseStr(str);

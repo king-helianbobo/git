@@ -2,12 +2,10 @@ package org.soul.splitWord;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,7 +13,6 @@ import org.soul.domain.Graph;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.splitWord.PatternMap.Node;
-import org.soul.treeSplit.StringUtil;
 import org.soul.utility.DictionaryReader;
 
 public class NewWordDetection {
@@ -47,17 +44,8 @@ public class NewWordDetection {
 	}
 
 	public Collection<Node> getNewWords(Graph graph) throws IOException {
-		// 构建patternTree
-		PatternMap pt = makePatHash(graph);
-		// 从patternTree中查找出最大公共字串
-		Collection<Node> words = pt.getWords();
-		return words;
-	}
+		PatternMap pt = new PatternMap(); // construct patternTree
 
-	// construct pat tree
-	private PatternMap makePatHash(Graph graph) {
-		PatternMap pt = new PatternMap();
-		// O(n^2)次遍历
 		List<Term> tempList = new ArrayList<Term>(20);
 		for (Term term : graph.terms) {
 			if (term == null) {
@@ -66,9 +54,7 @@ public class NewWordDetection {
 			if (filter(term)) {
 				tempList.add(term);
 			} else {
-				// 如果大于,则放到树中
 				if (tempList.size() > 1) {
-					// 计算分数.并且增加到patTree中
 					pt.addList(tempList);
 				}
 				if (tempList.size() > 0) {
@@ -76,12 +62,13 @@ public class NewWordDetection {
 				}
 			}
 		}
-		return pt;
+		Collection<Node> words = pt.getWords();
+		return words;
 	}
 
 	private boolean filter(Term term) {
 		int length = term.getName().length();
-		// 只对单字新词发现
+		// 只对单字做新词发现,ignore one char Term
 		if (length > 1) {
 			return false;
 		}

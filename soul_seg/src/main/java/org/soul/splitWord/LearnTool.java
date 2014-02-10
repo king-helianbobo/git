@@ -7,9 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.domain.Graph;
 import org.soul.domain.NewWord;
-import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.CompanyRecogntion;
@@ -19,22 +20,25 @@ import org.soul.treeSplit.CollectionUtil;
 import org.soul.treeSplit.SmartForest;
 
 public class LearnTool {
-
+	private static final Log log = LogFactory.getLog(LearnTool.class);
 	public boolean isCompany = true;
 	public boolean isNewWord = true;
 	public boolean isAsianName = true;
 	public boolean isForeignName = true;
-	public int count; // number of newWord we found
+	public int count; // number of new Word we found
 	private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
 
 	public void learn(Graph graph) {
 		if (isCompany) {
+			// find organization
 			findCompany(graph);
 		}
 		if (isAsianName) {
+			// find Chinese and Korea Name
 			findAsianPerson(graph);
 		}
 		if (isForeignName) {
+			// find English name
 			findForeignPerson(graph);
 		}
 		if (isNewWord) {
@@ -60,7 +64,7 @@ public class LearnTool {
 		addListToTerm(newWords);
 	}
 
-	// 将新词加入到词典中
+	// add new word to Forest
 	private void addListToTerm(List<NewWord> newWords) {
 		if (newWords.size() == 0)
 			return;
@@ -96,7 +100,7 @@ public class LearnTool {
 					newWord.getAllFreq());
 		} else {
 			count++;
-			// 设置名字为空,节省内存空间
+			// number of newWord plus 1
 			synchronized (sf) {
 				sf.add(newWord.getName(), newWord);
 			}
@@ -108,7 +112,7 @@ public class LearnTool {
 	}
 
 	/**
-	 * 返回学习到的新词.
+	 * return new word we found
 	 * 
 	 * @param num
 	 *            返回数目.0为全部返回
@@ -137,21 +141,22 @@ public class LearnTool {
 	}
 
 	private void valueResult(SmartForest<NewWord> smartForest,
-			HashMap<String, Double> hm, TermNatures nature) {
-		// TODO Auto-generated method stub
+			HashMap<String, Double> map, TermNatures nature) {
 		for (int i = 0; i < smartForest.branches.length; i++) {
 			NewWord param = smartForest.branches[i].getParam();
 			if (smartForest.branches[i].getStatus() == 3) {
 				if (nature == null || param.getNature().equals(nature)) {
-					hm.put(param.getName(), param.getScore());
+					map.put(param.getName(), param.getScore());
+					log.info("score: " + param.getName() + ", "
+							+ param.getScore());
 				}
 			} else if (smartForest.branches[i].getStatus() == 2) {
 				if (nature == null || param.getNature().equals(nature)) {
-					hm.put(param.getName(), param.getScore());
+					map.put(param.getName(), param.getScore());
 				}
-				valueResult(smartForest.branches[i], hm, nature);
+				valueResult(smartForest.branches[i], map, nature);
 			} else {
-				valueResult(smartForest.branches[i], hm, nature);
+				valueResult(smartForest.branches[i], map, nature);
 			}
 		}
 	}

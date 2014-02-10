@@ -2,38 +2,27 @@ package org.soul.treeSplit;
 
 import java.util.Arrays;
 
-/**
- * 一个小树,和Forest的区别是.这个在首字也是用二分查找,意味着,更节省内存.但是在构造和查找的时候都慢一点,一般应用在.词少.或者临时词典中.
- * 在ansj分词中这个应用是在自适应分词
- * 
- * @author ansj
- * 
- */
 public class SmartForest<T> implements Comparable<SmartForest<T>> {
 
 	/**
-	 * status 此字的状态1，继续 2，是个词语但是还可以继续 ,3确定 nature 词语性质
+	 * 1 doesn't represent one word ,but could continue, 2 represent one word
+	 * but could continue, 3 represent one word ,could not continue
 	 */
-	public SmartForest<T>[] branches = null;
-	private char c;
-	// 状态
+	public SmartForest<T>[] branches = null; // subTree
+	private char c;// root Char
 	private byte status = 1;
-	// 单独查找出来的对象
-	SmartForest<T> branch = null;
-	// 词典后的参数
-	private T param = null;
+	SmartForest<T> tmpBranch = null;
+	private T param = null; // corresponding parameters
 
-	// root
 	public SmartForest() {
 	}
 
-	// temp branch
 	private SmartForest(char c) {
 		this.c = c;
 	}
 
 	/**
-	 * 增加子页节点
+	 * add sub branch
 	 * 
 	 * @param branch
 	 * @return
@@ -45,25 +34,24 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 		}
 		int bs = get(branch.getC());
 		if (bs > -1) {
-			this.branch = this.branches[bs];
+			this.tmpBranch = this.branches[bs];
 			switch (branch.getStatus()) {
-				case -1 :
-					this.branch.setStatus(1);
+				case -1 : // if already deleted
+					this.tmpBranch.setStatus(1);
 					break;
 				case 1 :
-					if (this.branch.getStatus() == 3) {
-						this.branch.setStatus(2);
+					if (this.tmpBranch.getStatus() == 3) {
+						this.tmpBranch.setStatus(2);
 					}
 					break;
 				case 3 :
-					if (this.branch.getStatus() != 3) {
-						this.branch.setStatus(2);
+					if (this.tmpBranch.getStatus() != 3) {
+						this.tmpBranch.setStatus(2);
 					}
-					this.branch.setParam(branch.getParam());
+					this.tmpBranch.setParam(branch.getParam());
 			}
-			return this.branch;
+			return this.tmpBranch;
 		}
-
 		if (bs < 0) {
 			SmartForest<T>[] newBranches = new SmartForest[branches.length + 1];
 			int insert = -(bs + 1);
@@ -89,12 +77,6 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 		return i;
 	}
 
-	/**
-	 * 二分查找是否包含
-	 * 
-	 * @param c
-	 * @return
-	 */
 	public boolean contains(char c) {
 		if (this.branches == null) {
 			return false;
@@ -141,24 +123,21 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 	}
 
 	/**
-	 * 增加新词
-	 * 
-	 * @param value
+	 * add new word to Forest
 	 */
 	public void add(String keyWord, T t) {
-		SmartForest<T> tempBranch = this;
+		SmartForest<T> _branch = this;
 		for (int i = 0; i < keyWord.length(); i++) {
 			if (keyWord.length() == i + 1) {
-				tempBranch.add(new SmartForest<T>(keyWord.charAt(i), 3, t));
+				_branch.add(new SmartForest<T>(keyWord.charAt(i), 3, t));
 			} else {
-				tempBranch.add(new SmartForest<T>(keyWord.charAt(i), 1, null));
+				_branch.add(new SmartForest<T>(keyWord.charAt(i), 1, null));
 			}
-			tempBranch = tempBranch.branches[tempBranch.get(keyWord.charAt(i))];
+			_branch = _branch.branches[_branch.get(keyWord.charAt(i))];
 		}
 	}
 
 	public int compareTo(SmartForest<T> o) {
-		// TODO Auto-generated method stub
 		if (this.c > o.c)
 			return 1;
 		if (this.c < o.c) {
@@ -168,7 +147,7 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 	}
 
 	/**
-	 * 根据一个词获得所取的参数,没有就返回null
+	 * get this term's parameters, else return null
 	 * 
 	 * @param keyWord
 	 */

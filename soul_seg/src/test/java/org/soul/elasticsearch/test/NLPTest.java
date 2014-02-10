@@ -1,4 +1,4 @@
-package org.word.segment.test;
+package org.soul.elasticsearch.test;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ public class NLPTest {
 		List<Entry<String, Double>> topTree = learn.getTopTree(100);
 		log.info(topTree);
 		log.info(pased);
+		log.info("这次训练已经学到了: " + learn.count + " 个词!");
 	}
 	@Test
 	public void newWordDetectionTest2() throws IOException {
@@ -61,12 +62,19 @@ public class NLPTest {
 
 	@Test
 	public void newWordDetectionTest3() {
-
-		List<String> value = new ArrayList<String>();
-		value.add("二次元乳量大不一定是王道");
-		value.add("贾瑞听了，魂不附体，只说：“好侄儿，只说没有见我，明日我重重的谢你。”贾蔷道：“你若谢我，放你不值什么，只不知你谢我多少？况且口说无凭，写一文契来。”贾瑞道：“这如何落纸呢？\"贾蔷道：“这也不妨，写一个赌钱输了外人帐目，借头家银若干两便罢。”贾瑞道：“这也容易．只是此时无纸笔。”贾蔷道：“这也容易。”说罢翻身出来，纸笔现成，拿来命贾瑞写．他两作好作歹，只写了五十两，然后画了押，贾蔷收起来．然后撕逻贾蓉．贾蓉先咬定牙不依，只说：“明日告诉族中的人评评理。”贾瑞急的至于叩头．贾蔷作好作歹的，也写了一张五十两欠契才罢．贾蔷又道：“如今要放你，我就担着不是．老太太那边的门早已关了，老爷正在厅上看南京的东西，那一条路定难过去，如今只好走后门．若这一走，倘或遇见了人，连我也完了．等我们先去哨探哨探，再来领你．这屋你还藏不得，少时就来堆东西．等我寻个地方。”说毕，拉着贾瑞，仍熄了灯，出至院外，摸着大台矶底下，说道：“这窝儿里好，你只蹲着，别哼一声，等我们来再动。”说毕，二人去了");
-		value.add("帮一个初中高中连读的中学做一个学生日常考评系统，就是记录迟到、早退、违纪什么的一个系统，由班主任管理记录，还要有什么表扬榜的。");
-		long start = System.currentTimeMillis();
+		List<String> vl = new ArrayList<String>();
+		vl.add("二次元乳量大不一定是王道");
+		vl.add("贾瑞听了，魂不附体，只说：“好侄儿，只说没有见我，明日我重重的谢你。"
+				+ "贾蔷道：“你若谢我，放你不值什么，只不知你谢我多少？况且口说无凭，写一文契来。"
+				+ "贾瑞道：“这如何落纸呢？贾蔷道：“这也不妨，写一个赌钱输了外人帐目，借头家银若干两便罢。”"
+				+ "贾瑞道：“这也容易．只是此时无纸笔。”贾蔷道：“这也容易。”" + "说罢翻身出来，纸笔现成，拿来命贾瑞写．"
+				+ "他两作好作歹，只写了五十两，然后画了押，贾蔷收起来．"
+				+ "然后撕逻贾蓉．贾蓉先咬定牙不依，只说：“明日告诉族中的人评评理。”"
+				+ "贾瑞急的至于叩头．贾蔷作好作歹的，也写了一张五十两欠契才罢．" + "贾蔷又道：“如今要放你，我就担着不是．"
+				+ "老太太那边的门早已关了，老爷正在厅上看南京的东西，那一条路定难过去，如今只好走后门．"
+				+ "若这一走，倘或遇见了人，连我也完了．等我们先去哨探哨探，再来领你．"
+				+ "这屋你还藏不得，少时就来堆东西．等我寻个地方。”" + "说毕，拉着贾瑞，仍熄了灯，出至院外，"
+				+ "摸着大台矶底下，说道：“这窝儿里好，你只蹲着，别哼一声，等我们来再动。”说毕，二人去了");
 		// 此对象可以公用一个.随着语料的增多可以学习新的词语
 		LearnTool learn = new LearnTool();
 		// 关闭人名识别
@@ -77,13 +85,13 @@ public class NLPTest {
 		// learn.isForeignName = true;
 		// 关闭新词发现
 		learn.isNewWord = true;
-		for (String string : value) {
+		for (String string : vl) {
 			List<Term> parse = NlpAnalysis.parse(string, learn);
 			log.info(parse);
 		}
 		log.info("这次训练已经学到了: " + learn.count + " 个词!");
-		log.info(System.currentTimeMillis() - start);
-		log.info(learn.getTopTree(100));
+		// log.info(System.currentTimeMillis() - start);
+		log.info(learn.getTopTree(100, TermNatures.NW));
 	}
 
 	@Test
@@ -96,8 +104,7 @@ public class NLPTest {
 	}
 
 	@Test
-	public void companyTest() {
-
+	public void organizationTest() {
 		List<String> all = new ArrayList<String>();
 		String example = "江苏宏宝五金股份有限公司（以下简称“本公司”）于2012年11月9日接到实际控制人"
 				+ "江苏宏宝集团有限公司（以下简称“宏宝集团”）通知，"
@@ -119,7 +126,6 @@ public class NLPTest {
 		all.add("蓝鼎集团资产总额为79.49亿元，净资产9.00亿元。2010年蓝鼎集团总资产64.21亿元，其中所有者权益2.19亿元。这意味着，2010年和2011年蓝鼎集团的资产负债率分别高达96.6%和88.34%。如此高的资产负债率在A股房地产类上市公司中较为少见。有关数据显示，在135家房地产上市公司中，2011年资产负债率高于88%的仅有3家公司，分别是*ST园城[10.61 -0.09% 股吧 研报](107.7%)、高新发展[6.72 -0.59% 股吧 研报](95.5%)以及鲁商置业[4.18 0.48% 股吧 研报](92%)。");
 		all.add("能不能试试这个 西伯利亚雅特大教堂位于俄罗斯东西伯利亚地区");
 		all.add("【10000亿——阿里巴巴称淘宝和天猫本年度的总零售额突破 10000亿】 阿里巴巴还公布了其它有趣的数据：2012 年第 3 季度中国第三方互联网支付市场交易规模达到 9764 亿元人民币，支付宝占 46.9%，财付通占 20.4%，银联在线占 11.5%");
-
 		LearnTool learn = new LearnTool();
 		for (String string : all) {
 			List<Term> parse = NlpAnalysis.parse(string, learn);
