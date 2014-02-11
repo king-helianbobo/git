@@ -624,36 +624,3 @@ curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
 }'
 \end{verbatim}
 \end{enumerate}
-\subsection{ES同义词}
-hadoop上的文件总共包含的记录数为：total Document number is 2033712
-\begin{verbatim}
-Map-Reduce Framework
-	Map input records=2033712
-	Map output records=2033712
-	Input split bytes=88608
-	Spilled Records=0
-	Failed Shuffles=0
-	Merged Map outputs=0
-	GC time elapsed (ms)=65225
-	CPU time spent (ms)=2717910
-	Physical memory (bytes) snapshot=144051867648
-	Virtual memory (bytes) snapshot=593957580800
-	Total committed heap usage (bytes)=85656469504
-\end{verbatim}
-\par 耗费时间约两小时40分钟，ES中显示的document数量是1997933，而我经过检查后，发现不同的docno个数也是total Document number is 2033712,total unique Document number is 1997933，证明了ES建立索引的过程是正确的。拼写基础词库的信息如下，len为词的长度，len=2意思是两字词，size是词的个数。
-\begin{verbatim}
-len = 2, size = 66937
-len = 3, size = 37677
-len = 4, size = 46238
-len = 5, size = 3251
-len = 6, size = 1885
-len = 7, size = 461
-len = 8, size = 594
-len = 9, size = 67
-len = 10, size = 76
-len = 11, size = 4
-len = 12, size = 7
-len = 14, size = 4
-Total Word count is 157202
-\end{verbatim}
-
