@@ -28,9 +28,9 @@ public class LibraryToForest {
 	 * @param values
 	 * @return Forest
 	 */
-	public static Forest makeForest(List<Value> values) {
+	public static Forest makeForest(List<TrieValue> values) {
 		Forest forest = new Forest();
-		for (Value value : values) {
+		for (TrieValue value : values) {
 			insertWord(forest, value.toString());
 		}
 		return forest;
@@ -63,7 +63,7 @@ public class LibraryToForest {
 		return forest;
 	}
 
-	public static void insertWord(Forest forest, Value value) {
+	public static void insertWord(Forest forest, TrieValue value) {
 		_insertWord_(forest, value.getKeyword(), value.getParamers());
 	}
 

@@ -2,18 +2,19 @@ package org.soul.treeSplit;
 
 import java.util.Arrays;
 
-public class Value {
+public class TrieValue {
 	private String keyword;
 	private String[] paramers = new String[0];
+	private static final String TAB = "\t";
 
-	public Value(String keyword, String... paramers) {
+	public TrieValue(String keyword, String... paramers) {
 		this.keyword = keyword;
 		if (paramers != null) {
 			this.paramers = paramers;
 		}
 	}
 
-	public Value(String temp) {
+	public TrieValue(String temp) {
 		String[] strs = temp.split(TAB);
 		this.keyword = strs[0];
 		if (strs.length > 1) {
@@ -36,8 +37,6 @@ public class Value {
 	public void setParamers(String[] paramers) {
 		this.paramers = paramers;
 	}
-
-	private static final String TAB = "\t";
 
 	@Override
 	public String toString() {

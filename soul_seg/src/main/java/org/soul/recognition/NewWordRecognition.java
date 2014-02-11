@@ -91,7 +91,7 @@ public class NewWordRecognition {
 	private void makeNewTerm() {
 		Term term = new Term(sb.toString(), offe, tempNatures);
 		term.selfScore = score;
-		term.setNature(tempNatures.termNatures[0].nature);
+		term.setNature(tempNatures.termNatures[0].natureInLib);
 		TermUtil.termLink(from, term);
 		TermUtil.termLink(term, to);
 		TermUtil.insertTerm(terms, term);

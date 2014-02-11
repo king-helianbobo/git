@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.soul.domain.Nature;
+import org.soul.domain.NatureInLib;
 import org.soul.domain.Term;
 
 public class FilterModifyWord {
@@ -36,7 +36,7 @@ public class FilterModifyWord {
 					continue;
 				}
 				if (!_stop.equals(natureStr)) {
-					term.setNature(new Nature(natureStr));
+					term.setNature(new NatureInLib(natureStr));
 					result.add(term);
 				}
 			}

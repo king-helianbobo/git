@@ -13,13 +13,13 @@ import java.util.ResourceBundle;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.soul.domain.BigramEntry;
+import org.soul.domain.PairEntry;
 import org.soul.treeSplit.IOUtil;
 import org.soul.treeSplit.StringUtil;
 
-public class StaticVarForSegment {
+public class MyStaticValue {
 
-	public static Log LibraryLog = LogFactory.getLog(StaticVarForSegment.class);
+	public static Log LibraryLog = LogFactory.getLog(MyStaticValue.class);
 	public static boolean allowNameRecognize = true;
 	public static boolean allowNumRecognize = true;
 	public static boolean allowQuantifierRecognize = true;
@@ -117,19 +117,19 @@ public class StaticVarForSegment {
 
 	// frequency between one word and another word
 	// if word1 and word2 no frequency ,then frequency is set to 0
-	public static BigramEntry[][] getBigramTables() {
-		BigramEntry[][] result = new BigramEntry[0][0];
+	public static PairEntry[][] getBigramTables() {
+		PairEntry[][] result = new PairEntry[0][0];
 		BufferedReader reader = null;
 		try {
 			reader = IOUtil.getReader(
 					DictionaryReader.getInputStream("bigramdict.dic"), "UTF-8");
 			String temp = null;
 			String[] strs = null;
-			result = new BigramEntry[InitDictionary.arrayLength][0];
+			result = new PairEntry[InitDictionary.arrayLength][0];
 			int fromId = 0;
 			int toId = 0;
 			int freq = 0;
-			BigramEntry to = null;
+			PairEntry to = null;
 			while ((temp = reader.readLine()) != null) {
 				if (StringUtil.isBlank(temp)) {
 					continue;
@@ -144,12 +144,12 @@ public class StaticVarForSegment {
 					toId = -1;
 				}
 
-				to = new BigramEntry(toId, freq);
+				to = new PairEntry(toId, freq);
 				int index = Arrays.binarySearch(result[fromId], to);
 				if (index > -1) { // if founded
 					continue;
 				} else {
-					BigramEntry[] branch = new BigramEntry[result[fromId].length + 1];
+					PairEntry[] branch = new PairEntry[result[fromId].length + 1];
 					int insert = -(index + 1);
 					System.arraycopy(result[fromId], 0, branch, 0, insert);
 					System.arraycopy(result[fromId], insert, branch,

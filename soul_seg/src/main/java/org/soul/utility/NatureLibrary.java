@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.soul.domain.Nature;
+import org.soul.domain.NatureInLib;
 import org.soul.domain.Term;
 import org.soul.treeSplit.StringUtil;
 
@@ -12,7 +12,7 @@ public class NatureLibrary {
 
 	private static final int YI = 1;
 	private static final int FYI = -1;
-	private static final HashMap<String, Nature> NATUREMAP = new HashMap<String, Nature>();
+	private static final HashMap<String, NatureInLib> NATUREMAP = new HashMap<String, NatureInLib>();
 	private static int[][] NATURETABLE = null;
 
 	static {
@@ -26,7 +26,7 @@ public class NatureLibrary {
 
 	private static void init() throws IOException {
 		String split = "\t";
-		BufferedReader reader = StaticVarForSegment.getNatureMapReader();
+		BufferedReader reader = MyStaticValue.getNatureMapReader();
 		String temp = null;
 		String[] strs = null;
 		int maxLength = 0;
@@ -40,14 +40,14 @@ public class NatureLibrary {
 			p0 = Integer.parseInt(strs[0]);
 			p1 = Integer.parseInt(strs[1]);
 			p2 = Integer.parseInt(strs[3]);
-			NATUREMAP.put(strs[2], new Nature(strs[2], p0, p1, p2));
+			NATUREMAP.put(strs[2], new NatureInLib(strs[2], p0, p1, p2));
 			maxLength = Math.max(maxLength, p1);
 		}
 		reader.close();
 
 		// 加载词性关系
 		NATURETABLE = new int[maxLength + 1][maxLength + 1];
-		reader = StaticVarForSegment.getNatureTableReader();
+		reader = MyStaticValue.getNatureTableReader();
 		int j = 0;
 		while ((temp = reader.readLine()) != null) {
 			if (StringUtil.isBlank(temp))
@@ -64,7 +64,7 @@ public class NatureLibrary {
 	/**
 	 * 获得两个词性之间的频率
 	 */
-	public static int getTwoNatureFreq(Nature from, Nature to) {
+	public static int getTwoNatureFreq(NatureInLib from, NatureInLib to) {
 		if (from.index < 0 || to.index < 0) {
 			return 0;
 		}
@@ -79,8 +79,8 @@ public class NatureLibrary {
 	 * @return
 	 */
 	public static int getTwoTermFreq(Term fromTerm, Term toTerm) {
-		Nature from = fromTerm.getNatrue();
-		Nature to = toTerm.getNatrue();
+		NatureInLib from = fromTerm.getNatrue();
+		NatureInLib to = toTerm.getNatrue();
 		if (from.index < 0 || to.index < 0) {
 			return 0;
 		}
@@ -93,10 +93,10 @@ public class NatureLibrary {
 	 * @param natureStr
 	 * @return
 	 */
-	public static Nature getNature(String natureStr) {
-		Nature nature = NATUREMAP.get(natureStr);
+	public static NatureInLib getNature(String natureStr) {
+		NatureInLib nature = NATUREMAP.get(natureStr);
 		if (nature == null) {
-			nature = new Nature(natureStr, FYI, FYI, YI);
+			nature = new NatureInLib(natureStr, FYI, FYI, YI);
 			NATUREMAP.put(natureStr, nature);
 			return nature;
 		}

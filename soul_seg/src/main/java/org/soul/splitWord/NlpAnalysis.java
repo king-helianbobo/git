@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.domain.Graph;
+import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.recognition.NatureRecognition;
 import org.soul.recognition.NewWordRecognition;
@@ -30,7 +30,7 @@ public class NlpAnalysis extends Analysis {
 	}
 
 	@Override
-	protected List<Term> getResult(final Graph graph) {
+	protected List<Term> getResult(final ViterbiGraph graph) {
 		Merger merger = new Merger() {
 			@Override
 			public List<Term> merge() {

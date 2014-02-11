@@ -22,7 +22,7 @@ import org.soul.splitWord.IndexAnalysis;
 import org.soul.treeSplit.IOUtil;
 import org.soul.utility.FilterModifyWord;
 import org.soul.utility.InitDictionary;
-import org.soul.utility.StaticVarForSegment;
+import org.soul.utility.MyStaticValue;
 import org.soul.utility.UserDefineLibrary;
 import org.soul.utility.WordAlter;
 
@@ -60,7 +60,7 @@ public class BasicAnalysisTest {
 		try {
 			String temp = null;
 			BufferedReader br = IOUtil.getReader(
-					StaticVarForSegment.stopLibrary, "UTF-8");
+					MyStaticValue.stopLibrary, "UTF-8");
 			while ((temp = br.readLine()) != null) {
 				temp = temp.trim().toLowerCase();
 				hs.add(temp);

@@ -7,7 +7,7 @@ public class TermUtil {
 	/**
 	 * 将两个数词/量词term合并为一个全新的term
 	 */
-	public static Term makeNewTermNum(Term from, Term to,
+	public static Term makeNewNumTerm(Term from, Term to,
 			TermNatures termNatures) {
 		Term term = new Term(from.getName() + to.getName(), from.getOffe(),
 				termNatures);
@@ -25,7 +25,7 @@ public class TermUtil {
 	}
 
 	/**
-	 * 将一个term插入到链表中的对应位置中
+	 * 将一个term插入到链表中的对应位置
 	 */
 	public static void insertTerm(Term[] terms, Term term) {
 		Term temp = terms[term.getOffe()];

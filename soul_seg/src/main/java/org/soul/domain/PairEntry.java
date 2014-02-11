@@ -2,16 +2,12 @@ package org.soul.domain;
 
 import java.io.Serializable;
 
-/**
- * google语义模型用到的词与词之间的关联频率，这个可以在网上下载吗？
- */
-public class BigramEntry implements Comparable<BigramEntry>, Serializable {
+public class PairEntry implements Comparable<PairEntry>, Serializable {
 	private static final long serialVersionUID = 5994821814571715244L;
-
 	public int id;
 	public int freq;
 
-	public BigramEntry(int id, int freq) {
+	public PairEntry(int id, int freq) {
 		this.id = id;
 		this.freq = freq;
 	}
@@ -27,7 +23,7 @@ public class BigramEntry implements Comparable<BigramEntry>, Serializable {
 	}
 
 	@Override
-	public int compareTo(BigramEntry o) {
+	public int compareTo(PairEntry o) {
 		return this.id - o.id;
 	}
 

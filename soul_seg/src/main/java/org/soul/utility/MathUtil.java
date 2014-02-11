@@ -54,7 +54,7 @@ public class MathUtil {
 	// compute score between two termNatures
 	public static double compuNatureFreq(NatureTerm from, NatureTerm to) {
 		double twoWordFreq = NatureLibrary.getTwoNatureFreq(
-				from.termNature.nature, to.termNature.nature);
+				from.termNature.natureInLib, to.termNature.natureInLib);
 		if (twoWordFreq == 0) {
 			twoWordFreq = Math.log(from.selfScore + to.selfScore);
 		}

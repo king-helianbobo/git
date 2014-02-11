@@ -8,8 +8,8 @@ import org.soul.utility.InitDictionary;
 
 //维特比构建最优路径使用的图
 
-public class Graph {
-	private static Log log = LogFactory.getLog(Graph.class);
+public class ViterbiGraph {
+	private static Log log = LogFactory.getLog(ViterbiGraph.class);
 
 	protected String str = null;
 	public Term[] terms = null;
@@ -20,7 +20,7 @@ public class Graph {
 	public boolean hasPerson; // 是否有人名
 	public boolean hasNum; // 是否有数字
 
-	public Graph(String str) {
+	public ViterbiGraph(String str) {
 		this.str = str;
 		int size = str.length();
 		terms = new Term[size + 1];

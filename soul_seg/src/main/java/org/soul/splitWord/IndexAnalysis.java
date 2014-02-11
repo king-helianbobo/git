@@ -4,13 +4,13 @@ import java.io.Reader;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.soul.domain.Graph;
+import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
-import org.soul.utility.StaticVarForSegment;
+import org.soul.utility.MyStaticValue;
 
 public class IndexAnalysis extends Analysis {
 
@@ -28,16 +28,16 @@ public class IndexAnalysis extends Analysis {
 	}
 
 	@Override
-	protected List<Term> getResult(final Graph graph) {
+	protected List<Term> getResult(final ViterbiGraph graph) {
 		Merger merger = new Merger() {
 
 			@Override
 			public List<Term> merge() {
 				graph.walkPath();
-				if (StaticVarForSegment.allowNumRecognize)
+				if (MyStaticValue.allowNumRecognize)
 					NumberRecognition.recognition(graph.terms);
 
-				if (StaticVarForSegment.allowNameRecognize)
+				if (MyStaticValue.allowNameRecognize)
 					new AsianNameRecognition(graph.terms).recognition();
 
 				if (forests == null) {

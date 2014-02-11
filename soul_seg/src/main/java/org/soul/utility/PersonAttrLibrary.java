@@ -32,7 +32,7 @@ public class PersonAttrLibrary {
 
 	// "person/asian_name_freq.data"
 	private void init2() throws NumberFormatException, IOException {
-		Map<String, int[][]> personFreqMap = StaticVarForSegment.getPersonFreqMap();
+		Map<String, int[][]> personFreqMap = MyStaticValue.getPersonFreqMap();
 		Set<Entry<String, int[][]>> entrySet = personFreqMap.entrySet();
 		PersonNatureAttr pna = null;
 		for (Entry<String, int[][]> entry : entrySet) {
@@ -63,7 +63,7 @@ public class PersonAttrLibrary {
 		BufferedReader br = null;
 		try {
 			pnMap = new HashMap<String, PersonNatureAttr>();
-			br = StaticVarForSegment.getPersonReader(); // "person/person.dic"
+			br = MyStaticValue.getPersonReader(); // "person/person.dic"
 			String temp = null;
 			PersonNatureAttr pna = null;
 			while ((temp = br.readLine()) != null) {

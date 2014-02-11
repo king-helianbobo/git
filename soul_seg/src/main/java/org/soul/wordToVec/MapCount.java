@@ -1,16 +1,9 @@
-package org.soul.treeSplit;
+package org.soul.wordToVec;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-/**
- * 用map做的计数器.
- * 
- * @author ansj
- * 
- * @param <T>
- */
 public class MapCount<T> {
 	private HashMap<T, Integer> hm = null;
 
@@ -37,11 +30,6 @@ public class MapCount<T> {
 		}
 	}
 
-	/**
-	 * 计数增加.默认为1
-	 * 
-	 * @param t
-	 */
 	public void add(T t) {
 		this.add(t, 1);
 	}
@@ -55,29 +43,14 @@ public class MapCount<T> {
 		return hm.size();
 	}
 
-	/**
-	 * 删除一个元素
-	 * 
-	 * @param t
-	 */
 	public void remove(T t) {
 		hm.remove(t);
 	}
 
-	/**
-	 * 得到内部的map
-	 * 
-	 * @return
-	 */
 	public HashMap<T, Integer> get() {
 		return this.hm;
 	}
 
-	/**
-	 * 将map序列化为词典格式
-	 * 
-	 * @return
-	 */
 	public String getDic() {
 		Iterator<Entry<T, Integer>> iterator = this.hm.entrySet().iterator();
 		StringBuilder sb = new StringBuilder();

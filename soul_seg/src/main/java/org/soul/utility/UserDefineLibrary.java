@@ -6,7 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.treeSplit.*;
 
-import static org.soul.utility.StaticVarForSegment.LibraryLog;
+import static org.soul.utility.MyStaticValue.LibraryLog;
 
 public class UserDefineLibrary {
 	private static Log log = LogFactory.getLog(UserDefineLibrary.class);
@@ -33,7 +33,7 @@ public class UserDefineLibrary {
 		String[] paramers = new String[2];
 		paramers[0] = WordAlter.alterAlphaAndNumber(nature);
 		paramers[1] = String.valueOf(freq);
-		Value value = new Value(WordAlter.alterAlphaAndNumber(key), paramers);
+		TrieValue value = new TrieValue(WordAlter.alterAlphaAndNumber(key), paramers);
 		LibraryToForest.insertWord(userDefineForest, value);
 	}
 
@@ -77,7 +77,7 @@ public class UserDefineLibrary {
 	 * load ambiguity sentence library
 	 */
 	private static void initAmbiguityLibrary() {
-		String ambiguityLibrary = StaticVarForSegment.ambiguityLibrary;
+		String ambiguityLibrary = MyStaticValue.ambiguityLibrary;
 		if (StringUtil.isBlank(ambiguityLibrary)) {
 			LibraryLog.warn("init ambiguity  waring :" + ambiguityLibrary
 					+ " because : not find that file or can not to read !");
@@ -104,7 +104,7 @@ public class UserDefineLibrary {
 	private static void initUserLibrary() {
 		try {
 			userDefineForest = new Forest();
-			String userLibrary = StaticVarForSegment.userLibrary;
+			String userLibrary = MyStaticValue.userLibrary;
 			loadLibrary(userDefineForest, userLibrary);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -121,7 +121,7 @@ public class UserDefineLibrary {
 		String temp = null;
 		BufferedReader br = null;
 		String[] strs = null;
-		Value value = null;
+		TrieValue value = null;
 		try {
 			br = IOUtil.getReader(new FileInputStream(file), "UTF-8");
 			while ((temp = br.readLine()) != null) {
@@ -131,9 +131,9 @@ public class UserDefineLibrary {
 					strs = WordAlter.alterAlphaAndNumber(temp).split("\t");
 					if (strs.length != 3) {
 						// "userDefine" would be default termNature
-						value = new Value(strs[0], "userDefine", "1000");
+						value = new TrieValue(strs[0], "userDefine", "1000");
 					} else {
-						value = new Value(strs[0], strs[1], strs[2]);
+						value = new TrieValue(strs[0], strs[1], strs[2]);
 					}
 					LibraryToForest.insertWord(forest, value);
 				}

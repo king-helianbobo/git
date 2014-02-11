@@ -1,7 +1,6 @@
 package org.soul.splitWord;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.domain.Graph;
+import org.soul.domain.ViterbiGraph;
 import org.soul.domain.NewWord;
 import org.soul.domain.TermNatures;
 import org.soul.recognition.AsianNameRecognition;
@@ -28,7 +27,7 @@ public class LearnTool {
 	public int count; // number of new Word we found
 	private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
 
-	public void learn(Graph graph) {
+	public void learn(ViterbiGraph graph) {
 		if (isCompany) {
 			// find organization
 			findCompany(graph);
@@ -46,19 +45,19 @@ public class LearnTool {
 		}
 	}
 
-	private void findAsianPerson(Graph graph) {
+	private void findAsianPerson(ViterbiGraph graph) {
 		List<NewWord> newWords = new AsianNameRecognition(graph.terms)
 				.getNewWords();
 		addListToTerm(newWords);
 	}
 
-	private void findForeignPerson(Graph graph) {
+	private void findForeignPerson(ViterbiGraph graph) {
 		List<NewWord> newWords = new ForeignNameRecognition(graph.terms)
 				.getNewWords();
 		addListToTerm(newWords);
 	}
 
-	private void findCompany(Graph graph) {
+	private void findCompany(ViterbiGraph graph) {
 		List<NewWord> newWords = new CompanyRecogntion(graph.terms)
 				.getNewWords();
 		addListToTerm(newWords);
@@ -73,7 +72,7 @@ public class LearnTool {
 		}
 	}
 
-	private void newWordDetection(Graph graph) {
+	private void newWordDetection(ViterbiGraph graph) {
 		Collection<Node> newWords = null;
 		try {
 			newWords = new NewWordDetection().getNewWords(graph);
@@ -147,8 +146,7 @@ public class LearnTool {
 			if (smartForest.branches[i].getStatus() == 3) {
 				if (nature == null || param.getNature().equals(nature)) {
 					map.put(param.getName(), param.getScore());
-					log.info("score: " + param.getName() + ", "
-							+ param.getScore());
+
 				}
 			} else if (smartForest.branches[i].getStatus() == 2) {
 				if (nature == null || param.getNature().equals(nature)) {

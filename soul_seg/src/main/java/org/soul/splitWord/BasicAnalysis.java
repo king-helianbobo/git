@@ -6,14 +6,14 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.domain.Graph;
+import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.ForeignNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
-import org.soul.utility.StaticVarForSegment;
+import org.soul.utility.MyStaticValue;
 import org.soul.utility.UserDefineLibrary;
 
 public class BasicAnalysis extends Analysis {
@@ -22,13 +22,13 @@ public class BasicAnalysis extends Analysis {
 	private Forest[] forests = null;
 
 	@Override
-	protected List<Term> getResult(final Graph graph) {
+	protected List<Term> getResult(final ViterbiGraph graph) {
 		Merger merger = new Merger() {
 			@Override
 			public List<Term> merge() {
 				// 先进行人名识别，然后再数字识别，因为某些姓名中含有数字（例如三本五十六）
 				graph.walkPath();// construct optimal path
-				if (graph.hasPerson && StaticVarForSegment.allowNameRecognize) {
+				if (graph.hasPerson && MyStaticValue.allowNameRecognize) {
 					new AsianNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 					AsianNameRecognition.nameAmbiguity(graph.terms);
@@ -53,7 +53,7 @@ public class BasicAnalysis extends Analysis {
 				return getResult();
 			}
 
-			private void userDefineRecognize(final Graph graph, Forest forest) {
+			private void userDefineRecognize(final ViterbiGraph graph, Forest forest) {
 				new UserDefineRecognition(graph.terms, forest).recognition();
 				graph.rmLittlePath();
 				graph.walkPathByScore();

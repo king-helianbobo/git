@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.domain.Graph;
+import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.splitWord.PatternMap.Node;
@@ -43,7 +43,7 @@ public class NewWordDetection {
 		}
 	}
 
-	public Collection<Node> getNewWords(Graph graph) throws IOException {
+	public Collection<Node> getNewWords(ViterbiGraph graph) throws IOException {
 		PatternMap pt = new PatternMap(); // construct patternTree
 
 		List<Term> tempList = new ArrayList<Term>(20);
@@ -53,9 +53,11 @@ public class NewWordDetection {
 			}
 			if (filter(term)) {
 				tempList.add(term);
+
 			} else {
 				if (tempList.size() > 1) {
 					pt.addList(tempList);
+					log.info("add one term: " + tempList);
 				}
 				if (tempList.size() > 0) {
 					tempList.clear();

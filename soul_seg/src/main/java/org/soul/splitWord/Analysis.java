@@ -12,7 +12,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.domain.Graph;
+import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
@@ -67,7 +67,7 @@ public abstract class Analysis {
 		String sentence = WordAlter.alterAlphaAndNumber(tmpStr, 0,
 				tmpStr.length());
 		// 将部分全角字母和数字变成相应的ASCII char
-		Graph gp = new Graph(sentence);
+		ViterbiGraph gp = new ViterbiGraph(sentence);
 		int startOffe = 0;
 		if (UserDefineLibrary.ambiguityForest != null) {
 			// use ambiguity dictionary provided by user
@@ -102,7 +102,7 @@ public abstract class Analysis {
 		terms.addAll(result);
 	}
 
-	private void analysis(Graph gp, String sentence, int startOffe) {
+	private void analysis(ViterbiGraph gp, String sentence, int startOffe) {
 		int start = 0;
 		int end = 0;
 		int length = 0;
@@ -176,7 +176,7 @@ public abstract class Analysis {
 		return terms;
 	}
 
-	protected abstract List<Term> getResult(Graph graph);
+	protected abstract List<Term> getResult(ViterbiGraph graph);
 
 	public abstract class Merger {
 		public abstract List<Term> merge();

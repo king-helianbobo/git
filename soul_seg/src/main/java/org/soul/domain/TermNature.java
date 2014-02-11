@@ -1,7 +1,6 @@
 package org.soul.domain;
 
 import org.soul.utility.NatureLibrary;
-import org.soul.utility.StaticVarForSegment;
 
 public class TermNature {
 
@@ -12,15 +11,15 @@ public class TermNature {
 	public static final TermNature END = new TermNature("末##末", 1);
 	public static final TermNature USER_DEFINE = new TermNature("userDefine", 1);
 	public static final TermNature NR = new TermNature("nr", 1);
-	// Chinese,Korea or Foreign Name
+	// Chinese, Korea or Foreign Name
 	public static final TermNature NT = new TermNature("nt", 1);// organization
 	public static final TermNature NW = new TermNature("nw", 1); // new word
 
-	public Nature nature;
+	public NatureInLib natureInLib;
 	public int frequency;
 
 	public TermNature(String natureStr, int frequency) {
-		this.nature = NatureLibrary.getNature(natureStr);
+		this.natureInLib = NatureLibrary.getNature(natureStr);
 		this.frequency = frequency;
 	}
 
@@ -44,6 +43,6 @@ public class TermNature {
 
 	@Override
 	public String toString() {
-		return this.nature.natureStr + "/" + frequency;
+		return this.natureInLib.natureStr + "/" + frequency;
 	}
 }

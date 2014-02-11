@@ -53,7 +53,7 @@ public class TermNatures {
 			termNature = termNatures[i];
 			allFreq += termNature.frequency;
 			max = Math.max(max, termNature.frequency);
-			switch (termNature.nature.index) {
+			switch (termNature.natureInLib.index) {
 			case 18: // m
 				if (numNatureAttr == null)
 					numNatureAttr = new NumNatureAttr();

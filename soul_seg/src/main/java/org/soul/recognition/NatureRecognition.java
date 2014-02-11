@@ -66,7 +66,7 @@ public class NatureRecognition {
 		int index = natureTermTable.length - 1;
 		while ((from = to.from) != null && index > 0) {
 			int i = --index;
-			terms.get(i).setNature(from.termNature.nature);
+			terms.get(i).setNature(from.termNature.natureInLib);
 			to = from;
 		}
 	}
@@ -93,7 +93,7 @@ public class NatureRecognition {
 
 		@Override
 		public String toString() {
-			return termNature.nature.natureStr + "/" + selfScore;
+			return termNature.natureInLib.natureStr + "/" + selfScore;
 		}
 
 	}

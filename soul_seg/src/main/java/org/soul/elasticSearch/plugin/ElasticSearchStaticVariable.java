@@ -24,7 +24,7 @@ import org.elasticsearch.env.Environment;
 import org.elasticsearch.env.FailedToResolveConfigException;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
 import org.soul.treeSplit.IOUtil;
-import org.soul.utility.StaticVarForSegment;
+import org.soul.utility.MyStaticValue;
 
 public class ElasticSearchStaticVariable {
 	private static Log log = LogFactory
@@ -50,17 +50,17 @@ public class ElasticSearchStaticVariable {
 		// whether use stemming for English word
 		pstemming = settings.getAsBoolean("soul_pstemming", false);
 		// userLibrary
-		StaticVarForSegment.userLibrary = getPath(settings.get("soul_userLib",
-				StaticVarForSegment.userLibrary));
+		MyStaticValue.userLibrary = getPath(settings.get("soul_userLib",
+				MyStaticValue.userLibrary));
 		// ambiguityLibrary
-		StaticVarForSegment.ambiguityLibrary = getPath(settings.get(
-				"soul_ambiguityLib", StaticVarForSegment.ambiguityLibrary));
+		MyStaticValue.ambiguityLibrary = getPath(settings.get(
+				"soul_ambiguityLib", MyStaticValue.ambiguityLibrary));
 		// stop word library
-		StaticVarForSegment.stopLibrary = getPath(settings.get("soul_stopPath",
-				StaticVarForSegment.stopLibrary));
+		MyStaticValue.stopLibrary = getPath(settings.get("soul_stopPath",
+				MyStaticValue.stopLibrary));
 		// log.info(StaticVarForSegment.stopLibrary);
-		StaticVarForSegment.synonymLibrary = getPath(settings.get(
-				"soul_synonymPath", StaticVarForSegment.synonymLibrary));
+		MyStaticValue.synonymLibrary = getPath(settings.get(
+				"soul_synonymPath", MyStaticValue.synonymLibrary));
 	}
 
 	private static String getPath(String path) {
@@ -80,9 +80,9 @@ public class ElasticSearchStaticVariable {
 	}
 
 	private static void loadFilter() {
-		File stopLibrary = new File(StaticVarForSegment.stopLibrary);
+		File stopLibrary = new File(MyStaticValue.stopLibrary);
 		if (!stopLibrary.isFile() || !stopLibrary.canRead()) {
-			logger.info("Can't find file:" + StaticVarForSegment.stopLibrary
+			logger.info("Can't find file:" + MyStaticValue.stopLibrary
 					+ "!");
 			filter = new HashSet<String>();
 			return;
@@ -108,9 +108,9 @@ public class ElasticSearchStaticVariable {
 	}
 
 	private static void loadSynonymArray() {
-		File synonymLibrary = new File(StaticVarForSegment.synonymLibrary);
+		File synonymLibrary = new File(MyStaticValue.synonymLibrary);
 		if (!synonymLibrary.isFile() || !synonymLibrary.canRead()) {
-			logger.info("Can't find file:" + StaticVarForSegment.synonymLibrary
+			logger.info("Can't find file:" + MyStaticValue.synonymLibrary
 					+ "!");
 			synonymTree = null;
 			return;

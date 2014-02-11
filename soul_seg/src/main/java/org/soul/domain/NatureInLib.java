@@ -1,20 +1,27 @@
 package org.soul.domain;
 
-public class Nature {
+/**
+ * 从词性对照表中加载的，与具体的Term无关
+ * 
+ * @author liubo
+ * 
+ */
+public class NatureInLib {
 
 	public final String natureStr; // 词性的名称
 	public final int index; // 在词性对照表的位置
 	public final int natureIndex; // 在词性对照表中的下标值
 	public final int allFrequency; // 词性出现频率
 
-	public Nature(String natureStr, int index, int natureIndex, int allFrequency) {
+	public NatureInLib(String natureStr, int index, int natureIndex,
+			int allFrequency) {
 		this.natureStr = natureStr;
 		this.index = index;
 		this.natureIndex = natureIndex;
 		this.allFrequency = allFrequency;
 	}
 
-	public Nature(String natureStr) {
+	public NatureInLib(String natureStr) {
 		this.natureStr = natureStr;
 		this.index = 0;
 		this.natureIndex = 0;
