@@ -121,7 +121,7 @@ public class BasicAnalysisTest {
 	}
 	@Ignore()
 	@Test
-	public void wordAlertTest() {
+	public void wordAlterTest() {
 		String str = "。，、”ｓｄｆｓｄｆ多啦哆啦Ａａ梦１";
 		String result = WordAlter.alterAlphaAndNumber(str, 0, str.length());
 		log.info(countChineseChars(str));

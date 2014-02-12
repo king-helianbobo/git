@@ -1,5 +1,5 @@
-## 使用这种mapping来测试自动提示无效，可能需要看下ES源码
-curl -XPUT "localhost:9200/test?pretty" -d'{
+## 使用这种mapping无效，可能需要看下ES源码
+curl -XPUT "localhost:9200/test?pretty" -d' {
     "settings": {
         "analysis": {
             "analyzer": "soul_pinyin"
@@ -52,8 +52,6 @@ curl -XPOST http://localhost:9200/test/_search?pretty=true  -d '{
      }
 }'
 
-
-
 curl -XPOST http://localhost:9200/soul_test/test1/_search?pretty  -d '{
     "query" : { "term" : { "content" : "许文强" }},
      "highlight" : {
@@ -66,6 +64,7 @@ curl -XPOST http://localhost:9200/soul_test/test1/_search?pretty  -d '{
 }'
 
 
+## 对index：pinyin_test进行自动提示测试
 curl -XPOST http://localhost:9200/pinyin_test/_search?pretty=true  -d '{
     "query": {
         "term": {
@@ -77,6 +76,25 @@ curl -XPOST http://localhost:9200/pinyin_test/_search?pretty=true  -d '{
         "post_tags" : ["</tag1>"],
         "fields" : {
             "title" : {}
+        }
+     }
+}'
+
+## 对sogou_mini索引，做自动提示，    
+## "fields": ["contenttitle", "postTime"]只输出这两个域，否则content内容过多，emacs显示很慢
+## sogou_mini中文档数目是31152个
+curl -XPOST http://localhost:9200/sogou_mini/_search?pretty=true  -d '{
+    "fields": ["contenttitle", "postTime"],
+    "query": {
+        "term": {
+            "contenttitle": "面试"
+        }
+    },
+     "highlight" : {
+        "pre_tags" : ["<t>"],
+        "post_tags" : ["</t>"],
+        "fields" : {
+            "contenttitle" : {}
         }
      }
 }'

@@ -68,7 +68,6 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 			analysisModule.addTokenFilter("file_watcher_synonym",
 					SynonymTokenFilterFactory.class);
 		}
-
 	}
 
 	public void onModule(RestModule restModule) {

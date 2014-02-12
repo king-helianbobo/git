@@ -1,41 +1,23 @@
 package org.lionsoul.jcseg.test;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.elasticsearch.index.query.QueryBuilders.simpleQueryString;
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertHitCount;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.MapWritable;
-import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
@@ -47,14 +29,10 @@ import org.elasticsearch.hadoop.serialization.MapWritableIdExtractor;
 import org.elasticsearch.hadoop.serialization.SerializationUtils;
 import org.elasticsearch.hadoop.util.BytesArray;
 import org.elasticsearch.hadoop.util.WritableUtils;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryStringQueryBuilder;
-import org.elasticsearch.index.query.SimpleQueryStringBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.suggest.module.test.NodeTestHelper;
 
 public class SogouDataTest {
 	private final Log log = LogFactory.getLog(SogouDataTest.class);
@@ -64,9 +42,11 @@ public class SogouDataTest {
 
 	// private String indexName = "sogou_test";
 	// private String typeName = "test1";
-	private String indexName = "sogou_test";
+	private String indexName = "sogou_mini";
 	private String typeName = "table";
-	private String hostName = "192.168.50.75";
+	// private String hostName = "192.168.50.75";
+	private String hostName = "localhost";
+	private String dirName = "/mnt/f/Sogou-mini/";
 	private int port = 9300;
 
 	@Before
@@ -74,7 +54,6 @@ public class SogouDataTest {
 		Properties properties = new Properties();
 		properties.put(ConfigurationOptions.ES_WRITE_OPERATION, "index");
 		properties.put(ConfigurationOptions.ES_MAPPING_ID, "docno");
-		// use docno as id field
 		String resource = indexName + "/" + typeName;
 		properties.put(ConfigurationOptions.ES_RESOURCE, resource);
 		// properties.put(ConfigurationOptions.ES_UPSERT_DOC, "false");
@@ -120,7 +99,7 @@ public class SogouDataTest {
 					.startObject("postTime").field("type", "string")
 					.field("index", "not_analyzed").endObject()
 					.startObject("contenttitle").field("type", "string")
-					.field("index_analyzer", "soul_index")
+					.field("index_analyzer", "soul_pinyin")
 					.field("search_analyzer", "soul_query").endObject()
 					.startObject("content").field("type", "string")
 					.field("index_analyzer", "soul_index")
@@ -139,13 +118,13 @@ public class SogouDataTest {
 		}
 	}
 
-	@Ignore("Send Data to Index Module")
+//	@Ignore("Send Data to Index Module")
 	@Test
 	public void testIndexOperation() throws Exception {
 		IndexCommand command = new IndexCommand(settings);
-		SogouDataReader reader = new SogouDataReader("/mnt/f/Sogou/");
+		SogouDataReader reader = new SogouDataReader(dirName);
 		List<HashMap<String, String>> result = null;
-		BytesArray data = new BytesArray(1024 * 1024);
+		BytesArray data = new BytesArray(4096 * 1024);
 		while ((result = reader.next()) != null) {
 			log.info(result.size());
 			for (int i = 0; i < result.size(); i++) {
@@ -164,14 +143,5 @@ public class SogouDataTest {
 		}
 		restClient.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
-	@Ignore("Convert Sogou Txt data to hdfs friendly format")
-	@Test
-	public void convertDataToHdfsFormat() {
-		SogouDataReader reader = new SogouDataReader("/mnt/f/Sogou/");
-		try {
-			reader.convertToHdfsFormat("/mnt/f/hdfs2/");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+
 }

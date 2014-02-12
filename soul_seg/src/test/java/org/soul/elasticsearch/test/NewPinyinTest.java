@@ -39,7 +39,6 @@ public class NewPinyinTest {
 			for (int i = 0; i < src.length(); i++) {
 				String[] pinYins = PinyinHelper.convertToPinyinArray(
 						src.charAt(i), outputFormat);
-
 				if (pinYins != null && pinYins.length > 0) {// Chinese words
 					for (int j = 0; j < pinYins.length; j++)
 						pinyinBuf.append(pinYins[j] + " ");

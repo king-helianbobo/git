@@ -131,7 +131,7 @@ public class SogouSpellCheckTest {
 
 		int number = 10;
 		// String[] queStrs = {"麻la将", "种植呵大", "关羽字云长", "麻辣ji翅"};
-		String[] queStrs = {"麻辣ji翅", "麻辣jiang"};
+		String[] queStrs = {"中央美术","中央书记"};
 		try {
 			for (String str : queStrs) {
 				String[] suggestions = spellChecker.suggestSimilar(str, number);
@@ -140,10 +140,14 @@ public class SogouSpellCheckTest {
 				} else {
 					StringBuilder builder = new StringBuilder();
 					for (int i = 0; i < suggestions.length; i++) {
-						if (i != (suggestions.length - 1))
-							builder.append(suggestions[i] + "/");
-						else
-							builder.append(suggestions[i]);
+						if (i % 2 != 0) {
+							builder.append("," + suggestions[i] + "]");
+						} else {
+							if (i != 0)
+								builder.append(" [" + suggestions[i]);
+							else
+								builder.append("[" + suggestions[i]);
+						}
 					}
 					log.info("Did you mean: " + builder.toString());
 				}

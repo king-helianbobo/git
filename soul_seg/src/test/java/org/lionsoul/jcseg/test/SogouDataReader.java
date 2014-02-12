@@ -62,6 +62,10 @@ public class SogouDataReader {
 		File dir = new File(outputDir);
 		if (!dir.exists())
 			dir.mkdir();
+		else {
+			dir.delete();
+			dir.mkdir();
+		}
 		FileWriter fw = null;
 		BufferedWriter bw = null;
 		long totalDocNumber = 0;
@@ -83,10 +87,9 @@ public class SogouDataReader {
 					bw = new BufferedWriter(fw);
 				}
 			}
-
 			while (br != null) {
 				final int number = 10;
-				List<HashMap<String, String>> products = getMapData(number);
+				List<HashMap<String, String>> products = generateDataMap(number);
 				if (products != null)
 					totalDocNumber += products.size();
 				for (int i = 0; i < products.size(); i++) {
@@ -138,7 +141,7 @@ public class SogouDataReader {
 			}
 		}
 		final int number = 10;
-		List<HashMap<String, String>> products = getMapData(number);
+		List<HashMap<String, String>> products = generateDataMap(number);
 		while (products.size() < number) {
 			int size = products.size();
 			if (paths.size() > 0) {
@@ -147,7 +150,7 @@ public class SogouDataReader {
 				paths.remove(0);
 				in = new FileInputStream(path);
 				br = new BufferedReader(new InputStreamReader(in, CHAR_CODING));
-				products.addAll(getMapData(number - size));
+				products.addAll(generateDataMap(number - size));
 			} else {
 				if (products.size() > 0)
 					return products;
@@ -157,7 +160,7 @@ public class SogouDataReader {
 		}
 		return products;
 	}
-	private List<HashMap<String, String>> getMapData(int number)
+	private List<HashMap<String, String>> generateDataMap(int number)
 			throws IOException {
 		List<HashMap<String, String>> products = Lists.newArrayList();
 		String temp = null;
@@ -211,7 +214,7 @@ public class SogouDataReader {
 						tmpMap.put("docno", "null");
 				}
 			} else { // (temp.startsWith("</doc>"))
-				HashMap<String, String> result = convertMap(tmpMap);
+				HashMap<String, String> result = addTimeToMap(tmpMap);
 				if (result != null) {
 					products.add(result);
 					n++;
@@ -225,17 +228,16 @@ public class SogouDataReader {
 			br = null;
 		return products;
 	}
-	private HashMap<String, String> convertMap(
-			HashMap<String, String> strBetweenDoc) {
-		for (String str : strBetweenDoc.values()) {
+	private HashMap<String, String> addTimeToMap(HashMap<String, String> docMap) {
+		for (String str : docMap.values()) {
 			if (str.equals("null"))
 				return null;
 		}
 		HashMap<String, String> element = new HashMap<String, String>();
-		element.put("url", strBetweenDoc.get("url"));
-		element.put("docno", strBetweenDoc.get("docno"));
-		element.put("contenttitle", strBetweenDoc.get("contenttitle"));
-		element.put("content", strBetweenDoc.get("content"));
+		element.put("url", docMap.get("url"));
+		element.put("docno", docMap.get("docno"));
+		element.put("contenttitle", docMap.get("contenttitle"));
+		element.put("content", docMap.get("content"));
 		element.put("postTime", generateRandomDate());
 		return element;
 	}
@@ -246,7 +248,7 @@ public class SogouDataReader {
 		// get month
 		String str1 = RandomStringUtils.random(1, "01");
 		if (str1.equals("1"))
-			builder.append(str1 + RandomStringUtils.random(1, "12"));
+			builder.append(str1 + RandomStringUtils.random(1, "012"));
 		else
 			builder.append(str1 + RandomStringUtils.random(1, "123456789"));
 		// get day
@@ -272,6 +274,25 @@ public class SogouDataReader {
 		str1 = RandomStringUtils.random(1, "012345");
 		builder.append(str1 + RandomStringUtils.random(1, "0123456789"));
 		return builder.toString();
+	}
+
+	@SuppressWarnings("unchecked")
+	public static List<String> readOneLine(BufferedReader reader, int size)
+			throws IOException {
+		String temp = null;
+		List<String> entry = new LinkedList<String>();
+		int n = 0;
+		while ((temp = reader.readLine()) != null) {
+			temp = temp.trim();
+			entry.add(temp);
+			n++;
+			if (n >= size)
+				break;
+		}
+		if (entry.size() > 0)
+			return entry;
+		else
+			return null;
 	}
 
 	@SuppressWarnings("unchecked")
