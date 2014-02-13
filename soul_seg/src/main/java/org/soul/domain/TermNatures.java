@@ -4,10 +4,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 public class TermNatures {
-
 	private static Log log = LogFactory.getLog(TermNatures.class);
 	public static final TermNatures NULL = new TermNatures(TermNature.NULL);
-	public static final TermNatures NB = new TermNatures(TermNature.NB);
+	public static final TermNatures M = new TermNatures(TermNature.M);
+	// public static final TermNatures NB = new TermNatures(TermNature.NB);
 	public static final TermNatures NR = new TermNatures(TermNature.NR);
 	public static final TermNatures EN = new TermNatures(TermNature.EN);
 	public static final TermNatures END = new TermNatures(TermNature.END,
@@ -16,12 +16,12 @@ public class TermNatures {
 			50610, 0);
 	public static final TermNatures NT = new TermNatures(TermNature.NT);
 	public static final TermNatures NW = new TermNatures(TermNature.NW);
-
 	public TermNature[] termNatures = null;
+
 	public NumNatureAttr numNature = NumNatureAttr.NULL; // 数字属性
 	public PersonNatureAttr personNature = PersonNatureAttr.NULL;// 人名词性
-	public CompanyNature companyNature = CompanyNature.NULL;// 机构名词性
-	public NewWordNature newWordNature = NewWordNature.NULL;// 新词词性
+	// public CompanyNature companyNature = CompanyNature.NULL;// 机构名词性
+	// public NewWordNature newWordNature = NewWordNature.NULL;// 新词词性
 	public int allFreq = 0;// 词频之和
 	public int id = -2;// term在baseArray中的id
 
@@ -54,16 +54,16 @@ public class TermNatures {
 			allFreq += termNature.frequency;
 			max = Math.max(max, termNature.frequency);
 			switch (termNature.natureInLib.index) {
-			case 18: // m
-				if (numNatureAttr == null)
-					numNatureAttr = new NumNatureAttr();
-				numNatureAttr.numFreq = termNature.frequency;
-				break;
-			case 29: // q,代表量词吗?即允许数字结尾，'倍''年'等量词都具有numEndFreq这个属性
-				if (numNatureAttr == null)
-					numNatureAttr = new NumNatureAttr();
-				numNatureAttr.numEndFreq = termNature.frequency;
-				break;
+				case 18 : // m
+					if (numNatureAttr == null)
+						numNatureAttr = new NumNatureAttr();
+					numNatureAttr.numFreq = termNature.frequency;
+					break;
+				case 29 : // q,代表量词吗?即允许数字结尾，'倍''年'等量词都具有numEndFreq这个属性
+					if (numNatureAttr == null)
+						numNatureAttr = new NumNatureAttr();
+					numNatureAttr.numEndFreq = termNature.frequency;
+					break;
 			}
 		}
 		if (numNatureAttr != null) {
@@ -76,13 +76,4 @@ public class TermNatures {
 	public void setPersonNatureAttr(PersonNatureAttr personAttr) {
 		this.personNature = personAttr;
 	}
-
-	public void setCompanyAttr(CompanyNature companyAttr) {
-		this.companyNature = companyAttr;
-	}
-
-	public void setNewWordAttr(NewWordNature newWordAttr) {
-		this.newWordNature = newWordAttr;
-	}
-
 }

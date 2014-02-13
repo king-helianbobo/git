@@ -15,11 +15,11 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Version;
+import org.elasticSearch.plugin.SoulSpellChecker;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.lionsoul.jcseg.JcSegment;
-import org.soul.elasticSearch.plugin.SoulSpellChecker;
 
 @Test
 public class SogouSpellCheckTest {

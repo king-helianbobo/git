@@ -1,11 +1,10 @@
 package org.soul.domain;
 
-import org.soul.utility.NatureLibrary;
+import org.soul.library.NatureLibrary;
 
 public class TermNature {
 
-	public static final TermNature NULL = new TermNature("null", 1);
-	public static final TermNature NB = new TermNature("m", 1);
+	public static final TermNature M = new TermNature("m", 1);
 	public static final TermNature EN = new TermNature("en", 1);
 	public static final TermNature BEGIN = new TermNature("始##始", 1);
 	public static final TermNature END = new TermNature("末##末", 1);
@@ -14,6 +13,7 @@ public class TermNature {
 	// Chinese, Korea or Foreign Name
 	public static final TermNature NT = new TermNature("nt", 1);// organization
 	public static final TermNature NW = new TermNature("nw", 1); // new word
+	public static final TermNature NULL = new TermNature("null", 1);
 
 	public NatureInLib natureInLib;
 	public int frequency;

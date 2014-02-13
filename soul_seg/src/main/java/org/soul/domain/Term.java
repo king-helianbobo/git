@@ -1,15 +1,17 @@
 package org.soul.domain;
 
+import java.util.List;
+
 import org.soul.recognition.ForeignNameRecognition;
 import org.soul.utility.MathUtil;
 
 public class Term implements Comparable<Term> {
-	public static final Term NULL = new Term("NULL", 0, TermNatures.NULL);
 
 	private String name;
+	private String realName;
 	private int offe;
-	private TermNatures termNatures = null;
-
+	private TermNatures termNatures = TermNatures.NULL;
+	private List<Term> subTerm = null;
 	private Term next;
 	public double score = 0;
 	public double selfScore = 1; // 自身概率
@@ -17,19 +19,24 @@ public class Term implements Comparable<Term> {
 	private Term to;// 到达位置
 	// term本身的词性，必须在词性识别之后才有值，默认为空
 	private NatureInLib nature = TermNature.NULL.natureInLib;
-
 	// 是否是外国人名
-	public boolean isFName = false;
+	// public boolean isFName = false;
 
 	public Term(String name, int offe, TermNatures termNatures) {
 		super();
 		this.name = name;
 		this.offe = offe;
-		this.termNatures = termNatures;
-		if (termNatures == TermNatures.NR || termNatures == TermNatures.NULL
-				|| name.length() == 1) {
-			isFName = ForeignNameRecognition.isFName(this.name);
-		}
+		if (termNatures != null)
+			this.termNatures = termNatures;
+	}
+
+	public Term(String name, int offe, String natureStr, int natureFreq) {
+		super();
+		this.name = name;
+		this.offe = offe;
+		TermNature termNature = new TermNature(natureStr, natureFreq);
+		this.nature = termNature.natureInLib;
+		this.termNatures = new TermNatures(termNature);
 	}
 
 	// 可以到达的位置
@@ -156,5 +163,24 @@ public class Term implements Comparable<Term> {
 	public void clearScore() {
 		this.score = 0;
 		this.selfScore = 0;
+	}
+
+	public void setSubTerm(List<Term> subTerm) {
+		this.subTerm = subTerm;
+	}
+
+	public List<Term> getSubTerm() {
+		return subTerm;
+	}
+
+	public String getRealName() {
+		if (realName == null) {
+			return name;
+		}
+		return realName;
+	}
+
+	public void setRealName(String realName) {
+		this.realName = realName;
 	}
 }

@@ -4,6 +4,9 @@ import java.util.Arrays;
 
 public class SmartForest<T> implements Comparable<SmartForest<T>> {
 
+	private static final int MAX_SIZE = 65536;
+	private static final double rate = 0.9;
+
 	/**
 	 * 1 doesn't represent one word ,but could continue, 2 represent one word
 	 * but could continue, 3 represent one word ,could not continue
@@ -19,6 +22,12 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 
 	private SmartForest(char c) {
 		this.c = c;
+	}
+
+	public SmartForest(char c, int status, T param) {
+		this.c = c;
+		this.status = (byte) status;
+		this.param = param;
 	}
 
 	/**
@@ -51,28 +60,35 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 					this.tmpBranch.setParam(branch.getParam());
 			}
 			return this.tmpBranch;
-		}
-		if (bs < 0) {
-			SmartForest<T>[] newBranches = new SmartForest[branches.length + 1];
-			int insert = -(bs + 1);
-			System.arraycopy(this.branches, 0, newBranches, 0, insert);
-			System.arraycopy(branches, insert, newBranches, insert + 1,
-					branches.length - insert);
-			newBranches[insert] = branch;
-			this.branches = newBranches;
+		} else {
+			// 如果数组内元素接近于最大值直接数组定位，rate是内存和速度的一个平衡
+			if (branches != null && branches.length >= MAX_SIZE * rate) {
+				SmartForest<T>[] tempBranches = new SmartForest[MAX_SIZE];
+				for (SmartForest<T> b : branches) {
+					tempBranches[b.getC()] = b;
+				}
+				tempBranches[branch.getC()] = branch;
+				branches = null;
+				branches = tempBranches;
+			} else {
+				SmartForest<T>[] newBranches = new SmartForest[branches.length + 1];
+				int insert = -(bs + 1);
+				System.arraycopy(this.branches, 0, newBranches, 0, insert);
+				System.arraycopy(branches, insert, newBranches, insert + 1,
+						branches.length - insert);
+				newBranches[insert] = branch;
+				this.branches = newBranches;
+			}
 		}
 		return branch;
-	}
-
-	public SmartForest(char c, int status, T param) {
-		this.c = c;
-		this.status = (byte) status;
-		this.param = param;
 	}
 
 	public int get(char c) {
 		if (branches == null)
 			return -1;
+		if (branches.length == MAX_SIZE) {
+			return c;
+		}
 		int i = Arrays.binarySearch(this.branches, new SmartForest<T>(c));
 		return i;
 	}
@@ -152,14 +168,20 @@ public class SmartForest<T> implements Comparable<SmartForest<T>> {
 	 * @param keyWord
 	 */
 	public SmartForest<T> getBranch(String keyWord) {
+		return this.getBranch(keyWord.toCharArray());
+	}
+
+	public SmartForest<T> getBranch(char[] chars) {
 		SmartForest<T> tempBranch = this;
 		int index = 0;
-		for (int j = 0; j < keyWord.length(); j++) {
-			index = tempBranch.get(keyWord.charAt(j));
+		for (int j = 0; j < chars.length; j++) {
+			index = tempBranch.get(chars[j]);
 			if (index < 0) {
 				return null;
 			}
-			tempBranch = tempBranch.branches[index];
+			if ((tempBranch = tempBranch.branches[index]) == null) {
+				return null;
+			}
 		}
 		return tempBranch;
 	}

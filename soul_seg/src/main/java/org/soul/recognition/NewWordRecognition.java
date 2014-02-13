@@ -1,23 +1,22 @@
 package org.soul.recognition;
 
+import org.soul.domain.NatureInLib;
 import org.soul.domain.NewWord;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
-import org.soul.domain.TermUtil;
-import org.soul.splitWord.LearnTool;
 import org.soul.treeSplit.SmartForest;
+import org.soul.utility.TermUtil;
 
 /**
  * 新词识别
  */
 public class NewWordRecognition {
-
 	private Term[] terms = null;
 	private double score;
 	private StringBuilder sb = new StringBuilder();
 	private SmartForest<NewWord> forest = null;
 	private SmartForest<NewWord> branch = null;
-	private TermNatures tempNatures;
+	private NatureInLib tempNature;
 	private Term from;
 	private Term to;
 	private int offe; // 偏移量
@@ -67,14 +66,14 @@ public class NewWordRecognition {
 					case 2 :
 						sb.append(term.getName());
 						score = branch.getParam().getScore();
-						tempNatures = branch.getParam().getNature();
+						tempNature = branch.getParam().getNature();
 						to = term.getTo();
 						makeNewTerm();
 						continue;
 					case 3 :
 						sb.append(term.getName());
 						score = branch.getParam().getScore();
-						tempNatures = branch.getParam().getNature();
+						tempNature = branch.getParam().getNature();
 						to = term.getTo();
 						makeNewTerm();
 						flag = false;
@@ -89,17 +88,21 @@ public class NewWordRecognition {
 	}
 
 	private void makeNewTerm() {
-		Term term = new Term(sb.toString(), offe, tempNatures);
+		Term term = new Term(sb.toString(), offe, tempNature.natureStr, 1);
 		term.selfScore = score;
-		term.setNature(tempNatures.termNatures[0].natureInLib);
+		term.setNature(tempNature);
+		if (sb.length() > 3) {
+			term.setSubTerm(TermUtil.getSubTerm(from, to));
+		}
 		TermUtil.termLink(from, term);
 		TermUtil.termLink(term, to);
 		TermUtil.insertTerm(terms, term);
+		TermUtil.parseNature(term);
 	}
 
 	private void reset() {
 		offe = -1;
-		tempNatures = null;
+		tempNature = null;
 		branch = forest;
 		score = 0;
 		sb = new StringBuilder();

@@ -4,8 +4,9 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.domain.NewWordNature;
 import org.soul.domain.Term;
+import org.soul.library.BiGramLibrary;
+import org.soul.library.NatureLibrary;
 import org.soul.recognition.NatureRecognition.NatureTerm;
 
 public class MathUtil {
@@ -25,7 +26,7 @@ public class MathUtil {
 			return MAX_FREQUENCE;
 		}
 
-		int nTwoWordsFreq = NGramLibrary.getTwoWordFreq(from, to);
+		int nTwoWordsFreq = BiGramLibrary.getTwoWordFreq(from, to);
 		double value = -Math.log(dSmoothingPara * frequency
 				/ (MAX_FREQUENCE + 80000) + (1 - dSmoothingPara)
 				* ((1 - dTemp) * nTwoWordsFreq / frequency + dTemp));
@@ -64,54 +65,54 @@ public class MathUtil {
 		return score;
 	}
 
-	//新词熵及其左右熵
-	public static double leftRightEntropy(List<Term> all) {
-		double score = 0;
-		NewWordNature newWordAttr = null;
-		Term begin = all.get(0);
+	// 新词熵及其左右熵
+	// public static double leftRightEntropy(List<Term> all) {
+	// double score = 0;
+	// NewWordNature newWordAttr = null;
+	// Term begin = all.get(0);
+	//
+	// // 查看左邻居
+	// int twoWordFreq = NGramLibrary.getTwoWordFreq(begin.getFrom(), begin);
+	// score -= twoWordFreq;
+	//
+	// // 查看右邻居
+	// int length = all.size() - 1;
+	// Term end = all.get(all.size() - 1);
+	// twoWordFreq = NGramLibrary.getTwoWordFreq(end, end.getTo());
+	// score -= twoWordFreq;
+	//
+	// // 查看内部链接
+	// for (int i = 0; i < length; i++) {
+	// score -= NGramLibrary.getTwoWordFreq(all.get(i), all.get(i + 1));
+	// }
+	// if (score < -3) {
+	// return 0;
+	// }
+	//
+	// // 首字分数
+	// newWordAttr = begin.getTermNatures().newWordNature;
+	// score += getTermScore(newWordAttr, newWordAttr.getB());
+	// // 末字分数
+	// newWordAttr = end.getTermNatures().newWordNature;
+	// score += getTermScore(newWordAttr, newWordAttr.getE());
+	// // 中词分数
+	// double midelScore = 0;
+	// Term term = null;
+	// for (int i = 1; i < length; i++) {
+	// term = all.get(i);
+	// newWordAttr = term.getTermNatures().newWordNature;
+	// midelScore += getTermScore(newWordAttr, newWordAttr.getM());
+	// }
+	// score += midelScore / (length);
+	// return score;
+	// }
 
-		// 查看左邻居
-		int twoWordFreq = NGramLibrary.getTwoWordFreq(begin.getFrom(), begin);
-		score -= twoWordFreq;
-
-		// 查看右邻居
-		int length = all.size() - 1;
-		Term end = all.get(all.size() - 1);
-		twoWordFreq = NGramLibrary.getTwoWordFreq(end, end.getTo());
-		score -= twoWordFreq;
-
-		// 查看内部链接
-		for (int i = 0; i < length; i++) {
-			score -= NGramLibrary.getTwoWordFreq(all.get(i), all.get(i + 1));
-		}
-		if (score < -3) {
-			return 0;
-		}
-
-		// 首字分数
-		newWordAttr = begin.getTermNatures().newWordNature;
-		score += getTermScore(newWordAttr, newWordAttr.getB());
-		// 末字分数
-		newWordAttr = end.getTermNatures().newWordNature;
-		score += getTermScore(newWordAttr, newWordAttr.getE());
-		// 中词分数
-		double midelScore = 0;
-		Term term = null;
-		for (int i = 1; i < length; i++) {
-			term = all.get(i);
-			newWordAttr = term.getTermNatures().newWordNature;
-			midelScore += getTermScore(newWordAttr, newWordAttr.getM());
-		}
-		score += midelScore / (length);
-		return score;
-	}
-
-	private static double getTermScore(NewWordNature newWordAttr, int freq) {
-		if (newWordAttr == NewWordNature.NULL) {
-			return 3;
-		}
-		return (freq / (double) (newWordAttr.getAll() + 1))
-				* Math.log(500000 / (double) (newWordAttr.getAll() + 1));
-	}
+	// private static double getTermScore(NewWordNature newWordAttr, int freq) {
+	// if (newWordAttr == NewWordNature.NULL) {
+	// return 3;
+	// }
+	// return (freq / (double) (newWordAttr.getAll() + 1))
+	// * Math.log(500000 / (double) (newWordAttr.getAll() + 1));
+	// }
 
 }

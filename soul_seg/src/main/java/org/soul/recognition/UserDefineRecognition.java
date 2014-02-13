@@ -3,11 +3,11 @@ package org.soul.recognition;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
-import org.soul.domain.TermUtil;
+import org.soul.library.UserDefineLibrary;
 import org.soul.treeSplit.Forest;
 import org.soul.treeSplit.ObjectBean;
 import org.soul.treeSplit.WoodInterface;
-import org.soul.utility.UserDefineLibrary;
+import org.soul.utility.TermUtil;
 
 public class UserDefineRecognition {
 

@@ -4,32 +4,43 @@ public class NewWord {
 
 	private String name;
 	private double score;
-	private TermNatures nature;
-	private int allFreq; // 词频
-	private double averageScore; // 平均分数
-	private boolean isActive = false;// 此词是否可用
+	private NatureInLib nature;
+	private int allFreq; // 总词频
+	// private double averageScore; // 平均分数
+	// private boolean isActive = false;// 此词是否可用
 
-	public NewWord(String name, TermNatures nature, double score, int freq) {
+	public NewWord(String name, NatureInLib nature, double score) {
 		this.name = name;
 		this.nature = nature;
-		this.score = getScore(nature, score);
-		this.allFreq = freq;
-		averageScore = score;
-		if (allFreq > 2 || averageScore < -0.5) {
-			isActive = true;
-		}
+		this.score = score;
+		this.allFreq = 1;
 	}
 
+	// public NewWord(String name, NatureInLib nature, double score, int freq) {
+	// this.name = name;
+	// this.nature = nature;
+	// this.score = getScore(nature, score);
+	// this.allFreq = freq;
+	// averageScore = score;
+	// if (allFreq > 2 || averageScore < -0.5) {
+	// isActive = true;
+	// }
+	// }
+
 	// 更新权重,NW代表newWord,NT代表company,NR代表name
-	private double getScore(TermNatures nature, double score) {
-		if (TermNatures.NW.equals(nature)) {
-			return score * -1;
-		} else if (TermNatures.NR.equals(nature)) {
-			return score * 100;
-		} else if (TermNatures.NT.equals(nature)) {
-			return score * 10;
-		}
-		return score;
+	// public double getScore() {
+	// // if (TermNatures.NW.equals(nature)) {
+	// // return score * -1;
+	// // } else if (TermNatures.NR.equals(nature)) {
+	// // return score * 100;
+	// // } else if (TermNatures.NT.equals(nature)) {
+	// // return score * 10;
+	// // }
+	// return score;
+	// }
+
+	public void setScore(double score) {
+		this.score = score;
 	}
 
 	public String getName() {
@@ -44,38 +55,39 @@ public class NewWord {
 		return score;
 	}
 
-	public TermNatures getNature() {
+	public NatureInLib getNature() {
 		return nature;
 	}
 
-	public void setNature(TermNatures nature) {
+	public void setNature(NatureInLib nature) {
 		this.nature = nature;
 	}
 
-	public void update(double score, TermNatures tn, int freq) {
-		this.score += getScore(tn, score);
+	public void update(double score, NatureInLib nature, int freq) {
+		this.score += score * freq;
 		this.allFreq += freq;
-		this.averageScore = this.score / freq;
-		if (tn == null || !TermNatures.NW.equals(tn)) {
-			this.nature = tn;
+		if (NatureInLib.NW != nature) {
+			this.nature = nature;
 		}
-		if (allFreq > 2 || averageScore < -0.5) {
-			isActive = true;
-		}
+		// this.score += getScore(nature, score);
+		// this.allFreq += freq;
+		// this.averageScore = this.score / freq;
+		// if (nature == null || !TermNatures.NW.equals(nature)) {
+		// this.nature = nature;
+		// // }
+		// if (allFreq > 2 || averageScore < -0.5) {
+		// isActive = true;
+		// }
 	}
 
 	@Override
 	public String toString() {
 		return this.name + "\t" + this.score + "\t"
-				+ this.getNature().termNatures[0];
+				+ this.getNature().natureStr;
 	}
 
 	public int getAllFreq() {
 		return allFreq;
-	}
-
-	public double getAverageScore() {
-		return averageScore;
 	}
 
 }

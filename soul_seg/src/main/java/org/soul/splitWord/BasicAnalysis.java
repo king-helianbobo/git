@@ -8,13 +8,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
+import org.soul.library.UserDefineLibrary;
 import org.soul.recognition.AsianNameRecognition;
 import org.soul.recognition.ForeignNameRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
 import org.soul.treeSplit.Forest;
 import org.soul.utility.MyStaticValue;
-import org.soul.utility.UserDefineLibrary;
 
 public class BasicAnalysis extends Analysis {
 

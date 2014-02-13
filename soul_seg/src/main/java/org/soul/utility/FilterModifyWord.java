@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.domain.NatureInLib;
 import org.soul.domain.Term;
 
 public class FilterModifyWord {
-
+	private static Log log = LogFactory.getLog(FilterModifyWord.class);
 	public static final String _stop = "_stop";
 	private static HashMap<String, String> updateDic = new HashMap<String, String>();
 
@@ -33,17 +35,13 @@ public class FilterModifyWord {
 				natureStr = updateDic.get(term.getName());
 				if (natureStr == null) {
 					result.add(term);
-					continue;
-				}
-				if (!_stop.equals(natureStr)) {
+				} else if (!_stop.equals(natureStr)) {
 					term.setNature(new NatureInLib(natureStr));
 					result.add(term);
 				}
 			}
 		} catch (Exception e) {
-			System.err
-					.println("FilterStopWord.updateDic can not be null , "
-							+ "you must use set FilterStopWord.setUpdateDic(map) or use method set map");
+			log.error("FilterStopWord.updateDic can not be null!");
 		}
 		return result;
 	}

@@ -10,7 +10,7 @@ import org.soul.utility.MathUtil;
 public class NatureRecognition {
 
 	private NatureTerm root = new NatureTerm(TermNature.BEGIN);
-	private NatureTerm[] end = { new NatureTerm(TermNature.END) };
+	private NatureTerm[] end = {new NatureTerm(TermNature.END)};
 	private List<Term> terms = null;
 	private NatureTerm[][] natureTermTable = null;
 
@@ -21,7 +21,7 @@ public class NatureRecognition {
 	}
 
 	/**
-	 * 进行最佳词性查找,引用赋值.所以不需要有返回值
+	 * 最佳词性查找,引用赋值.所以不需要有返回值
 	 */
 	public void recognition() {
 		int length = terms.size();

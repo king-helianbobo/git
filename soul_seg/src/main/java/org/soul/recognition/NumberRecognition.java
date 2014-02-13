@@ -1,13 +1,14 @@
 package org.soul.recognition;
 
 import java.util.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
-import org.soul.domain.TermUtil;
-import org.soul.utility.InitDictionary;
+import org.soul.library.InitDictionary;
 import org.soul.utility.MyStaticValue;
+import org.soul.utility.TermUtil;
 
 public class NumberRecognition {
 	private static Log log = LogFactory.getLog(NumberRecognition.class);

@@ -6,11 +6,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.soul.domain.NatureInLib;
 import org.soul.domain.NewWord;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
-import org.soul.domain.TermUtil;
 import org.soul.treeSplit.StringUtil;
+import org.soul.utility.TermUtil;
 
 /**
  * 外国人名识别
@@ -75,7 +76,9 @@ public class ForeignNameRecognition {
 				}
 			}
 			name = term.getName();
-			if (term.isFName) {
+			if (term.getTermNatures() == TermNatures.NR
+					|| term.getTermNatures() == TermNatures.NW
+					|| name.length() == 1) {
 				boolean flag = validate(name);
 				if (flag) {
 					tempList.add(term);
@@ -158,7 +161,9 @@ public class ForeignNameRecognition {
 			}
 
 			name = term.getName();
-			if (term.isFName) {
+			if (term.getTermNatures() == TermNatures.NR
+					|| term.getTermNatures() == TermNatures.NW
+					|| name.length() == 1) {
 				boolean flag = validate(name);
 				if (flag) {
 					tempList.add(term);
@@ -170,8 +175,8 @@ public class ForeignNameRecognition {
 				for (Term temp : tempList) {
 					sb.append(temp.getName());
 				}
-				all.add(new NewWord(sb.toString(), TermNatures.NR, -1, 1));
-				// notice:word is new generated ,not reference object
+				all.add(new NewWord(sb.toString(), NatureInLib.NRF, -sb
+						.length()));
 				reset();
 			}
 		}

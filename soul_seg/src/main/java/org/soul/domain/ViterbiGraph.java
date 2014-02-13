@@ -1,17 +1,20 @@
 package org.soul.domain;
 
 import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.library.InitDictionary;
 import org.soul.splitWord.Analysis.Merger;
-import org.soul.utility.InitDictionary;
+import org.soul.utility.WordAlter;
 
 //维特比构建最优路径使用的图
 
 public class ViterbiGraph {
 	private static Log log = LogFactory.getLog(ViterbiGraph.class);
-
-	protected String str = null;
+	// public char[] chars = null;
+	public String convertedStr = null;
+	protected String realStr = null;
 	public Term[] terms = null;
 	protected Term end = null;
 	protected Term root = null;
@@ -21,7 +24,8 @@ public class ViterbiGraph {
 	public boolean hasNum; // 是否有数字
 
 	public ViterbiGraph(String str) {
-		this.str = str;
+		this.realStr = str;
+		this.convertedStr = WordAlter.alterAlphaAndNumber(str, 0, str.length());
 		int size = str.length();
 		terms = new Term[size + 1];
 		end = new Term(E, size, TermNatures.END);
@@ -102,13 +106,13 @@ public class ViterbiGraph {
 			 * 对字数进行优化.如果一个字.就跳过..两个字.且第二个为null则.也跳过.从第二个后开始
 			 */
 			switch (maxTerm.getName().length()) {
-			case 1:
-				continue;
-			case 2:
-				if (terms[i + 1] == null) {
-					i = i + 1;
+				case 1 :
 					continue;
-				}
+				case 2 :
+					if (terms[i + 1] == null) {
+						i = i + 1;
+						continue;
+					}
 			}
 
 			/**
@@ -221,11 +225,11 @@ public class ViterbiGraph {
 				term = term.getNext();
 			}
 		} else {
-			char c = str.charAt(to);
+			char c = this.convertedStr.charAt(to);
 			log.info(c);
 			TermNatures tn = InitDictionary.termNatures[c];
 			if (tn == null)
-				tn = TermNatures.NULL;
+				tn = TermNatures.NW;
 			terms[to] = new Term(String.valueOf(c), to, tn);
 			terms[to].setPathScore(fromTerm);
 		}

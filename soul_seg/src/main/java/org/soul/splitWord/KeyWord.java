@@ -46,5 +46,19 @@ public class KeyWord implements Comparable<KeyWord> {
 	public String toString() {
 		return name;// "="+score+":"+freq+":"+idf;
 	}
+	public String getName() {
+		return name;
+	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public double getScore() {
+		return score;
+	}
+
+	public void setScore(double score) {
+		this.score = score;
+	}
 }

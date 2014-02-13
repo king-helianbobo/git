@@ -1,8 +1,8 @@
 package org.soul.splitWord;
 
-import static org.soul.utility.InitDictionary.IN_SYSTEM;
-import static org.soul.utility.InitDictionary.TraditionalToSimplified;
-import static org.soul.utility.InitDictionary.status;
+import static org.soul.library.InitDictionary.IN_SYSTEM;
+import static org.soul.library.InitDictionary.TraditionalToSimplified;
+import static org.soul.library.InitDictionary.status;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,9 +16,10 @@ import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
+import org.soul.library.UserDefineLibrary;
+import org.soul.treeSplit.Forest;
 import org.soul.treeSplit.GetTrieWords;
 import org.soul.treeSplit.StringUtil;
-import org.soul.utility.UserDefineLibrary;
 import org.soul.utility.WordAlter;
 
 public abstract class Analysis {
@@ -30,7 +31,7 @@ public abstract class Analysis {
 	private BufferedReader br;
 	private LinkedList<Term> terms = new LinkedList<Term>();
 	private Term term = null;
-
+	protected Forest[] forests = null;
 	public Analysis(Reader reader) {
 		br = new BufferedReader(reader);
 	}
@@ -64,19 +65,19 @@ public abstract class Analysis {
 	}
 
 	private void analysisSentence(String tmpStr) {
-		String sentence = WordAlter.alterAlphaAndNumber(tmpStr, 0,
-				tmpStr.length());
+		// String sentence = WordAlter.alterAlphaAndNumber(tmpStr, 0,
+		// tmpStr.length());
 		// 将部分全角字母和数字变成相应的ASCII char
-		ViterbiGraph gp = new ViterbiGraph(sentence);
+		ViterbiGraph gp = new ViterbiGraph(tmpStr);
 		int startOffe = 0;
 		if (UserDefineLibrary.ambiguityForest != null) {
 			// use ambiguity dictionary provided by user
 			GetTrieWords getTrieWords = new GetTrieWords(
-					UserDefineLibrary.ambiguityForest, sentence);
+					UserDefineLibrary.ambiguityForest, gp.convertedStr);
 			String[] params = null;
 			while ((getTrieWords.getOneWord()) != null) {
 				if (getTrieWords.offe > startOffe) {
-					String str = sentence.substring(startOffe,
+					String str = gp.convertedStr.substring(startOffe,
 							getTrieWords.offe);
 					analysis(gp, str, startOffe);
 				}
@@ -90,13 +91,13 @@ public abstract class Analysis {
 					startOffe += params[i].length();
 				}
 			}
-			if (startOffe != sentence.length()) {
+			int length = gp.convertedStr.length();
+			if (startOffe < length - 1) {
 				// log.info(sentence.substring(startOffe, sentence.length()));
-				analysis(gp, sentence.substring(startOffe, sentence.length()),
-						startOffe);
+				analysis(gp, gp.convertedStr.substring(startOffe), startOffe);
 			}
 		} else {
-			analysis(gp, sentence, startOffe);
+			analysis(gp, gp.convertedStr, startOffe);
 		}
 		List<Term> result = this.getResult(gp);
 		terms.addAll(result);
@@ -134,7 +135,7 @@ public abstract class Analysis {
 						end++;
 					}
 					str = WordAlter.alterNumber(sentence, start, end);
-					gp.addTerm(new Term(str, start + startOffe, TermNatures.NB));
+					gp.addTerm(new Term(str, start + startOffe, TermNatures.M));
 					// decimal number use TermNatures.NB
 					i--;
 					break;

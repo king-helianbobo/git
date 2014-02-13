@@ -6,12 +6,19 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.domain.NewWord;
 import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
+import org.soul.library.InitDictionary;
+import org.soul.library.NatureLibrary;
+import org.soul.newWord.crf.SplitWord;
+import org.soul.recognition.AsianNameRecognition;
+import org.soul.recognition.LearnTool;
 import org.soul.recognition.NatureRecognition;
 import org.soul.recognition.NewWordRecognition;
 import org.soul.recognition.NumberRecognition;
 import org.soul.recognition.UserDefineRecognition;
+import org.soul.utility.WordAlter;
 
 /**
  * Native language processing
@@ -19,7 +26,8 @@ import org.soul.recognition.UserDefineRecognition;
 public class NlpAnalysis extends Analysis {
 	private static Log log = LogFactory.getLog(NlpAnalysis.class);
 	private LearnTool learn = null;
-
+	private static final SplitWord DEFAULT_SLITWORD = InitDictionary
+			.getCRFSplitWord();
 	public NlpAnalysis(Reader reader, LearnTool learn) {
 		super(reader);
 		this.learn = learn;
@@ -39,26 +47,39 @@ public class NlpAnalysis extends Analysis {
 				if (graph.hasNum)
 					NumberRecognition.recognition(graph.terms);
 				log.info(getResult());
-
 				List<Term> result = getResult();
 				new NatureRecognition(result).recognition(); // 词性标注
 				log.info(getResult());
 
 				// 新词发现训练
+				if (learn == null) {
+					learn = new LearnTool();
+				}
 				learn.learn(graph);
 				log.info(getResult());
 
+				// 通过crf分词
+				// List<String> words =
+				// DEFAULT_SLITWORD.cut(graph.convertedStr);
+				// for (String word : words) {
+				// if (word.length() < 2 || InitDictionary.isInSystemDic(word)
+				// || WordAlter.isRuleWord(word)) {
+				// continue;
+				// }
+				// learn.addTerm(new NewWord(word, NatureLibrary
+				// .getNature("nw"), -word.length()));
+				// }
+
 				// 用户自定义词典
 				new UserDefineRecognition(graph.terms).recognition();
-				// log.info(getResult());
-				// graph.rmLittlePath();
 				graph.walkPathByScore();
 				log.info(getResult());
 
 				new NewWordRecognition(graph.terms, learn).recognition();
 				graph.walkPathByScore();
 				log.info(getResult());
-				// 优化后重新获得最优路径
+				// 修复人名左右连接
+				AsianNameRecognition.nameAmbiguity(graph.terms);
 				return getResult();
 			}
 

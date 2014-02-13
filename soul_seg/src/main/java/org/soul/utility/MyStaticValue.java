@@ -9,17 +9,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+
 //import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.soul.domain.PairEntry;
+import org.soul.library.InitDictionary;
 import org.soul.treeSplit.IOUtil;
 import org.soul.treeSplit.StringUtil;
 
 public class MyStaticValue {
 
-	public static Log LibraryLog = LogFactory.getLog(MyStaticValue.class);
+	public static Log libLog = LogFactory.getLog(MyStaticValue.class);
 	public static boolean allowNameRecognize = true;
 	public static boolean allowNumRecognize = true;
 	public static boolean allowQuantifierRecognize = true;
@@ -50,7 +51,7 @@ public class MyStaticValue {
 			else
 				synonymLibrary = "library/synonym.txt";
 		} catch (Exception e) {
-			LibraryLog.warn("can't find library.properties in classpath!");
+			libLog.warn("can't find library.properties in classpath!");
 		}
 	}
 
@@ -60,10 +61,6 @@ public class MyStaticValue {
 
 	public static BufferedReader getCompanyReader() {
 		return DictionaryReader.getReader("company/company.data");
-	}
-
-	public static BufferedReader getNewWordReader() {
-		return DictionaryReader.getReader("newWord/new_word_freq.dic");
 	}
 
 	public static BufferedReader getBaseArrayReader() {
@@ -86,9 +83,12 @@ public class MyStaticValue {
 		return DictionaryReader.getReader("nature/nature.table");
 	}
 
-	public static BufferedReader getPersonFreqReader() {
-		return DictionaryReader.getReader("person/name_freq.dic");
-	}
+	// public static BufferedReader getNewWordReader() {
+	// return DictionaryReader.getReader("newWord/new_word_freq.dic");
+	// }
+	// public static BufferedReader getPersonFreqReader() {
+	// return DictionaryReader.getReader("person/name_freq.dic");
+	// }
 
 	@SuppressWarnings("unchecked")
 	public static Map<String, int[][]> getPersonFreqMap() {

@@ -12,13 +12,13 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.Version;
+import org.elasticSearch.plugin.PinyinAnalyzer;
+import org.elasticSearch.plugin.PinyinTokenFilter;
+import org.elasticSearch.plugin.SoulEdgeNGramTokenFilter;
+import org.elasticSearch.plugin.SoulIndexAnalyzer;
+import org.elasticSearch.plugin.SoulPinyinAnalyzer;
 import org.lionsoul.jcseg.pinyin.PinyinFormat;
 import org.lionsoul.jcseg.pinyin.PinyinHelper;
-import org.soul.elasticSearch.plugin.PinyinAnalyzer;
-import org.soul.elasticSearch.plugin.SoulPinyinAnalyzer;
-import org.soul.elasticSearch.plugin.PinyinTokenFilter;
-import org.soul.elasticSearch.plugin.SoulEdgeNGramTokenFilter;
-import org.soul.elasticSearch.plugin.SoulIndexAnalyzer;
 import org.testng.annotations.*;
 
 public class NewPinyinTest {

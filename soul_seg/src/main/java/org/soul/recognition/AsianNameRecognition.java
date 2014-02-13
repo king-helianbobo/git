@@ -5,13 +5,14 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.domain.NatureInLib;
 import org.soul.domain.NewWord;
 import org.soul.domain.PersonNatureAttr;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
-import org.soul.domain.TermUtil;
+import org.soul.library.BiGramLibrary;
 import org.soul.splitWord.BasicAnalysis;
-import org.soul.utility.NGramLibrary;
+import org.soul.utility.TermUtil;
 
 public class AsianNameRecognition {
 
@@ -145,9 +146,9 @@ public class AsianNameRecognition {
 	public List<NewWord> getNewWords() {
 		List<NewWord> all = new ArrayList<NewWord>();
 		List<Term> termList = recogntion_();
-		for (Term term2 : termList) {
-			all.add(new NewWord(term2.getName(), TermNatures.NR,
-					term2.selfScore, 1));
+		for (Term t2 : termList) {
+			all.add(new NewWord(t2.getName(), NatureInLib.NR, -t2.getName()
+					.length()));
 		}
 		return all;
 	}
