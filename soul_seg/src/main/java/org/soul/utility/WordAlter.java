@@ -1,9 +1,11 @@
 package org.soul.utility;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.soul.newWord.crf.Element;
+import org.ansj.app.crf.pojo.Element;
+
 public class WordAlter {
 
 	public static final int MIN_LOWER = 65345;
@@ -31,6 +33,7 @@ public class WordAlter {
 			} else if (i >= MIN_UPPER_N && i <= MAX_UPPER_N) {
 				CHARCOVER[i] = (char) (i - UPPER_GAP_N);
 			} else {
+				CHARCOVER[i] = 0;
 				// CHARCOVER[i] = (char) i;
 			}
 		}
@@ -256,7 +259,7 @@ public class WordAlter {
 		int maxLen = chars.length - 1;
 		List<Element> list = new ArrayList<Element>();
 		Element element = null;
-		out : for (int i = 0; i < chars.length; i++) {
+		out: for (int i = 0; i < chars.length; i++) {
 			if (chars[i] >= '0' && chars[i] <= '9') {
 				element = new Element('M');
 				list.add(element);

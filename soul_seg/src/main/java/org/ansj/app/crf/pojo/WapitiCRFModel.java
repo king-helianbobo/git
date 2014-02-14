@@ -1,4 +1,4 @@
-package org.soul.newWord.crf;
+package org.ansj.app.crf.pojo;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;
@@ -6,11 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.soul.newWord.crf.Model;
 import org.soul.treeSplit.IOUtil;
 import org.soul.treeSplit.StringUtil;
 
-public class WapitiCRFModel extends Model {
+public class WapitiCRFModel extends org.ansj.app.crf.pojo.Model {
 
 	Map<String, Integer> statusMap = null;
 

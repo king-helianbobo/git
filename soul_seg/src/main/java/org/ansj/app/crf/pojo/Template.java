@@ -1,4 +1,4 @@
-package org.soul.newWord.crf;
+package org.ansj.app.crf.pojo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,25 +10,14 @@ import java.util.List;
 import java.util.Map;
 import org.soul.treeSplit.StringUtil;
 
-/**
- * 解析crf++模板
- * 
- * @author ansj
- * 
- */
 public class Template implements Serializable {
 
 	private static final long serialVersionUID = 8265350854930361325L;
-
 	public int left = 2;
-
 	public int right = 2;
-
-	public int[][] ft = {{-2}, {-1}, {0}, {1}, {2}, {-2, -1}, {-1, 0}, {0, 1},
-			{1, 2}, {-1, 1}};
-
+	public int[][] ft = { { -2 }, { -1 }, { 0 }, { 1 }, { 2 }, { -2, -1 },
+			{ -1, 0 }, { 0, 1 }, { 1, 2 }, { -1, 1 } };
 	public int tagNum;
-
 	public Map<String, Integer> statusMap;
 
 	/**
@@ -39,7 +28,6 @@ public class Template implements Serializable {
 	 * @throws IOException
 	 */
 	public static Template parse(String templateStr) throws IOException {
-		// TODO Auto-generated method stub
 		return parse(new BufferedReader(new StringReader(templateStr)));
 	}
 

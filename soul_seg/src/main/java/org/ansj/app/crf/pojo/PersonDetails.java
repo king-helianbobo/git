@@ -1,4 +1,4 @@
-package org.soul.library;
+package org.ansj.app.crf.pojo;
 
 import java.io.Serializable;
 

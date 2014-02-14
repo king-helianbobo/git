@@ -1,11 +1,11 @@
-package org.soul.newWord.crf;
+package org.ansj.app.crf.pojo;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GetPersonDetails {
+public class PersonDetailsRead {
 
 	public static void main(String[] args) {
 		String filename = "/home/liubo/person.txt";

@@ -7,13 +7,13 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.ansj.app.crf.pojo.Model;
+import org.ansj.app.crf.pojo.SplitWord;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.domain.PersonNatureAttr;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
-import org.soul.newWord.crf.Model;
-import org.soul.newWord.crf.SplitWord;
 import org.soul.treeSplit.StringUtil;
 import org.soul.utility.DictionaryReader;
 import org.soul.utility.MyStaticValue;

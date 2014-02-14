@@ -1,4 +1,4 @@
-package org.soul.newWord.crf;
+package org.ansj.app.crf.pojo;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -12,24 +12,27 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.ansj.app.crf.pojo.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.library.InitDictionary;
 import org.soul.treeSplit.SmartForest;
 
 public abstract class Model {
 	private static Log log = LogFactory.getLog(Model.class);
+
 	public static enum MODEL_TYPE {
 		CRF, EMM
 	};
 
 	protected Template template = null;
 
-	protected double[][] status = null;
+	// protected double[][] status = null;
+	public double[][] status = null;
 
 	protected Map<String, Feature> myGrad;
 
@@ -52,8 +55,6 @@ public abstract class Model {
 	 * @throws IOException
 	 */
 	private void makeSide(int left, int right) throws IOException {
-		// TODO Auto-generated method stub
-
 		leftList = new ArrayList<Element>(Math.abs(left));
 		for (int i = left; i < 0; i++) {
 			leftList.add(new Element((char) ('B' + i)));
@@ -74,8 +75,6 @@ public abstract class Model {
 	 */
 	public void writeModel(String path) throws FileNotFoundException,
 			IOException {
-		// TODO Auto-generated method stub
-
 		System.out.println("compute ok now to save model!");
 		// 写模型
 		ObjectOutputStream oos = new ObjectOutputStream(
@@ -141,24 +140,52 @@ public abstract class Model {
 
 			log.info("read object started!");
 			model.template = (Template) ois.readObject();
-			log.info("read object ended!");
 			model.makeSide(model.template.left, model.template.right);
-
 			int tagNum = model.template.tagNum;
-
 			int featureNum = model.template.ft.length;
+			for (int i = 0; i < featureNum; i++) {
+				StringBuilder builder = new StringBuilder();
+				for (int j = 0; j < model.template.ft[i].length; j++) {
+					builder.append(model.template.ft[i][j] + " ");
 
+				}
+				log.info("ft: " + builder.toString());
+			}
+
+			// log.info((char) ('B' + 1));
+			// log.info((char) ('B' - 1));
+			Set<Entry<String, Integer>> entrySet = model.template.statusMap
+					.entrySet();
+			for (Entry<String, Integer> entry : entrySet) {
+				log.info("statusMap: " + entry.getKey() + ", "
+						+ entry.getValue());
+			}
 			model.smartForest = new SmartForest<double[][]>();
-
 			model.status = (double[][]) ois.readObject();
+			for (int i = 0; i < model.status.length; i++) {
+				StringBuilder builder = new StringBuilder();
+				for (int j = 0; j < model.status[i].length; j++) {
+					builder.append(model.status[i][j] + " ");
+				}
+				log.info("status: " + builder.toString());
+			}
 
 			// 总共的特征数
 			double[][] w = null;
 			String key = null;
 			int b = 0;
 			int featureCount = ois.readInt();
+			log.info("featureCount = " + featureCount + ", featureNum = "
+					+ featureNum + ", tagNum = " + tagNum);
+			int maxLen = -1;
+			int minLen = 1000;
 			for (int i = 0; i < featureCount; i++) {
 				key = ois.readUTF();
+				// log.info("key = " + key);
+				if (key.length() > maxLen)
+					maxLen = key.length();
+				if (key.length() < minLen)
+					minLen = key.length();
 				w = new double[featureNum][0];
 				for (int j = 0; j < featureNum; j++) {
 					while ((b = ois.readByte()) != -1) {
@@ -170,7 +197,7 @@ public abstract class Model {
 				}
 				model.smartForest.add(key, w);
 			}
-
+			log.info("len = [" + minLen + "," + maxLen + "]");
 			return model;
 		} finally {
 			if (ois != null) {

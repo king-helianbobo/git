@@ -1,34 +1,24 @@
-package org.soul.newWord.crf;
+package org.ansj.app.crf.pojo;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import org.ansj.app.crf.pojo.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.treeSplit.StringUtil;
 import org.soul.utility.MatrixUtil;
 import org.soul.utility.WordAlter;
 
-/**
- * 分词
- * 
- * @author ansj
- * 
- */
 public class SplitWord {
-
+	private static Log log = LogFactory.getLog(SplitWord.class);
 	private Model model = null;
-
 	private int[] tagConver = null;
-
 	private int[] revTagConver = null;
 
-	/**
-	 * 这个对象比较重。支持多线程，请尽量重复使用
-	 * 
-	 * @param model
-	 * @throws Exception
-	 */
 	public SplitWord(Model model) {
 		this.model = model;
 		tagConver = new int[model.template.tagNum];
@@ -52,7 +42,6 @@ public class SplitWord {
 				revTagConver[3] = entry.getValue();
 			}
 		}
-
 		model.end1 = model.template.statusMap.get("S");
 		model.end2 = model.template.statusMap.get("E");
 
@@ -67,7 +56,6 @@ public class SplitWord {
 			return Collections.emptyList();
 		}
 		List<Element> elements = vterbi(line);
-
 		LinkedList<String> result = new LinkedList<String>();
 
 		Element e = null;
@@ -77,21 +65,21 @@ public class SplitWord {
 		for (int i = 0; i < elements.size(); i++) {
 			e = elements.get(i);
 			switch (fixTag(e.getTag())) {
-				case 0 :
+			case 0:
+				end += e.len;
+				result.add(line.substring(begin, end));
+				begin = end;
+				break;
+			case 1:
+				end += e.len;
+				while (fixTag((e = elements.get(++i)).getTag()) != 3) { // 不是“E”
 					end += e.len;
-					result.add(line.substring(begin, end));
-					begin = end;
-					break;
-				case 1 :
-					end += e.len;
-					while (fixTag((e = elements.get(++i)).getTag()) != 3) {
-						end += e.len;
-					}
-					end += e.len;
-					result.add(line.substring(begin, end));
-					begin = end;
-				default :
-					break;
+				}
+				end += e.len;
+				result.add(line.substring(begin, end));
+				begin = end;
+			default:
+				break;
 			}
 		}
 		return result;
@@ -103,7 +91,7 @@ public class SplitWord {
 		int length = elements.size();
 
 		if (length == 1) {
-			elements.get(0).updateTag(revTagConver[0]);
+			elements.get(0).updateTag(revTagConver[0]); // "S"
 			return elements;
 		}
 
@@ -118,23 +106,22 @@ public class SplitWord {
 		elements.get(0).tagScore[revTagConver[2]] = -1000;
 		elements.get(0).tagScore[revTagConver[3]] = -1000;
 		for (int i = 1; i < length; i++) {
-			elements.get(i).maxFrom(model, elements.get(i - 1));
+			elements.get(i).maxFrom(model.status, elements.get(i - 1));
 		}
 
-		// 末位置只能从S,E开始
+		// 末位状态只能从S,E开始,end1 represent S ,end2 represent E
 		Element next = elements.get(elements.size() - 1);
-		Element self = null;
-		int maxStatus = next.tagScore[model.end1] > next.tagScore[model.end2]
-				? model.end1
+		Element selfElement = null;
+		int maxStatus = next.tagScore[model.end1] > next.tagScore[model.end2] ? model.end1
 				: model.end2;
 		next.updateTag(maxStatus);
 		maxStatus = next.from[maxStatus];
-		// 逆序寻找
 		for (int i = elements.size() - 2; i > 0; i--) {
-			self = elements.get(i);
-			self.updateTag(maxStatus);
-			maxStatus = self.from[self.getTag()];
-			next = self;
+			selfElement = elements.get(i);
+			selfElement.updateTag(maxStatus);
+			// maxStatus = selfElement.from[selfElement.getTag()];
+			maxStatus = selfElement.from[maxStatus];
+			next = selfElement;
 		}
 		elements.get(0).updateTag(maxStatus);
 		return elements;
@@ -142,24 +129,29 @@ public class SplitWord {
 	}
 
 	private void computeTagScore(List<Element> elements, int index) {
-		// TODO Auto-generated method stub
-
 		double[] tagScore = new double[model.template.tagNum];
-
 		Template t = model.template;
 		char[] chars = null;
+		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < t.ft.length; i++) {
 			chars = new char[t.ft[i].length];
 			for (int j = 0; j < chars.length; j++) {
 				chars[j] = getElement(elements, index + t.ft[i][j]).name;
 			}
+			if (i == 0)
+				builder.append("[" + String.valueOf(chars));
+			else if (i == t.ft.length - 1)
+				builder.append("," + String.valueOf(chars) + "]");
+			else
+				builder.append("," + String.valueOf(chars));
+
 			MatrixUtil.dot(tagScore, model.getFeature(i, chars));
 		}
+		log.info("splitWord : " + builder.toString());
 		elements.get(index).tagScore = tagScore;
 	}
 
 	private Element getElement(List<Element> elements, int i) {
-		// TODO Auto-generated method stub
 		if (i < 0) {
 			return new Element((char) ('B' + i));
 		} else if (i >= elements.size()) {

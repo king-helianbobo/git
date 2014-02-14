@@ -1,4 +1,5 @@
 package org.soul.splitWord.test;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import org.soul.treeSplit.StringUtil;
 
 public class NLPTest {
 	private final Log log = LogFactory.getLog(NLPTest.class);
+
 	@Test
 	public void newWordDetectionTest1() {
 		String content = "产量两万年中将增长两倍";
@@ -32,6 +34,7 @@ public class NLPTest {
 		log.info(pased);
 		log.info("这次训练已经学到了: " + learn.count + " 个词!");
 	}
+
 	@Test
 	public void newWordDetectionTest2() throws IOException {
 		HashMap<String, Integer> hm = new HashMap<String, Integer>();
@@ -94,7 +97,7 @@ public class NLPTest {
 		log.info(learn.getTopTree(100, TermNatures.NW));
 	}
 
-	@Test
+	// @Test
 	public void keyWordTest() {
 		KeyWordExtraction kwe = new KeyWordExtraction(6);
 		String title = "维基解密否认斯诺登接受委内瑞拉庇护";
@@ -103,7 +106,7 @@ public class NLPTest {
 		log.info(result);
 	}
 
-	@Test
+	// @Test
 	public void organizationTest() {
 		List<String> all = new ArrayList<String>();
 		String example = "江苏宏宝五金股份有限公司（以下简称“本公司”）于2012年11月9日接到实际控制人"

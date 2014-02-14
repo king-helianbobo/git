@@ -1,14 +1,11 @@
-package org.soul.newWord.crf;
-
+package org.ansj.app.crf.pojo;
 
 public class Element {
 	public char name;
 	private int tag = -1;
 	public int len = 1;
 	public String nature;
-
 	public double[] tagScore;
-
 	public int[] from;
 
 	public Element(char name) {
@@ -43,20 +40,19 @@ public class Element {
 		return name + "/" + len;
 	}
 
-	public void maxFrom(Model model, Element element) {
-		// TODO Auto-generated method stub
+	public void maxFrom(double[][] transW, Element element) {
 		if (from == null) {
 			from = new int[this.tagScore.length];
 		}
-		double[] pTagScore = element.tagScore;
-		double rate = 0;
+		double[] preTagScore = element.tagScore;
 		for (int i = 0; i < this.tagScore.length; i++) {
 			double maxValue = 0;
-			for (int j = 0; j < pTagScore.length; j++) {
-				if ((rate = model.tagRate(j, i)) == 0) {
+			for (int j = 0; j < preTagScore.length; j++) {
+				// if ((rate = model.tagRate(j, i)) == 0) {
+				if (transW[j][i] == 0) {
 					continue;
 				}
-				double value = (pTagScore[j] + tagScore[i]) + rate;
+				double value = (preTagScore[j] + tagScore[i]) + transW[j][i];
 				if (value > maxValue) {
 					maxValue = value;
 					from[i] = j;
@@ -67,19 +63,17 @@ public class Element {
 	}
 
 	public static char getTagName(int tag) {
-		// TODO Auto-generated method stub
 		switch (tag) {
-			case 0 :
-				return 'S';
-			case 1 :
-				return 'B';
-			case 2 :
-				return 'M';
-			case 3 :
-				return 'E';
-			default :
-				return '?';
+		case 0:
+			return 'S';
+		case 1:
+			return 'B';
+		case 2:
+			return 'M';
+		case 3:
+			return 'E';
+		default:
+			return '?';
 		}
 	}
-
 }

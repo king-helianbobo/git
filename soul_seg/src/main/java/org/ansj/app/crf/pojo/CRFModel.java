@@ -1,4 +1,4 @@
-package org.soul.newWord.crf;
+package org.ansj.app.crf.pojo;
 
 import java.io.BufferedReader;
 import java.util.HashMap;
