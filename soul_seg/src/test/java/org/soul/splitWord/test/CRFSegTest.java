@@ -8,7 +8,6 @@ import org.soul.library.InitDictionary;
 public class CRFSegTest {
 	private final Log log = LogFactory.getLog(CRFSegTest.class);
 	String[] texts = {
-			"厦门大学的大厦是长春人建立的",
 			"秋后的蚂蚱长不了",
 			"最美丽     乡村  	教师",
 			"百家讲坛开播了",

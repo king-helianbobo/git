@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.ansj.app.crf.pojo.Element;
+import org.soul.app.crf.Element;
 
 public class WordAlter {
 

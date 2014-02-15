@@ -7,10 +7,10 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.ansj.app.crf.pojo.Model;
-import org.ansj.app.crf.pojo.SplitWord;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.app.crf.Model;
+import org.soul.app.crf.SplitWord;
 import org.soul.domain.PersonNatureAttr;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
@@ -256,9 +256,13 @@ public class InitDictionary {
 			return crfSplitWord;
 		}
 		try {
-			// long start = System.currentTimeMillis();
-			crfSplitWord = new SplitWord(Model.loadModel(DictionaryReader
-					.getInputStream("crf/crf.model")));
+			long start = System.currentTimeMillis();
+			// crfSplitWord = new SplitWord(Model.loadModel(DictionaryReader
+			// .getInputStream("crf/crf.model")));
+			crfSplitWord = new SplitWord(Model.readModel(DictionaryReader
+					.getInputStream("crf/crf-model")));
+			log.info("load crf model, use time: "
+					+ (System.currentTimeMillis() - start) + " milliseconds!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
