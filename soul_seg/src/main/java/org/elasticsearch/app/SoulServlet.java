@@ -26,36 +26,35 @@ public class SoulServlet {
 		} else {
 			method = SoulMethod.BASE;
 		}
-		Boolean nature = true;
+		Boolean nature = true; // 是否做词性识别
 		if (strNature != null && strNature.toLowerCase().equals("false")) {
 			nature = false;
 		}
 		List<Term> terms = null;
 		Collection<KeyWord> keyWords = null;
 		switch (method) {
-			case NLP :
-				terms = NlpAnalysis.parse(input);
-				break;
-			case MIN_NLP :
-				terms = NlpAnalysis.parse(input);
-			case KEYWORD :
-				KeyWordExtraction kwc = new KeyWordExtraction(10);
-				keyWords = kwc.computeArticleTfidf(input);
-				break;
-			case INDEX :
-				terms = IndexAnalysis.parse(input);
-				break;
-			default :
-				terms = BasicAnalysis.parse(input);
+		case NLP:
+			terms = NlpAnalysis.parse(input);
+			break;
+		case MIN_NLP:
+			terms = NlpAnalysis.parse(input);
+		case KEYWORD:
+			KeyWordExtraction kwc = new KeyWordExtraction(10);
+			keyWords = kwc.computeArticleTfidf(input);
+			break;
+		case INDEX:
+			terms = IndexAnalysis.parse(input);
+			break;
+		default:
+			terms = BasicAnalysis.parse(input);
 		}
 		if (terms != null) {
 			return termToString(terms, nature, method);
 		}
-
 		if (keyWords != null) {
 			return keyWordsToString(keyWords, nature);
 		}
-		return "i am error!";
+		return "Error happen!";
 	}
 
 	private static String keyWordsToString(Collection<KeyWord> keyWords,
@@ -94,5 +93,4 @@ public class SoulServlet {
 		}
 		return sb.toString();
 	}
-
 }

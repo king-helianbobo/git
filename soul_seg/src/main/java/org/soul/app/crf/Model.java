@@ -36,7 +36,7 @@ public abstract class Model {
 	public double[][] status = null;
 	protected Map<String, Feature> myGrad;
 
-	protected Map<String, double[][]> tmpFeatures;
+	// protected Map<String, double[][]> tmpFeatures;
 	protected SmartForest<double[][]> smartForest = null;
 
 	public int allFeatureCount = 0;
@@ -114,18 +114,19 @@ public abstract class Model {
 			oos.writeInt(entry.getValue());
 		}
 		oos.writeObject(model.status);
-		oos.writeInt(model.tmpFeatures.size());
-		for (Entry<String, double[][]> entry : model.tmpFeatures.entrySet()) {
-			oos.writeUTF(entry.getKey());
-			double[][] value = entry.getValue();
-			for (i = 0; i < value.length; i++) {
-				for (j = 0; j < value[i].length; j++) {
-					oos.writeByte(j);
-					oos.writeFloat((float) value[i][j]);
-				}
-				oos.writeByte(-1);
-			}
-		}
+		// oos.writeInt(model.tmpFeatures.size());
+		// for (Entry<String, double[][]> entry : model.tmpFeatures.entrySet())
+		// {
+		// oos.writeUTF(entry.getKey());
+		// double[][] value = entry.getValue();
+		// for (i = 0; i < value.length; i++) {
+		// for (j = 0; j < value[i].length; j++) {
+		// oos.writeByte(j);
+		// oos.writeFloat((float) value[i][j]);
+		// }
+		// oos.writeByte(-1);
+		// }
+		// }
 		oos.flush();
 		oos.close();
 	}
@@ -200,9 +201,9 @@ public abstract class Model {
 						weight[j][b] = ois.readFloat();
 					}
 				}
-				if (model.tmpFeatures == null)
-					model.tmpFeatures = new HashMap<String, double[][]>();
-				model.tmpFeatures.put(key, weight);
+				// if (model.tmpFeatures == null)
+				// model.tmpFeatures = new HashMap<String, double[][]>();
+				// model.tmpFeatures.put(key, weight);
 				model.smartForest.add(key, weight);
 			}
 			logModelInfo(model);
@@ -276,9 +277,9 @@ public abstract class Model {
 					}
 				}
 				model.smartForest.add(key, weight);
-				if (model.tmpFeatures == null)
-					model.tmpFeatures = new HashMap<String, double[][]>();
-				model.tmpFeatures.put(key, weight);
+				// if (model.tmpFeatures == null)
+				// model.tmpFeatures = new HashMap<String, double[][]>();
+				// model.tmpFeatures.put(key, weight);
 			}
 			logModelInfo(model);
 			return model;

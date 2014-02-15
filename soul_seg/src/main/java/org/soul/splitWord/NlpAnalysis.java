@@ -26,8 +26,10 @@ import org.soul.utility.WordAlter;
 public class NlpAnalysis extends Analysis {
 	private static Log log = LogFactory.getLog(NlpAnalysis.class);
 	private LearnTool learn = null;
-	private static final SplitWord DEFAULT_SLITWORD = InitDictionary
+	private static final SplitWord crfSplitModel = InitDictionary
 			.getCRFSplitWord();
+
+	// private static final SplitWord crfSplitModel = null;
 
 	public NlpAnalysis(Reader reader, LearnTool learn) {
 		super(reader);
@@ -59,15 +61,17 @@ public class NlpAnalysis extends Analysis {
 				learn.learn(graph);
 				log.info(getResult());
 
-				// 通过crf分词
-				List<String> words = DEFAULT_SLITWORD.cut(graph.convertedStr);
-				for (String word : words) {
-					if (word.length() < 2 || InitDictionary.isInSystemDic(word)
-							|| WordAlter.isRuleWord(word)) {
-						continue;
+				if (crfSplitModel != null) {
+					List<String> words = crfSplitModel.cut(graph.convertedStr);
+					for (String word : words) {
+						if (word.length() < 2
+								|| InitDictionary.isInSystemDic(word)
+								|| WordAlter.isRuleWord(word)) {
+							continue;
+						}
+						learn.addTerm(new NewWord(word, NatureLibrary
+								.getNature("nw"), -word.length()));
 					}
-					learn.addTerm(new NewWord(word, NatureLibrary
-							.getNature("nw"), -word.length()));
 				}
 
 				// 用户自定义词典
