@@ -1,4 +1,4 @@
-package org.soul.splitWord;
+package org.soul.analysis;
 
 public class KeyWord implements Comparable<KeyWord> {
 	private String name;

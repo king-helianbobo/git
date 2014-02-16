@@ -10,7 +10,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.Version;
 import org.elasticsearch.common.settings.Settings;
-import org.soul.splitWord.BasicAnalysis;
+import org.soul.analysis.BasicAnalysis;
 
 import java.io.IOException;
 import java.io.Reader;

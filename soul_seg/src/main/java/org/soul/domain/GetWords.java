@@ -1,4 +1,4 @@
-package org.soul.splitWord;
+package org.soul.domain;
 
 import static org.soul.library.InitDictionary.TraditionalToSimplified;
 import static org.soul.library.InitDictionary.base;
@@ -6,8 +6,6 @@ import static org.soul.library.InitDictionary.check;
 import static org.soul.library.InitDictionary.status;
 import static org.soul.library.InitDictionary.termNatures;
 import static org.soul.library.InitDictionary.words;
-
-import org.soul.domain.TermNatures;
 
 public class GetWords {
 
@@ -38,32 +36,32 @@ public class GetWords {
 		for (; i < charsLength; i++) {
 			int charHashCode = TraditionalToSimplified(chars.charAt(i));
 			switch (getStatement(charHashCode)) {
-				case 0 : // not in dictionary
-					if (baseValue == chars.charAt(i)) {
-						str = String.valueOf(chars.charAt(i));
-						offe = i;
-						start = ++i;
-						baseValue = 0;
-						tmpBaseValue = baseValue;
-						return str;
-					} else {
-						i = start;
-						start++;
-						baseValue = 0;
-						break; // break current switch
-					}
-				case 2 : // continue
-					i++;
-					offe = start;
-					tmpBaseValue = baseValue;
-					return words[tmpBaseValue];
-				case 3 : // form one word,break
-					offe = start;
-					start++;
-					i = start;
-					tmpBaseValue = baseValue;
+			case 0: // not in dictionary
+				if (baseValue == chars.charAt(i)) {
+					str = String.valueOf(chars.charAt(i));
+					offe = i;
+					start = ++i;
 					baseValue = 0;
-					return words[tmpBaseValue];
+					tmpBaseValue = baseValue;
+					return str;
+				} else {
+					i = start;
+					start++;
+					baseValue = 0;
+					break; // break current switch
+				}
+			case 2: // continue
+				i++;
+				offe = start;
+				tmpBaseValue = baseValue;
+				return words[tmpBaseValue];
+			case 3: // form one word,break
+				offe = start;
+				start++;
+				i = start;
+				tmpBaseValue = baseValue;
+				baseValue = 0;
+				return words[tmpBaseValue];
 			}
 		}
 		if (start++ != charsLength) {
@@ -121,5 +119,4 @@ public class GetWords {
 	public int getOffe() {
 		return offe;
 	}
-
 }

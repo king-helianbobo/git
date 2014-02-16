@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.analysis.Analysis.Merger;
 import org.soul.library.InitDictionary;
-import org.soul.splitWord.Analysis.Merger;
 import org.soul.utility.WordAlter;
 
 //维特比构建最优路径使用的图
@@ -85,34 +85,32 @@ public class ViterbiGraph {
 	}
 
 	/**
-	 * 删除最短的节点,废了好大劲写的.然后发现木有用..伤不起啊.舍不得删.让他进git体验下吧回头我再删掉-_-!
+	 * 删除最短的节点
 	 */
 	public void rmLittlePath() {
 		int maxTo = -1;
 		Term temp = null;
 		Term maxTerm = null;
-		// 是否有交叉
-		boolean flag = false;
+
+		boolean flag = false; // 是否有交叉
 		int length = terms.length - 1;
 		for (int i = 0; i < length; i++) {
 			maxTerm = getMaxTerm(i);
-
 			if (maxTerm == null)
 				continue;
-
 			maxTo = maxTerm.getToValue();
 
 			/**
 			 * 对字数进行优化.如果一个字.就跳过..两个字.且第二个为null则.也跳过.从第二个后开始
 			 */
 			switch (maxTerm.getName().length()) {
-				case 1 :
+			case 1:
+				continue;
+			case 2:
+				if (terms[i + 1] == null) {
+					i = i + 1;
 					continue;
-				case 2 :
-					if (terms[i + 1] == null) {
-						i = i + 1;
-						continue;
-					}
+				}
 			}
 
 			/**
@@ -143,13 +141,12 @@ public class ViterbiGraph {
 	}
 
 	/**
-	 * 得到本行最大term
+	 * 得到本offset下的最长term
 	 * 
 	 * @param i
 	 * @return
 	 */
 	private Term getMaxTerm(int i) {
-		// TODO Auto-generated method stub
 		Term maxTerm = terms[i];
 		if (maxTerm == null) {
 			return null;

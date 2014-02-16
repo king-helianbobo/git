@@ -1,4 +1,4 @@
-package org.soul.splitWord;
+package org.soul.analysis;
 
 import java.util.ArrayList;
 import java.util.Collection;

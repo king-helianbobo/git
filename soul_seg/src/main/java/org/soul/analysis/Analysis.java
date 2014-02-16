@@ -1,4 +1,4 @@
-package org.soul.splitWord;
+package org.soul.analysis;
 
 import static org.soul.library.InitDictionary.IN_SYSTEM;
 import static org.soul.library.InitDictionary.TraditionalToSimplified;
@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.domain.GetWords;
 import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;

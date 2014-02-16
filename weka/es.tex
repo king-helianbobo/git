@@ -624,3 +624,14 @@ curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
 }'
 \end{verbatim}
 \end{enumerate}
+\par 关键字为"中国 美国",要搜索的内容为"美国和中国",可以搜索不出来. 关键字为"美国 中国"就搜索得出来.
+现人就是只能让关键字两个词的顺序和要搜内容的顺序一致才搜索出来,这效果不好,
+这问题怎么解决,
+试试PhraseQuery
+import org.apache.lucene.search.PhraseQuery;
+
+PhraseQuery pQuery = new PhraseQuery();
+pQuery.setSlop(0);          //设置坡度，设为0，表示必须紧挨着,如果你要搜索"美国和中国"可以试试把值设高一点
+pQuery.add(new Term("Contents", "美国"));      //Contents是你要搜索的域
+pQuery.add(new Term("Contents","中国"));
+indexSearcher.search(pQuery,10000);      //然后用一个indexSearcher搜索就可以了，返回多少个结果自己定，暂时写了个10000上去。

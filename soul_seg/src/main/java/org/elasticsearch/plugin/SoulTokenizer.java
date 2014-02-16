@@ -12,10 +12,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.elasticsearch.hadoop.util.StringUtils;
+import org.soul.analysis.Analysis;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.library.UserDefineLibrary;
-import org.soul.splitWord.Analysis;
 
 public class SoulTokenizer extends Tokenizer {
 

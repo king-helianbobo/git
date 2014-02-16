@@ -11,7 +11,7 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.soul.splitWord.NlpAnalysis;
+import org.soul.analysis.NlpAnalysis;
 import org.soul.treeSplit.IOUtil;
 import org.soul.treeSplit.StringUtil;
 import org.soul.utility.MyStaticValue;

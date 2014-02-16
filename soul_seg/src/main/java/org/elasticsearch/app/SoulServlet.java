@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
+import org.soul.analysis.BasicAnalysis;
+import org.soul.analysis.IndexAnalysis;
+import org.soul.analysis.KeyWord;
+import org.soul.analysis.KeyWordExtraction;
+import org.soul.analysis.NlpAnalysis;
 import org.soul.domain.Term;
 import org.soul.recognition.NatureRecognition;
-import org.soul.splitWord.BasicAnalysis;
-import org.soul.splitWord.IndexAnalysis;
-import org.soul.splitWord.KeyWord;
-import org.soul.splitWord.KeyWordExtraction;
-import org.soul.splitWord.NlpAnalysis;
 
 public class SoulServlet {
 

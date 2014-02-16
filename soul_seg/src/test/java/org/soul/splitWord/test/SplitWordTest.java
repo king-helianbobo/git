@@ -5,9 +5,9 @@ import java.io.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.analysis.BasicAnalysis;
+import org.soul.analysis.NlpAnalysis;
 import org.soul.domain.Term;
-import org.soul.splitWord.BasicAnalysis;
-import org.soul.splitWord.NlpAnalysis;
 import org.soul.treeSplit.IOUtil;
 import org.junit.Test;
 import org.junit.Ignore;

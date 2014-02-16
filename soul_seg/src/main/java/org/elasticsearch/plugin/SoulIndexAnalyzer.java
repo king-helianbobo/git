@@ -10,7 +10,7 @@ import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.util.Version;
-import org.soul.splitWord.BasicAnalysis;
+import org.soul.analysis.BasicAnalysis;
 
 public class SoulIndexAnalyzer extends Analyzer {
 

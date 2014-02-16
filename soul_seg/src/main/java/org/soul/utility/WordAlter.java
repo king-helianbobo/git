@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.soul.app.crf.Element;
 
+//对特殊字符进行转换
 public class WordAlter {
 
 	public static final int MIN_LOWER = 65345;

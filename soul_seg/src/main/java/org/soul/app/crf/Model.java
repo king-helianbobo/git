@@ -37,7 +37,8 @@ public abstract class Model {
 	protected Map<String, Feature> myGrad;
 
 	// protected Map<String, double[][]> tmpFeatures;
-	protected SmartForest<double[][]> smartForest = null;
+	// protected SmartForest<double[][]> smartForest = null;
+	protected SmartForest<float[][]> smartForest = null;
 
 	public int allFeatureCount = 0;
 
@@ -184,19 +185,19 @@ public abstract class Model {
 			int featureNum = model.template.ft.length;
 
 			model.status = (double[][]) ois.readObject();
-			model.smartForest = new SmartForest<double[][]>();
-			double[][] weight = null;
+			model.smartForest = new SmartForest<float[][]>();
+			float[][] weight = null;
 			String key = null;
 			int b = 0;
 			int featureCount = ois.readInt();
 			for (int i = 0; i < featureCount; i++) {
 				key = ois.readUTF();
 				// log.info("key = " + key);
-				weight = new double[featureNum][0];
+				weight = new float[featureNum][0];
 				for (int j = 0; j < featureNum; j++) {
 					while ((b = ois.readByte()) != -1) {
 						if (weight[j].length == 0) {
-							weight[j] = new double[tagNum];
+							weight[j] = new float[tagNum];
 						}
 						weight[j][b] = ois.readFloat();
 					}
@@ -257,7 +258,7 @@ public abstract class Model {
 			log.info("read object started!");
 			model.template = (Template) ois.readObject();
 			model.makeSide(model.template.left, model.template.right);
-			model.smartForest = new SmartForest<double[][]>();
+			model.smartForest = new SmartForest<float[][]>();
 			model.status = (double[][]) ois.readObject();
 			int tagNum = model.template.tagNum;
 			int featureNum = model.template.ft.length;
@@ -268,11 +269,11 @@ public abstract class Model {
 				int b = 0;
 				String key = ois.readUTF();
 				log.info("key = " + key);
-				double[][] weight = new double[featureNum][0];
+				float[][] weight = new float[featureNum][0];
 				for (int j = 0; j < featureNum; j++) {
 					while ((b = ois.readByte()) != -1) {
 						if (weight[j].length == 0)
-							weight[j] = new double[tagNum];
+							weight[j] = new float[tagNum];
 						weight[j][b] = ois.readFloat();
 					}
 				}
@@ -290,8 +291,8 @@ public abstract class Model {
 		}
 	}
 
-	public double[] getFeature(int featureIndex, char... chars) {
-		SmartForest<double[][]> sf = smartForest;
+	public float[] getFeature(int featureIndex, char... chars) {
+		SmartForest<float[][]> sf = smartForest;
 		sf = sf.getBranch(chars);
 		if (sf == null || sf.getParam() == null) {
 			return null;

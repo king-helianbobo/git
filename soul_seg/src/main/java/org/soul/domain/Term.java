@@ -19,6 +19,7 @@ public class Term implements Comparable<Term> {
 	private Term to;// 到达位置
 	// term本身的词性，必须在词性识别之后才有值，默认为空
 	private NatureInLib nature = TermNature.NULL.natureInLib;
+
 	// 是否是外国人名
 	// public boolean isFName = false;
 
@@ -70,7 +71,7 @@ public class Term implements Comparable<Term> {
 
 	// 维特比算法构建最优路径
 	public void setPathSelfScore(Term from) {
-		double score = from.getScore() + this.selfScore;
+		double score = from.getScore() + this.selfScore; // 自身权重
 		if (this.from == null || this.getScore() > score) {
 			this.setFromAndScore(from, score);
 		}

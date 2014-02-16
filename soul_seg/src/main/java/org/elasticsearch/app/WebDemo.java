@@ -1,6 +1,6 @@
 package org.elasticsearch.app;
 
-import org.soul.splitWord.NlpAnalysis;
+import org.soul.analysis.NlpAnalysis;
 
 public class WebDemo {
 	private final static String WARM_UP_WORD = "中文分词";

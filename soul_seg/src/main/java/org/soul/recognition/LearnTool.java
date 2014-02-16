@@ -20,18 +20,12 @@ import org.soul.treeSplit.SmartForest;
 
 public class LearnTool {
 	private static final Log log = LogFactory.getLog(LearnTool.class);
-	// public boolean isCompany = true;
-	// public boolean isNewWord = true;
 	public boolean isAsianName = true;
 	public boolean isForeignName = true;
 	public int count; // number of new Word we found
 	private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
 
 	public void learn(ViterbiGraph graph) {
-		// if (isCompany) {
-		// // find organization
-		// findCompany(graph);
-		// }
 		if (isAsianName) {
 			// find Chinese and Korea Name
 			findAsianPerson(graph);
@@ -40,9 +34,6 @@ public class LearnTool {
 			// find English name
 			findForeignPerson(graph);
 		}
-		// if (isNewWord) {
-		// newWordDetection(graph);
-		// }
 		// 抽取书名号中的实体
 		findRuleEntry(graph);
 	}
@@ -51,6 +42,7 @@ public class LearnTool {
 		List<NewWord> newWords = RuleRecogntion.recognition(graph);
 		addListToTerm(newWords);
 	}
+
 	private void findAsianPerson(ViterbiGraph graph) {
 		List<NewWord> newWords = new AsianNameRecognition(graph.terms)
 				.getNewWords();
@@ -63,11 +55,6 @@ public class LearnTool {
 		addListToTerm(newWords);
 	}
 
-	// private void findCompany(ViterbiGraph graph) {
-	// List<NewWord> newWords = new RuleRecogntion(graph.terms).getNewWords();
-	// addListToTerm(newWords);
-	// }
-
 	// add new word to Forest
 	private void addListToTerm(List<NewWord> newWords) {
 		if (newWords.size() == 0)
@@ -76,23 +63,6 @@ public class LearnTool {
 			addTerm(newWord);
 		}
 	}
-
-	// private void newWordDetection(ViterbiGraph graph) {
-	// Collection<Node> newWords = null;
-	// try {
-	// newWords = new NewWordDetection().getNewWords(graph);
-	// } catch (IOException e) {
-	// e.printStackTrace();
-	// }
-	// if (newWords == null)
-	// return;
-	// NewWord newWord = null;
-	// for (Node node : newWords) {
-	// newWord = new NewWord(node.getName(), TermNatures.NW,
-	// node.getScore(), node.getFreq());
-	// addTerm(newWord);
-	// }
-	// }
 
 	public void addTerm(NewWord newWord) {
 		NewWord temp = null;

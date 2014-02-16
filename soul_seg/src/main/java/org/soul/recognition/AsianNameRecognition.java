@@ -5,13 +5,13 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.analysis.BasicAnalysis;
 import org.soul.domain.NatureInLib;
 import org.soul.domain.NewWord;
 import org.soul.domain.PersonNatureAttr;
 import org.soul.domain.Term;
 import org.soul.domain.TermNatures;
 import org.soul.library.BiGramLibrary;
-import org.soul.splitWord.BasicAnalysis;
 import org.soul.utility.TermUtil;
 
 public class AsianNameRecognition {
