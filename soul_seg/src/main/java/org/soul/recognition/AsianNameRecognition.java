@@ -89,7 +89,7 @@ public class AsianNameRecognition {
 			}
 			term = terms[i];
 			pna = term.getTermNatures().personNature;
-			// 这个长度的这个位置的词频,如果没有就干掉,跳出循环
+			// 这个长度的这个位置的词频,如果没有就跳出循环
 			if ((freq = pna.getFreq(size, index)) == 0) {
 				return null;
 			}

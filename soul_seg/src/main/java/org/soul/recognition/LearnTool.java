@@ -1,7 +1,5 @@
 package org.soul.recognition;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -12,9 +10,6 @@ import org.soul.domain.ViterbiGraph;
 import org.soul.domain.NewWord;
 import org.soul.domain.TermNatures;
 import org.soul.recognition.RuleRecogntion;
-//import org.soul.splitWord.NewWordDetection;
-//import org.soul.splitWord.PatternMap;
-//import org.soul.splitWord.PatternMap.Node;
 import org.soul.treeSplit.CollectionUtil;
 import org.soul.treeSplit.SmartForest;
 

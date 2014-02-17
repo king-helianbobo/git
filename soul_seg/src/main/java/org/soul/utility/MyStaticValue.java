@@ -24,7 +24,6 @@ public class MyStaticValue {
 	public static boolean allowNameRecognize = true;
 	public static boolean allowNumRecognize = true;
 	public static boolean allowQuantifierRecognize = true;
-
 	public static String userLibrary;
 	public static String ambiguityLibrary;
 	public static String stopLibrary;
@@ -83,13 +82,6 @@ public class MyStaticValue {
 		return DictionaryReader.getReader("nature/nature.table");
 	}
 
-	// public static BufferedReader getNewWordReader() {
-	// return DictionaryReader.getReader("newWord/new_word_freq.dic");
-	// }
-	// public static BufferedReader getPersonFreqReader() {
-	// return DictionaryReader.getReader("person/name_freq.dic");
-	// }
-
 	@SuppressWarnings("unchecked")
 	public static Map<String, int[][]> getPersonFreqMap() {
 		InputStream inputStream = null;
@@ -115,54 +107,4 @@ public class MyStaticValue {
 		return map;
 	}
 
-	// frequency between one word and another word
-	// if word1 and word2 no frequency ,then frequency is set to 0
-	public static PairEntry[][] getBigramTables() {
-		PairEntry[][] result = new PairEntry[0][0];
-		BufferedReader reader = null;
-		try {
-			reader = IOUtil.getReader(
-					DictionaryReader.getInputStream("bigramdict.dic"), "UTF-8");
-			String temp = null;
-			String[] strs = null;
-			result = new PairEntry[InitDictionary.arrayLength][0];
-			int fromId = 0;
-			int toId = 0;
-			int freq = 0;
-			PairEntry to = null;
-			while ((temp = reader.readLine()) != null) {
-				if (StringUtil.isBlank(temp)) {
-					continue;
-				}
-				strs = temp.split("\t");
-				freq = Integer.parseInt(strs[1]);
-				strs = strs[0].split("@");
-				if ((fromId = InitDictionary.getWordId(strs[0])) <= 0) {
-					fromId = 0;
-				}
-				if ((toId = InitDictionary.getWordId(strs[1])) <= 0) {
-					toId = -1;
-				}
-
-				to = new PairEntry(toId, freq);
-				int index = Arrays.binarySearch(result[fromId], to);
-				if (index > -1) { // if founded
-					continue;
-				} else {
-					PairEntry[] branch = new PairEntry[result[fromId].length + 1];
-					int insert = -(index + 1);
-					System.arraycopy(result[fromId], 0, branch, 0, insert);
-					System.arraycopy(result[fromId], insert, branch,
-							insert + 1, result[fromId].length - insert);
-					branch[insert] = to;
-					result[fromId] = branch;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			IOUtil.close(reader);
-		}
-		return result;
-	}
 }

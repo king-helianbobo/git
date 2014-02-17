@@ -9,12 +9,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.app.crf.Model;
-import org.soul.app.crf.SplitWord;
+import org.soul.crf.Model;
+import org.soul.crf.SplitWord;
 import org.soul.domain.PersonNatureAttr;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
 import org.soul.treeSplit.StringUtil;
+import org.soul.utility.CompactHashMap;
 import org.soul.utility.DictionaryReader;
 import org.soul.utility.MyStaticValue;
 
@@ -27,9 +28,9 @@ public class InitDictionary {
 	public static byte[] status = null;
 	public static String[] words = null;
 	public static TermNatures[] termNatures = null;
-	// crf 模型
+
 	private static final Lock LOCK = new ReentrantLock();
-	private static SplitWord crfSplitWord = null;
+	private static SplitWord crfSplitWord = null; // crf split model
 	public static boolean isRealName = false;
 
 	static {
@@ -78,16 +79,9 @@ public class InitDictionary {
 
 	private static void initArrays(BufferedReader reader) throws Exception {
 
-		HashMap<String, PersonNatureAttr> personMap = new PersonAttrLibrary()
+		CompactHashMap<String, PersonNatureAttr> personMap = new PersonAttrLibrary()
 				.getPersonMap();
 		PersonNatureAttr personAttr = null;
-		// HashMap<String, CompanyNature> companyMap = new CompanyAttrLib()
-		// .getCompanyMap();
-		// CompanyNature companyAttr = null;
-		// HashMap<String, NewWordNature> newWordMap = new NewWordAttrLib()
-		// .getNewWordMap();
-		// NewWordNature newWordAttr = null;
-
 		String temp = null;
 		int num = 0;
 		while ((temp = reader.readLine()) != null) {
@@ -110,15 +104,6 @@ public class InitDictionary {
 				if ((personAttr = personMap.get(strs[1])) != null) {
 					tn.setPersonNatureAttr(personAttr);
 				}
-				// // 是否地名属性
-				// if ((companyAttr = companyMap.get(strs[1])) != null) {
-				// tn.setCompanyAttr(companyAttr);
-				// }
-				// 是否新词属性
-				// if ((newWordAttr = newWordMap.get(strs[1])) != null) {
-				// newWordAttr.updateAll(tn.allFreq);
-				// tn.setNewWordAttr(newWordAttr);
-				// }
 				termNatures[num] = tn;
 			}
 		}
@@ -145,29 +130,6 @@ public class InitDictionary {
 				termNatures[c] = tn;
 			}
 		}
-
-		// // 机构词性补录
-		// Set<Entry<String, CompanyNature>> cnSet = companyMap.entrySet();
-		// for (Entry<String, CompanyNature> entry : cnSet) {
-		// if (entry.getKey().length() == 1) {
-		// c = entry.getKey().charAt(0);
-		// if (status[c] > 1) {
-		// continue;
-		// }
-		// if (status[c] == 0) {
-		// base[c] = c;
-		// check[c] = -1;
-		// status[c] = 3;
-		// words[c] = entry.getKey();
-		// }
-		//
-		// if ((tn = termNatures[c]) == null) {
-		// tn = new TermNatures(TermNature.NULL);
-		// }
-		// tn.setCompanyAttr(entry.getValue());
-		// termNatures[c] = tn;
-		// }
-		// }
 		// traditional Chinese to simplified Chinese
 		BufferedReader reader2 = DictionaryReader.getReader("jianFan.dic");
 		while ((temp = reader2.readLine()) != null) {

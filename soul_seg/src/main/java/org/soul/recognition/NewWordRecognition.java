@@ -1,16 +1,14 @@
 package org.soul.recognition;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.domain.NatureInLib;
 import org.soul.domain.NewWord;
 import org.soul.domain.Term;
-import org.soul.domain.TermNatures;
 import org.soul.treeSplit.SmartForest;
 import org.soul.utility.TermUtil;
 
-/**
- * 新词识别
- */
 public class NewWordRecognition {
+	private static Log log = LogFactory.getLog(NewWordRecognition.class);
 	private Term[] terms = null;
 	private double score;
 	private StringBuilder sb = new StringBuilder();
@@ -19,7 +17,7 @@ public class NewWordRecognition {
 	private NatureInLib tempNature;
 	private Term from;
 	private Term to;
-	private int offe; // 偏移量
+	private int offe;
 
 	public NewWordRecognition(Term[] terms, LearnTool learn) {
 		this.terms = terms;
@@ -79,7 +77,6 @@ public class NewWordRecognition {
 						flag = false;
 						break;
 					default :
-						System.out.println("怎么能出现0呢?");
 						break;
 				}
 			}
@@ -92,12 +89,13 @@ public class NewWordRecognition {
 		term.selfScore = score;
 		term.setNature(tempNature);
 		if (sb.length() > 3) {
-			term.setSubTerm(TermUtil.getSubTerm(from, to));
+			log.info("sb.length() > 3 " + sb.toString());
+			term.setSubTermList(TermUtil.getSubTermList(from, to));
 		}
 		TermUtil.termLink(from, term);
 		TermUtil.termLink(term, to);
 		TermUtil.insertTerm(terms, term);
-		TermUtil.parseNature(term);
+		TermUtil.parseNewWordNature(term);
 	}
 
 	private void reset() {

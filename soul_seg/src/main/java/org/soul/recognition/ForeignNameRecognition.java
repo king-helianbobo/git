@@ -20,7 +20,7 @@ public class ForeignNameRecognition {
 
 	private static final LinkedList<NameChar> PRLIST = new LinkedList<NameChar>();
 
-	private static NameChar INNAME = null;
+	private static NameChar IN_NAME_SET = null;
 
 	private static HashSet<Character> ISNOTFIRST = new HashSet<Character>();
 
@@ -39,7 +39,7 @@ public class ForeignNameRecognition {
 		PRLIST.add(trans_russian);
 		// PRLIST.add(trans_japanese);
 
-		INNAME = new NameChar(
+		IN_NAME_SET = new NameChar(
 				StringUtil
 						.sortCharArray("-·—丁万丘东丝中丹丽乃久义乌乔买于亚亨京什仑仓代以仲伊伍伏伐伦伯伽但佐佛佩依侯俄保儒克兰其兹内冈凯切列利别力加努劳勃勒北华卓南博卜卡卢卫厄历及古可史叶司各合吉吐君吾呼哈哥哲唐喀善喇喜嘉噶因图土圣坎坚坦埃培基堡塔塞增墨士夏多大夫奇奈奎契奥妮姆威娃娅娜孜季宁守安宜宰密察尔尕尤尧尼居山川差巴布希帕帝干平年库庞康廉弗强当彦彭彻彼律得德恩恰慈慕戈戴才扎托拉拜捷提摩敏敖敦文斐斯新施日旦旺昂明普智曼朗木本札朱李杜来杰林果查柯柴根格桑梅梵森楞次欣欧歇武比毕汀汉汗汤汶沁沃沙河治泉泊法波泰泼泽洛津济浦海涅温滕潘澳烈热爱牙特狄王玛玻珀珊珍班理琪琳琴瑞瑟瓜瓦甫申畔略登白皮盖盟相石祖福科穆立笆简米素索累约纳纽绍维罕罗翁翰考耶聂肉肯胡胥腓舍良色艾芙芬芭苏若英茂范茅茨茹荣莉莎莫莱莲菲萨葛蒂蒙虏蜜衣裴西詹让诗诸诺谢豪贝费贾赖赛赫路辛达迈连迦迪逊道那邦郎鄂采里金钦锡门阿陀陶隆雅雍雷霍革韦音额香马魏鲁鲍麦黎默黛齐"));
 
@@ -114,9 +114,9 @@ public class ForeignNameRecognition {
 	}
 
 	public static boolean isFName(String name) {
-		// 如果name中任意一个字属于外国人名关键字集合
+		// 如果name中每一个字都属于IN_NAME_SET
 		for (int i = 0; i < name.length(); i++) {
-			if (!INNAME.contains(name.charAt(i))) {
+			if (!IN_NAME_SET.contains(name.charAt(i))) {
 				return false;
 			}
 		}
@@ -125,15 +125,9 @@ public class ForeignNameRecognition {
 
 	private static class NameChar {
 		private char[] chars = null;
-
 		public NameChar(char[] chars) {
 			this.chars = chars;
 		}
-
-		// public boolean contains(String name) {
-		// return contains(name.charAt(0));
-		// }
-
 		public boolean contains(char c) {
 			return Arrays.binarySearch(chars, c) > -1;
 		}

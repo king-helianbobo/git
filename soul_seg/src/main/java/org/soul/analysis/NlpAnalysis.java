@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.app.crf.SplitWord;
+import org.soul.crf.SplitWord;
 import org.soul.domain.NewWord;
 import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
@@ -26,10 +26,10 @@ import org.soul.utility.WordAlter;
 public class NlpAnalysis extends Analysis {
 	private static Log log = LogFactory.getLog(NlpAnalysis.class);
 	private LearnTool learn = null;
-	private static final SplitWord crfSplitModel = InitDictionary
-			.getCRFSplitWord();
+	// private static final SplitWord crfSplitModel = InitDictionary
+	// .getCRFSplitWord();
 
-	// private static final SplitWord crfSplitModel = null;
+	private static final SplitWord crfSplitModel = null;
 
 	public NlpAnalysis(Reader reader, LearnTool learn) {
 		super(reader);
@@ -46,21 +46,14 @@ public class NlpAnalysis extends Analysis {
 			@Override
 			public List<Term> merge() {
 				graph.walkPath(); // get optimal path
-				log.info(getResult());
 				if (graph.hasNum)
 					NumberRecognition.recognition(graph.terms);
-				log.info(getResult());
 				List<Term> result = getResult();
 				new NatureRecognition(result).recognition(); // 词性标注
-				log.info(getResult());
-
-				// 新词发现训练
 				if (learn == null) {
 					learn = new LearnTool();
 				}
 				learn.learn(graph);
-				log.info(getResult());
-
 				if (crfSplitModel != null) {
 					List<String> words = crfSplitModel.cut(graph.convertedStr);
 					for (String word : words) {
@@ -73,17 +66,15 @@ public class NlpAnalysis extends Analysis {
 								.getNature("nw"), -word.length()));
 					}
 				}
-
 				// 用户自定义词典
 				new UserDefineRecognition(graph.terms).recognition();
 				graph.walkPathByScore();
-				log.info(getResult());
 
 				new NewWordRecognition(graph.terms, learn).recognition();
 				graph.walkPathByScore();
+
+				AsianNameRecognition.nameAmbiguity(graph.terms); // 修复人名左右连接
 				log.info(getResult());
-				// 修复人名左右连接
-				AsianNameRecognition.nameAmbiguity(graph.terms);
 				return getResult();
 			}
 

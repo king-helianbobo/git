@@ -11,10 +11,13 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.analysis.NlpAnalysis;
 import org.soul.treeSplit.IOUtil;
 import org.soul.treeSplit.StringUtil;
 import org.soul.utility.MyStaticValue;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -25,9 +28,9 @@ public class SoulServer {
 
 	private static final String FILE_ENCODING = System
 			.getProperty("file.encoding");
-
+	public static Log libLog = LogFactory.getLog(SoulServer.class);
 	public void startServer(int serverPort) throws Exception {
-		MyStaticValue.libLog.info("starting http server");
+		libLog.info("starting http server");
 		HttpServerProvider provider = HttpServerProvider.provider();
 		HttpServer httpserver = provider.createHttpServer(
 				new InetSocketAddress(serverPort), 100);
@@ -35,43 +38,48 @@ public class SoulServer {
 		httpserver.createContext("/", new SoulHttpHandler());
 		httpserver.setExecutor(null);
 		httpserver.start();
-		MyStaticValue.libLog.info("server started");
+		libLog.info("server started");
 	}
 
 	private static class SoulHttpHandler implements HttpHandler {
 		public void handle(HttpExchange httpExchange) {
 			try {
 				String path = httpExchange.getRequestURI().getPath();
-				MyStaticValue.libLog.info("path = " + path);
 				if (path != null && path.startsWith("/page")) {
+					libLog.info("path = " + path);
 					writeToClient(httpExchange, readFileToString(path));
 					return;
+				} else if (path != null && path.endsWith("favicon.ico")) {
+					return;
+				} else {
+					libLog.info("path = " + path);
+					// String responseMsg =
+					// "欢迎使用Soul中文分词 \n http://localhost:8888/?input=中文分词&method=nlp";
+					Map<String, String> paramers = parseParamers(httpExchange);
+					String input = paramers.get("input");
+					String method = paramers.get("method");
+					String nature = paramers.get("nature");
+					libLog.info("input = " + input + ",method = " + method
+							+ ", nature = " + nature);
+					if (StringUtil.isNotBlank(input)) {
+						String responseMsg = SoulServlet.processRequest(input,
+								method, nature);
+						writeToClient(httpExchange, responseMsg);
+					} else {
+						writeToClient(httpExchange, "");
+					}
 				}
-				String responseMsg = "欢迎使用Soul中文分词 \n demo:http://localhost:8888/?input=中文分词&method=nlp";
-				Map<String, String> paramers = parseParamers(httpExchange);
-				String input = paramers.get("input");
-
-				String method = paramers.get("method");
-				String nature = paramers.get("nature");
-				MyStaticValue.libLog.info("input = " + input + ",method = "
-						+ method + ", nature = " + nature);
-				if (StringUtil.isNotBlank(input)) {
-					responseMsg = SoulServlet.processRequest(input, method,
-							nature);
-				}
-				writeToClient(httpExchange, responseMsg);
 			} catch (Exception e) {
 				e.printStackTrace();
 				try {
 					writeToClient(httpExchange, e.getMessage());
 				} catch (IOException e1) {
-					MyStaticValue.libLog.error("write to client error!");
+					libLog.error("write to client error!");
 				}
 			} finally {
 				httpExchange.close();
 			}
 		}
-
 		private String readFileToString(String path) {
 			InputStream resourceAsStream = null;
 			try {
@@ -107,13 +115,12 @@ public class SoulServer {
 				Map<String, String> parameters = new HashMap<String, String>();
 				URI requestedUri = httpExchange.getRequestURI();
 				String query = requestedUri.getRawQuery();
-				MyStaticValue.libLog.info("query = " + query);
+				// libLog.info("RawQuery = [" + query + "]");
 				parseQuery(query, parameters);
-				// post 请求解析
 				reader = IOUtil.getReader(httpExchange.getRequestBody(),
 						FILE_ENCODING);
 				query = IOUtil.getContent(reader).trim();
-				MyStaticValue.libLog.info("query = " + query);
+				// libLog.info("RequestBody = " + query);
 				parseQuery(query, parameters);
 				httpExchange.setAttribute("parameters", parameters);
 				return parameters;

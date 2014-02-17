@@ -15,7 +15,7 @@ import org.soul.recognition.NatureRecognition;
 public class SoulServlet {
 
 	private enum SoulMethod {
-		BASE, NLP, KEYWORD, INDEX, MIN_NLP
+		BASE, NLP, KEYWORD, INDEX
 	}
 
 	public static String processRequest(String input, String strMethod,
@@ -27,26 +27,24 @@ public class SoulServlet {
 			method = SoulMethod.BASE;
 		}
 		Boolean nature = true; // 是否做词性识别
-		if (strNature != null && strNature.toLowerCase().equals("false")) {
+		if (strNature != null && strNature.toLowerCase().equals("false"))
 			nature = false;
-		}
+
 		List<Term> terms = null;
 		Collection<KeyWord> keyWords = null;
 		switch (method) {
-		case NLP:
-			terms = NlpAnalysis.parse(input);
-			break;
-		case MIN_NLP:
-			terms = NlpAnalysis.parse(input);
-		case KEYWORD:
-			KeyWordExtraction kwc = new KeyWordExtraction(10);
-			keyWords = kwc.computeArticleTfidf(input);
-			break;
-		case INDEX:
-			terms = IndexAnalysis.parse(input);
-			break;
-		default:
-			terms = BasicAnalysis.parse(input);
+			case NLP :
+				terms = NlpAnalysis.parse(input);
+				break;
+			case KEYWORD :
+				KeyWordExtraction kwc = new KeyWordExtraction(10);
+				keyWords = kwc.computeArticleTfidf(input);
+				break;
+			case INDEX :
+				terms = IndexAnalysis.parse(input);
+				break;
+			default :
+				terms = BasicAnalysis.parse(input);
 		}
 		if (terms != null) {
 			return termToString(terms, nature, method);
@@ -75,17 +73,12 @@ public class SoulServlet {
 		if (terms == null) {
 			return "Failed to parse input";
 		}
-		if (nature && method != SoulMethod.NLP && method != SoulMethod.MIN_NLP) {
+		if (nature && method != SoulMethod.NLP) {
 			new NatureRecognition(terms).recognition();
 		}
 		StringBuilder sb = new StringBuilder();
 		for (Term term : terms) {
-			String tmp = null;
-			if (method == SoulMethod.MIN_NLP && term.getSubTerm() != null) {
-				tmp = term.getSubTerm().toString();
-			} else {
-				tmp = term.getName();
-			}
+			String tmp = term.getName();
 			if (nature) {
 				tmp += "/" + term.getNatrue().natureStr;
 			}

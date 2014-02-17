@@ -6,8 +6,6 @@ public class NewWord {
 	private double score;
 	private NatureInLib nature;
 	private int allFreq; // 总词频
-	// private double averageScore; // 平均分数
-	// private boolean isActive = false;// 此词是否可用
 
 	public NewWord(String name, NatureInLib nature, double score) {
 		this.name = name;

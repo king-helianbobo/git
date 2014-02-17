@@ -1,12 +1,9 @@
 package org.soul.domain;
 
 import java.util.List;
-
-import org.soul.recognition.ForeignNameRecognition;
 import org.soul.utility.MathUtil;
 
 public class Term implements Comparable<Term> {
-
 	private String name;
 	private String realName;
 	private int offe;
@@ -19,9 +16,6 @@ public class Term implements Comparable<Term> {
 	private Term to;// 到达位置
 	// term本身的词性，必须在词性识别之后才有值，默认为空
 	private NatureInLib nature = TermNature.NULL.natureInLib;
-
-	// 是否是外国人名
-	// public boolean isFName = false;
 
 	public Term(String name, int offe, TermNatures termNatures) {
 		super();
@@ -40,7 +34,6 @@ public class Term implements Comparable<Term> {
 		this.termNatures = new TermNatures(termNature);
 	}
 
-	// 可以到达的位置
 	public int getToValue() {
 		return offe + name.length();
 	}
@@ -61,16 +54,16 @@ public class Term implements Comparable<Term> {
 		this.name = name;
 	}
 
-	// 维特比构建最优路径
 	public void setPathScore(Term from) {
+		// 维特比构建最优路径
 		double score = from.getScore() + MathUtil.compuScore(from, this);
 		if (this.from == null || this.getScore() >= score) {
 			this.setFromAndScore(from, score);
 		}
 	}
 
-	// 维特比算法构建最优路径
 	public void setPathSelfScore(Term from) {
+		// 维特比算法构建最优路径
 		double score = from.getScore() + this.selfScore; // 自身权重
 		if (this.from == null || this.getScore() > score) {
 			this.setFromAndScore(from, score);
@@ -149,15 +142,6 @@ public class Term implements Comparable<Term> {
 		return nature;
 	}
 
-	@Override
-	public String toString() {
-		if (nature != null && !"null".equals(nature.natureStr)) {
-			return "[" + this.name + "/" + nature.natureStr + "]";
-		} else {
-			return "[" + this.name + "]";
-		}
-	}
-
 	/**
 	 * 将term的所有分数置为0
 	 */
@@ -166,11 +150,11 @@ public class Term implements Comparable<Term> {
 		this.selfScore = 0;
 	}
 
-	public void setSubTerm(List<Term> subTerm) {
+	public void setSubTermList(List<Term> subTerm) {
 		this.subTerm = subTerm;
 	}
 
-	public List<Term> getSubTerm() {
+	public List<Term> getSubTermList() {
 		return subTerm;
 	}
 
@@ -183,5 +167,14 @@ public class Term implements Comparable<Term> {
 
 	public void setRealName(String realName) {
 		this.realName = realName;
+	}
+
+	@Override
+	public String toString() {
+		if (nature != null && !"null".equals(nature.natureStr)) {
+			return "[" + this.name + "/" + nature.natureStr + "]";
+		} else {
+			return "[" + this.name + "]";
+		}
 	}
 }

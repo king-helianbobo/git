@@ -18,10 +18,15 @@ public class CRFSegTest {
 			"满宠字伯宁,山阳昌邑人也,魏国名将，最初在曹操手下任许县县令。", "掌管司法，以执法严格著称.",
 			"转任汝南太守，开始参与军事，曾参与赤壁之战。", "后关羽围攻樊城，满宠协助曹仁守城，劝阻了弃城而逃的计划，成功坚持到援军到来。",
 			"曹丕在位期间，满宠驻扎在新野，负责荆州侧的对吴作战。", "曹睿在位期间，满宠转任到扬州，接替曹休负责东线对吴作战，屡有功劳",
-			"后因年迈调回中央担任太尉，数年后病逝。" };
+			"后因年迈调回中央担任太尉，数年后病逝。"};
 
 	@Test
 	public void crfModelSegTest1() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("012");
+		log.info(sb.length());
+		sb.append("345");
+		log.info(sb.length());
 		for (String str : texts) {
 			log.info(InitDictionary.getCRFSplitWord().cut(str));
 		}

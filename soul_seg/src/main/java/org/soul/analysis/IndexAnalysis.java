@@ -4,6 +4,8 @@ import java.io.Reader;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.domain.ViterbiGraph;
 import org.soul.domain.Term;
 import org.soul.recognition.AsianNameRecognition;
@@ -13,9 +15,8 @@ import org.soul.treeSplit.Forest;
 import org.soul.utility.MyStaticValue;
 
 public class IndexAnalysis extends Analysis {
-
+	private static Log log = LogFactory.getLog(IndexAnalysis.class);
 	private Forest[] forests = null;
-
 	public IndexAnalysis(Reader reader) {
 		super(reader);
 	}
@@ -50,6 +51,7 @@ public class IndexAnalysis extends Analysis {
 								.recognition();
 					}
 				}
+				log.info(result());
 				return result();
 			}
 

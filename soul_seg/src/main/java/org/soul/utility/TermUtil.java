@@ -4,14 +4,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.domain.Term;
 import org.soul.domain.TermNature;
 import org.soul.domain.TermNatures;
 import org.soul.library.CompanyAttrLib;
 import org.soul.library.NatureLibrary;
 import org.soul.recognition.ForeignNameRecognition;
+import org.soul.recognition.NewWordRecognition;
 
 public class TermUtil {
+	private static Log log = LogFactory.getLog(TermUtil.class);
+	private static final HashMap<String, int[]> companyMap = CompanyAttrLib
+			.getCompanyMap();
 
 	/**
 	 * 将两个数词/量词term合并为一个全新的term
@@ -66,15 +72,8 @@ public class TermUtil {
 		return from;
 	}
 
-	private static final HashMap<String, int[]> companyMap = CompanyAttrLib
-			.getCompanyMap();
-
-	/**
-	 * 确定新词的词性
-	 * 
-	 * @return 返回是null说明已经是最细颗粒度
-	 */
-	public static void parseNature(Term term) {
+	// set new word's nature
+	public static void parseNewWordNature(Term term) {
 		if (!TermNature.NW.equals(term.getNatrue())) {
 			return;
 		}
@@ -82,21 +81,20 @@ public class TermUtil {
 		if (name.length() <= 3) {
 			return;
 		}
-		// 是否是外国人名
+		// if this term is foreign name
 		if (ForeignNameRecognition.isFName(name)) {
 			term.setNature(NatureLibrary.getNature("nrf"));
 			return;
 		}
-		List<Term> subTerm = term.getSubTerm();
-		term.setSubTerm(subTerm);
+		List<Term> subTerm = term.getSubTermList();
+		term.setSubTermList(subTerm);
 		Term first = subTerm.get(0);
 		Term last = subTerm.get(subTerm.size() - 1);
-		int[] is = companyMap.get(first.getName()); // 判断是否是机构名
-		int all = 0;
+		int[] is = companyMap.get(first.getName()); // is organization?
 		is = companyMap.get(last.getName());
-		if (is != null) {
+		int all = 0;
+		if (is != null)
 			all += is[1];
-		}
 		if (all > 1000) {
 			term.setNature(NatureLibrary.getNature("nt"));
 			return;
@@ -111,9 +109,10 @@ public class TermUtil {
 	 * @param to
 	 * @return
 	 */
-	public static List<Term> getSubTerm(Term from, Term to) {
-		List<Term> subTerm = new ArrayList<Term>(3);
+	public static List<Term> getSubTermList(Term from, Term to) {
+		List<Term> subTerm = new ArrayList<Term>();
 		while ((from = from.getTo()) != to) {
+			// log.info(from.getName());
 			subTerm.add(from);
 		}
 		return subTerm;
