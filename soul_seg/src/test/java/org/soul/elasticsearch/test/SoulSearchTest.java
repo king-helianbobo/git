@@ -22,8 +22,8 @@ import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
-import org.junit.Test;
-import org.mapper.attachment.test.EncryptedDocMapperTest;
+//import org.junit.Test;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Random;
@@ -37,11 +37,11 @@ import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders.scriptFunction;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class SoulSearchTest extends ElasticsearchIntegrationTest {
 	private static Log log = LogFactory.getLog(SoulSearchTest.class);
+
 	@Test
 	// see https://github.com/elasticsearch/elasticsearch/issues/3177
 	public void testIssue3177() {
@@ -187,8 +187,7 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 						constantScoreQuery(boolQuery().must(matchAllQuery())
 								.must(constantScoreQuery(
 										matchQuery("field1", "quick")).boost(
-										1.0f + (random.nextBoolean()
-												? 0.0f
+										1.0f + (random.nextBoolean() ? 0.0f
 												: random.nextFloat()))))).get();
 		assertHitCount(searchResponse, 2l);
 		assertFirstHit(searchResponse,
@@ -222,9 +221,9 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 						.prepareSearch("test_1")
 						.setQuery(
 								boolQuery().must(matchAllQuery()).must(
-										constantScoreQuery(matchQuery).boost(
-												1.0f + (random.nextBoolean()
-														? 0.0f
+										constantScoreQuery(matchQuery)
+												.boost(1.0f + (random
+														.nextBoolean() ? 0.0f
 														: random.nextFloat()))))
 						.setSize(num).get();
 				hits = searchResponse.getHits();
@@ -234,9 +233,9 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 						.prepareSearch("test_1")
 						.setQuery(
 								boolQuery().must(matchAllQuery()).must(
-										constantScoreQuery(filter).boost(
-												1.0f + (random.nextBoolean()
-														? 0.0f
+										constantScoreQuery(filter)
+												.boost(1.0f + (random
+														.nextBoolean() ? 0.0f
 														: random.nextFloat()))))
 						.setSize(num).get();
 				hits = searchResponse.getHits();
@@ -1096,8 +1095,8 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		assertAcked(client().admin().indices().prepareCreate("test")
 				.setSettings(SETTING_NUMBER_OF_SHARDS, 1));
 		client().prepareIndex("test", "type1", "1")
-				.setSource("field1", new String[]{"value1", "value2", "value3"})
-				.get();
+				.setSource("field1",
+						new String[] { "value1", "value2", "value3" }).get();
 		client().prepareIndex("test", "type1", "2")
 				.setSource("field2", "value1").get();
 		refresh();
@@ -1313,18 +1312,8 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		searchResponse = client()
 				.prepareSearch("test")
 				.setQuery(
-						filteredQuery(
-								matchAllQuery(),
-								termsFilter("lng", new long[]{2, 3}).execution(
-										"fielddata"))).get();
-		assertHitCount(searchResponse, 2l);
-		assertSearchHits(searchResponse, "2", "3");
-
-		searchResponse = client()
-				.prepareSearch("test")
-				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("dbl", new double[]{2, 3})
+								termsFilter("lng", new long[] { 2, 3 })
 										.execution("fielddata"))).get();
 		assertHitCount(searchResponse, 2l);
 		assertSearchHits(searchResponse, "2", "3");
@@ -1332,10 +1321,18 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		searchResponse = client()
 				.prepareSearch("test")
 				.setQuery(
-						filteredQuery(
-								matchAllQuery(),
-								termsFilter("lng", new int[]{1, 3}).execution(
-										"fielddata"))).get();
+						filteredQuery(matchAllQuery(),
+								termsFilter("dbl", new double[] { 2, 3 })
+										.execution("fielddata"))).get();
+		assertHitCount(searchResponse, 2l);
+		assertSearchHits(searchResponse, "2", "3");
+
+		searchResponse = client()
+				.prepareSearch("test")
+				.setQuery(
+						filteredQuery(matchAllQuery(),
+								termsFilter("lng", new int[] { 1, 3 })
+										.execution("fielddata"))).get();
 		assertHitCount(searchResponse, 2l);
 		assertSearchHits(searchResponse, "1", "3");
 
@@ -1343,7 +1340,7 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("dbl", new float[]{2, 4})
+								termsFilter("dbl", new float[] { 2, 4 })
 										.execution("fielddata"))).get();
 		assertHitCount(searchResponse, 2l);
 		assertSearchHits(searchResponse, "2", "4");
@@ -1364,7 +1361,7 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("dbl", new double[]{2, 5})
+								termsFilter("dbl", new double[] { 2, 5 })
 										.execution("fielddata"))).get();
 		assertNoFailures(searchResponse);
 		assertHitCount(searchResponse, 1l);
@@ -1373,10 +1370,9 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		searchResponse = client()
 				.prepareSearch("test")
 				.setQuery(
-						filteredQuery(
-								matchAllQuery(),
-								termsFilter("lng", new long[]{2, 5}).execution(
-										"fielddata"))).get();
+						filteredQuery(matchAllQuery(),
+								termsFilter("lng", new long[] { 2, 5 })
+										.execution("fielddata"))).get();
 		assertNoFailures(searchResponse);
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("2"));
@@ -1395,17 +1391,16 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("dbl", new double[]{5, 6})
+								termsFilter("dbl", new double[] { 5, 6 })
 										.execution("fielddata"))).get();
 		assertHitCount(searchResponse, 0l);
 
 		searchResponse = client()
 				.prepareSearch("test")
 				.setQuery(
-						filteredQuery(
-								matchAllQuery(),
-								termsFilter("lng", new long[]{5, 6}).execution(
-										"fielddata"))).get();
+						filteredQuery(matchAllQuery(),
+								termsFilter("lng", new long[] { 5, 6 })
+										.execution("fielddata"))).get();
 		assertHitCount(searchResponse, 0l);
 	}
 
@@ -1428,11 +1423,11 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 		indexRandom(
 				true,
 				client().prepareIndex("lookup", "type", "1").setSource("terms",
-						new String[]{"1", "3"}),
+						new String[] { "1", "3" }),
 				client().prepareIndex("lookup", "type", "2").setSource("terms",
-						new String[]{"2"}),
+						new String[] { "2" }),
 				client().prepareIndex("lookup", "type", "3").setSource("terms",
-						new String[]{"2", "4"}),
+						new String[] { "2", "4" }),
 				client().prepareIndex("lookup", "type", "4").setSource("other",
 						"value"),
 				client().prepareIndex("lookup2", "type", "1").setSource(
@@ -1739,27 +1734,27 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 
 		logger.info("--> terms query on 1");
 		searchResponse = client().prepareSearch("test")
-				.setQuery(termsQuery("num_byte", new int[]{1})).get();
+				.setQuery(termsQuery("num_byte", new int[] { 1 })).get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client().prepareSearch("test")
-				.setQuery(termsQuery("num_short", new int[]{1})).get();
+				.setQuery(termsQuery("num_short", new int[] { 1 })).get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client().prepareSearch("test")
-				.setQuery(termsQuery("num_integer", new int[]{1})).get();
+				.setQuery(termsQuery("num_integer", new int[] { 1 })).get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client().prepareSearch("test")
-				.setQuery(termsQuery("num_long", new int[]{1})).get();
+				.setQuery(termsQuery("num_long", new int[] { 1 })).get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client().prepareSearch("test")
-				.setQuery(termsQuery("num_float", new double[]{1})).get();
+				.setQuery(termsQuery("num_float", new double[] { 1 })).get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client().prepareSearch("test")
-				.setQuery(termsQuery("num_double", new double[]{1})).get();
+				.setQuery(termsQuery("num_double", new double[] { 1 })).get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 
@@ -1812,21 +1807,7 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("num_byte", new int[]{1}))).get();
-		assertHitCount(searchResponse, 1l);
-		assertFirstHit(searchResponse, hasId("1"));
-		searchResponse = client()
-				.prepareSearch("test")
-				.setQuery(
-						filteredQuery(matchAllQuery(),
-								termsFilter("num_short", new int[]{1}))).get();
-		assertHitCount(searchResponse, 1l);
-		assertFirstHit(searchResponse, hasId("1"));
-		searchResponse = client()
-				.prepareSearch("test")
-				.setQuery(
-						filteredQuery(matchAllQuery(),
-								termsFilter("num_integer", new int[]{1})))
+								termsFilter("num_byte", new int[] { 1 })))
 				.get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
@@ -1834,21 +1815,40 @@ public class SoulSearchTest extends ElasticsearchIntegrationTest {
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("num_long", new int[]{1}))).get();
+								termsFilter("num_short", new int[] { 1 })))
+				.get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client()
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("num_float", new int[]{1}))).get();
+								termsFilter("num_integer", new int[] { 1 })))
+				.get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 		searchResponse = client()
 				.prepareSearch("test")
 				.setQuery(
 						filteredQuery(matchAllQuery(),
-								termsFilter("num_double", new int[]{1}))).get();
+								termsFilter("num_long", new int[] { 1 })))
+				.get();
+		assertHitCount(searchResponse, 1l);
+		assertFirstHit(searchResponse, hasId("1"));
+		searchResponse = client()
+				.prepareSearch("test")
+				.setQuery(
+						filteredQuery(matchAllQuery(),
+								termsFilter("num_float", new int[] { 1 })))
+				.get();
+		assertHitCount(searchResponse, 1l);
+		assertFirstHit(searchResponse, hasId("1"));
+		searchResponse = client()
+				.prepareSearch("test")
+				.setQuery(
+						filteredQuery(matchAllQuery(),
+								termsFilter("num_double", new int[] { 1 })))
+				.get();
 		assertHitCount(searchResponse, 1l);
 		assertFirstHit(searchResponse, hasId("1"));
 	}

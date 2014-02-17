@@ -92,12 +92,13 @@ public class HttpClientTest {
 		client.close();
 	}
 
-	// @Ignore("Create Index and send data to index")
+	@Ignore("Create Index and send data to index")
 	@Test
 	public void testMethod1() throws Exception {
 		createIndexTestWithMapping();
 		testIndexOperation();
 	}
+
 	public void createIndexTestWithMapping() {
 		try {
 			IndicesExistsResponse existsResponse = transportClient.admin()
@@ -156,13 +157,14 @@ public class HttpClientTest {
 		}
 		client.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
-	@Ignore("Test Query")
+
+	// @Ignore("Test Query")
 	@Test
 	public void testQueryStringOperation() {
 		// 词组后面跟随~10,表示词组中的多个词之间的距离之和不超过10,则满足查询
 		// 词之间的距离,即查询词组中词为满足和目标词组相同的最小移动次数
-		String queryStr[] = {"\"耳熟能详\"", "\"微软并购雅虎\"", "\"微软是否\"~2",
-				"\"微软是否\"~1", "Google互联网网上信息表"};
+		String queryStr[] = { "\"耳熟能详\"", "\"微软并购雅虎\"", "\"微软是否\"~2",
+				"\"微软是否\"~1", "Google互联网网上信息表" };
 		for (String str : queryStr) {
 			SearchResponse searchResponse = transportClient
 					.prepareSearch(indexName)
@@ -177,13 +179,14 @@ public class HttpClientTest {
 					+ searchResponse.toString());
 		}
 	}
-	@Ignore
+
+	// @Ignore
 	@Test
 	public void testStopWordHaveEffectOperation() {
 		// 词组后面跟随~10,表示词组中的多个词之间的距离之和不超过10,则满足查询
 		// 词之间的距离,即查询词组中词为满足和目标词组相同的最小移动次数
-		String queryStr[] = {"\"香港的网站为主，占\"", "\"香港的网站为主占\"", "\"香港的网站为主(占\"",
-				"\"香港的网站为主()占\""};
+		String queryStr[] = { "\"香港的网站为主，占\"", "\"香港的网站为主占\"", "\"香港的网站为主(占\"",
+				"\"香港的网站为主()占\"" };
 		for (String str : queryStr) {
 			SearchResponse searchResponse = transportClient
 					.prepareSearch(indexName)
@@ -198,11 +201,13 @@ public class HttpClientTest {
 					+ searchResponse.toString());
 		}
 	}
-	@Ignore("Test Query")
+
+	// @Ignore("Test Query")
 	@Test
 	public void testSimpleQueryStringOperation() {
 		// 使用soul_query分完词后，建立boolean查询，此时与顺序无关
-		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "Google互联网", "雅虎"};
+		String queryStrs[] = { "Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
+				"网民 娱乐" };
 		for (String queryStr : queryStrs) {
 			SearchResponse searchResponse = transportClient
 					.prepareSearch(indexName)
@@ -218,23 +223,5 @@ public class HttpClientTest {
 					+ searchResponse.toString());
 		}
 	}
-	private String createJSONQuery(String field, String term, String type) {
-		if (type == null)
-			return String.format("{ \"field\": \"%s\", \"term\": \"%s\" }",
-					field, term);
-		else
-			return String
-					.format("{ \"field\": \"%s\", \"term\": \"%s\" , \"type\": \"%s\" }",
-							field, term, type);
-	}
 
-	@SuppressWarnings("unchecked")
-	private List<String> getSuggestionsFromResponse(String response)
-			throws IOException {
-		XContentParser parser = JsonXContent.jsonXContent
-				.createParser(response);
-		Map<String, Object> jsonResponse = parser.map();
-		assertThat(jsonResponse, hasKey("suggestions"));
-		return (List<String>) jsonResponse.get("suggestions");
-	}
 }

@@ -87,6 +87,7 @@ public class MainSearchTest extends ElasticsearchIntegrationTest {
 
 		return injector.getInstance(AnalysisService.class);
 	}
+
 	public static SimilarityLookupService newSimilarityLookupService() {
 		return new SimilarityLookupService(new Index("test"),
 				ImmutableSettings.Builder.EMPTY_SETTINGS);
@@ -301,7 +302,6 @@ public class MainSearchTest extends ElasticsearchIntegrationTest {
 	public void testQueryStringWithSlopAndFields() {
 		createIndex("test");
 		ensureGreen();
-
 		client().prepareIndex("test", "customer", "1")
 				.setSource("desc", "one two three").get();
 		client().prepareIndex("test", "product", "2")
@@ -340,15 +340,7 @@ public class MainSearchTest extends ElasticsearchIntegrationTest {
 			SearchResponse searchResponse = client()
 					.prepareSearch("test")
 					.setQuery(
-							QueryBuilders.queryString("\"one two\"")
-									.defaultField("customer.desc")).get();
-			assertHitCount(searchResponse, 1);
-		}
-		{
-			SearchResponse searchResponse = client()
-					.prepareSearch("test")
-					.setQuery(
-							QueryBuilders.queryString("\"one two\"")
+							QueryBuilders.queryString("\"one three\"~3")
 									.defaultField("customer.desc")).get();
 			assertHitCount(searchResponse, 1);
 		}
@@ -382,6 +374,8 @@ public class MainSearchTest extends ElasticsearchIntegrationTest {
 				.setSource("body", "quux baz eggplant").get();
 		client().prepareIndex("test", "type1", "5")
 				.setSource("body", "quux baz spaghetti").get();
+		client().prepareIndex("test", "type1", "7").setSource("body", "time")
+				.get();
 		client().prepareIndex("test", "type1", "6")
 				.setSource("otherbody", "spaghetti").get();
 		refresh();
@@ -421,5 +415,11 @@ public class MainSearchTest extends ElasticsearchIntegrationTest {
 		assertHitCount(searchResponse, 2l);
 		assertFirstHit(searchResponse, hasId("5"));
 		assertSearchHits(searchResponse, "5", "6");
+
+		searchResponse = client().prepareSearch()
+				.setQuery(simpleQueryString("timing").analyzer("snowball"))
+				.get();
+		assertHitCount(searchResponse, 1l);
+		assertFirstHit(searchResponse, hasId("7"));
 	}
 }
