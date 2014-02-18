@@ -1,8 +1,13 @@
 package org.lionsoul.jcseg.test;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.simpleQueryString;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.hasId;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -15,8 +20,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.MapWritable;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.Priority;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.Settings;
@@ -29,6 +39,9 @@ import org.elasticsearch.hadoop.serialization.MapWritableIdExtractor;
 import org.elasticsearch.hadoop.serialization.SerializationUtils;
 import org.elasticsearch.hadoop.util.BytesArray;
 import org.elasticsearch.hadoop.util.WritableUtils;
+import org.elasticsearch.index.query.SimpleQueryStringBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -42,7 +55,7 @@ public class SogouDataTest {
 
 	// private String indexName = "sogou_test";
 	// private String typeName = "test1";
-	private String indexName = "sogou_mini";
+	private String indexName = "soul_mini";
 	private String typeName = "table";
 	// private String hostName = "192.168.50.75";
 	private String hostName = "localhost";
@@ -78,8 +91,16 @@ public class SogouDataTest {
 		restClient.close();
 	}
 
-	@Ignore("Create Index sogou_test")
-	@Test
+	// @Test
+	public void createIndexAndFillDataTest() {
+		createIndexTestWithMapping();
+		try {
+			testIndexOperation();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void createIndexTestWithMapping() {
 		try {
 			IndicesExistsResponse existsResponse = transportClient.admin()
@@ -118,8 +139,6 @@ public class SogouDataTest {
 		}
 	}
 
-//	@Ignore("Send Data to Index Module")
-	@Test
 	public void testIndexOperation() throws Exception {
 		IndexCommand command = new IndexCommand(settings);
 		SogouDataReader reader = new SogouDataReader(dirName);
@@ -143,5 +162,74 @@ public class SogouDataTest {
 		}
 		restClient.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
+	@Test
+	public void testSimpleQueryStringOperation() {
+		// 使用soul_query分完词后，建立boolean查询，此时与顺序无关
+		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
+				"奥斯卡 艺术"};
 
+		for (String queryStr : queryStrs) {
+			int size = 0;
+			long totalSize = 0;
+			SimpleQueryStringBuilder builder = simpleQueryString(queryStr)
+					.analyzer("soul_query").field("content", 1.0f)
+					.field("contenttitle", 2.0f)
+					.defaultOperator(SimpleQueryStringBuilder.Operator.AND);
+			SearchRequestBuilder srb = transportClient.prepareSearch(indexName)
+					.setQuery(builder);
+			SearchResponse searchResponse = null;
+			log.info("******************* " + queryStr + " *******************");
+			do {
+				srb.setFrom(size);
+				searchResponse = srb.execute().actionGet();
+				totalSize = searchResponse.getHits().getTotalHits();
+				size += searchResponse.getHits().getHits().length;
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					// log.info(hit.getId() + ", " + hit.getScore() + ", "
+					// + hit.getSource().get("url") + ", "
+					// + hit.getSource().get("contenttitle"));
+				}
+			} while (size < totalSize);
+			log.info("******************* " + queryStr + "/" + totalSize
+					+ " *******************");
+		}
+	}
+
+	@Test
+	public void testSimpleScrollQueryThenFetch() throws Exception {
+		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
+				"奥斯卡 艺术"};
+		for (String queryStr : queryStrs) {
+			log.info("******************* " + queryStr + " *******************");
+			SimpleQueryStringBuilder strBuilder = simpleQueryString(queryStr)
+					.analyzer("soul_query").field("content", 1.0f)
+					.field("contenttitle", 2.0f)
+					.defaultOperator(SimpleQueryStringBuilder.Operator.AND);
+			SearchResponse searchResponse = transportClient
+					.prepareSearch(indexName).setQuery(strBuilder).setSize(15)
+					.setScroll(TimeValue.timeValueMinutes(4)).execute()
+					.actionGet();
+			for (SearchHit hit : searchResponse.getHits().getHits()) {
+				// log.info(hit.getId() + ", " + hit.getScore() + ", "
+				// + hit.getSource().get("url") + ", "
+				// + hit.getSource().get("contenttitle"));
+			}
+			int size = searchResponse.getHits().getHits().length;
+			long totalSize = searchResponse.getHits().getTotalHits();
+			while (size < totalSize) {
+				searchResponse = transportClient
+						.prepareSearchScroll(searchResponse.getScrollId())
+						.setScroll(TimeValue.timeValueMinutes(4)).execute()
+						.actionGet();
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					// log.info(hit.getId() + ", " + hit.getScore() + ", "
+					// + hit.getSource().get("url") + ", "
+					// + hit.getSource().get("contenttitle"));
+				}
+				size += searchResponse.getHits().getHits().length;
+			};
+			log.info("******************* " + queryStr + "/" + totalSize
+					+ " *******************");
+		}
+	}
 }

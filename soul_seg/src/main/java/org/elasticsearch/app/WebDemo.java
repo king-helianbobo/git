@@ -7,7 +7,7 @@ public class WebDemo {
 
 	public static void main(String[] args) throws Exception {
 		if (args == null || args.length < 1) {
-			System.err.println("ServerPort by default 8888");
+			// System.err.println("ServerPort by default 8888");
 			args = new String[]{"8888"};
 		}
 		NlpAnalysis.parse(welcomeWord);

@@ -13,7 +13,7 @@ import org.soul.domain.Term;
 import org.soul.recognition.NatureRecognition;
 
 public class SoulServlet {
-
+	private static SoulSearchClient client = new SoulSearchClient();
 	private enum SoulMethod {
 		BASE, NLP, KEYWORD, INDEX
 	}
@@ -31,10 +31,14 @@ public class SoulServlet {
 			nature = false;
 
 		List<Term> terms = null;
+		String resultStr = null;
 		Collection<KeyWord> keyWords = null;
 		switch (method) {
-			case NLP :
-				terms = NlpAnalysis.parse(input);
+		// case NLP :
+		// terms = NlpAnalysis.parse(input);
+		// break;
+			case NLP : // use as search
+				resultStr = client.simpleQueryStringQuery(input);
 				break;
 			case KEYWORD :
 				KeyWordExtraction kwc = new KeyWordExtraction(10);
@@ -52,9 +56,11 @@ public class SoulServlet {
 		if (keyWords != null) {
 			return keyWordsToString(keyWords, nature);
 		}
+		if (resultStr != null) {
+			return resultStr;
+		}
 		return "Error happen!";
 	}
-
 	private static String keyWordsToString(Collection<KeyWord> keyWords,
 			boolean nature) {
 		StringBuilder sb = new StringBuilder();

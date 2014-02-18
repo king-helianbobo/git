@@ -53,8 +53,6 @@ public class SoulServer {
 					return;
 				} else {
 					libLog.info("path = " + path);
-					// String responseMsg =
-					// "欢迎使用Soul中文分词 \n http://localhost:8888/?input=中文分词&method=nlp";
 					Map<String, String> paramers = parseParamers(httpExchange);
 					String input = paramers.get("input");
 					String method = paramers.get("method");
