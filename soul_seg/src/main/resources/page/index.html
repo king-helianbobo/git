@@ -26,7 +26,15 @@
       $(document).ready(
       function() {
       $('#segButton').click(function() {
-      $("#form1").attr("action","../?method=keyword&nature=true") ;
+      $.ajax({
+      type: "POST",
+      url: "/",
+      data: "method=keyword&nature=true&input=天涯",
+      success: function(msg) {
+      alert(msg);
+      }
+      });
+      $("#form1").attr("action","../?method=keyword");
       $("#form1").attr("target","KEYWORD") ;
       $("#form1").submit();
 

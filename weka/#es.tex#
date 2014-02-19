@@ -648,7 +648,7 @@ curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
       type: "POST",
       url: "/servlet/xxxxxx",
       data: "name=John&location=Boston",
-      success: function(msg){
+      success: function(msg) {
       alert( "Data Saved: " + msg );
       }
-      });
+      }); });

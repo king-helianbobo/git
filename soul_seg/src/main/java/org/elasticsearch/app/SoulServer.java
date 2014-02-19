@@ -29,6 +29,7 @@ public class SoulServer {
 	private static final String FILE_ENCODING = System
 			.getProperty("file.encoding");
 	public static Log libLog = LogFactory.getLog(SoulServer.class);
+
 	public void startServer(int serverPort) throws Exception {
 		libLog.info("starting http server");
 		HttpServerProvider provider = HttpServerProvider.provider();
@@ -78,6 +79,7 @@ public class SoulServer {
 				httpExchange.close();
 			}
 		}
+
 		private String readFileToString(String path) {
 			InputStream resourceAsStream = null;
 			try {
@@ -113,12 +115,12 @@ public class SoulServer {
 				Map<String, String> parameters = new HashMap<String, String>();
 				URI requestedUri = httpExchange.getRequestURI();
 				String query = requestedUri.getRawQuery();
-				// libLog.info("RawQuery = [" + query + "]");
+				libLog.info("RawQuery = [" + query + "]");
 				parseQuery(query, parameters);
 				reader = IOUtil.getReader(httpExchange.getRequestBody(),
 						FILE_ENCODING);
 				query = IOUtil.getContent(reader).trim();
-				// libLog.info("RequestBody = " + query);
+				libLog.info("RequestBody = " + query);
 				parseQuery(query, parameters);
 				httpExchange.setAttribute("parameters", parameters);
 				return parameters;
@@ -139,6 +141,7 @@ public class SoulServer {
 			if (StringUtil.isBlank(query)) {
 				return;
 			}
+			libLog.info(query);
 			String splitStrs[] = query.split("\\?");
 			query = splitStrs[splitStrs.length - 1];
 			splitStrs = query.split("&");

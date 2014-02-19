@@ -34,12 +34,12 @@ public class SoulServlet {
 		String resultStr = null;
 		Collection<KeyWord> keyWords = null;
 		switch (method) {
-		// case NLP :
-		// terms = NlpAnalysis.parse(input);
+		case NLP:
+			terms = NlpAnalysis.parse(input);
+			break;
+		// case NLP : // use as search
+		// resultStr = client.simpleQueryStringQuery(input);
 		// break;
-			case NLP : // use as search
-				resultStr = client.simpleQueryStringQuery(input);
-				break;
 			case KEYWORD :
 				KeyWordExtraction kwc = new KeyWordExtraction(10);
 				keyWords = kwc.computeArticleTfidf(input);
