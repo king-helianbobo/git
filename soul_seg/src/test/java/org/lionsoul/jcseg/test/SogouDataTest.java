@@ -53,8 +53,6 @@ public class SogouDataTest {
 	private Settings settings;
 	TransportClient transportClient;
 
-	// private String indexName = "sogou_test";
-	// private String typeName = "test1";
 	private String indexName = "soul_mini";
 	private String typeName = "table";
 	// private String hostName = "192.168.50.75";
@@ -84,9 +82,6 @@ public class SogouDataTest {
 
 	@After
 	public void closeResources() {
-		// DeleteIndexResponse deleteIndexResponse = transportClient.admin()
-		// .indices().prepareDelete(indexName).execute().actionGet();
-		// assertThat(deleteIndexResponse.isAcknowledged(), is(true));
 		transportClient.close();
 		restClient.close();
 	}
@@ -162,12 +157,13 @@ public class SogouDataTest {
 		}
 		restClient.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
-	@Test
+	// @Test
 	public void testSimpleQueryStringOperation() {
 		// 使用soul_query分完词后，建立boolean查询，此时与顺序无关
-		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
-				"奥斯卡 艺术"};
-
+		// String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google",
+		// "雅虎北京",
+		// "奥斯卡 艺术"};
+		String queryStrs[] = {"Google雅虎"};
 		for (String queryStr : queryStrs) {
 			int size = 0;
 			long totalSize = 0;
@@ -176,7 +172,8 @@ public class SogouDataTest {
 					.field("contenttitle", 2.0f)
 					.defaultOperator(SimpleQueryStringBuilder.Operator.AND);
 			SearchRequestBuilder srb = transportClient.prepareSearch(indexName)
-					.setQuery(builder);
+					.setQuery(builder).addHighlightedField("contenttitle")
+					.addHighlightedField("content");
 			SearchResponse searchResponse = null;
 			log.info("******************* " + queryStr + " *******************");
 			do {
@@ -185,9 +182,8 @@ public class SogouDataTest {
 				totalSize = searchResponse.getHits().getTotalHits();
 				size += searchResponse.getHits().getHits().length;
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
-					// log.info(hit.getId() + ", " + hit.getScore() + ", "
-					// + hit.getSource().get("url") + ", "
-					// + hit.getSource().get("contenttitle"));
+					log.info(hit.getHighlightFields().get("contenttitle"));
+					log.info(hit.getHighlightFields().get("content"));
 				}
 			} while (size < totalSize);
 			log.info("******************* " + queryStr + "/" + totalSize
@@ -195,7 +191,7 @@ public class SogouDataTest {
 		}
 	}
 
-	@Test
+	// @Test
 	public void testSimpleScrollQueryThenFetch() throws Exception {
 		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
 				"奥斯卡 艺术"};
@@ -228,6 +224,71 @@ public class SogouDataTest {
 				}
 				size += searchResponse.getHits().getHits().length;
 			};
+			log.info("******************* " + queryStr + "/" + totalSize
+					+ " *******************");
+		}
+	}
+
+	// @Test
+	public void testMatchAllQuery() throws Exception {
+		SearchResponse searchResponse = transportClient
+				.prepareSearch(indexName).setQuery(matchAllQuery()).setSize(30)
+				.setScroll(TimeValue.timeValueMinutes(2)).execute().actionGet();
+		assertThat(searchResponse.getHits().hits().length, equalTo(30));
+		for (SearchHit hit : searchResponse.getHits()) {
+			// log.info(hit.getSource().get("contenttitle") + "  "
+			// + hit.getSource().get("postTime"));
+		}
+		for (int i = 0; i < 4; i++) {
+			searchResponse = transportClient
+					.prepareSearchScroll(searchResponse.getScrollId())
+					.setScroll(TimeValue.timeValueMinutes(2)).execute()
+					.actionGet();
+			assertThat(searchResponse.getHits().hits().length, equalTo(30));
+			for (SearchHit hit : searchResponse.getHits()) {
+				// log.info(hit.getSource().get("contenttitle") + "  "
+				// + hit.getSource().get("postTime"));
+			}
+		}
+	}
+	@Test
+	public void testSimpleScrollQueryWithHighLight() throws Exception {
+
+		// String queryStrs[] = {"互联网Google", "雅虎北京", "奥斯卡 艺术"};
+		String queryStrs[] = {"雅虎北京"};
+		for (String queryStr : queryStrs) {
+			log.info("******************* " + queryStr + " *******************");
+			SimpleQueryStringBuilder strBuilder = simpleQueryString(queryStr)
+					.analyzer("soul_query").field("content", 1.0f)
+					.field("contenttitle", 2.0f)
+					.defaultOperator(SimpleQueryStringBuilder.Operator.AND);
+			SearchResponse searchResponse = null;
+			int size = 0;
+			long totalSize = 0;
+			do {
+				if (searchResponse == null)
+					searchResponse = transportClient.prepareSearch(indexName)
+							.setQuery(strBuilder).setSize(15)
+							.setScroll(TimeValue.timeValueMinutes(4))
+							.addHighlightedField("contenttitle")
+							.addHighlightedField("content").execute()
+							.actionGet();
+				else
+					searchResponse = transportClient
+							.prepareSearchScroll(searchResponse.getScrollId())
+							.setScroll(TimeValue.timeValueMinutes(4)).execute()
+							.actionGet();
+				size += searchResponse.getHits().getHits().length;
+				totalSize = searchResponse.getHits().getTotalHits();
+				log.info(size + "," + totalSize);
+				log.info(searchResponse.toString());
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					// log.info(resp.getHits().hits()hit.getId() + ", " +
+					// hit.getScore() + ", "
+					// + hit.getSource().get("url") + ", "
+					// + hit.getSource().get("contenttitle"));
+				}
+			} while (size < totalSize);
 			log.info("******************* " + queryStr + "/" + totalSize
 					+ " *******************");
 		}
