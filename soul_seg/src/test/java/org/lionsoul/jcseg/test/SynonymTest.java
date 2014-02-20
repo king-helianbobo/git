@@ -3,11 +3,14 @@ package org.lionsoul.jcseg.test;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+
 import java.io.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.app.SoulSearchClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -22,6 +25,9 @@ public class SynonymTest {
 	private String indexName = "synonym-test";
 	private String typeName = "test1";
 	private int port = 9300;
+
+	SoulSearchClient searchClinet = new SoulSearchClient("localhost",
+			"soul_mini", "table");
 
 	@Before
 	public void startClient() throws Exception {
@@ -76,5 +82,12 @@ public class SynonymTest {
 			e.printStackTrace();
 		}
 	}
+	@Test
+	public void synonymQueryTest() {
+		String[] queryStrs = {"面试过程", "公积", "口试口水", "口试 guangd", "guang Dong"};
+		for (String queryStr : queryStrs) {
+			searchClinet.synonymQuery(queryStr);
+		}
 
+	}
 }
