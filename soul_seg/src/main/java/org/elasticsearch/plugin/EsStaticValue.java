@@ -1,20 +1,12 @@
 package org.elasticsearch.plugin;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.lucene.util.Version;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
@@ -26,15 +18,15 @@ import org.elasticsearch.node.internal.InternalSettingsPreparer;
 import org.soul.treeSplit.IOUtil;
 import org.soul.utility.MyStaticValue;
 
-public class ElasticSearchStaticVariable {
-	private static Log log = LogFactory
-			.getLog(ElasticSearchStaticVariable.class);
+public class EsStaticValue {
+	private static Log log = LogFactory.getLog(EsStaticValue.class);
 	public static ESLogger logger = Loggers.getLogger("soul-analyzer");
 	public static boolean loaded = false;
 	public static Set<String> filter;
 	public static TreeMap<String, List<String>> synonymTree;
 	public static boolean pstemming = false;
 	public static Environment environment;
+	public static Version LuceneVersion = Version.LUCENE_46;
 
 	static {
 		Tuple<Settings, Environment> tuple = InternalSettingsPreparer
@@ -43,7 +35,7 @@ public class ElasticSearchStaticVariable {
 		initConfigPath(tuple.v1());
 		loadFilter(); // load stop words
 		loadSynonymArray();
-		ElasticSearchStaticVariable.loaded = true;
+		EsStaticValue.loaded = true;
 	}
 
 	private static void initConfigPath(Settings settings) {
@@ -59,8 +51,8 @@ public class ElasticSearchStaticVariable {
 		MyStaticValue.stopLibrary = getPath(settings.get("soul_stopPath",
 				MyStaticValue.stopLibrary));
 		// log.info(StaticVarForSegment.stopLibrary);
-		MyStaticValue.synonymLibrary = getPath(settings.get(
-				"soul_synonymPath", MyStaticValue.synonymLibrary));
+		MyStaticValue.synonymLibrary = getPath(settings.get("soul_synonymPath",
+				MyStaticValue.synonymLibrary));
 	}
 
 	private static String getPath(String path) {
@@ -82,8 +74,7 @@ public class ElasticSearchStaticVariable {
 	private static void loadFilter() {
 		File stopLibrary = new File(MyStaticValue.stopLibrary);
 		if (!stopLibrary.isFile() || !stopLibrary.canRead()) {
-			logger.info("Can't find file:" + MyStaticValue.stopLibrary
-					+ "!");
+			logger.info("Can't find file:" + MyStaticValue.stopLibrary + "!");
 			filter = new HashSet<String>();
 			return;
 		} else {
@@ -110,8 +101,7 @@ public class ElasticSearchStaticVariable {
 	private static void loadSynonymArray() {
 		File synonymLibrary = new File(MyStaticValue.synonymLibrary);
 		if (!synonymLibrary.isFile() || !synonymLibrary.canRead()) {
-			logger.info("Can't find file:" + MyStaticValue.synonymLibrary
-					+ "!");
+			logger.info("Can't find file:" + MyStaticValue.synonymLibrary + "!");
 			synonymTree = null;
 			return;
 		} else {

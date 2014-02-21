@@ -14,7 +14,6 @@ import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.base.Function;
 import org.elasticsearch.common.base.Joiner;
@@ -40,6 +39,7 @@ import org.elasticsearch.index.shard.AbstractIndexShardComponent;
 import org.elasticsearch.index.shard.IndexShardState;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.shard.service.IndexShard;
+import org.elasticsearch.plugin.EsStaticValue;
 import org.elasticsearch.plugin.PinyinTokenFilter;
 import org.elasticsearch.plugin.SoulSpellChecker;
 import org.suggest.elasticsearch.action.refresh.ShardSuggestRefreshRequest;
@@ -109,7 +109,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 								ramDirectoryCache.get(field));
 
 						IndexWriterConfig config = new IndexWriterConfig(
-								Version.LUCENE_CURRENT, null);
+								EsStaticValue.LuceneVersion, null);
 						config.setOpenMode(OpenMode.CREATE_OR_APPEND);
 						spellChecker.indexDictionary(
 								dictCache.getUnchecked(field), config, false);

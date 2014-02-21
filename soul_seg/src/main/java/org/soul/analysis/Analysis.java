@@ -1,7 +1,7 @@
 package org.soul.analysis;
 
 import static org.soul.library.InitDictionary.IN_SYSTEM;
-import static org.soul.library.InitDictionary.TraditionalToSimplified;
+//import static org.soul.library.InitDictionary.TraditionalToSimplified;
 import static org.soul.library.InitDictionary.status;
 
 import java.io.BufferedReader;
@@ -35,6 +35,7 @@ public abstract class Analysis {
 	protected Forest[] forests = null;
 	public Analysis(Reader reader) {
 		br = new BufferedReader(reader);
+		resetContent(br);
 	}
 
 	protected Analysis() {
@@ -52,6 +53,7 @@ public abstract class Analysis {
 				return null;
 			} else {
 				offe = offe + temp.length() + 1;
+				// 为何加1？
 				temp = br.readLine();
 			}
 		}
@@ -66,9 +68,6 @@ public abstract class Analysis {
 	}
 
 	private void analysisSentence(String tmpStr) {
-		// String sentence = WordAlter.alterAlphaAndNumber(tmpStr, 0,
-		// tmpStr.length());
-		// 将部分全角字母和数字变成相应的ASCII char
 		ViterbiGraph gp = new ViterbiGraph(tmpStr);
 		int startOffe = 0;
 		if (UserDefineLibrary.ambiguityForest != null) {
@@ -78,9 +77,7 @@ public abstract class Analysis {
 			String[] params = null;
 			while ((getTrieWords.getOneWord()) != null) {
 				if (getTrieWords.offe > startOffe) {
-					String str = gp.convertedStr.substring(startOffe,
-							getTrieWords.offe);
-					analysis(gp, str, startOffe);
+					_analysis(gp, startOffe, getTrieWords.offe);
 				}
 				params = getTrieWords.getParams();
 				startOffe = getTrieWords.offe;
@@ -95,77 +92,75 @@ public abstract class Analysis {
 			int length = gp.convertedStr.length();
 			if (startOffe < length - 1) {
 				// log.info(sentence.substring(startOffe, sentence.length()));
-				analysis(gp, gp.convertedStr.substring(startOffe), startOffe);
+				_analysis(gp, startOffe, gp.convertedStr.length());
 			}
 		} else {
-			analysis(gp, gp.convertedStr, startOffe);
+			_analysis(gp, startOffe, gp.convertedStr.length());
 		}
 		List<Term> result = this.getResult(gp);
 		terms.addAll(result);
 	}
 
-	private void analysis(ViterbiGraph gp, String sentence, int startOffe) {
+	private void _analysis(ViterbiGraph gp, int startOffe, int endOffe) {
 		int start = 0;
 		int end = 0;
-		int length = 0;
-		length = sentence.length();
-		tempLength = length + 1;
+		String sentence = gp.convertedStr;
 		String str = null;
 		char c = 0;
-		for (int i = 0; i < length; i++) {
-			switch (status[TraditionalToSimplified(sentence.charAt(i))]) {
+		for (int i = startOffe; i < endOffe; i++) {
+			switch (status[sentence.charAt(i)]) {
 				case 0 : // particular symbol
-					gp.addTerm(new Term(sentence.charAt(i) + "", startOffe + i,
+					gp.addTerm(new Term(sentence.charAt(i) + "", i,
 							TermNatures.NULL));
 					break;
 				case 4 : // consecutive alpha
 					start = i;
 					end = 1;
-					while (++i < length && status[sentence.charAt(i)] == 4) {
+					while (++i < endOffe && status[sentence.charAt(i)] == 4) {
 						end++;
 					}
 					str = WordAlter.alterAlpha(sentence, start, end);
-					gp.addTerm(new Term(str, start + startOffe, TermNatures.EN));
+					gp.addTerm(new Term(str, start, TermNatures.EN));
 					// English words use TermNatures.EN
 					i--;
 					break;
 				case 5 : // consecutive number
 					start = i;
 					end = 1;
-					while (++i < length && status[sentence.charAt(i)] == 5) {
+					while (++i < endOffe && status[sentence.charAt(i)] == 5) {
 						end++;
 					}
 					str = WordAlter.alterNumber(sentence, start, end);
-					gp.addTerm(new Term(str, start + startOffe, TermNatures.M));
-					// decimal number use TermNatures.NB
+					gp.addTerm(new Term(str, start, TermNatures.M));
 					i--;
 					break;
-				default :
+				default : // 普通汉字
 					start = i;
 					end = i;
 					c = sentence.charAt(start);
 					while (IN_SYSTEM[c] > 0) {
 						end++;
-						if (++i >= length)
+						if (++i >= endOffe)
 							break;
 						c = sentence.charAt(i);
 					}
 					if (start == end) {
-						gp.addTerm(new Term(String.valueOf(c), i + startOffe,
-								TermNatures.NULL)); // couldn't determine
-													// termNature
+						gp.addTerm(new Term(String.valueOf(c), i,
+								TermNatures.NULL));
+						continue;
+						// couldn't determine termNature
 					} else {
 						str = sentence.substring(start, end);
 						gwi.setStr(str);
 						while ((str = gwi.fetchOneWord()) != null) {
-							gp.addTerm(new Term(str, gwi.offe + start
-									+ startOffe, gwi.getTermNatures()));
+							gp.addTerm(new Term(str, gwi.offe + start, gwi
+									.getTermNatures()));
 						}
 					}
 					if (IN_SYSTEM[c] > 0 || status[c] > 3) {
 						i -= 1;
 					} else { // 以未知字符加入到graph中，未知字符不能确定词性
-						gp.addTerm(new Term(String.valueOf(c), i + startOffe,
+						gp.addTerm(new Term(String.valueOf(c), i,
 								TermNatures.NULL));
 					}
 					break;

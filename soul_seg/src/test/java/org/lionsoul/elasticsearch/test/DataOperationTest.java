@@ -1,4 +1,4 @@
-package org.lionsoul.jcseg.test;
+package org.lionsoul.elasticsearch.test;
 
 import static org.junit.Assert.assertNotNull;
 

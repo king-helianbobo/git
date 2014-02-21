@@ -1,4 +1,4 @@
-package org.lionsoul.jcseg.test;
+package org.lionsoul.elasticsearch.test;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -22,6 +22,7 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.app.SoulSearchClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -52,7 +53,8 @@ public class SogouDataTest {
 	private RestClient restClient;
 	private Settings settings;
 	TransportClient transportClient;
-
+	SoulSearchClient searchClinet = new SoulSearchClient("localhost",
+			"soul_mini", "table");
 	private String indexName = "soul_mini";
 	private String typeName = "table";
 	// private String hostName = "192.168.50.75";
@@ -253,44 +255,11 @@ public class SogouDataTest {
 	}
 	@Test
 	public void testSimpleScrollQueryWithHighLight() throws Exception {
-
 		// String queryStrs[] = {"互联网Google", "雅虎北京", "奥斯卡 艺术"};
-		String queryStrs[] = {"雅虎北京"};
+		String queryStrs[] = {"口试 广东"};
 		for (String queryStr : queryStrs) {
-			log.info("******************* " + queryStr + " *******************");
-			SimpleQueryStringBuilder strBuilder = simpleQueryString(queryStr)
-					.analyzer("soul_query").field("content", 1.0f)
-					.field("contenttitle", 2.0f)
-					.defaultOperator(SimpleQueryStringBuilder.Operator.AND);
-			SearchResponse searchResponse = null;
-			int size = 0;
-			long totalSize = 0;
-			do {
-				if (searchResponse == null)
-					searchResponse = transportClient.prepareSearch(indexName)
-							.setQuery(strBuilder).setSize(15)
-							.setScroll(TimeValue.timeValueMinutes(4))
-							.addHighlightedField("contenttitle")
-							.addHighlightedField("content").execute()
-							.actionGet();
-				else
-					searchResponse = transportClient
-							.prepareSearchScroll(searchResponse.getScrollId())
-							.setScroll(TimeValue.timeValueMinutes(4)).execute()
-							.actionGet();
-				size += searchResponse.getHits().getHits().length;
-				totalSize = searchResponse.getHits().getTotalHits();
-				log.info(size + "," + totalSize);
-				log.info(searchResponse.toString());
-				for (SearchHit hit : searchResponse.getHits().getHits()) {
-					// log.info(resp.getHits().hits()hit.getId() + ", " +
-					// hit.getScore() + ", "
-					// + hit.getSource().get("url") + ", "
-					// + hit.getSource().get("contenttitle"));
-				}
-			} while (size < totalSize);
-			log.info("******************* " + queryStr + "/" + totalSize
-					+ " *******************");
+			// searchClinet.simpleScrollQuery(queryStr);
+			searchClinet.multiMatchQuery(queryStr);
 		}
 	}
 }

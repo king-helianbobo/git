@@ -359,7 +359,6 @@ TBLPROPERTIES('es.resource' = 'eshive/hive1/',
 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
 \end{verbatim}
 \subsubsection{ElasticSearch Query}
-
 \paragraph{Scroll}
 \par A search request can be scrolled by specifying the scroll parameter. The scroll parameter is a time value parameter (for example: scroll=5m), indicating for how long the nodes that participate in the search will maintain relevant resources in order to continue and support it. This is very similar in its idea to opening a cursor against a database.
 \par A scroll\_id is returned from the first search request (and from continuous) scroll requests. The scroll\_id should be used when scrolling (along with the scroll parameter, to stop the scroll from expiring). The scroll id can also be passed as part of the search request body. The scroll\_id changes for each scroll request and only the most recent one should be used.
@@ -416,7 +415,9 @@ curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM
   }
 }
 \end{verbatim}
-
+\paragraph{ElasticSearch打分机制}
+\par The default scoring is the DefaultSimilarity algorithm in core Lucene, largely documented here. You can customize scoring by configuring your own Similarity, or using something like a custom\_score query.
+\par The odd score variation in the first five results shown seems small enough that it doesn't concern me much, as far as the validity of the query results and their ordering, but if you want to understand the cause of it, the explain api can show you exactly what is going on there.
 \subsection{ElasticSearch源码分析}
 \subsubsection{ES模块}
 \par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
@@ -447,7 +448,6 @@ curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM
 \item NodeClientModule：客户端模块
 \end{multicols}
 \end{itemize}
-
 \begin{enumerate}[(1)]
 \item 有"/\_analyze"和"/\{index\}/\_analyze两种，接受GET和POST方法，在org/elasticsearch/rest/action/admin/indices/analyze/RestAnalyzeAction.java中被处理；在ActionModule中，存在一个注册函数registerAction(AnalyzeAction.INSTANCE, TransportAnalyzeAction.class)，因此请求将由TransportAnalyzeAction类处理。
 \item "/\{index\}/\_close"，只接受POST方法，在org/elasticsearch/rest/action/admin/indices/close/RestCloseIndexAction.java中被处理；
@@ -643,12 +643,3 @@ curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
 }'
 \end{verbatim}
 \end{enumerate}
-      $('#segButton').click(function() {
-      $.ajax({
-      type: "POST",
-      url: "/servlet/xxxxxx",
-      data: "name=John&location=Boston",
-      success: function(msg) {
-      alert( "Data Saved: " + msg );
-      }
-      }); });

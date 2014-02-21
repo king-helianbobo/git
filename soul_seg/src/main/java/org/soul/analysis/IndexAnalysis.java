@@ -24,10 +24,6 @@ public class IndexAnalysis extends Analysis {
 	private IndexAnalysis() {
 	};
 
-	public IndexAnalysis(Forest[] forests) {
-		this.forests = forests;
-	}
-
 	@Override
 	protected List<Term> getResult(final ViterbiGraph graph) {
 		Merger merger = new Merger() {
@@ -81,8 +77,4 @@ public class IndexAnalysis extends Analysis {
 		return new IndexAnalysis().parseStr(str);
 	}
 
-	public static List<Term> parse(String str, Forest... forests) {
-		return new IndexAnalysis(forests).parseStr(str);
-
-	}
 }

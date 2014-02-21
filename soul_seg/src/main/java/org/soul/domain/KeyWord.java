@@ -1,4 +1,4 @@
-package org.soul.analysis;
+package org.soul.domain;
 
 public class KeyWord implements Comparable<KeyWord> {
 	private String name;

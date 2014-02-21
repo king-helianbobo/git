@@ -4,15 +4,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.util.Version;
 import org.elasticsearch.common.settings.Settings;
-import org.soul.analysis.BasicAnalysis;
-
-import java.io.IOException;
 import java.io.Reader;
 
 public class PinyinAnalyzer extends Analyzer {
@@ -21,8 +15,6 @@ public class PinyinAnalyzer extends Analyzer {
 
 	private String padding_char;
 	private String first_letter;
-
-	private int stringLen;
 
 	public PinyinAnalyzer(Settings settings) {
 		log.info("PinyinAnalyzer is added!");
@@ -33,16 +25,14 @@ public class PinyinAnalyzer extends Analyzer {
 	public PinyinAnalyzer() {
 		first_letter = "none";
 		padding_char = " ";
-
 	}
 
 	@Override
 	protected TokenStreamComponents createComponents(String fieldName,
 			Reader reader) {
-
 		WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(
-				Version.LUCENE_CURRENT, reader);
-		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
+				EsStaticValue.LuceneVersion, reader);
+		TokenStream result = new StandardFilter(EsStaticValue.LuceneVersion,
 				tokenizer);
 		result = new PinyinTokenFilter(result);
 		// result = new SoulEdgeNGramTokenFilter(result,

@@ -11,12 +11,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.lionsoul.jcseg.JcSegment;
-import org.lionsoul.jcseg.pinyin.ChineseHelper;
-import org.soul.utility.JcsegInstance;
 
-public class PinyinTokenFilter extends TokenFilter {
-
+public class SynonymTokenFilter extends TokenFilter {
 	private static Log log = LogFactory.getLog(PinyinTokenFilter.class);
 	private int totalNumber = 1; // number of to be convert
 	private int tokenStart;
@@ -28,21 +24,17 @@ public class PinyinTokenFilter extends TokenFilter {
 	private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 	private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 	public static final String TYPE_SYNONYM = "SOUL_SYNONYM";
-	public static final String TYPE_PINYIN = "SOUL_PINYIN";
-	public static final String TYPE_HANZI = "SOUL_HANZI";
 	public static final String TYPE_WORD = "SOUL_WORD";
-	private static JcSegment seg = JcsegInstance.instance();
 	private TreeMap<String, List<String>> synonymTree;
 	private List<String> synonymList = null;
-	private String pinyin = null;
 	private String originalToken = null;
 
-	public PinyinTokenFilter(TokenStream input) { // accept one token stream
+	public SynonymTokenFilter(TokenStream input) { // accept one token stream
 		super(input);
 		synonymTree = null;
 	}
 
-	public PinyinTokenFilter(TokenStream input,
+	public SynonymTokenFilter(TokenStream input,
 			TreeMap<String, List<String>> synonymTree) {
 		// accept one token stream and synonym tree
 		super(input);
@@ -64,14 +56,6 @@ public class PinyinTokenFilter extends TokenFilter {
 					position = posAtt.getPositionIncrement();
 					// log.info("position = " + position);
 					totalNumber = 1;
-					if (ChineseHelper.containChineseChar(originalToken)) {
-						// if not include Chinese chars, no need get Pinyin
-						Reader reader = new StringReader(originalToken);
-						pinyin = seg.convertToPinyin(reader, true);
-						totalNumber += 1;
-					} else {
-						pinyin = null;
-					}
 					if (synonymTree != null) {
 						List<String> list = synonymTree.get(originalToken);
 						if (list != null) {
@@ -95,17 +79,7 @@ public class PinyinTokenFilter extends TokenFilter {
 					offsetAtt.setOffset(tokenStart, tokenEnd);
 					termAtt.append(originalToken);
 					posAtt.setPositionIncrement(position);
-					if (pinyin == null)
-						typeAtt.setType(TYPE_WORD);
-					else
-						typeAtt.setType(TYPE_HANZI);
-				} else if (pinyin != null) {
-					clearAttributes();
-					offsetAtt.setOffset(tokenStart, tokenEnd);
-					termAtt.copyBuffer(pinyin.toCharArray(), 0, pinyin.length());
-					typeAtt.setType(TYPE_PINYIN);
-					posAtt.setPositionIncrement(position);
-					pinyin = null;
+					typeAtt.setType(TYPE_WORD);
 				} else if (synonymList != null) {
 					clearAttributes();
 					offsetAtt.setOffset(tokenStart, tokenEnd);
@@ -113,7 +87,6 @@ public class PinyinTokenFilter extends TokenFilter {
 					termAtt.append(text);
 					typeAtt.setType(TYPE_SYNONYM);
 					posAtt.setPositionIncrement(position);
-					// log.info("Synonym Token is [ " + text + " ]");
 					if (synonymList.size() == 0)
 						synonymList = null;
 				}

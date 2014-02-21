@@ -32,7 +32,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.Version;
 import org.lionsoul.jcseg.JcSegment;
 import org.soul.utility.JcsegInstance;
 
@@ -97,8 +96,9 @@ public class SoulSpellChecker implements java.io.Closeable {
 		synchronized (modifyCurrentIndexLock) {
 			ensureOpen();
 			if (!DirectoryReader.indexExists(spellIndexDir)) {
-				IndexWriter writer = new IndexWriter(spellIndexDir,
-						new IndexWriterConfig(Version.LUCENE_CURRENT, null));
+				IndexWriter writer = new IndexWriter(
+						spellIndexDir,
+						new IndexWriterConfig(EsStaticValue.LuceneVersion, null));
 				writer.close();
 			}
 			swapSearcher(spellIndexDir);
@@ -265,74 +265,7 @@ public class SoulSpellChecker implements java.io.Closeable {
 		return this.suggestSimilar(word, numSuggest, null, null,
 				SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, this.accuracy);
 	}
-	// private String[] suggestWithFixedNumber(String word, int numSuggest,
-	// IndexReader ir, String field, SuggestMode suggestMode)
-	// throws IOException {
-	// final IndexSearcher indexSearcher = obtainSearcher();
-	// try {
-	// if (ir == null || field == null) {
-	// suggestMode = SuggestMode.SUGGEST_ALWAYS;
-	// }
-	// if (suggestMode == SuggestMode.SUGGEST_ALWAYS) {
-	// ir = null;
-	// field = null;
-	// }
-	// final int freq = (ir != null && field != null) ? ir
-	// .docFreq(new Term(field, word)) : 0;
-	// final int goalFreq = suggestMode == SuggestMode.SUGGEST_MORE_POPULAR
-	// ? freq
-	// : 0;
-	// if (suggestMode == SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX
-	// && freq > 0) {
-	// return new String[]{word};
-	// }
-	// String pinyin = jcSeg.convertToPinyin(word);
-	// BooleanQuery query = createBooleanQuery(word, pinyin);
-	// int maxHits = 5 * numSuggest;
-	// ScoreDoc[] hits = indexSearcher.search(query, null, maxHits).scoreDocs;
-	// // String[] list = new String[sugQueue.size()];
-	// SuggestWordQueue sugQueue = new SuggestWordQueue(numSuggest,
-	// comparator);
-	// int finalLen = Math.min(hits.length, maxHits);
-	// for (int i = 0; i < finalLen; i++) {
-	// SuggestWord sugWord = new SuggestWord();
-	// sugWord.string = indexSearcher.doc(hits[i].doc).get(F_WORD);
-	// String sugPinyin = indexSearcher.doc(hits[i].doc).get(F_PINYIN);
-	// if (sugWord.string.equals(word)) {
-	// continue;
-	// }
-	// sugWord.score = sd.getDistance(word, sugWord.string);
-	// float score = sd.getDistance(pinyin, sugPinyin);
-	// sugWord.score = Math.max(sugWord.score, score);
-	// log.info("分数：" + sugWord.score + " [" + sugWord.string + "/"
-	// + sugPinyin + "] [" + word + "/" + pinyin + "]");
-	// if (ir != null && field != null) { // use the user index
-	// sugWord.freq = ir.docFreq(new Term(field, sugWord.string));
-	// // don't suggest a word that is not present in the field
-	// if ((suggestMode == SuggestMode.SUGGEST_MORE_POPULAR && goalFreq >
-	// sugWord.freq)
-	// || sugWord.freq < 1) {
-	// continue;
-	// }
-	// }
-	// sugQueue.insertWithOverflow(sugWord);
-	// }
-	// String[] list = new String[sugQueue.size() * 2];
-	// for (int i = list.length - 1; i >= 0; i -= 2) {
-	// // log.info(sugQueue.top().score + "," + sugQueue.top().string);
-	// // list[i] = sugQueue.pop().string;
-	// float suggestScore = sugQueue.top().score;
-	// String suggestWord = sugQueue.top().string;
-	// log.info(sugQueue.top().score + "," + sugQueue.top().string);
-	// list[i] = String.valueOf(suggestScore);
-	// list[i - 1] = suggestWord;
-	// sugQueue.pop();
-	// }
-	// return list;
-	// } finally {
-	// releaseSearcher(indexSearcher);
-	// }
-	// }
+
 	private BooleanQuery createBooleanQuery(String word, String pinyin) {
 		BooleanQuery query = new BooleanQuery();
 		String[] grams;
@@ -410,7 +343,7 @@ public class SoulSpellChecker implements java.io.Closeable {
 			ensureOpen();
 			final Directory dir = this.spellIndex;
 			final IndexWriter writer = new IndexWriter(dir,
-					new IndexWriterConfig(Version.LUCENE_CURRENT, null)
+					new IndexWriterConfig(EsStaticValue.LuceneVersion, null)
 							.setOpenMode(OpenMode.CREATE));
 			writer.close();
 			swapSearcher(dir);

@@ -8,8 +8,6 @@ import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AbstractIndexAnalyzerProvider;
 import org.elasticsearch.index.settings.IndexSettings;
 
-/**
- */
 public class SoulPinyinAnalyzerProvider
 		extends
 			AbstractIndexAnalyzerProvider<SoulPinyinAnalyzer> {

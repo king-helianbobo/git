@@ -12,7 +12,6 @@ import org.soul.utility.WordAlter;
 
 public class ViterbiGraph {
 	private static Log log = LogFactory.getLog(ViterbiGraph.class);
-	// public char[] chars = null;
 	public String convertedStr = null;
 	protected String realStr = null;
 	public Term[] terms = null;
@@ -25,14 +24,16 @@ public class ViterbiGraph {
 
 	public ViterbiGraph(String str) {
 		this.realStr = str;
-		this.convertedStr = WordAlter.alterAlphaAndNumber(str, 0, str.length());
+		// this.convertedStr = WordAlter.alterAlphaAndNumber(str, 0,
+		// str.length());
+		// 在analysis类中已经转换过数字和字符了
+		this.convertedStr = WordAlter.TraditionalToSimplified(str);
 		int size = str.length();
 		terms = new Term[size + 1];
 		end = new Term(E, size, TermNatures.END);
 		root = new Term(B, -1, TermNatures.BEGIN);
 		terms[size] = end;
 	}
-
 	public List<Term> getResult(Merger merger) {
 		return merger.merge();
 	}
@@ -104,13 +105,13 @@ public class ViterbiGraph {
 			 * 对字数进行优化.如果一个字.就跳过..两个字.且第二个为null则.也跳过.从第二个后开始
 			 */
 			switch (maxTerm.getName().length()) {
-			case 1:
-				continue;
-			case 2:
-				if (terms[i + 1] == null) {
-					i = i + 1;
+				case 1 :
 					continue;
-				}
+				case 2 :
+					if (terms[i + 1] == null) {
+						i = i + 1;
+						continue;
+					}
 			}
 
 			/**
@@ -200,8 +201,7 @@ public class ViterbiGraph {
 
 	public void walkPath() {
 		Term term = null;
-		// BEGIN先行打分
-		merge(root, 0);
+		merge(root, 0); // BEGIN先打分
 		for (int i = 0; i < terms.length; i++) {
 			term = terms[i];
 			while (term != null && term.getFrom() != null && term != end) {
@@ -223,7 +223,6 @@ public class ViterbiGraph {
 			}
 		} else {
 			char c = this.convertedStr.charAt(to);
-			log.info(c);
 			TermNatures tn = InitDictionary.termNatures[c];
 			if (tn == null)
 				tn = TermNatures.NW;

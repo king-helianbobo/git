@@ -18,7 +18,6 @@ import org.lionsoul.jcseg.core.IWord;
 import org.lionsoul.jcseg.core.JcsegException;
 import org.lionsoul.jcseg.core.JcsegTaskConfig;
 import org.lionsoul.jcseg.core.SegmentFactory;
-import org.soul.domain.TermNature;
 
 public class SoulJcsegTokenizer extends Tokenizer {
 	private static Log log = LogFactory.getLog(SoulJcsegTokenizer.class);

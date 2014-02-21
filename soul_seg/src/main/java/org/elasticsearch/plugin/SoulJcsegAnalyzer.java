@@ -3,12 +3,10 @@ package org.elasticsearch.plugin;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
-import org.apache.lucene.util.Version;
 import org.lionsoul.jcseg.core.JcsegException;
 
 public class SoulJcsegAnalyzer extends Analyzer {
@@ -23,8 +21,8 @@ public class SoulJcsegAnalyzer extends Analyzer {
 			final Reader reader) {
 		try {
 			Tokenizer tokenizer = new SoulJcsegTokenizer(reader);
-			TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
-					tokenizer);
+			TokenStream result = new StandardFilter(
+					EsStaticValue.LuceneVersion, tokenizer);
 			return new TokenStreamComponents(tokenizer, result);
 		} catch (JcsegException e) {
 			e.printStackTrace();
