@@ -51,7 +51,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.lionsoul.jcseg.test.SogouDataReader;
+import org.lionsoul.elasticsearch.test.SogouDataReader;
 
 public class HttpClientTest {
 	private final Log log = LogFactory.getLog(HttpClientTest.class);
@@ -163,8 +163,8 @@ public class HttpClientTest {
 	public void testQueryStringOperation() {
 		// 词组后面跟随~10,表示词组中的多个词之间的距离之和不超过10,则满足查询
 		// 词之间的距离,即查询词组中词为满足和目标词组相同的最小移动次数
-		String queryStr[] = { "\"耳熟能详\"", "\"微软并购雅虎\"", "\"微软是否\"~2",
-				"\"微软是否\"~1", "Google互联网网上信息表" };
+		String queryStr[] = {"\"耳熟能详\"", "\"微软并购雅虎\"", "\"微软是否\"~2",
+				"\"微软是否\"~1", "Google互联网网上信息表"};
 		for (String str : queryStr) {
 			SearchResponse searchResponse = transportClient
 					.prepareSearch(indexName)
@@ -185,8 +185,8 @@ public class HttpClientTest {
 	public void testStopWordHaveEffectOperation() {
 		// 词组后面跟随~10,表示词组中的多个词之间的距离之和不超过10,则满足查询
 		// 词之间的距离,即查询词组中词为满足和目标词组相同的最小移动次数
-		String queryStr[] = { "\"香港的网站为主，占\"", "\"香港的网站为主占\"", "\"香港的网站为主(占\"",
-				"\"香港的网站为主()占\"" };
+		String queryStr[] = {"\"香港的网站为主，占\"", "\"香港的网站为主占\"", "\"香港的网站为主(占\"",
+				"\"香港的网站为主()占\""};
 		for (String str : queryStr) {
 			SearchResponse searchResponse = transportClient
 					.prepareSearch(indexName)
@@ -206,8 +206,8 @@ public class HttpClientTest {
 	@Test
 	public void testSimpleQueryStringOperation() {
 		// 使用soul_query分完词后，建立boolean查询，此时与顺序无关
-		String queryStrs[] = { "Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
-				"网民 娱乐" };
+		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
+				"网民 娱乐"};
 		for (String queryStr : queryStrs) {
 			SearchResponse searchResponse = transportClient
 					.prepareSearch(indexName)

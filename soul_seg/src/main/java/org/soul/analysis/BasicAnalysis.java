@@ -32,9 +32,11 @@ public class BasicAnalysis extends Analysis {
 					new AsianNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 					AsianNameRecognition.nameAmbiguity(graph.terms);
+					log.info(getResult());
 					new ForeignNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 				}
+				log.info(getResult());
 				if (graph.hasNum) { // recognize consecutive numbers
 					NumberRecognition.recognition(graph.terms);
 				}
@@ -53,7 +55,8 @@ public class BasicAnalysis extends Analysis {
 				return getResult();
 			}
 
-			private void userDefineRecognize(final ViterbiGraph graph, Forest forest) {
+			private void userDefineRecognize(final ViterbiGraph graph,
+					Forest forest) {
 				new UserDefineRecognition(graph.terms, forest).recognition();
 				graph.rmLittlePath();
 				graph.walkPathByScore();
@@ -75,13 +78,6 @@ public class BasicAnalysis extends Analysis {
 
 	public BasicAnalysis() {
 	};
-
-	public BasicAnalysis(Forest[] forests) {
-		if (forests == null) {
-			forests = new Forest[]{UserDefineLibrary.userDefineForest};
-		}
-		this.forests = forests;
-	}
 
 	public BasicAnalysis(Reader reader) {
 		super(reader);

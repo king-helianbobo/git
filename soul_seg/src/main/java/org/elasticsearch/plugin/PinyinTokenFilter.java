@@ -69,16 +69,12 @@ public class PinyinTokenFilter extends TokenFilter {
 						Reader reader = new StringReader(originalToken);
 						pinyin = seg.convertToPinyin(reader, true);
 						totalNumber += 1;
-						// log.info("text =  " + originalToken + ", pinyin = "
-						// + pinyin);
 					} else {
 						pinyin = null;
 					}
 					if (synonymTree != null) {
 						List<String> list = synonymTree.get(originalToken);
 						if (list != null) {
-							// log.info("originalToken is " + originalToken);
-							// needSynonymConv = true;
 							totalNumber += (list.size());
 							synonymList = new LinkedList<String>();
 							synonymList.addAll(list);
@@ -96,8 +92,6 @@ public class PinyinTokenFilter extends TokenFilter {
 			if (curNumber < totalNumber) {
 				if (curNumber == 0) {
 					clearAttributes();
-					// offsetAtt.setOffset(tokenStart,
-					// tokenStart + originalToken.length());
 					offsetAtt.setOffset(tokenStart, tokenEnd);
 					termAtt.append(originalToken);
 					posAtt.setPositionIncrement(position);
@@ -107,25 +101,19 @@ public class PinyinTokenFilter extends TokenFilter {
 						typeAtt.setType(TYPE_HANZI);
 				} else if (pinyin != null) {
 					clearAttributes();
-					// offsetAtt.setOffset(tokenStart,
-					// tokenStart + originalToken.length());
 					offsetAtt.setOffset(tokenStart, tokenEnd);
-					// log.info(text + "," + pinyin);
 					termAtt.copyBuffer(pinyin.toCharArray(), 0, pinyin.length());
 					typeAtt.setType(TYPE_PINYIN);
 					posAtt.setPositionIncrement(position);
 					pinyin = null;
 				} else if (synonymList != null) {
 					clearAttributes();
-					// offsetAtt.setOffset(tokenStart,
-					// tokenStart + originalToken.length());
 					offsetAtt.setOffset(tokenStart, tokenEnd);
 					String text = synonymList.remove(0);
 					termAtt.append(text);
 					typeAtt.setType(TYPE_SYNONYM);
 					posAtt.setPositionIncrement(position);
-					log.info("Synonym Token is [ " + text + " ]");
-
+					// log.info("Synonym Token is [ " + text + " ]");
 					if (synonymList.size() == 0)
 						synonymList = null;
 				}

@@ -9,6 +9,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.soul.domain.KeyWord;
 import org.soul.domain.Term;
 import org.soul.recognition.LearnTool;
 

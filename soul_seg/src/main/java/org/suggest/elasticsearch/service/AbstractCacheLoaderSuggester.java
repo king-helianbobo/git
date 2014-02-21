@@ -5,7 +5,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
-import org.apache.lucene.util.Version;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.cache.CacheLoader;
@@ -14,6 +13,7 @@ import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.mapper.MapperService;
+import org.elasticsearch.plugin.EsStaticValue;
 
 public abstract class AbstractCacheLoaderSuggester<T>
 		extends
@@ -47,7 +47,7 @@ public abstract class AbstractCacheLoaderSuggester<T>
 			queryAnalyzer = namedAnalyzer.analyzer();
 		}
 		if (queryAnalyzer == null) {
-			queryAnalyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+			queryAnalyzer = new StandardAnalyzer(EsStaticValue.LuceneVersion);
 		}
 
 		Analyzer indexAnalyzer = fieldMapper.searchAnalyzer();
@@ -61,7 +61,7 @@ public abstract class AbstractCacheLoaderSuggester<T>
 			indexAnalyzer = namedAnalyzer.analyzer();
 		}
 		if (indexAnalyzer == null) {
-			indexAnalyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+			indexAnalyzer = new StandardAnalyzer(EsStaticValue.LuceneVersion);
 		}
 
 		return getSuggester(indexAnalyzer, queryAnalyzer, fieldType);

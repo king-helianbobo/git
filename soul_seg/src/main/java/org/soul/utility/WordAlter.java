@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.soul.crf.Element;
+import org.soul.library.InitDictionary;
 
 //对特殊字符进行转换
 /**
@@ -309,5 +310,21 @@ public class WordAlter {
 		}
 		return false;
 	}
+	public static char TraditionalToSimplified(char c) {
+		char value = InitDictionary.IN_SYSTEM[c];
+		if (value == 0) {
+			return c;
+		}
+		return value;
+	}
 
+	public static String TraditionalToSimplified(String str) {
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < str.length(); i++) {
+			char c = str.charAt(i);
+			char value = TraditionalToSimplified(c);
+			builder.append(value);
+		}
+		return builder.toString();
+	}
 }

@@ -42,12 +42,9 @@ import java.util.concurrent.ScheduledFuture;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 
 @AnalysisSettingsRequired
-public class SynonymTokenFilterFactory
-		extends
-			AbstractTokenFilterFactory {
+public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
 
-	private final Log log = LogFactory
-			.getLog(SynonymTokenFilterFactory.class);
+	private final Log log = LogFactory.getLog(SynonymTokenFilterFactory.class);
 	private final URL synonymFileURL; // where synonyms file
 	private final String indexName; // index name for es
 	private final ThreadPool threadPool;

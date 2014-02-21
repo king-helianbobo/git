@@ -43,14 +43,17 @@ public class TermUtil {
 	 * 将一个term插入到链表中的对应位置
 	 */
 	public static void insertTerm(Term[] terms, Term term) {
+		// 插入到最后面
 		Term temp = terms[term.getOffe()];
+		term.setNext(null);
 		if (temp == null) {
 			terms[term.getOffe()] = term;
 		} else {
-			if (temp.getNext() != null) {
-				term.setNext(temp.getNext());
+			Term last = temp;
+			while ((temp = temp.getNext()) != null) {
+				last = temp;
 			}
-			temp.setNext(term);
+			last.setNext(term);
 		}
 	}
 

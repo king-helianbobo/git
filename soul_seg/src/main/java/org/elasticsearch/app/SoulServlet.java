@@ -6,9 +6,9 @@ import java.util.List;
 
 import org.soul.analysis.BasicAnalysis;
 import org.soul.analysis.IndexAnalysis;
-import org.soul.analysis.KeyWord;
 import org.soul.analysis.KeyWordExtraction;
 import org.soul.analysis.NlpAnalysis;
+import org.soul.domain.KeyWord;
 import org.soul.domain.Term;
 import org.soul.recognition.NatureRecognition;
 

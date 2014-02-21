@@ -51,6 +51,7 @@ _region_.tex
 .classpath
 
 ## ignore below directories
+soul_seg/
 soul_seg/target/
 soul_seg/test-output/
 elasticsearch/target/

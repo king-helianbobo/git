@@ -9,8 +9,6 @@ import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AbstractIndexAnalyzerProvider;
 import org.elasticsearch.index.settings.IndexSettings;
 
-import static org.elasticsearch.plugin.ElasticSearchStaticVariable.*;
-
 public class SoulIndexAnalyzerProvider
 		extends
 			AbstractIndexAnalyzerProvider<Analyzer> {
@@ -21,19 +19,19 @@ public class SoulIndexAnalyzerProvider
 			@IndexSettings Settings indexSettings, Environment env,
 			@Assisted String name, @Assisted Settings settings) {
 		super(index, indexSettings, name, settings);
-		analyzer = new SoulIndexAnalyzer(filter, pstemming);
+		analyzer = new SoulIndexAnalyzer();
 	}
 
 	public SoulIndexAnalyzerProvider(Index index, Settings indexSettings,
 			String name, Settings settings) {
 		super(index, indexSettings, name, settings);
-		analyzer = new SoulIndexAnalyzer(filter, pstemming);
+		analyzer = new SoulIndexAnalyzer();
 	}
 
 	public SoulIndexAnalyzerProvider(Index index, Settings indexSettings,
 			String prefixSettings, String name, Settings settings) {
 		super(index, indexSettings, prefixSettings, name, settings);
-		analyzer = new SoulIndexAnalyzer(filter, pstemming);
+		analyzer = new SoulIndexAnalyzer();
 	}
 
 	@Override

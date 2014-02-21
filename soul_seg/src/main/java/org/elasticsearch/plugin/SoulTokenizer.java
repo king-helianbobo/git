@@ -103,7 +103,7 @@ public class SoulTokenizer extends Tokenizer {
 	@Override
 	public void reset() throws IOException {
 		super.reset();
-		analysis.resetContent(new BufferedReader(this.input));
+		analysis.resetContent(new BufferedReader(input));
 	}
 
 }

@@ -40,6 +40,14 @@ public class NlpAnalysis extends Analysis {
 		this.learn = learn;
 	}
 
+	public static List<Term> parse(String str, LearnTool learn) {
+		return new NlpAnalysis(learn).parseStr(str);
+	}
+
+	public static List<Term> parse(String str) {
+		return new NlpAnalysis(new LearnTool()).parseStr(str);
+	}
+
 	@Override
 	protected List<Term> getResult(final ViterbiGraph graph) {
 		Merger merger = new Merger() {
@@ -92,11 +100,4 @@ public class NlpAnalysis extends Analysis {
 		return merger.merge();
 	}
 
-	public static List<Term> parse(String str, LearnTool learn) {
-		return new NlpAnalysis(learn).parseStr(str);
-	}
-
-	public static List<Term> parse(String str) {
-		return new NlpAnalysis(new LearnTool()).parseStr(str);
-	}
 }

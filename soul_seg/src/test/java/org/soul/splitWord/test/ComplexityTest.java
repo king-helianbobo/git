@@ -50,8 +50,7 @@ public class ComplexityTest {
 		all.add("林益世想回高雄探母 法官警告勿有逃亡念头");
 		for (int i = 0; i < all.size(); i++) {
 			if (i % 2 == 0) {
-				String str1 = InitDictionary
-						.TraditionalToSimplified(all.get(i));
+				String str1 = WordAlter.TraditionalToSimplified(all.get(i));
 				assertEquals(all.get(i + 1), str1);
 			}
 		}

@@ -6,38 +6,25 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
-import org.apache.lucene.util.Version;
 import org.soul.analysis.BasicAnalysis;
 
 public class SoulIndexAnalyzer extends Analyzer {
 
-	boolean pstemming;
-	public Set<String> filter;
-
-	public SoulIndexAnalyzer(Set<String> filter, boolean pstemming) {
-		this.filter = filter;
-	}
-
+	boolean pstemming = EsStaticValue.pstemming;
 	// 是否分析词干，进行单复数和时态的转换
-	public SoulIndexAnalyzer(boolean pstemming) {
-		this.pstemming = pstemming;
-	}
+	public Set<String> filter = EsStaticValue.filter;
 
 	public SoulIndexAnalyzer() {
 		super();
 	}
-
 	@Override
 	protected TokenStreamComponents createComponents(String fieldName,
 			final Reader reader) {
 		Tokenizer tokenizer = new SoulTokenizer(new BasicAnalysis(reader),
 				reader, filter, pstemming);
-		TokenStream result = new StandardFilter(Version.LUCENE_CURRENT,
+		TokenStream result = new StandardFilter(EsStaticValue.LuceneVersion,
 				tokenizer);
 		return new TokenStreamComponents(tokenizer, result);
 	}
-
 }

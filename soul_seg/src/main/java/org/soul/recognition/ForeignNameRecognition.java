@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.soul.domain.NatureInLib;
 import org.soul.domain.NewWord;
 import org.soul.domain.Term;
@@ -17,12 +19,10 @@ import org.soul.utility.TermUtil;
  * 外国人名识别
  */
 public class ForeignNameRecognition {
-
+	private final Log log = LogFactory.getLog(ForeignNameRecognition.class);
 	private static final LinkedList<NameChar> PRLIST = new LinkedList<NameChar>();
-
 	private static NameChar IN_NAME_SET = null;
-
-	private static HashSet<Character> ISNOTFIRST = new HashSet<Character>();
+	private static HashSet<Character> IsNotFirst = new HashSet<Character>();
 
 	static {
 		NameChar trans_english = new NameChar(
@@ -31,7 +31,7 @@ public class ForeignNameRecognition {
 		NameChar trans_russian = new NameChar(
 				StringUtil
 						.sortCharArray("·-阿安奥巴比彼波布察茨大德得丁杜尔法夫伏甫盖格哈基加坚捷金卡科可克库拉莱兰勒雷里历利连列卢鲁罗洛马梅蒙米姆娜涅宁诺帕泼普奇齐乔切日萨色山申什斯索塔坦特托娃维文乌西希谢亚耶叶依伊以扎佐柴达登蒂戈果海赫华霍吉季津柯理琳玛曼穆纳尼契钦丘桑沙舍泰图瓦万雅卓兹"));
-		// 注释掉了日本人名.表面上是抵制日货.背地里是处理不好..
+		// 注释掉了日本人名
 		// NameChar trans_japanese = new NameChar(
 		// StringUtil
 		// .sortCharArray("安奥八白百邦保北倍本比滨博步部彩菜仓昌长朝池赤川船淳次村大代岛稻道德地典渡尔繁饭风福冈高工宫古谷关广桂贵好浩和合河黑横恒宏后户荒绘吉纪佳加见健江介金今进井静敬靖久酒菊俊康可克口梨理里礼栗丽利立凉良林玲铃柳隆鹿麻玛美萌弥敏木纳南男内鸟宁朋片平崎齐千前浅桥琴青清庆秋丘曲泉仁忍日荣若三森纱杉山善上伸神圣石实矢世市室水顺司松泰桃藤天田土万望尾未文武五舞西细夏宪相小孝新星行雄秀雅亚岩杨洋阳遥野也叶一伊衣逸义益樱永由有佑宇羽郁渊元垣原远月悦早造则泽增扎宅章昭沼真政枝知之植智治中忠仲竹助椎子佐阪坂堀荻菅薰浜濑鸠筱"));
@@ -43,34 +43,31 @@ public class ForeignNameRecognition {
 				StringUtil
 						.sortCharArray("-·—丁万丘东丝中丹丽乃久义乌乔买于亚亨京什仑仓代以仲伊伍伏伐伦伯伽但佐佛佩依侯俄保儒克兰其兹内冈凯切列利别力加努劳勃勒北华卓南博卜卡卢卫厄历及古可史叶司各合吉吐君吾呼哈哥哲唐喀善喇喜嘉噶因图土圣坎坚坦埃培基堡塔塞增墨士夏多大夫奇奈奎契奥妮姆威娃娅娜孜季宁守安宜宰密察尔尕尤尧尼居山川差巴布希帕帝干平年库庞康廉弗强当彦彭彻彼律得德恩恰慈慕戈戴才扎托拉拜捷提摩敏敖敦文斐斯新施日旦旺昂明普智曼朗木本札朱李杜来杰林果查柯柴根格桑梅梵森楞次欣欧歇武比毕汀汉汗汤汶沁沃沙河治泉泊法波泰泼泽洛津济浦海涅温滕潘澳烈热爱牙特狄王玛玻珀珊珍班理琪琳琴瑞瑟瓜瓦甫申畔略登白皮盖盟相石祖福科穆立笆简米素索累约纳纽绍维罕罗翁翰考耶聂肉肯胡胥腓舍良色艾芙芬芭苏若英茂范茅茨茹荣莉莎莫莱莲菲萨葛蒂蒙虏蜜衣裴西詹让诗诸诺谢豪贝费贾赖赛赫路辛达迈连迦迪逊道那邦郎鄂采里金钦锡门阿陀陶隆雅雍雷霍革韦音额香马魏鲁鲍麦黎默黛齐"));
 
-		ISNOTFIRST.add('-');
-		ISNOTFIRST.add('·');
-		ISNOTFIRST.add('—');
+		IsNotFirst.add('-');
+		IsNotFirst.add('·');
+		IsNotFirst.add('—');
 	}
-
-	private List<Term> tempList = new ArrayList<Term>();
-	private LinkedList<NameChar> prList = null;
 	private Term[] terms = null;
 
 	public ForeignNameRecognition(Term[] terms) {
 		this.terms = terms;
 	}
 
-	public void recognition() {
+	private List<Term> _recognition() {
+		List<Term> result = new ArrayList<Term>();
 		String name = null;
-		Term term = null;
-		reset();
+		List<Term> tempList = new ArrayList<Term>();
 		for (int i = 0; i < terms.length; i++) {
 			if (terms[i] == null) {
 				continue;
 			}
-			term = terms[i];
+			Term term = terms[i];
 			// 如果名字的开始是人名的前缀,或者后缀.那么忽略
 			if (tempList.size() == 0) {
 				if (term.getTermNatures().personNature.end > 10) {
 					continue;
 				}
-				if ((terms[i].getName().length() == 1 && ISNOTFIRST
+				if ((terms[i].getName().length() == 1 && IsNotFirst
 						.contains(terms[i].getName().charAt(0)))) {
 					continue;
 				}
@@ -79,38 +76,43 @@ public class ForeignNameRecognition {
 			if (term.getTermNatures() == TermNatures.NR
 					|| term.getTermNatures() == TermNatures.NW
 					|| name.length() == 1) {
+
 				boolean flag = validate(name);
 				if (flag) {
+					log.info(name);
 					tempList.add(term);
 				}
 			} else if (tempList.size() == 1) {
-				reset();
+				tempList.clear();
 			} else if (tempList.size() > 1) {
-				TermUtil.insertTerm(terms, tempList, TermNatures.NR);
-				reset();
+				StringBuilder sb = new StringBuilder();
+				for (Term temp : tempList) {
+					sb.append(temp.getName());
+				}
+				// log.info(sb.toString());
+				int offe = tempList.get(0).getOffe();
+				result.add(new Term(sb.toString(), offe, TermNatures.NR));
+				tempList.clear();
 			}
 		}
+		return result;
 	}
-
+	public void recognition() {
+		List<Term> termList = _recognition();
+		for (Term term : termList) {
+			term.selfScore = -term.getName().length();
+			TermUtil.insertTerm(terms, term);
+		}
+	}
 	private boolean validate(String name) {
 		boolean flag = false;
 		NameChar nameChar = null;
-		for (int j = 0; j < prList.size(); j++) {
-			nameChar = prList.get(j);
-			if (nameChar.contains(name.charAt(0))) {
+		for (int j = 0; j < PRLIST.size(); j++) {
+			nameChar = PRLIST.get(j);
+			if (nameChar.contains(name.charAt(0)))
 				flag = true;
-			} else {
-				prList.remove(j); // 向后回退一位
-				j--;
-			}
 		}
 		return flag;
-	}
-
-	@SuppressWarnings("unchecked")
-	private void reset() {
-		tempList.clear();
-		prList = (LinkedList<NameChar>) PRLIST.clone();
 	}
 
 	public static boolean isFName(String name) {
@@ -135,44 +137,10 @@ public class ForeignNameRecognition {
 
 	public List<NewWord> getNewWords() {
 		List<NewWord> all = new ArrayList<NewWord>();
-		String name = null;
-		Term term = null;
-		reset();
-		for (int i = 0; i < terms.length; i++) {
-			if (terms[i] == null) {
-				continue;
-			}
-			term = terms[i];
-			// 如果名字的开始是人名的前缀,或者后缀.那么忽略
-			if (tempList.size() == 0) {
-				if (term.getTermNatures().personNature.end > 10) {
-					continue;
-				}
-				if ((terms[i].getName().length() == 1 && ISNOTFIRST
-						.contains(terms[i].getName().charAt(0)))) {
-					continue;
-				}
-			}
-
-			name = term.getName();
-			if (term.getTermNatures() == TermNatures.NR
-					|| term.getTermNatures() == TermNatures.NW
-					|| name.length() == 1) {
-				boolean flag = validate(name);
-				if (flag) {
-					tempList.add(term);
-				}
-			} else if (tempList.size() == 1) {
-				reset();
-			} else if (tempList.size() > 1) {
-				StringBuilder sb = new StringBuilder();
-				for (Term temp : tempList) {
-					sb.append(temp.getName());
-				}
-				all.add(new NewWord(sb.toString(), NatureInLib.NRF, -sb
-						.length()));
-				reset();
-			}
+		List<Term> termList = _recognition();
+		for (Term term : termList) {
+			all.add(new NewWord(term.getName(), NatureInLib.NRF, -term
+					.getName().length()));
 		}
 		return all;
 	}
