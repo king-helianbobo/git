@@ -27,13 +27,13 @@ public class AsianNameRecognition {
 	}
 
 	public void recognition() {
-		List<Term> termList = recogntion_();
+		List<Term> termList = _recognition();
 		for (Term term2 : termList) {
 			TermUtil.insertTerm(terms, term2);
 		}
 	}
 
-	private List<Term> recogntion_() {
+	private List<Term> _recognition() {
 		List<Term> termList = new ArrayList<Term>();
 		int beginFreq = 10;
 		for (int i = 0; i < terms.length; i++) {
@@ -145,7 +145,7 @@ public class AsianNameRecognition {
 
 	public List<NewWord> getNewWords() {
 		List<NewWord> all = new ArrayList<NewWord>();
-		List<Term> termList = recogntion_();
+		List<Term> termList = _recognition();
 		for (Term t2 : termList) {
 			all.add(new NewWord(t2.getName(), NatureInLib.NR, -t2.getName()
 					.length()));

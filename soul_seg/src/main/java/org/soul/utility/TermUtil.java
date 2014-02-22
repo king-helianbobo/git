@@ -57,6 +57,19 @@ public class TermUtil {
 		}
 	}
 
+	/**
+	 * 将两个term插入到链表
+	 */
+	public static void insertTerm(Term[] terms, Term tmpTerm1, Term tmpTerm2) {
+		int startOffe = tmpTerm1.getOffe();
+		int endOffe = tmpTerm2.getOffe() + tmpTerm2.getName().length() - 1;
+		TermUtil.termLink(terms[startOffe].getFrom(), tmpTerm1);
+		TermUtil.termLink(tmpTerm1, tmpTerm2);
+		TermUtil.termLink(tmpTerm2, terms[endOffe].getTo());
+		terms[startOffe] = tmpTerm1;
+		terms[endOffe] = tmpTerm2;
+	}
+
 	public static void insertTerm(Term[] terms, List<Term> tempList,
 			TermNatures nr) { // nr defaults to TermNatures.NR
 		StringBuilder sb = new StringBuilder();

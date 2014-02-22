@@ -34,6 +34,7 @@ public class ViterbiGraph {
 		root = new Term(B, -1, TermNatures.BEGIN);
 		terms[size] = end;
 	}
+
 	public List<Term> getResult(Merger merger) {
 		return merger.merge();
 	}
@@ -105,13 +106,13 @@ public class ViterbiGraph {
 			 * 对字数进行优化.如果一个字.就跳过..两个字.且第二个为null则.也跳过.从第二个后开始
 			 */
 			switch (maxTerm.getName().length()) {
-				case 1 :
+			case 1:
+				continue;
+			case 2:
+				if (terms[i + 1] == null) {
+					i = i + 1;
 					continue;
-				case 2 :
-					if (terms[i + 1] == null) {
-						i = i + 1;
-						continue;
-					}
+				}
 			}
 
 			/**

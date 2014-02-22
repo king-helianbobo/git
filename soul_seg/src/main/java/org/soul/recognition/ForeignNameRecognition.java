@@ -79,7 +79,6 @@ public class ForeignNameRecognition {
 
 				boolean flag = validate(name);
 				if (flag) {
-					log.info(name);
 					tempList.add(term);
 				}
 			} else if (tempList.size() == 1) {
@@ -97,6 +96,7 @@ public class ForeignNameRecognition {
 		}
 		return result;
 	}
+
 	public void recognition() {
 		List<Term> termList = _recognition();
 		for (Term term : termList) {
@@ -104,6 +104,7 @@ public class ForeignNameRecognition {
 			TermUtil.insertTerm(terms, term);
 		}
 	}
+
 	private boolean validate(String name) {
 		boolean flag = false;
 		NameChar nameChar = null;
@@ -127,9 +128,11 @@ public class ForeignNameRecognition {
 
 	private static class NameChar {
 		private char[] chars = null;
+
 		public NameChar(char[] chars) {
 			this.chars = chars;
 		}
+
 		public boolean contains(char c) {
 			return Arrays.binarySearch(chars, c) > -1;
 		}

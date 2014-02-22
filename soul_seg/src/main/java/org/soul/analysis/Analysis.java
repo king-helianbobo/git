@@ -33,6 +33,7 @@ public abstract class Analysis {
 	private LinkedList<Term> terms = new LinkedList<Term>();
 	private Term term = null;
 	protected Forest[] forests = null;
+
 	public Analysis(Reader reader) {
 		br = new BufferedReader(reader);
 		resetContent(br);
@@ -59,6 +60,7 @@ public abstract class Analysis {
 		}
 		offe += tempLength;
 		analysisSentence(temp); // analysis string
+		tempLength = temp.length();
 		if (!terms.isEmpty()) {
 			term = terms.poll();
 			term.updateOffe(offe); // term's offset in document
@@ -109,61 +111,59 @@ public abstract class Analysis {
 		char c = 0;
 		for (int i = startOffe; i < endOffe; i++) {
 			switch (status[sentence.charAt(i)]) {
-				case 0 : // particular symbol
-					gp.addTerm(new Term(sentence.charAt(i) + "", i,
-							TermNatures.NULL));
-					break;
-				case 4 : // consecutive alpha
-					start = i;
-					end = 1;
-					while (++i < endOffe && status[sentence.charAt(i)] == 4) {
-						end++;
+			case 0: // particular symbol
+				gp.addTerm(new Term(sentence.charAt(i) + "", i,
+						TermNatures.NULL));
+				break;
+			case 4: // consecutive alpha
+				start = i;
+				end = 1;
+				while (++i < endOffe && status[sentence.charAt(i)] == 4) {
+					end++;
+				}
+				str = WordAlter.alterAlpha(sentence, start, end);
+				gp.addTerm(new Term(str, start, TermNatures.EN));
+				// English words use TermNatures.EN
+				i--;
+				break;
+			case 5: // consecutive number
+				start = i;
+				end = 1;
+				while (++i < endOffe && status[sentence.charAt(i)] == 5) {
+					end++;
+				}
+				str = WordAlter.alterNumber(sentence, start, end);
+				gp.addTerm(new Term(str, start, TermNatures.M));
+				i--;
+				break;
+			default: // 普通汉字
+				start = i;
+				end = i;
+				c = sentence.charAt(start);
+				while (IN_SYSTEM[c] > 0) {
+					end++;
+					if (++i >= endOffe)
+						break;
+					c = sentence.charAt(i);
+				}
+				if (start == end) {
+					gp.addTerm(new Term(String.valueOf(c), i, TermNatures.NULL));
+					continue;
+					// couldn't determine termNature
+				} else {
+					str = sentence.substring(start, end);
+					gwi.setStr(str);
+					while ((str = gwi.fetchOneWord()) != null) {
+						gp.addTerm(new Term(str, gwi.offe + start, gwi
+								.getTermNatures()));
 					}
-					str = WordAlter.alterAlpha(sentence, start, end);
-					gp.addTerm(new Term(str, start, TermNatures.EN));
-					// English words use TermNatures.EN
-					i--;
-					break;
-				case 5 : // consecutive number
-					start = i;
-					end = 1;
-					while (++i < endOffe && status[sentence.charAt(i)] == 5) {
-						end++;
-					}
-					str = WordAlter.alterNumber(sentence, start, end);
-					gp.addTerm(new Term(str, start, TermNatures.M));
-					i--;
-					break;
-				default : // 普通汉字
-					start = i;
-					end = i;
-					c = sentence.charAt(start);
-					while (IN_SYSTEM[c] > 0) {
-						end++;
-						if (++i >= endOffe)
-							break;
-						c = sentence.charAt(i);
-					}
-					if (start == end) {
-						gp.addTerm(new Term(String.valueOf(c), i,
-								TermNatures.NULL));
-						continue;
-						// couldn't determine termNature
-					} else {
-						str = sentence.substring(start, end);
-						gwi.setStr(str);
-						while ((str = gwi.fetchOneWord()) != null) {
-							gp.addTerm(new Term(str, gwi.offe + start, gwi
-									.getTermNatures()));
-						}
-					}
-					if (IN_SYSTEM[c] > 0 || status[c] > 3) {
-						i -= 1;
-					} else { // 以未知字符加入到graph中，未知字符不能确定词性
-						gp.addTerm(new Term(String.valueOf(c), i,
-								TermNatures.NULL));
-					}
-					break;
+				}
+				if (IN_SYSTEM[c] > 0 || status[c] > 3) {
+					i -= 1;
+				} else { // 以未知字符加入到graph中，未知字符不能确定词性
+					gp.addTerm(new Term(String.valueOf(c), i, TermNatures.NULL));
+				}
+				break;
 			}
 		}
 	}

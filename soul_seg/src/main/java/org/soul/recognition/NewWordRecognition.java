@@ -1,4 +1,5 @@
 package org.soul.recognition;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.soul.domain.NatureInLib;
@@ -36,6 +37,7 @@ public class NewWordRecognition {
 				continue;
 			} else {
 				from = terms[i].getFrom();
+				log.info(from.getName());
 				terms[i].score = 0;
 				terms[i].selfScore = 0;
 			}
@@ -58,26 +60,26 @@ public class NewWordRecognition {
 					break;
 				}
 				switch (branch.getStatus()) {
-					case 1 :
-						sb.append(term.getName());
-						continue;
-					case 2 :
-						sb.append(term.getName());
-						score = branch.getParam().getScore();
-						tempNature = branch.getParam().getNature();
-						to = term.getTo();
-						makeNewTerm();
-						continue;
-					case 3 :
-						sb.append(term.getName());
-						score = branch.getParam().getScore();
-						tempNature = branch.getParam().getNature();
-						to = term.getTo();
-						makeNewTerm();
-						flag = false;
-						break;
-					default :
-						break;
+				case 1:
+					sb.append(term.getName());
+					continue;
+				case 2:
+					sb.append(term.getName());
+					score = branch.getParam().getScore();
+					tempNature = branch.getParam().getNature();
+					to = term.getTo();
+					makeNewTerm();
+					continue;
+				case 3:
+					sb.append(term.getName());
+					score = branch.getParam().getScore();
+					tempNature = branch.getParam().getNature();
+					to = term.getTo();
+					makeNewTerm();
+					flag = false;
+					break;
+				default:
+					break;
 				}
 			}
 			reset();
