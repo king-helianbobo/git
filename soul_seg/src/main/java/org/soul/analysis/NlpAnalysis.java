@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.lionsoul.jcseg.pinyin.ChineseHelper;
 import org.soul.crf.SplitWord;
 import org.soul.domain.NewWord;
 import org.soul.domain.TermNatures;
@@ -51,7 +52,6 @@ public class NlpAnalysis extends Analysis {
 	}
 
 	private void checkTerm(int startOffe, String word, ViterbiGraph graph) {
-
 		if ((startOffe >= 0) && (startOffe < graph.terms.length - 3)) {
 			Term term1 = graph.terms[startOffe];
 			Term term2 = graph.terms[startOffe + 1];
@@ -59,15 +59,20 @@ public class NlpAnalysis extends Analysis {
 			if ((term1 != null) && (term1.getName().length() == 1)
 					&& (term2 != null) && (term2.getName().length() == 2)
 					&& (term3 != null) && (term3.getName().length() == 1)) {
-				StringBuilder builder = new StringBuilder();
-				builder.append(graph.convertedStr.charAt(startOffe + 2));
-				builder.append(graph.convertedStr.charAt(startOffe + 3));
-				String str1 = word;
-				String str2 = builder.toString();
-				log.info(str1 + ", " + str2);
-				Term tmpTerm1 = new Term(str1, startOffe, TermNatures.NW);
-				Term tmpTerm2 = new Term(str2, startOffe + 2, TermNatures.NW);
-				TermUtil.insertTerm(graph.terms, tmpTerm1, tmpTerm2);
+				if (ChineseHelper.allChineseChar(term1.getName())
+						&& ChineseHelper.allChineseChar(term2.getName())
+						&& ChineseHelper.allChineseChar(term3.getName())) {
+					StringBuilder builder = new StringBuilder();
+					builder.append(graph.convertedStr.charAt(startOffe + 2));
+					builder.append(graph.convertedStr.charAt(startOffe + 3));
+					String str1 = word;
+					String str2 = builder.toString();
+					Term tmpTerm1 = new Term(str1, startOffe, TermNatures.NW);
+					Term tmpTerm2 = new Term(str2, startOffe + 2,
+							TermNatures.NW);
+					TermUtil.insertTerm(graph.terms, tmpTerm1, tmpTerm2);
+				} else
+					return;
 			}
 		}
 		if ((startOffe >= 2) && (startOffe < graph.terms.length - 1)) {
@@ -77,15 +82,20 @@ public class NlpAnalysis extends Analysis {
 			if ((term1 != null) && (term1.getName().length() == 1)
 					&& (term2 != null) && (term2.getName().length() == 2)
 					&& (term3 != null) && (term3.getName().length() == 1)) {
-				StringBuilder builder = new StringBuilder();
-				builder.append(graph.convertedStr.charAt(startOffe - 2));
-				builder.append(graph.convertedStr.charAt(startOffe - 1));
-				String str1 = builder.toString();
-				String str2 = word;
-				log.info(str1 + ", " + str2);
-				Term tmpTerm1 = new Term(str1, startOffe - 2, TermNatures.NW);
-				Term tmpTerm2 = new Term(str2, startOffe, TermNatures.NW);
-				TermUtil.insertTerm(graph.terms, tmpTerm1, tmpTerm2);
+				if (ChineseHelper.allChineseChar(term1.getName())
+						&& ChineseHelper.allChineseChar(term2.getName())
+						&& ChineseHelper.allChineseChar(term3.getName())) {
+					StringBuilder builder = new StringBuilder();
+					builder.append(graph.convertedStr.charAt(startOffe - 2));
+					builder.append(graph.convertedStr.charAt(startOffe - 1));
+					String str1 = builder.toString();
+					String str2 = word;
+					Term tmpTerm1 = new Term(str1, startOffe - 2,
+							TermNatures.NW);
+					Term tmpTerm2 = new Term(str2, startOffe, TermNatures.NW);
+					TermUtil.insertTerm(graph.terms, tmpTerm1, tmpTerm2);
+				} else
+					return;
 			}
 		}
 	}

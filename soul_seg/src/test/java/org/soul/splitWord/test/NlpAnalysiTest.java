@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
+import org.lionsoul.jcseg.pinyin.ChineseHelper;
 import org.soul.analysis.NlpAnalysis;
 
 public class NlpAnalysiTest {
@@ -44,7 +45,19 @@ public class NlpAnalysiTest {
 
 	@Test
 	public void companyTest() {
+		String str1 = "习近平和朱镕基情切照相";
+		String str2 = "關注十八大：台港澳密集解讀十八大報告";
 
+		for (int i = 0; i < str1.length(); i++) {
+			char c = str1.charAt(i);
+			if (ChineseHelper.isChinese(c))
+				log.info(c);
+		}
+		for (int i = 0; i < str2.length(); i++) {
+			char c = str2.charAt(i);
+			if (ChineseHelper.isChinese(c))
+				log.info(c);
+		}
 	}
 
 	@Test

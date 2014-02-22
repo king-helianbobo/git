@@ -89,10 +89,6 @@ public class ChineseHelper {
 
 	/**
 	 * 判断某个字符是否为汉字
-	 * 
-	 * @param c
-	 *            需要判断的字符
-	 * @return 是汉字返回true，否则返回false
 	 */
 	public static boolean isChinese(char c) {
 		String regex = "[\\u4e00-\\u9fa5]";
@@ -100,12 +96,7 @@ public class ChineseHelper {
 	}
 
 	/**
-	 * 
-	 * 判断某个字符串是否包含汉字
-	 * 
-	 * @param c
-	 *            需要判断的字符
-	 * @return 是汉字返回true，否则返回false
+	 * 判断字符串是否包含汉字
 	 */
 	public static boolean containChineseChar(String str) {
 		for (int i = 0, len = str.length(); i < len; i++) {
@@ -114,5 +105,17 @@ public class ChineseHelper {
 				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * 判断某个字符串是否全是汉字
+	 */
+	public static boolean allChineseChar(String str) {
+		for (int i = 0, len = str.length(); i < len; i++) {
+			char c = str.charAt(i);
+			if (!isChinese(c))
+				return false;
+		}
+		return true;
 	}
 }
