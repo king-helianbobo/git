@@ -1,13 +1,18 @@
 package org.elasticsearch.app;
 
 import static org.elasticsearch.index.query.QueryBuilders.simpleQueryString;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
@@ -22,6 +27,8 @@ import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.SimpleQueryStringBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.suggest.elasticsearch.action.suggest.SuggestResponse;
+import org.suggest.elasticsearch.client.action.SuggestRequestBuilder;
 
 public class SoulSearchClient {
 	private final Log log = LogFactory.getLog(SoulSearchClient.class);
@@ -114,6 +121,20 @@ public class SoulSearchClient {
 				}
 			}
 		} while (size < totalSize);
+	}
+	public String simpleTermQuery(String queryStr) {
+		String field = "contenttitle";
+		SearchResponse searchResponse = transportClient
+				.prepareSearch(indexName).setQuery(termQuery(field, queryStr))
+				.addHighlightedField(field).get();
+		log.info("******************* " + queryStr + " *******************");
+		StringBuilder builder = new StringBuilder();
+		for (SearchHit hit : searchResponse.getHits().getHits()) {
+			String str = hit.getSource().get(field) + "\n";
+			builder.append(str + "\n");
+			log.info(str);
+		}
+		return builder.toString();
 	}
 	public String synonymQuery(String queryStr) {
 		String field = "contenttitle";
@@ -220,5 +241,24 @@ public class SoulSearchClient {
 		for (SearchHit hit : searchResponse.getHits().getHits()) {
 			logInfo(hit, "contenttitle", "content");
 		}
+	}
+
+	public List<String> getSuggestions(String inputStr) throws Exception {
+		// SuggestRequestBuilder builder = new SuggestRequestBuilder(
+		// transportClient).setIndices("sogou_spellcheck")
+		// .field("content").term(inputStr).size(10).similarity(0.7f)
+		// .suggestType("soul");
+		// builder.preservePositionIncrements(true);
+		// SuggestResponse suggestResponse = builder.execute().actionGet();
+		// // assertThat(suggestResponse.getShardFailures(), is(emptyArray()));
+		// log.info(suggestResponse.suggestions());
+		// return suggestResponse.suggestions();
+		List<String> resultStr = new LinkedList<String>();
+		for (int i = 0; i < 4; i++) {
+			String str = inputStr + RandomStringUtils.randomAlphabetic(5);
+			resultStr.add(str);
+		}
+		log.info(resultStr);
+		return resultStr;
 	}
 }

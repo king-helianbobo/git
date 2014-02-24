@@ -3,7 +3,7 @@ package org.elasticsearch.app;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-
+import org.apache.commons.lang.RandomStringUtils;
 import org.soul.analysis.BasicAnalysis;
 import org.soul.analysis.IndexAnalysis;
 import org.soul.analysis.KeyWordExtraction;
@@ -24,7 +24,7 @@ public class SoulServlet {
 		if (strMethod != null) {
 			method = SoulMethod.valueOf(strMethod.toUpperCase());
 		} else {
-			method = SoulMethod.BASE;
+			method = SoulMethod.KEYWORD;
 		}
 		Boolean nature = true; // 是否做词性识别
 		if (strNature != null && strNature.toLowerCase().equals("false"))
@@ -32,14 +32,15 @@ public class SoulServlet {
 
 		List<Term> terms = null;
 		String resultStr = null;
+
 		Collection<KeyWord> keyWords = null;
 		switch (method) {
-		case NLP:
-			terms = NlpAnalysis.parse(input);
-			break;
-		// case NLP : // use as search
-		// resultStr = client.simpleQueryStringQuery(input);
+		// case NLP:
+		// terms = NlpAnalysis.parse(input);
 		// break;
+			case NLP : // use as search
+				resultStr = client.simpleQueryStringQuery(input);
+				break;
 			case KEYWORD :
 				KeyWordExtraction kwc = new KeyWordExtraction(10);
 				keyWords = kwc.computeArticleTfidf(input);
@@ -48,7 +49,22 @@ public class SoulServlet {
 				terms = IndexAnalysis.parse(input);
 				break;
 			default :
-				terms = BasicAnalysis.parse(input);
+				// terms = BasicAnalysis.parse(input);
+				// resultStr = input + RandomStringUtils.randomAlphabetic(10);
+				try {
+					List<String> result = client.getSuggestions(input);
+					StringBuilder builder = new StringBuilder();
+					for (int i = 0; i < result.size(); i++) {
+						String str = result.get(i);
+						if (i != (result.size() - 1)) {
+							builder.append(str);
+						} else
+							builder.append(str + ",");
+					}
+					resultStr = builder.toString();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 		}
 		if (terms != null) {
 			return termToString(terms, nature, method);

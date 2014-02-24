@@ -10,7 +10,7 @@
     <!-- Bootstrap core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
 
-    <style>
+    <style type='text/css'>
       body {
       padding-top: 50px;
       }
@@ -19,85 +19,223 @@
       padding: 40px 15px;
       text-align: center;
       }
+      
     </style>
+    
     <script src="js/jquery.min.js"></script>
-
+    <script src="js/inputSuggest_0.1.js"></script>
+    <script src = "js/typeahead.bundle.js"></script>
+    
     <script>
-      $(document).ready(
-      function() {
-      $('#segButton').click(function() {
-      $.ajax({
-      type: "POST",
-      url: "/",
-      data: "method=keyword&nature=true&input=天涯",
-      success: function(msg) {
-      alert(msg);
+      var str='';
+      var dataAry = new Array();
+      function OnInput (event) {
+         // alert ("The new content: " + event.target.value);
+         dataAry = ManageCommentText(event.target.value).split(',');
+         var sinaSuggest = new InputSuggest({
+           input: document.getElementById('input'),
+           data:dataAry
+         });
       }
-      });
-      $("#form1").attr("action","../?method=keyword");
-      $("#form1").attr("target","KEYWORD") ;
-      $("#form1").submit();
-
-      $("#form1").attr("action","../?method=nlp&nature=true") ;
-      $("#form1").attr("target","NLP") ;
-      $("#form1").submit();
+      function OnPropChanged (event) {
+         if (event.propertyName.toLowerCase () == "value") {
+            //alert ("The new content: " + event.srcElement.value);
+         }
+      } 
       
-      $("#form1").attr("action","../?method=base&nature=true") ;
-      $("#form1").attr("target","BASE") ;
-      $("#form1").submit();
-      
-      $("#form1").attr("action","../?method=index&nature=true") ;
-      $("#form1").attr("target","INDEX") ;
-      $("#form1").submit();
-      });
-      });
-    </script>
+      function ManageCommentText(value) {
+         $.ajax({ 
+           type:"POST", 
+           url:'../?method=base&nature=true',
+           data:'input='+value,
+           async: false,
+           cache: false,
+           success : function(result) {
+               str = result;	
+           }
+         });
+         return str;
+      }
+      $(document).ready(
+         function() {
+            $("input").focus(function() { 
+              $("#div2").hide();
+            })
+            $("input").blur(function() {
+              $("#div2").show(); 
+            })
+         $('#segButton').click(function() {
+            $.ajax({ 
+              type:"POST", 
+              url:'../?method=nlp&nature=true',
+              data:'input='+document.getElementById('input').value,
+              success : function(data) {
+                 var strAry = new Array();
+                 var htmlStr='';
+                 var tabStr ='';
+                 strAry = data.split(',');
+                 for(var i=0 ;i< strAry.length; i++) {
+		      if(strAry[i]!="" && i<15)
+	                  htmlStr +=  '<li><a href=http://www.baidu.com>'+strAry[i]+'&nbsp;</a>2013-04-04 02:45:52</li> <br>';
+                 }
+                 htmlStr +=  "<div style=width:360px;text-align:center;>"+
+                                // "<span id='page_prev' style='cursor:pointer' onclick='pages_prev()'>上一页&nbsp;&nbsp;&nbsp;</span>"+
+					      "<span id='page_next' style='cursor:pointer' onclick='pages_next()'>下一页&nbsp;&nbsp;&nbsp;</span>"+
+					      "<span id='endPage' style='cursor:pointer' onclick='upPage(10)'>尾页</span>"+ "</div>";
+		     tabStr +=  "<style type='text/css'>"+
+					      ".order_box .stitle { "+
+					      "width: 825px;"+
+					      "clear: right;"+
+					      "height: 27px;"+
+					      "border-bottom: 2px solid #A10000;}"+
+					      ".order_box .stitle .close {"+
+					      "width: 80px;"+
+					      "height: 18px;"+
+					      "border-top: 1px solid #dedede;"+
+					      "border-left: 1px solid #dedede;"+
+					      "border-right: 1px solid #dedede;"+
+					      "background: #f1f1f1;"+
+					      "color: #000;"+
+					      "text-align: center;"+
+					      "float: left;"+
+					      "margin-right: 5px;"+
+					      "padding-top: 8px;}"+
+					      ".order_box .stitle .open {"+
+					      "width: 82px;"+
+					      "height: 20px;"+
+					      "background: #A10000;"+
+					      "color: #fff;"+
+					      "text-align: center;"+
+					      "float: left;"+
+					      "margin-right: 5px;"+
+					      "padding-top: 8px;"+
+					      "overflow: hidden;}"+
+					      ".order_box ul li {"+
+					      "cursor: pointer;"+
+					      "display: list-item;"+
+					      "list-style:none;"+
+					      "</style>";
+					      tabStr +="<script src='js/jquery.min.js'><"+"/script>"
+					      tabStr +="<script>"+
+					      "var obj='';"+
+					      "var flag=1;"+
+					      "var pageAry = new Array();"+
+					      "var pageNum=1;";
+					      for(var j=0;j<strAry.length;j++){
+						              tabStr +="pageAry.push('"+strAry[j]+"');";
+						              }
+							      tabStr +="$(function () {"+
+						              "$('.stitle li').click(function () {"+
+						              "var index_tab = $(this).parent().children().index($(this));"+
+						              "$(this).parent().find('.open').removeClass('open').addClass('close'); "+
+						              "$(this).removeClass('close').addClass('open');"+
+						              "var content_obj = $('.cntorder');"+
+						              "content_obj.hide();"+
+						              "content_obj.eq(index_tab).show();"+
+						              "});"+ 
+						              "});"+
+						              "function fist_page(p){obj='';document.getElementById('tabInfoDiv').innerHTML='';"+
+						              "for(var i=0;i<pageAry.length;i++){"+
+						              "if(pageAry[i]!=''&&i<15)"+
+						              "obj+='<li><a href=http://www.baidu.com>'+pageAry[i]+'&nbsp;</a>2013-04-04 02:45:52</li> <br>';"+
+						              "};"+
+						              "obj+='<span style=cursor:pointer; onclick=pages_next(1)>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;下一页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "obj+='<span style=cursor:pointer; onclick=upPage(10)>尾页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "document.getElementById('tabInfoDiv').innerHTML=obj};"+ 
+						              "function pages_prev(){obj='';document.getElementById('tabInfoDiv').innerHTML='';"+
+						              "flag--;"+
+						              "for(var i=flag*15;i<pageAry.length;i++){"+
+						              "if(pageAry[i]!=''&&i<flag*30)"+
+						              "obj+='<li><a href=http://www.baidu.com>'+pageAry[i]+'&nbsp;</a>2013-04-04 02:45:52</li> <br>';"+
+						              "};if(flag!=0){obj+='<span style=cursor:pointer onclick=fist_page(1)>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首页&nbsp;&nbsp;&nbsp;</span>';};"+
+						              "obj+='<span style=cursor:pointer; onclick=pages_prev()>上一页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "obj+='<span style=cursor:pointer; onclick=pages_next()>下一页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "obj+='<span style=cursor:pointer; onclick=upPage(10)>尾页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "document.getElementById('tabInfoDiv').innerHTML=obj};"+
+						              "function pages_next(){obj='';document.getElementById('tabInfoDiv').innerHTML='';"+
+						              "flag++;"+
+						              "for(var i=flag*15;i<pageAry.length;i++){"+
+						              "if(pageAry[i]!=''&&i<flag*30)"+
+						              "obj+='<li><a href=http://www.baidu.com>'+pageAry[i]+'&nbsp;</a>2013-04-04 02:45:52</li> <br>';"+
+						              "};if(flag!=0){obj+='<span style=cursor:pointer onclick=fist_page(1)>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首页&nbsp;&nbsp;&nbsp;</span>';};"+
+						              "obj+='<span style=cursor:pointer; onclick=pages_prev()>上一页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "obj+='<span style=cursor:pointer; onclick=pages_next()>下一页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "if(flag!=150){obj+='<span style=cursor:pointer; onclick=upPage(10)>尾页&nbsp;&nbsp;&nbsp;</span>';};"+
+						              "document.getElementById('tabInfoDiv').innerHTML=obj};"+
+						              "function upPage(p){obj='';document.getElementById('tabInfoDiv').innerHTML='';"+
+						              "for(var i=135;i<pageAry.length;i++){"+
+						              "if(pageAry[i]!='')"+
+						              "obj+='<li><a href=http://www.baidu.com>'+pageAry[i]+'&nbsp;</a>2013-04-04 02:45:52</li> <br>';"+
+						              "};obj+='<span style=cursor:pointer onclick=fist_page(1)>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;首页&nbsp;&nbsp;&nbsp;</span>';"+
+						              "obj+='<span style=cursor:pointer onclick=pages_prev()>上一页&nbsp;&nbsp;&nbsp;</span>';"+
+						              //"</div>"+
+						              "document.getElementById('tabInfoDiv').innerHTML=obj};"+  
+						              "<"+"/script>";
+							      
+							      tabStr += "<div class='order_box'>"+
+							      "<div class='stitle'>"+
+							      "<ul>"+
+							      "<li class='open'>参考案例</li>"+
+							      "<li class='close'>网上办事</li>"+
+							      "<li class='close'>其他</li>"+
+							      "<li class='close'>网上互动</li>"+
+							      "<li class='close'>便民服务</li>"+
+							      "<li class='close'>信息公开</li>"+
+							      "</ul>"+
+							      "</div>"+
+							      "<div class='cntorder' id='tabInfoDiv'>"+htmlStr+"</div>"+
+							      "<div class='cntorder' style='display: none;'>网上办事无内容</div>"+
+							      "<div class='cntorder' style='display: none;'>其他无内容</div>"+
+							      "<div class='cntorder' style='display: none;'>网上互动无内容</div>"+
+							      "<div class='cntorder' style='display: none;'>便民服务无内容</div>"+
+							      "<div class='cntorder' style='display: none;'>信息公开无内容</div>"+
+							      "</div> ";
+							      
+							      window.frames["NLP"].document.open(); 
+							      window.frames["NLP"].document.write(tabStr);
+							      window.frames["NLP"].document.close();
+							      
+							      }
+							      });
+							      });
+							      });
+							      </script>
 
-  </head>
+</head>
 
-  <body>
-    <div class="navbar navbar-inverse navbar-fixed-top" >
-      <div class="container">
-	<div class="navbar-header">
-	  <button type="button" class="navbar-toggle" data-toggle="collapse"
-		  data-target=".navbar-collapse">
-	    <span class="sr-only">Toggle navigation</span> 
-	    <span class="icon-bar"></span> 
-	    <span class="icon-bar"></span> 
-	    <span class="icon-bar"></span>
-	  </button>
-	  <a class="navbar-brand" href="#">Soul智能机器人-演示程序</a>
-	</div>
-      </div>
-    </div>
-
+<body>
+  <div class="navbar navbar-inverse navbar-fixed-top" >
     <div class="container">
-      <form name="form1" id="form1" method="post">
-	<div class="starter-template">
-	  <textarea style="width: 100%;" rows="10" name="input">Soul智能机器人-演示程序</textarea>
-	  <div class="btn-group btn-group-lg navbar-right">
-	    <input type="button" class="btn btn-primary" id="segButton" value="搜索" />
-	  </div>
-	</div>
-      </form>
-      <div class="starter-template">
-	<h4>提取关键词</h4>
-	<iframe name="KEYWORD" style="width: 100%"></iframe>
-	<h4>NLP分词方式</h4>
-	<iframe name="NLP" style="width: 100%"></iframe>
-	<h4>Base分词方式</h4>
-	<iframe name="BASE" style="width: 100%"></iframe>
-	<h4>Index分词方式</h4>
-	<iframe name="INDEX" style="width: 100%"></iframe>
+      <div class="navbar-header">
+	<button type="button" class="navbar-toggle" data-toggle="collapse"
+		data-target=".navbar-collapse">
+	  <span class="sr-only">Toggle navigation</span> 
+	  <span class="icon-bar"></span> 
+	  <span class="icon-bar"></span> 
+	  <span class="icon-bar"></span>
+	</button>
+	<a class="navbar-brand" href="#">Soul智能机器人-演示程序</a>
       </div>
     </div>
-    <!-- /.container -->
+  </div>
 
-
-    <!-- Bootstrap core JavaScript
-	 ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <!-- <script src="js/bootstrap.min.js"></script> -->
-  </body>
+  <div class="container">
+    <form name="form1" id="form1" method="post">
+      <div class="starter-template">
+	<input type="text" style="width: 55%; height:45px;" name="input" id="input" oninput="OnInput (event)" onpropertychange="OnPropChanged (event)" autoComplete="off"></input>
+	<input type="button" class="btn btn-primary" id="segButton" value="搜索" />
+      </div>
+    </form>
+    <div class="starter-template">
+      <h4>搜索结果</h4>
+      <iframe name="NLP" id="NLP" style="height:500px; width:100%; "></iframe>
+      <!--<h4>提取关键词</h4>
+	  <iframe name="KEYWORD" style="width: 100%"></iframe>
+	  <h4>Base分词方式</h4>
+	  <iframe name="BASE" style="width: 100%"></iframe>
+	  <h4>Index分词方式</h4>
+	  <iframe name="INDEX" style="width: 100%"></iframe>
+	  --></div>
+  </div>
+</body>
 </html>
-

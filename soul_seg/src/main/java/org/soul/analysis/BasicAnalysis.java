@@ -32,11 +32,11 @@ public class BasicAnalysis extends Analysis {
 					new AsianNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 					AsianNameRecognition.nameAmbiguity(graph.terms);
-					log.info(getResult());
+					// log.info(getResult());
 					new ForeignNameRecognition(graph.terms).recognition();
 					graph.walkPathByScore();
 				}
-				log.info(getResult());
+				// log.info(getResult());
 				if (graph.hasNum) { // recognize consecutive numbers
 					NumberRecognition.recognition(graph.terms);
 				}
@@ -51,7 +51,7 @@ public class BasicAnalysis extends Analysis {
 						userDefineRecognize(graph, forest);
 					}
 				}
-				log.info(getResult());
+				// log.info(getResult());
 				return getResult();
 			}
 

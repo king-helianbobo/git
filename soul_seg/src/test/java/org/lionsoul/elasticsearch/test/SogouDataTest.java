@@ -3,7 +3,6 @@ package org.lionsoul.elasticsearch.test;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.simpleQueryString;
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.hasId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -253,13 +252,24 @@ public class SogouDataTest {
 			}
 		}
 	}
-	@Test
+	// @Test
 	public void testSimpleScrollQueryWithHighLight() throws Exception {
 		// String queryStrs[] = {"互联网Google", "雅虎北京", "奥斯卡 艺术"};
 		String queryStrs[] = {"口试 广东"};
 		for (String queryStr : queryStrs) {
 			// searchClinet.simpleScrollQuery(queryStr);
 			searchClinet.multiMatchQuery(queryStr);
+		}
+	}
+
+	@Test
+	public void testSuggestQuery() throws Exception {
+		// String queryStrs[] = {"互联网Google", "雅虎北京", "奥斯卡 艺术"};
+		String queryStrs[] = {"天呀"};
+		for (String queryStr : queryStrs) {
+			// searchClinet.simpleScrollQuery(queryStr);
+			log.info(searchClinet.getSuggestions(queryStr));
+
 		}
 	}
 }

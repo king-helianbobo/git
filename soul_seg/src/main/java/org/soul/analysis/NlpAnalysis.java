@@ -29,10 +29,10 @@ import org.soul.utility.WordAlter;
 public class NlpAnalysis extends Analysis {
 	private static Log log = LogFactory.getLog(NlpAnalysis.class);
 	private LearnTool learn = null;
-	private static final SplitWord crfSplitModel = InitDictionary
-			.getCRFSplitWord();
+	// private static final SplitWord crfSplitModel = InitDictionary
+	// .getCRFSplitWord();
 
-	// private static final SplitWord crfSplitModel = null;
+	private static final SplitWord crfSplitModel = null;
 
 	public NlpAnalysis(Reader reader, LearnTool learn) {
 		super(reader);
@@ -56,19 +56,18 @@ public class NlpAnalysis extends Analysis {
 			Term term1 = graph.terms[startOffe];
 			Term term2 = graph.terms[startOffe + 1];
 			Term term3 = graph.terms[startOffe + 3];
-			if ((term1 != null) && (term1.getName().length() == 1)
-					&& (term2 != null) && (term2.getName().length() == 2)
-					&& (term3 != null) && (term3.getName().length() == 1)) {
+			if ((term1 != null) && (term2 != null) && (term3 != null)
+					&& (term1.getName().length() == 1)
+					&& (term2.getName().length() == 2)
+					&& (term3.getName().length() == 1)) {
 				if (ChineseHelper.allChineseChar(term1.getName())
 						&& ChineseHelper.allChineseChar(term2.getName())
 						&& ChineseHelper.allChineseChar(term3.getName())) {
 					StringBuilder builder = new StringBuilder();
 					builder.append(graph.convertedStr.charAt(startOffe + 2));
 					builder.append(graph.convertedStr.charAt(startOffe + 3));
-					String str1 = word;
-					String str2 = builder.toString();
-					Term tmpTerm1 = new Term(str1, startOffe, TermNatures.NW);
-					Term tmpTerm2 = new Term(str2, startOffe + 2,
+					Term tmpTerm1 = new Term(word, startOffe, TermNatures.NW);
+					Term tmpTerm2 = new Term(builder.toString(), startOffe + 2,
 							TermNatures.NW);
 					TermUtil.insertTerm(graph.terms, tmpTerm1, tmpTerm2);
 				} else
@@ -79,27 +78,25 @@ public class NlpAnalysis extends Analysis {
 			Term term1 = graph.terms[startOffe - 2];
 			Term term2 = graph.terms[startOffe - 1];
 			Term term3 = graph.terms[startOffe + 1];
-			if ((term1 != null) && (term1.getName().length() == 1)
-					&& (term2 != null) && (term2.getName().length() == 2)
-					&& (term3 != null) && (term3.getName().length() == 1)) {
+			if ((term1 != null) && (term2 != null) && (term3 != null)
+					&& (term1.getName().length() == 1)
+					&& (term2.getName().length() == 2)
+					&& (term3.getName().length() == 1)) {
 				if (ChineseHelper.allChineseChar(term1.getName())
 						&& ChineseHelper.allChineseChar(term2.getName())
 						&& ChineseHelper.allChineseChar(term3.getName())) {
 					StringBuilder builder = new StringBuilder();
 					builder.append(graph.convertedStr.charAt(startOffe - 2));
 					builder.append(graph.convertedStr.charAt(startOffe - 1));
-					String str1 = builder.toString();
-					String str2 = word;
-					Term tmpTerm1 = new Term(str1, startOffe - 2,
+					Term tmpTerm1 = new Term(builder.toString(), startOffe - 2,
 							TermNatures.NW);
-					Term tmpTerm2 = new Term(str2, startOffe, TermNatures.NW);
+					Term tmpTerm2 = new Term(word, startOffe, TermNatures.NW);
 					TermUtil.insertTerm(graph.terms, tmpTerm1, tmpTerm2);
 				} else
 					return;
 			}
 		}
 	}
-
 	@Override
 	protected List<Term> getResult(final ViterbiGraph graph) {
 		Merger merger = new Merger() {
@@ -132,7 +129,6 @@ public class NlpAnalysis extends Analysis {
 						learn.addTerm(new NewWord(word, NatureLibrary
 								.getNature("nw"), -word.length()));
 						log.info("crf , word = " + word);
-
 					}
 				}
 				// 用户自定义词典
