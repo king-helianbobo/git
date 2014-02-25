@@ -21,7 +21,7 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.app.SoulSearchClient;
+import org.elasticsearch.app.SoulTransportClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -34,9 +34,9 @@ import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.MapReduceWriter;
 import org.elasticsearch.hadoop.rest.InitializationUtils;
 import org.elasticsearch.hadoop.rest.RestClient;
-import org.elasticsearch.hadoop.serialization.IndexCommand;
-import org.elasticsearch.hadoop.serialization.MapWritableIdExtractor;
-import org.elasticsearch.hadoop.serialization.SerializationUtils;
+import org.elasticsearch.hadoop.serailize.IndexCommand;
+import org.elasticsearch.hadoop.serailize.MapWritableIdExtractor;
+import org.elasticsearch.hadoop.serailize.SerializationUtils;
 import org.elasticsearch.hadoop.util.BytesArray;
 import org.elasticsearch.hadoop.util.WritableUtils;
 import org.elasticsearch.index.query.SimpleQueryStringBuilder;
@@ -52,7 +52,7 @@ public class SogouDataTest {
 	private RestClient restClient;
 	private Settings settings;
 	TransportClient transportClient;
-	SoulSearchClient searchClinet = new SoulSearchClient("localhost",
+	SoulTransportClient searchClinet = new SoulTransportClient("localhost",
 			"soul_mini", "table");
 	private String indexName = "soul_mini";
 	private String typeName = "table";

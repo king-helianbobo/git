@@ -1,4 +1,4 @@
-package org.elasticsearch.hadoop.serialization;
+package org.elasticsearch.hadoop.serailize;
 
 import java.util.Map;
 import org.apache.hadoop.io.Text;

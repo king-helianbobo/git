@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.serialization;
+package org.elasticsearch.hadoop.serailize;
+
+import org.elasticsearch.hadoop.util.BytesArray;
+
 
 /**
- * Simple container used for indicating to a {@link Command}, the data has been processed already.
+ * Bulk command to execute.
  */
-public class SerializedObject {
+public interface Command {
 
-    public byte[] data;
-    public int size;
-    public byte[] id;
+    int prepare(Object object);
+
+    void write(Object object, BytesArray buffer);
 }

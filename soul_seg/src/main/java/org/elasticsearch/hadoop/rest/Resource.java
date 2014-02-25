@@ -13,10 +13,6 @@ public class Resource {
 
 	public Resource(String resource) {
 		this.resource = new StringBuilder(resource);
-		// int location = resource.lastIndexOf("_");
-		// if (location <= 0) {
-		// location = resource.length();
-		// }
 		String _root = resource.substring(0, resource.length());
 		if (!_root.endsWith("/")) {
 			_root = _root + "/";

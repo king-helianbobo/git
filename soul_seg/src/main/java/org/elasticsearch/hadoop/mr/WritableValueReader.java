@@ -14,8 +14,8 @@ import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.elasticsearch.hadoop.serialization.FieldType;
-import org.elasticsearch.hadoop.serialization.JdkValueReader;
+import org.elasticsearch.hadoop.serailize.FieldType;
+import org.elasticsearch.hadoop.serailize.JdkValueReader;
 
 public class WritableValueReader extends JdkValueReader {
 

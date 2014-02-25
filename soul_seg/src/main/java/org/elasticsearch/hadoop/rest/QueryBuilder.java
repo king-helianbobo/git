@@ -18,7 +18,7 @@ package org.elasticsearch.hadoop.rest;
 import java.io.IOException;
 
 import org.elasticsearch.hadoop.cfg.Settings;
-import org.elasticsearch.hadoop.serialization.ScrollReader;
+import org.elasticsearch.hadoop.serailize.ScrollReader;
 import org.elasticsearch.hadoop.util.Assert;
 import org.elasticsearch.hadoop.util.StringUtils;
 import org.elasticsearch.hadoop.util.TimeValue;

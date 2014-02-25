@@ -21,8 +21,8 @@ import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.MapReduceWriter;
 import org.elasticsearch.hadoop.rest.InitializationUtils;
 import org.elasticsearch.hadoop.rest.RestClient;
-import org.elasticsearch.hadoop.serialization.MapWritableIdExtractor;
-import org.elasticsearch.hadoop.serialization.SerializationUtils;
+import org.elasticsearch.hadoop.serailize.MapWritableIdExtractor;
+import org.elasticsearch.hadoop.serailize.SerializationUtils;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.SimpleQueryStringBuilder;
@@ -30,8 +30,8 @@ import org.elasticsearch.search.SearchHit;
 import org.suggest.elasticsearch.action.suggest.SuggestResponse;
 import org.suggest.elasticsearch.client.action.SuggestRequestBuilder;
 
-public class SoulSearchClient {
-	private final Log log = LogFactory.getLog(SoulSearchClient.class);
+public class SoulTransportClient {
+	private final Log log = LogFactory.getLog(SoulTransportClient.class);
 	private RestClient restClient;
 	TransportClient transportClient;
 	private String indexName = "soul_mini";
@@ -39,7 +39,7 @@ public class SoulSearchClient {
 	private String hostName = "localhost";
 	private int port = 9300;
 
-	public SoulSearchClient() {
+	public SoulTransportClient() {
 		restClient = _GetRestClient();
 		transportClient = new TransportClient()
 				.addTransportAddress(new InetSocketTransportAddress(hostName,
@@ -62,7 +62,8 @@ public class SoulSearchClient {
 		return restClient;
 	}
 
-	public SoulSearchClient(String hostName, String indexName, String typeName) {
+	public SoulTransportClient(String hostName, String indexName,
+			String typeName) {
 		this.hostName = hostName;
 		this.indexName = indexName;
 		this.typeName = typeName;

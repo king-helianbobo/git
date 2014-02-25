@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.serialization;
+package org.elasticsearch.hadoop.serailize;
 
-/**
- * Translates a value to its JSON-like structure.
- */
-public interface ValueWriter<T> {
+//import org.apache.hadoop.io.Text;
 
-    /**
-     * Returns true if the value was written, false otherwise.
-     *
-     * @param object
-     * @param generator
-     * @return true if the value was written, false otherwise
-     */
-    boolean write(T object, Generator generator);
+public interface IdExtractor {
+
+	String getIdValue(Object target);
+
+	String getIdFieldName();
 }

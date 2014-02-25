@@ -13,35 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.serialization;
+package org.elasticsearch.hadoop.serailize;
 
 import org.elasticsearch.hadoop.cfg.ConfigurationOptions;
 import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.util.StringUtils;
 
-class CreateCommand extends AbstractCommand {
+public class IndexCommand extends AbstractCommand {
 
-    private final byte[] HEADER = ("{\"" + ConfigurationOptions.ES_OPERATION_CREATE + "\":{}}\n").getBytes(StringUtils.UTF_8);
-    private final byte[] HEADER_PREFIX = ("{\"" + ConfigurationOptions.ES_OPERATION_CREATE + "\":{\"_id\":\"").getBytes(StringUtils.UTF_8);
-    private final byte[] HEADER_SUFFIX = ("\"}}\n").getBytes(StringUtils.UTF_8);
+	private final byte[] HEADER = ("{\""
+			+ ConfigurationOptions.ES_OPERATION_INDEX + "\":{}}\n")
+			.getBytes(StringUtils.UTF_8);
+	private final byte[] HEADER_PREFIX = ("{\""
+			+ ConfigurationOptions.ES_OPERATION_INDEX + "\":{\"_id\":\"")
+			.getBytes(StringUtils.UTF_8);
+	private final byte[] HEADER_SUFFIX = ("\"}}\n").getBytes(StringUtils.UTF_8);
 
-    CreateCommand(Settings settings) {
-        super(settings);
-    }
+	public IndexCommand(Settings settings) {
+		super(settings);
+	}
 
-    @Override
-    protected byte[] headerPrefix() {
-        return HEADER_PREFIX;
-    }
+	@Override
+	protected byte[] headerPrefix() {
+		return HEADER_PREFIX;
+	}
 
-    @Override
-    protected byte[] headerSuffix() {
-        return HEADER_SUFFIX;
-    }
+	@Override
+	protected byte[] headerSuffix() {
+		return HEADER_SUFFIX;
+	}
 
-
-    @Override
-    protected byte[] header() {
-        return HEADER;
-    }
+	@Override
+	protected byte[] header() {
+		return HEADER;
+	}
 }

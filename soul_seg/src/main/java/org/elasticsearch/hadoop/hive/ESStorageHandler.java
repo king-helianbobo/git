@@ -34,7 +34,7 @@ import org.elasticsearch.hadoop.cfg.Settings;
 import org.elasticsearch.hadoop.cfg.SettingsManager;
 import org.elasticsearch.hadoop.mr.ESOutputFormat;
 import org.elasticsearch.hadoop.rest.InitializationUtils;
-import org.elasticsearch.hadoop.serialization.SerializationUtils;
+import org.elasticsearch.hadoop.serailize.SerializationUtils;
 import org.elasticsearch.hadoop.util.Assert;
 
 import static org.elasticsearch.hadoop.hive.HiveConstants.*;

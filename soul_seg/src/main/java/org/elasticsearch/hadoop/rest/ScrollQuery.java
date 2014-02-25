@@ -21,88 +21,91 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.elasticsearch.hadoop.serialization.ScrollReader;
+import org.elasticsearch.hadoop.serailize.ScrollReader;
 
 /**
- * Result streaming data from a ElasticSearch query using the scan/scroll. Performs batching underneath to retrieve data in chunks.
+ * Result streaming data from a ElasticSearch query using the scan/scroll.
+ * Performs batching underneath to retrieve data in chunks.
  */
 public class ScrollQuery implements Iterator<Object>, Closeable {
 
-    private BufferedRestClient client;
-    private String scrollId;
-    private List<Object[]> batch = Collections.emptyList();
-    private boolean finished = false;
+	private BufferedRestClient client;
+	private String scrollId;
+	private List<Object[]> batch = Collections.emptyList();
+	private boolean finished = false;
 
-    private int batchIndex = 0;
-    private long read = 0;
-    private long size;
+	private int batchIndex = 0;
+	private long read = 0;
+	private long size;
 
-    private final ScrollReader reader;
+	private final ScrollReader reader;
 
-    ScrollQuery(BufferedRestClient client, String scrollId, long size, ScrollReader reader) {
-        this.client = client;
-        this.scrollId = scrollId;
-        this.size = size;
-        this.reader = reader;
-    }
+	ScrollQuery(BufferedRestClient client, String scrollId, long size,
+			ScrollReader reader) {
+		this.client = client;
+		this.scrollId = scrollId;
+		this.size = size;
+		this.reader = reader;
+	}
 
-    @Override
-    public void close() throws IOException {
-        finished = true;
-        batch = Collections.emptyList();
-        client.close();
-    }
+	@Override
+	public void close() throws IOException {
+		finished = true;
+		batch = Collections.emptyList();
+		client.close();
+	}
 
-    @Override
-    public boolean hasNext() {
-        if (finished)
-            return false;
+	@Override
+	public boolean hasNext() {
+		if (finished)
+			return false;
 
-        if (batch.isEmpty() || batchIndex >= batch.size()) {
-            if (read >= size) {
-                finished = true;
-                return false;
-            }
+		if (batch.isEmpty() || batchIndex >= batch.size()) {
+			if (read >= size) {
+				finished = true;
+				return false;
+			}
 
-            try {
-                batch = client.scroll(scrollId, reader);
-            } catch (IOException ex) {
-                throw new IllegalStateException("Cannot retrieve scroll [" + scrollId + "]", ex);
-            }
-            read += batch.size();
-            if (batch.isEmpty()) {
-                finished = true;
-                return false;
-            }
-            // reset index
-            batchIndex = 0;
-        }
+			try {
+				batch = client.scroll(scrollId, reader);
+			} catch (IOException ex) {
+				throw new IllegalStateException("Cannot retrieve scroll ["
+						+ scrollId + "]", ex);
+			}
+			read += batch.size();
+			if (batch.isEmpty()) {
+				finished = true;
+				return false;
+			}
+			// reset index
+			batchIndex = 0;
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    public long getSize() {
-        return size;
-    }
+	public long getSize() {
+		return size;
+	}
 
-    public long getRead() {
-        return read;
-    }
+	public long getRead() {
+		return read;
+	}
 
-    @Override
-    public Object[] next() {
-        return batch.get(batchIndex++);
-    }
+	@Override
+	public Object[] next() {
+		return batch.get(batchIndex++);
+	}
 
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("read-only operator");
-    }
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException("read-only operator");
+	}
 
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("ScrollQuery [scrollId=").append(scrollId).append("]");
-        return builder.toString();
-    }
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("ScrollQuery [scrollId=").append(scrollId).append("]");
+		return builder.toString();
+	}
 }

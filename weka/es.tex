@@ -373,6 +373,22 @@ curl -XGET 'http://localhost:9200/twitter/tweet/_search?scroll=5m' -d '{
 curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM0NDg1ODpzRlBLc0FXNlNyNm5JWUc1'
 \end{verbatim}
 \par Scrolling is not intended for real time user requests, it is intended for cases like scrolling over large portions of data that exists within elasticsearch to reindex it for example. For more information on scrolling, see the scan search type.
+\par The scan search type allows to efficiently scroll a large result set. It’s used first by executing a search request with scrolling and a query:
+\begin{verbatim}
+curl -XGET 'localhost:9200/sogou_spellcheck/table/_search?search_type=scan&scroll=10m&size=50' -d '
+{
+    "query" : {
+        "match_all" : {}
+    }
+}'
+\end{verbatim}
+\par The scroll parameter control the keep alive time of the scrolling request and initiates the scrolling process. The timeout applies per round trip (i.e. between the previous scan scroll request, to the next).
+\par The response will include no hits, with two important results, the total\_hits will include the total hits that match the query, and the scroll\_id that allows to start the scroll process. From this stage, the \_search/scroll endpoint should be used to scroll the hits, feeding the next scroll request with the previous search result scroll\_id. 
+\par 然后，利用上一步获得的scroll\_id，执行以后的scroll query，注意：\_search/scroll为一个endPoint:
+\begin{verbatim}
+curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'c2NhbjsxOjBLMzdpWEtqU2IyZHlmVURPeFJOZnc7MzowSzM3aVhLalNiMmR5ZlVET3hSTmZ3OzU6MEszN2lYS2pTYjJkeWZVRE94Uk5mdzsyOjBLMzdpWEtqU2IyZHlmVURPeFJOZnc7NDowSzM3aVhLalNiMmR5ZlVET3hSTmZ3Ow=='
+\end{verbatim}
+\par Scroll requests will include a number of hits equal to the size multiplied by the number of primary shards.The "breaking" condition out of a scroll is when no hits has been returned. The total\_hits will be maintained between scroll requests.但是， scan search type does not support sorting (either on score or a field) or faceting.
 \paragraph{Search Type}
 \par There are different execution paths that can be done when executing a distributed search. The distributed search operation needs to be scattered to all the relevant shards and then all the results are gathered back. When doing scatter/gather type execution, there are several ways to do that, specifically with search engines.
 \par One of the questions when executing a distributed search is how much results to retrieve from each shard. For example, if we have 10 shards, the 1st shard might hold the most relevant results from 0 till 10, with other shards results ranking below it. For this reason, when executing a request, we will need to get results from 0 till 10 from all shards, sort them, and then return the results if we want to insure correct results.

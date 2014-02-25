@@ -26,7 +26,7 @@ import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.io.Writable;
 import org.elasticsearch.hadoop.mr.MapReduceWriter;
-import org.elasticsearch.hadoop.serialization.Generator;
+import org.elasticsearch.hadoop.serailize.Generator;
 
 /**
  * Writer for the Hive specific Writable types (specifically from serde2.io

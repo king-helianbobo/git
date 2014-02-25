@@ -83,7 +83,7 @@ curl -XPOST http://localhost:9200/pinyin_test/_search?pretty=true  -d '{
 ## 对sogou_mini索引，做自动提示，    
 ## "fields": ["contenttitle", "postTime"]只输出这两个域，否则content内容过多，emacs显示很慢
 ## sogou_mini中文档数目是31152个
-curl -XPOST http://localhost:9200/sogou_mini/_search?pretty=true  -d '{
+curl -XPOST http://localhost:9200/sogou_mini/_search?pretty=true  -d ' {
     "fields": ["contenttitle", "postTime"],
     "query": {
         "term": {

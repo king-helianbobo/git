@@ -13,7 +13,7 @@ import org.soul.domain.Term;
 import org.soul.recognition.NatureRecognition;
 
 public class SoulServlet {
-	private static SoulSearchClient client = new SoulSearchClient();
+	private static SoulTransportClient client = new SoulTransportClient();
 	private enum SoulMethod {
 		BASE, NLP, KEYWORD, INDEX
 	}

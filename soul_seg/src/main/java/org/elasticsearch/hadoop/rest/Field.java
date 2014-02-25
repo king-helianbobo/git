@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.elasticsearch.hadoop.serialization.FieldType;
+import org.elasticsearch.hadoop.serailize.FieldType;
 
 @SuppressWarnings("serial")
 public class Field implements Serializable {

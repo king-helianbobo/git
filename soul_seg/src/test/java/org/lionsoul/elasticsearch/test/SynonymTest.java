@@ -10,7 +10,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.app.SoulSearchClient;
+import org.elasticsearch.app.SoulTransportClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -26,7 +26,7 @@ public class SynonymTest {
 	private String typeName = "test1";
 	private int port = 9300;
 
-	SoulSearchClient searchClinet = new SoulSearchClient("localhost",
+	SoulTransportClient searchClinet = new SoulTransportClient("localhost",
 			"soul_mini", "table");
 
 	@Before

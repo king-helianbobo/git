@@ -59,7 +59,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ShardSuggestService extends AbstractIndexShardComponent {
 	private static Log log = LogFactory.getLog(ShardSuggestService.class);
 	private final IndexShard indexShard;
-
 	private final ReentrantLock lock = new ReentrantLock();
 	private IndexReader indexReader;
 	private final LoadingCache<String, FSTCompletionLookup> lookupCache;

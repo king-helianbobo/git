@@ -22,10 +22,10 @@ import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
-import org.elasticsearch.hadoop.serialization.Parser;
-import org.elasticsearch.hadoop.serialization.SerializationException;
-import org.elasticsearch.hadoop.serialization.Parser.NumberType;
-import org.elasticsearch.hadoop.serialization.Parser.Token;
+import org.elasticsearch.hadoop.serailize.Parser;
+import org.elasticsearch.hadoop.serailize.SerializationException;
+import org.elasticsearch.hadoop.serailize.Parser.NumberType;
+import org.elasticsearch.hadoop.serailize.Parser.Token;
 
 public class JacksonJsonParser implements Parser {
 

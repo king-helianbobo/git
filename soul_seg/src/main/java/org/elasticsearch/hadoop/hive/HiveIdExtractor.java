@@ -16,12 +16,13 @@
 package org.elasticsearch.hadoop.hive;
 
 import java.util.Map;
+
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.elasticsearch.hadoop.cfg.Settings;
-import org.elasticsearch.hadoop.serialization.IdExtractor;
-import org.elasticsearch.hadoop.serialization.SettingsAware;
+import org.elasticsearch.hadoop.serailize.IdExtractor;
+import org.elasticsearch.hadoop.serailize.SettingsAware;
 import org.elasticsearch.hadoop.util.Assert;
 
 public class HiveIdExtractor implements IdExtractor, SettingsAware {

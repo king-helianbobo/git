@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.elasticsearch.hadoop.serialization;
+package org.elasticsearch.hadoop.serailize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +22,8 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.hadoop.rest.Field;
-import org.elasticsearch.hadoop.serialization.Parser.NumberType;
-import org.elasticsearch.hadoop.serialization.Parser.Token;
+import org.elasticsearch.hadoop.serailize.Parser.NumberType;
+import org.elasticsearch.hadoop.serailize.Parser.Token;
 import org.elasticsearch.hadoop.util.Assert;
 import org.elasticsearch.hadoop.util.JacksonJsonParser;
 

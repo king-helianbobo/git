@@ -22,8 +22,8 @@ import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
-import org.elasticsearch.hadoop.serialization.Generator;
-import org.elasticsearch.hadoop.serialization.SerializationException;
+import org.elasticsearch.hadoop.serailize.Generator;
+import org.elasticsearch.hadoop.serailize.SerializationException;
 
 public class JacksonJsonGenerator implements Generator {
 

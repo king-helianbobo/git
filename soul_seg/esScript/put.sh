@@ -38,3 +38,17 @@ curl -XPUT "http://localhost:9200/movies/movie/1" -d'
     "year": 1972,
     "genres": ["Crime", "Drama"]
 }'
+
+curl -XPOST "localhost:9200/soul_mini/table/_search?pretty=true" -d '{
+    "query": {
+        "simple_query_string": {
+            "analyzer": "soul_query", 
+            "default_operator": "and", 
+            "fields": [
+                "content^1.0", 
+                "contenttitle^2.0"
+            ], 
+            "query": "中国"
+        }
+    }
+}' | grep -nw 'total'

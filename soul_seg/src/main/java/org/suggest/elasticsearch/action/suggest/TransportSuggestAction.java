@@ -88,7 +88,7 @@ public class TransportSuggestAction
 		}
 		List<String> resultItems = items;
 		// List<String> resultItems = ImmutableSortedSet.copyOf(items).asList();
-		TreeMap<Float, String> tree = new TreeMap<Float, String>(
+		TreeMap<Float, List<String>> tree = new TreeMap<Float, List<String>>(
 				new Comparator<Float>() {
 					public int compare(Float o1, Float o2) {
 						return o2.compareTo(o1);
@@ -96,16 +96,25 @@ public class TransportSuggestAction
 				});
 
 		for (int i = 0; i < resultItems.size(); i += 2) {
-			tree.put(Float.valueOf(resultItems.get(i + 1)), resultItems.get(i));
+			Float score = Float.valueOf(resultItems.get(i + 1));
+			String value = resultItems.get(i);
+			List<String> tmpList = tree.get(score);
+			if (tmpList == null) {
+				tmpList = new ArrayList<String>();
+				tmpList.add(value);
+			} else
+				tmpList.add(value);
+			tree.put(score, tmpList);
+			log.info("score = " + score + "[" + value + "]");
 		}
-
-		// log.info("total number = " + resultItems.size() + "[" + resultItems
-		// + "]");
 		List<String> result = new LinkedList<String>();
 		Iterator<Float> it = tree.keySet().iterator();
-		for (int i = 0; i < Math.min(tree.size(), request.size()); i++) {
-			if (it.hasNext())
-				result.add(tree.get(it.next()));
+		for (int i = 0; i < Math.min(tree.size(), request.size());) {
+			if (it.hasNext()) {
+				List<String> list = tree.get(it.next());
+				result.addAll(list);
+				i += list.size();
+			}
 		}
 		// number of items at most request.size()
 		return new SuggestResponse(result, shardsResponses.length(),

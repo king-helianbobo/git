@@ -23,7 +23,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import org.apache.commons.codec.binary.Base64;
-import org.elasticsearch.hadoop.serialization.SerializationException;
+import org.elasticsearch.hadoop.serailize.SerializationException;
 
 /**
  * Utility class used internally for the Pig support.

@@ -16,7 +16,7 @@
 package org.elasticsearch.hadoop.util;
 
 import org.elasticsearch.hadoop.cfg.Settings;
-import org.elasticsearch.hadoop.serialization.SettingsAware;
+import org.elasticsearch.hadoop.serailize.SettingsAware;
 
 public abstract class ObjectUtils {
 

@@ -29,8 +29,8 @@ import org.elasticsearch.hadoop.rest.BufferedRestClient;
 import org.elasticsearch.hadoop.rest.InitializationUtils;
 import org.elasticsearch.hadoop.rest.Node;
 import org.elasticsearch.hadoop.rest.Shard;
-import org.elasticsearch.hadoop.serialization.MapWritableIdExtractor;
-import org.elasticsearch.hadoop.serialization.SerializationUtils;
+import org.elasticsearch.hadoop.serailize.MapWritableIdExtractor;
+import org.elasticsearch.hadoop.serailize.SerializationUtils;
 import org.elasticsearch.hadoop.util.Assert;
 
 /**

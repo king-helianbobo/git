@@ -35,8 +35,8 @@ import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
-import org.elasticsearch.hadoop.serialization.Generator;
-import org.elasticsearch.hadoop.serialization.ValueWriter;
+import org.elasticsearch.hadoop.serailize.Generator;
+import org.elasticsearch.hadoop.serailize.ValueWriter;
 
 @SuppressWarnings("deprecation")
 public class MapReduceWriter implements ValueWriter<Writable> {
