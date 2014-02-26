@@ -22,7 +22,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.MapWritable;
 import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.hadoop.util.WritableUtils;
-import org.soul.treeSplit.StringUtil;
+import org.splitword.soul.treeSplit.StringUtil;
 public class SogouDataReader {
 
 	private static Log log = LogFactory.getLog(SogouDataReader.class);

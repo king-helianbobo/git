@@ -62,7 +62,22 @@ public class SoulHttpClient implements Closeable {
 		connectionParams.setTcpNoDelay(true);
 	}
 
-	private String getSimpleQueryStringJson(String queryStr) {
+	private String spellCheckJson(String queryStr) {
+		Map<String, String> fileInfo = new HashMap<String, String>();
+		fileInfo.put("term", queryStr);
+		fileInfo.put("field", "content");
+		fileInfo.put("similarity", "-0.8");
+		fileInfo.put("type", "soul");
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			String json = mapper.writeValueAsString(fileInfo);
+			return json;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	private String simpleQueryStringJson(String queryStr) {
 		List<String> array = new ArrayList<String>();
 		array.add("content^1.0");
 		array.add("contenttitle^2.0");
@@ -73,18 +88,18 @@ public class SoulHttpClient implements Closeable {
 		map2.put("query", queryStr);
 		Map<String, Object> map1 = new HashMap<String, Object>();
 		map1.put("simple_query_string", map2);
-		Map<String, Map<String, Object>> fileInfo = new HashMap<String, Map<String, Object>>();
-		fileInfo.put("query", map1);
+		Map<String, Map<String, Object>> map = new HashMap<String, Map<String, Object>>();
+		map.put("query", map1);
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-			String json = mapper.writeValueAsString(fileInfo);
+			String json = mapper.writeValueAsString(map);
 			return json;
 		} catch (IOException e) {
 			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
-	private String getTermQueryJson(String queryStr) {
+	private String termQueryJson(String queryStr) {
 		Map<String, Object> mapmap = new HashMap<String, Object>();
 		mapmap.put("contenttitle", queryStr);
 		Map<String, Object> map = new HashMap<String, Object>();
@@ -100,85 +115,82 @@ public class SoulHttpClient implements Closeable {
 			return json;
 		} catch (IOException e) {
 			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
-	public void refresh(String index) {
-		int slash = index.indexOf("/");
-		String indx = (slash < 0) ? index : index.substring(0, slash);
-		execute(new PostMethod(indx + "/_refresh"));
-	}
-
-	public void deleteIndex(String index) {
-		execute(new DeleteMethod(index));
-	}
-
 	@SuppressWarnings("unchecked")
-	public void searchPoint(String queryStr) {
+	public void anotherSuggestSearch(String queryStr) {
 		try {
-			String json = this.getSimpleQueryStringJson(queryStr);
-			String query = "soul_mini/table/_search";
-			Map<String, Object> map = post(query, json, "hits");
-			List<Map<String, Object>> tmpResult = (List<Map<String, Object>>) map
-					.get("hits");
-			int size = tmpResult.size();
-			int totalSize = (Integer) map.get("total");
-			System.out.println("totalSize = " + totalSize);
-			for (int i = 0; i < tmpResult.size(); i++) {
-				Map<String, Object> map1 = tmpResult.get(i);
-				Map<String, Object> map2 = (Map<String, Object>) map1
-						.get("_source");
-				System.out.println(map2.get("contenttitle"));
-			}
-			while (size < totalSize) {
-				map = post(query, json, "hits");
-				tmpResult = (List<Map<String, Object>>) map.get("hits");
-				totalSize = (Integer) map.get("total");
-				System.out.println("totalSize = " + totalSize);
-				size += tmpResult.size();
-				for (int i = 0; i < tmpResult.size(); i++) {
-					Map<String, Object> map1 = tmpResult.get(i);
-					Map<String, Object> map2 = (Map<String, Object>) map1
-							.get("_source");
-					System.out.println(map2.get("contenttitle"));
-				}
-			};
+			String json = spellCheckJson(queryStr);
+			log.info(json);
+			String firstQuery = "sogou_spellcheck/table/__suggest?pretty=true";
+			PostMethod method = new PostMethod(firstQuery);
+			StringRequestEntity requestEntity = new StringRequestEntity(json,
+					"application/json", "UTF-8");
+			method.setRequestEntity(requestEntity);
+			Map<String, Object> map = parseContent(execute(method));
+			List<String> result = (List<String>) map.get("suggestions");
+			for (int i = 0; i < result.size(); i++)
+				log.info(result.get(i));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	public void suggestSearch(String queryStr) {
+	public void simpleQuerySearch(String queryStr) {
 		try {
-			String json = this.getTermQueryJson(queryStr);
-			System.out.println(json);
-			String firstQuery = "sogou_mini/table/_search?pretty=true";
-			Map<String, Object> map = post(firstQuery, json, "hits");
+			String json = this.simpleQueryStringJson(queryStr);
+			String query = "soul_mini/table/_search";
+			Map<String, Object> map = post(query, json);
+			map = (Map<String, Object>) map.get("hits");
 			List<Map<String, Object>> tmpResult = (List<Map<String, Object>>) map
 					.get("hits");
 			int size = tmpResult.size();
 			int totalSize = (Integer) map.get("total");
-			System.out.println("totalSize = " + totalSize);
+			log.info("totalSize = " + totalSize);
 			for (int i = 0; i < tmpResult.size(); i++) {
 				Map<String, Object> map1 = tmpResult.get(i);
 				Map<String, Object> map2 = (Map<String, Object>) map1
-						.get("fields");
-				System.out.println(map2.get("contenttitle"));
+						.get("_source");
+				log.info(map2.get("contenttitle"));
 			}
 			while (size < totalSize) {
-				map = post(firstQuery, json, "hits");
+				map = post(query, json);
+				map = (Map<String, Object>) map.get("hits");
 				tmpResult = (List<Map<String, Object>>) map.get("hits");
 				totalSize = (Integer) map.get("total");
-				System.out.println("totalSize = " + totalSize);
 				size += tmpResult.size();
 				for (int i = 0; i < tmpResult.size(); i++) {
 					Map<String, Object> map1 = tmpResult.get(i);
 					Map<String, Object> map2 = (Map<String, Object>) map1
-							.get("fields");
-					System.out.println(map2.get("contenttitle"));
+							.get("_source");
+					log.info(map2.get("contenttitle"));
 				}
 			};
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	@SuppressWarnings("unchecked")
+	public void suggestSearch(String queryStr) {
+		try {
+			String json = termQueryJson(queryStr);
+			log.info(json);
+			String firstQuery = "sogou_mini/table/_search?pretty=true";
+			Map<String, Object> map = post(firstQuery, json);
+			map = (Map<String, Object>) map.get("hits");
+			List<Map<String, Object>> tmpResult = (List<Map<String, Object>>) map
+					.get("hits");
+			// int size = tmpResult.size();
+			int totalSize = (Integer) map.get("total");
+			log.info("totalSize = " + totalSize);
+			for (int i = 0; i < tmpResult.size(); i++) {
+				Map<String, Object> map1 = tmpResult.get(i);
+				Map<String, Object> map2 = (Map<String, Object>) map1
+						.get("fields");
+				log.info(map2.get("contenttitle"));
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -187,7 +199,8 @@ public class SoulHttpClient implements Closeable {
 	@SuppressWarnings("unchecked")
 	public void scrollSearch(String queryStr) {
 		try {
-			String json = this.getSimpleQueryStringJson(queryStr);
+			String json = this.simpleQueryStringJson(queryStr);
+			log.info(json);
 			String firstQuery = "soul_mini/table/_search?search_type=scan&scroll=10m&size=10";
 			PostMethod method = new PostMethod(firstQuery);
 			StringRequestEntity requestEntity = new StringRequestEntity(json,
@@ -197,10 +210,12 @@ public class SoulHttpClient implements Closeable {
 			String scrollId = (String) map.get("_scroll_id");
 			Map<String, Object> tmpMap = (Map<String, Object>) map.get("hits");
 			int totalSize = (Integer) tmpMap.get("total");
+			log.info("totalSize = " + totalSize);
 			String query = "_search/scroll?scroll=10m&size=10";
 			int size = 0;
 			while (size < totalSize) {
-				map = post(query, scrollId, "hits");
+				map = post(query, scrollId);
+				map = (Map<String, Object>) map.get("hits");
 				List<Map<String, Object>> tmpResult = (List<Map<String, Object>>) map
 						.get("hits");
 				size += tmpResult.size();
@@ -208,7 +223,7 @@ public class SoulHttpClient implements Closeable {
 					Map<String, Object> map1 = tmpResult.get(i);
 					Map<String, Object> map2 = (Map<String, Object>) map1
 							.get("_source");
-					System.out.println(map2.get("contenttitle"));
+					log.info(map2.get("contenttitle"));
 				}
 			};
 		} catch (IOException e) {
@@ -228,37 +243,25 @@ public class SoulHttpClient implements Closeable {
 		}
 	}
 
-	byte[] execute(HttpMethodBase method) {
+	private byte[] execute(HttpMethodBase method) {
 		return execute(method, true);
 	}
-
-	byte[] execute(HttpMethodBase method, boolean checkStatus) {
+	private byte[] execute(HttpMethodBase method, boolean checkStatus) {
 		try {
 			int status = client.executeMethod(method);
 			if (checkStatus && status >= HttpStatus.SC_MULTI_STATUS) {
 				String body = "";
-				try {
-					InputStream rstream = method.getResponseBodyAsStream();
-					// Process the response from Yahoo! Web Services
-					BufferedReader br = new BufferedReader(
-							new InputStreamReader(rstream));
-					// body = method.getResponseBodyAsString();
-					String line;
-					while ((line = br.readLine()) != null) {
-						body += line;
-					}
-					br.close();
-					return body.getBytes();
-				} catch (IOException ex) {
-					body = "";
+				InputStream rstream = method.getResponseBodyAsStream();
+				BufferedReader br = new BufferedReader(new InputStreamReader(
+						rstream));
+				String line;
+				while ((line = br.readLine()) != null) {
+					body += line;
 				}
-				throw new IllegalStateException(String.format(
-						"[%s] on [%s] failed; server[%s] returned [%s]", method
-								.getName(), method.getURI(), client
-								.getHostConfiguration().getHostURL(), body));
-			}
-			return method.getResponseBody();
-
+				br.close();
+				return body.getBytes();
+			} else
+				return method.getResponseBody();
 		} catch (IOException io) {
 			String target;
 			try {
@@ -273,26 +276,53 @@ public class SoulHttpClient implements Closeable {
 			method.releaseConnection();
 		}
 	}
+
+	// byte[] execute(HttpMethodBase method, boolean checkStatus) {
+	// try {
+	// int status = client.executeMethod(method);
+	// if (checkStatus && status >= HttpStatus.SC_MULTI_STATUS) {
+	// String body = "";
+	// try {
+	// InputStream rstream = method.getResponseBodyAsStream();
+	// BufferedReader br = new BufferedReader(
+	// new InputStreamReader(rstream));
+	// String line;
+	// while ((line = br.readLine()) != null) {
+	// body += line;
+	// }
+	// br.close();
+	// return body.getBytes();
+	// } catch (IOException ex) {
+	// body = "";
+	// }
+	// throw new IllegalStateException(String.format(
+	// "[%s] on [%s] failed; server[%s] returned [%s]", method
+	// .getName(), method.getURI(), client
+	// .getHostConfiguration().getHostURL(), body));
+	// }
+	// return method.getResponseBody();
+	// } catch (IOException io) {
+	// String target;
+	// try {
+	// target = method.getURI().toString();
+	// } catch (IOException ex) {
+	// target = method.getPath();
+	// }
+	// throw new IllegalStateException(String.format(
+	// "Cannot get response body for [%s][%s]", method.getName(),
+	// target));
+	// } finally {
+	// method.releaseConnection();
+	// }
+	// }
 	@SuppressWarnings("deprecation")
-	private <T> T post(String query, String body, String keyStr)
+	private Map<String, Object> post(String query, String json)
 			throws IOException {
 		PostMethod postMethod = new PostMethod(query);
-		StringRequestEntity requestEntity = new StringRequestEntity(body,
+		StringRequestEntity requestEntity = new StringRequestEntity(json,
 				"application/json", "UTF-8");
 		postMethod.setRequestEntity(requestEntity);
-		return parseContent(execute(postMethod), keyStr);
-	}
-	@SuppressWarnings("unchecked")
-	private <T> T parseContent(byte[] content, String string)
-			throws IOException {
-		// create parser manually to lower Jackson requirements
-		JsonParser jsonParser = mapper.getJsonFactory().createJsonParser(
-				content);
-		Map<String, Object> map = mapper.readValue(jsonParser, Map.class);
-		for (Entry<String, Object> entry : map.entrySet()) {
-			System.out.println(entry.getKey());
-		}
-		return (T) (string != null ? map.get(string) : map);
+		return parseContent(execute(postMethod));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -302,5 +332,9 @@ public class SoulHttpClient implements Closeable {
 				content);
 		Map<String, Object> map = mapper.readValue(jsonParser, Map.class);
 		return map;
+	}
+
+	public void deleteIndex(String index) {
+		execute(new DeleteMethod(index));
 	}
 }

@@ -33,7 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.lionsoul.jcseg.JcSegment;
-import org.soul.utility.JcsegInstance;
+import org.splitword.soul.utility.JcsegInstance;
 
 public class SoulSpellChecker implements java.io.Closeable {
 

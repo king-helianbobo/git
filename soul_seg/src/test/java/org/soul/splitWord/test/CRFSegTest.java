@@ -3,7 +3,7 @@ package org.soul.splitWord.test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
-import org.soul.library.InitDictionary;
+import org.splitword.soul.library.InitDictionary;
 
 public class CRFSegTest {
 	private final Log log = LogFactory.getLog(CRFSegTest.class);

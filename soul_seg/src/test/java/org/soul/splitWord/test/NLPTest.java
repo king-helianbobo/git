@@ -12,13 +12,13 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
-import org.soul.analysis.KeyWordExtraction;
-import org.soul.analysis.NlpAnalysis;
-import org.soul.domain.KeyWord;
-import org.soul.domain.Term;
-import org.soul.domain.TermNatures;
-import org.soul.recognition.LearnTool;
-import org.soul.treeSplit.StringUtil;
+import org.splitword.soul.analysis.KeyWordExtraction;
+import org.splitword.soul.analysis.NlpAnalysis;
+import org.splitword.soul.domain.KeyWord;
+import org.splitword.soul.domain.Term;
+import org.splitword.soul.domain.TermNatures;
+import org.splitword.soul.recognition.LearnTool;
+import org.splitword.soul.treeSplit.StringUtil;
 
 public class NLPTest {
 	private final Log log = LogFactory.getLog(NLPTest.class);

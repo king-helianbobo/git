@@ -5,10 +5,10 @@ import java.io.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.analysis.BasicAnalysis;
-import org.soul.analysis.NlpAnalysis;
-import org.soul.domain.Term;
-import org.soul.treeSplit.IOUtil;
+import org.splitword.soul.analysis.BasicAnalysis;
+import org.splitword.soul.analysis.NlpAnalysis;
+import org.splitword.soul.domain.Term;
+import org.splitword.soul.treeSplit.IOUtil;
 import org.junit.Test;
 import org.junit.Ignore;
 

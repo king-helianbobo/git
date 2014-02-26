@@ -7,7 +7,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 import org.lionsoul.jcseg.pinyin.ChineseHelper;
-import org.soul.analysis.NlpAnalysis;
+import org.splitword.soul.analysis.NlpAnalysis;
 
 public class NlpAnalysiTest {
 	private final Log log = LogFactory.getLog(NlpAnalysiTest.class);

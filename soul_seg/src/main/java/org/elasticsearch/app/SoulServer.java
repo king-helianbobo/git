@@ -13,10 +13,10 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.soul.analysis.NlpAnalysis;
-import org.soul.treeSplit.IOUtil;
-import org.soul.treeSplit.StringUtil;
-import org.soul.utility.MyStaticValue;
+import org.splitword.soul.analysis.NlpAnalysis;
+import org.splitword.soul.treeSplit.IOUtil;
+import org.splitword.soul.treeSplit.StringUtil;
+import org.splitword.soul.utility.MyStaticValue;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

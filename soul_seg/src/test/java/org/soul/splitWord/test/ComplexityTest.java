@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
-import org.soul.library.InitDictionary;
-import org.soul.utility.WordAlter;
+import org.splitword.soul.library.InitDictionary;
+import org.splitword.soul.utility.WordAlter;
 
 public class ComplexityTest {
 

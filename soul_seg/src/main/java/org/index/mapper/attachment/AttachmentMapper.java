@@ -36,7 +36,7 @@ import java.util.Map;
 
 import static org.elasticsearch.index.mapper.MapperBuilders.*;
 import static org.elasticsearch.index.mapper.core.TypeParsers.parsePathType;
-import static org.soul.utility.TikaInstance.tika;
+import static org.splitword.soul.utility.TikaInstance.tika;
 
 /**
  * _content_length = Specify the maximum amount of characters to extract from

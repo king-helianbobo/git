@@ -12,17 +12,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 import org.junit.Ignore;
-import org.soul.analysis.Analysis;
-import org.soul.analysis.BasicAnalysis;
-import org.soul.analysis.IndexAnalysis;
-import org.soul.domain.Term;
-import org.soul.library.InitDictionary;
-import org.soul.library.UserDefineLibrary;
-import org.soul.recognition.NatureRecognition;
-import org.soul.treeSplit.IOUtil;
-import org.soul.utility.FilterModifyWord;
-import org.soul.utility.MyStaticValue;
-import org.soul.utility.WordAlter;
+import org.splitword.soul.analysis.Analysis;
+import org.splitword.soul.analysis.BasicAnalysis;
+import org.splitword.soul.analysis.IndexAnalysis;
+import org.splitword.soul.domain.Term;
+import org.splitword.soul.library.InitDictionary;
+import org.splitword.soul.library.UserDefineLibrary;
+import org.splitword.soul.recognition.NatureRecognition;
+import org.splitword.soul.treeSplit.IOUtil;
+import org.splitword.soul.utility.FilterModifyWord;
+import org.splitword.soul.utility.MyStaticValue;
+import org.splitword.soul.utility.WordAlter;
 
 public class BasicAnalysisTest {
 	private final Log log = LogFactory.getLog(BasicAnalysisTest.class);

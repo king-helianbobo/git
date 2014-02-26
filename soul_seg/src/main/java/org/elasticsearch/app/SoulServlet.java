@@ -3,14 +3,15 @@ package org.elasticsearch.app;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+
 import org.apache.commons.lang.RandomStringUtils;
-import org.soul.analysis.BasicAnalysis;
-import org.soul.analysis.IndexAnalysis;
-import org.soul.analysis.KeyWordExtraction;
-import org.soul.analysis.NlpAnalysis;
-import org.soul.domain.KeyWord;
-import org.soul.domain.Term;
-import org.soul.recognition.NatureRecognition;
+import org.splitword.soul.analysis.BasicAnalysis;
+import org.splitword.soul.analysis.IndexAnalysis;
+import org.splitword.soul.analysis.KeyWordExtraction;
+import org.splitword.soul.analysis.NlpAnalysis;
+import org.splitword.soul.domain.KeyWord;
+import org.splitword.soul.domain.Term;
+import org.splitword.soul.recognition.NatureRecognition;
 
 public class SoulServlet {
 	private static SoulTransportClient client = new SoulTransportClient();

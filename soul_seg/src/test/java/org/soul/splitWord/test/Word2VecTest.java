@@ -13,12 +13,12 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.*;
-import org.soul.analysis.BasicAnalysis;
-import org.soul.domain.Term;
-import org.soul.treeSplit.*;
-import org.soul.utility.DictionaryReader;
-import org.soul.wordToVec.VectorLearn;
-import org.soul.wordToVec.WordToVec;
+import org.splitword.soul.analysis.BasicAnalysis;
+import org.splitword.soul.domain.Term;
+import org.splitword.soul.treeSplit.*;
+import org.splitword.soul.utility.DictionaryReader;
+import org.splitword.soul.wordToVec.VectorLearn;
+import org.splitword.soul.wordToVec.WordToVec;
 
 public class Word2VecTest {
 

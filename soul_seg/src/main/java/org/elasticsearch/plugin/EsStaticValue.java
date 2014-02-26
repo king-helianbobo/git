@@ -15,8 +15,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.env.FailedToResolveConfigException;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
-import org.soul.treeSplit.IOUtil;
-import org.soul.utility.MyStaticValue;
+import org.splitword.soul.treeSplit.IOUtil;
+import org.splitword.soul.utility.MyStaticValue;
 
 public class EsStaticValue {
 	private static Log log = LogFactory.getLog(EsStaticValue.class);
