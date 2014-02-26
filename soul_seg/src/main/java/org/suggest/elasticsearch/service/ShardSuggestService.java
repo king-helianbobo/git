@@ -66,6 +66,7 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 	private final LoadingCache<FieldType, FuzzySuggester> fuzzySuggesterCache;
 	private final LoadingCache<String, HighFrequencyDictionary> dictCache;
 	private final LoadingCache<String, SoulSpellChecker> spellCheckerCache;
+	private final LoadingCache<String, SoulTitleCache> titleSuggestCache;
 	private final LoadingCache<String, RAMDirectory> ramDirectoryCache;
 
 	@Inject
@@ -97,21 +98,53 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 					}
 				});
 
+		// spellCheckerCache = CacheBuilder.newBuilder().build(
+		// new CacheLoader<String, SoulSpellChecker>() {
+		// @Override
+		// public SoulSpellChecker load(String field) throws Exception {
+		// // String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
+		// // log.info("filed = " + field + "/dicPath= "
+		// // + dictionaryPath);
+		// SoulSpellChecker spellChecker = new SoulSpellChecker(
+		// ramDirectoryCache.get(field));
+		//
+		// IndexWriterConfig config = new IndexWriterConfig(
+		// EsStaticValue.LuceneVersion, null);
+		// config.setOpenMode(OpenMode.CREATE_OR_APPEND);
+		// spellChecker.indexDictionary(
+		// dictCache.getUnchecked(field), config, false);
+		// // spellChecker.indexDictionary(new PlainTextDictionary(
+		// // new File(dictionaryPath)), config, false);
+		// return spellChecker;
+		// }
+		// });
+
+		titleSuggestCache = CacheBuilder.newBuilder().build(
+				new CacheLoader<String, SoulTitleCache>() {
+					@Override
+					public SoulTitleCache load(String field) throws Exception {
+						SoulTitleCache titleCache = new SoulTitleCache(
+								new RAMDirectory());
+						log.info("field is " + field);
+						HighFrequencyDictionary dict = new HighFrequencyDictionary(
+								createOrGetIndexReader(), field, 0);
+						titleCache.fillThisDictionary(dict, false);
+						return titleCache;
+					}
+				});
+
 		spellCheckerCache = CacheBuilder.newBuilder().build(
 				new CacheLoader<String, SoulSpellChecker>() {
 					@Override
 					public SoulSpellChecker load(String field) throws Exception {
-						// String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
-						// log.info("filed = " + field + "/dicPath= "
-						// + dictionaryPath);
 						SoulSpellChecker spellChecker = new SoulSpellChecker(
-								ramDirectoryCache.get(field));
-
+								new RAMDirectory());
 						IndexWriterConfig config = new IndexWriterConfig(
 								EsStaticValue.LuceneVersion, null);
 						config.setOpenMode(OpenMode.CREATE_OR_APPEND);
-						spellChecker.indexDictionary(
-								dictCache.getUnchecked(field), config, false);
+						HighFrequencyDictionary dict = new HighFrequencyDictionary(
+								createOrGetIndexReader(), field, 0);
+						spellChecker.indexDictionary(dict, config, false);
 						// spellChecker.indexDictionary(new PlainTextDictionary(
 						// new File(dictionaryPath)), config, false);
 						return spellChecker;
@@ -177,6 +210,18 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 				spellCheckerCache.refresh(field);
 				try {
 					spellChecker.close();
+				} catch (IOException e) {
+					logger.error(
+							"Could not close spellchecker in indexshard [{}] for field [{}]",
+							e, indexShard, field);
+				}
+			}
+
+			SoulTitleCache suggestCache = titleSuggestCache.getIfPresent(field);
+			if (suggestCache != null) {
+				titleSuggestCache.refresh(field);
+				try {
+					suggestCache.close();
 				} catch (IOException e) {
 					logger.error(
 							"Could not close spellchecker in indexshard [{}] for field [{}]",
@@ -291,40 +336,23 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 		return Collections.emptyList();
 	}
 
-	private Collection<String> getSuggestions(
+	private Collection<String> getSuggestTitles(
 			ShardSuggestRequest shardSuggestRequest) {
-		List<LookupResult> lookupResults = Lists.newArrayList();
-		if ("full".equals(shardSuggestRequest.suggestType())) {
-			AnalyzingSuggester analyzingSuggester = analyzingSuggesterCache
-					.getUnchecked(new FieldType(shardSuggestRequest));
-			lookupResults.addAll(analyzingSuggester.lookup(
-					shardSuggestRequest.term(), false,
-					shardSuggestRequest.size()));
-
-		} else if ("fuzzy".equals(shardSuggestRequest.suggestType())) {
-			lookupResults.addAll(fuzzySuggesterCache.getUnchecked(
-					new FieldType(shardSuggestRequest)).lookup(
-					shardSuggestRequest.term(), false,
-					shardSuggestRequest.size()));
-
-		} else if ("soul".equals(shardSuggestRequest.suggestType())) {
-			Collection<String> suggestions = new ArrayList<String>();
-			float similarity = shardSuggestRequest.similarity();
-			if (similarity <= 1.0f) {
-				suggestions.addAll(getSimilarSuggestions(shardSuggestRequest));
-			}
-			return suggestions;
-		} else {
-			// lookupResults.addAll(lookupCache.getUnchecked(
-			// shardSuggestRequest.field()).lookup(
-			// shardSuggestRequest.term(), true,
-			// shardSuggestRequest.size() + 1));
-			// Collection<String> suggestions = Collections2.transform(
-			// lookupResults, new LookupResultToStringFunction());
+		String field = shardSuggestRequest.field();
+		String term = shardSuggestRequest.term();
+		Integer limit = shardSuggestRequest.size();
+		Float similarity = shardSuggestRequest.similarity();
+		try {
+			String[] suggestSimilar = titleSuggestCache.getUnchecked(field)
+					.suggestTitles(term, limit);
+			log.info(field + ", " + term + ", " + limit);
+			return Arrays.asList(suggestSimilar);
+		} catch (IOException e) {
+			logger.error(
+					"Error getting spellchecker suggestions for shard [{}] field [{}] term [{}] limit [{}] similarity [{}]",
+					e, shardId, field, term, limit, similarity);
 		}
-
-		return Collections2.transform(lookupResults,
-				new LookupResultToStringFunction());
+		return Collections.emptyList();
 	}
 
 	private List<String> getSuggestionList(
@@ -335,6 +363,10 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 			if (similarity <= 1.0f) {
 				suggestions.addAll(getSimilarSuggestions(shardSuggestRequest));
 			}
+			return suggestions;
+		} else if ("sogou".equals(shardSuggestRequest.suggestType())) {
+			List<String> suggestions = new ArrayList<String>();
+			suggestions.addAll(getSuggestTitles(shardSuggestRequest));
 			return suggestions;
 		} else {
 			// do nothing

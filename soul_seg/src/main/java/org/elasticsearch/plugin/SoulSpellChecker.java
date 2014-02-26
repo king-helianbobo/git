@@ -36,7 +36,6 @@ import org.splitword.lionsoul.jcseg.JcSegment;
 import org.splitword.soul.utility.JcsegInstance;
 
 public class SoulSpellChecker implements java.io.Closeable {
-
 	private static Log log = LogFactory.getLog(SoulSpellChecker.class);
 	private static JcSegment jcSeg = JcsegInstance.instance();
 	private float accuracy = -0.5f;
@@ -203,16 +202,6 @@ public class SoulSpellChecker implements java.io.Closeable {
 				float score1 = sd1.getDistance(word, sugWord.string);
 				sugWord.score = Math.max(sugWord.score, score);
 				sugWord.score = Math.max(sugWord.score, score1);
-				// StringDistance sd2 = new LuceneLevenshteinDistance();
-				// StringDistance sd3 = new JaroWinklerDistance();
-
-				// double score2 = sd2.getDistance(word, sugWord.string);
-				// double score3 = sd3.getDistance(word, sugWord.string);
-
-				// log.info("score0: " + sugWord.score + " score1: " + score1
-				// + " score3: " + score3 + " [" + sugWord.string + "/"
-				// + sugWordPinyin + "] [" + word + "/" + pinyin + "]");
-
 				if (sugWord.score < accur) {
 					continue;
 				}
@@ -396,17 +385,11 @@ public class SoulSpellChecker implements java.io.Closeable {
 			try {
 				BytesRefIterator iter = dict.getWordsIterator();
 				BytesRef currentTerm;
-
 				terms : while ((currentTerm = iter.next()) != null) {
 					String word = currentTerm.utf8ToString();
 					if ((word == null) || (word.equals("null"))
 							|| (word.equals("")))
 						continue;
-					String pinyin = jcSeg.convertToPinyin(word);
-					int len = pinyin.length();
-					if (len < 2) {
-						continue; // ignore too short pinyin but "long" is fine
-					}
 					if (!isEmpty) {
 						for (TermsEnum te : termsEnums) {
 							if (te.seekExact(currentTerm)) {
@@ -414,6 +397,10 @@ public class SoulSpellChecker implements java.io.Closeable {
 							}
 						}
 					}
+					String pinyin = jcSeg.convertToPinyin(word);
+					int len = pinyin.length();
+					if (len < 2)
+						continue; // ignore too short pinyin but "long" is fine
 					// now index word
 					Document doc = createDocument(word, 2, 3, pinyin,
 							getPinyinMin(len), getPinyinMax(len));

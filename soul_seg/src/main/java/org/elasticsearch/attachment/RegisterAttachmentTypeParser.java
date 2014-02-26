@@ -1,4 +1,4 @@
-package org.index.mapper.attachment;
+package org.elasticsearch.attachment;
 
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;

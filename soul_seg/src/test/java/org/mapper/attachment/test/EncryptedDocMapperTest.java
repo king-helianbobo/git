@@ -3,6 +3,7 @@ package org.mapper.attachment.test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.Document;
+import org.elasticsearch.attachment.AttachmentMapper;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.index.Index;
@@ -11,7 +12,6 @@ import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.MapperParsingException;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
-import org.index.mapper.attachment.AttachmentMapper;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

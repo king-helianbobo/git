@@ -19,13 +19,13 @@
 
 package org.mapper.attachment.test;
 
+import org.elasticsearch.attachment.AttachmentMapper;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.core.DateFieldMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
-import org.index.mapper.attachment.AttachmentMapper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

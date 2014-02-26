@@ -2,11 +2,15 @@ package org.splitword.soul.analysis;
 
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.elasticsearch.hadoop.util.StringUtils;
 import org.splitword.soul.domain.Term;
+import org.splitword.soul.domain.TermNature;
 import org.splitword.soul.domain.ViterbiGraph;
 import org.splitword.soul.library.UserDefineLibrary;
 import org.splitword.soul.recognition.AsianNameRecognition;
@@ -83,16 +87,35 @@ public class BasicAnalysis extends Analysis {
 		super(reader);
 	}
 
-	public BasicAnalysis(Reader reader, Forest[] forests) {
-		super(reader);
-		if (forests == null) {
-			forests = new Forest[]{UserDefineLibrary.userDefineForest};
-		}
-		this.forests = forests;
-	}
+	// public BasicAnalysis(Reader reader, Forest[] forests) {
+	// super(reader);
+	// if (forests == null) {
+	// forests = new Forest[]{UserDefineLibrary.userDefineForest};
+	// }
+	// this.forests = forests;
+	// }
 
 	public static List<Term> parse(String str) {
 		return new BasicAnalysis().parseStr(str);
+	}
+
+	public static List<String> parse(String str, Set<String> filter) {
+		List<Term> terms = new BasicAnalysis().parseStr(str);
+		List<String> result = new LinkedList<String>();
+		for (int i = 0; i < terms.size(); i++) {
+			Term term = terms.get(i);
+			if (term == null)
+				break;
+			String name = term.getName();
+			if (filter != null && filter.contains(name)) {
+				continue;
+			} else if (!StringUtils.hasText(name)) {
+				continue;
+			} else {
+				result.add(name);
+			}
+		}
+		return result;
 	}
 
 }

@@ -28,7 +28,7 @@ import static org.elasticsearch.rest.action.support.RestActions.buildBroadcastSh
 
 public class RestSuggestAction extends BaseRestHandler {
 
-	// private static Log log = LogFactory.getLog(RestSuggestAction.class);
+	private static Log log = LogFactory.getLog(RestSuggestAction.class);
 
 	@Inject
 	public RestSuggestAction(Settings settings, Client client,
@@ -88,6 +88,8 @@ public class RestSuggestAction extends BaseRestHandler {
 			suggestRequest.size(XContentMapValues.nodeIntegerValue(
 					parserMap.get("size"), 10));
 
+			log.info(suggestRequest.toString());
+
 			client.execute(SuggestAction.INSTANCE, suggestRequest,
 					new ActionListener<SuggestResponse>() {
 						@Override
@@ -99,7 +101,6 @@ public class RestSuggestAction extends BaseRestHandler {
 								buildBroadcastShardsHeader(builder, response);
 								builder.field("suggestions",
 										response.suggestions());
-
 								builder.endObject();
 								channel.sendResponse(new XContentRestResponse(
 										request, OK, builder));

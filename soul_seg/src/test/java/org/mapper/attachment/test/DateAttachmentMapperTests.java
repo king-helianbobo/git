@@ -21,13 +21,13 @@ package org.mapper.attachment.test;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.elasticsearch.attachment.AttachmentMapper;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
 import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
-import org.index.mapper.attachment.AttachmentMapper;
 import org.splitword.lionsoul.jcseg.ASegment;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

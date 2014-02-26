@@ -44,9 +44,9 @@ public class SegmentFactory {
 			throws JcsegException {
 		String __segClass;
 		if (mode == JcsegTaskConfig.SIMPLE_MODE)
-			__segClass = "org.lionsoul.jcseg.SimpleSeg";
+			__segClass = "org.splitword.lionsoul.jcseg.SimpleSeg";
 		else if (mode == JcsegTaskConfig.COMPLEX_MODE)
-			__segClass = "org.lionsoul.jcseg.ComplexSeg";
+			__segClass = "org.splitword.lionsoul.jcseg.ComplexSeg";
 		else
 			throw new JcsegException("No Such Algorithm Excpetion");
 

@@ -3,11 +3,6 @@ package org.splitword.lionsoul.jcseg.core;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 
-/**
- * Dictionary Factory to create Dictionary instance . <br />
- * a path of the class that has extends the ADictionary class must be given
- * first. <br />
- */
 public class DictionaryFactory {
 
 	private DictionaryFactory() {
@@ -42,9 +37,10 @@ public class DictionaryFactory {
 	 */
 	public static ADictionary createDefaultDictionary(JcsegTaskConfig config,
 			boolean sync) {
-		ADictionary dic = createDictionary("org.lionsoul.jcseg.Dictionary",
-				new Class[]{JcsegTaskConfig.class, Boolean.class},
-				new Object[]{config, sync});
+		ADictionary dic = createDictionary(
+				"org.splitword.lionsoul.jcseg.Dictionary", new Class[]{
+						JcsegTaskConfig.class, Boolean.class}, new Object[]{
+						config, sync});
 		try {
 			// load lexicon from more than one path.
 			String[] lexpath = config.getLexiconPath();

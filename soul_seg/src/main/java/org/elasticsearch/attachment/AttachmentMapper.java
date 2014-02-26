@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.index.mapper.attachment;
+package org.elasticsearch.attachment;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

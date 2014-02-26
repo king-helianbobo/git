@@ -66,12 +66,12 @@ public class LuceneOperationTest {
 		analyzerMap.put(hanzi, new SoulPinyinAnalyzer());
 		analyzerMap.put(jcsegHanzi, new SoulJcsegAnalyzer());
 		PerFieldAnalyzerWrapper wrapper = new PerFieldAnalyzerWrapper(
-				new StandardAnalyzer(Version.LUCENE_CURRENT), analyzerMap);
+				new StandardAnalyzer(EsStaticValue.LuceneVersion), analyzerMap);
 
 		IndexWriter indexWriter = null;
 		directory = new RAMDirectory(); // this index will RAM resident
 		IndexWriterConfig iwConfig = new IndexWriterConfig(
-				Version.LUCENE_CURRENT, wrapper);
+				EsStaticValue.LuceneVersion, wrapper);
 		iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
 		try {
 			indexWriter = new IndexWriter(directory, iwConfig);
@@ -117,11 +117,10 @@ public class LuceneOperationTest {
 			for (String keyword : keywords) {
 				// 使用QueryParser查询分析器构造Query对象
 				Analyzer analyzer = new SoulIndexAnalyzer();
-				// Analyzer analyzer = new IKAnalyzer4PinYin(true);
-				QueryParser qpHanzi = new QueryParser(Version.LUCENE_CURRENT,
-						hanzi, analyzer);
-				QueryParser qpJcseg = new QueryParser(Version.LUCENE_CURRENT,
-						jcsegHanzi, analyzer);
+				QueryParser qpHanzi = new QueryParser(
+						EsStaticValue.LuceneVersion, hanzi, analyzer);
+				QueryParser qpJcseg = new QueryParser(
+						EsStaticValue.LuceneVersion, jcsegHanzi, analyzer);
 				Query queryHanzi = qpHanzi.parse(keyword);
 				Query queryJcseg = qpJcseg.parse(keyword);
 				// Query queryShouzimu = qpShouzimu.parse(keyword);
@@ -164,8 +163,8 @@ public class LuceneOperationTest {
 			for (String keyword : keywords) {
 				// 使用QueryParser查询分析器构造Query对象
 				Analyzer analyzer = new SoulIndexAnalyzer();
-				QueryParser qpHanzi = new QueryParser(Version.LUCENE_CURRENT,
-						hanzi, analyzer);
+				QueryParser qpHanzi = new QueryParser(
+						EsStaticValue.LuceneVersion, hanzi, analyzer);
 				Query queryHanzi = qpHanzi.parse(keyword);
 				// Query queryShouzimu = qpShouzimu.parse(keyword);
 				//

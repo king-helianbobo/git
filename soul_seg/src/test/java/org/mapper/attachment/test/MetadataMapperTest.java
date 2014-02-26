@@ -1,6 +1,7 @@
 package org.mapper.attachment.test;
 
 import org.apache.lucene.document.Document;
+import org.elasticsearch.attachment.AttachmentMapper;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
@@ -9,9 +10,10 @@ import org.elasticsearch.index.analysis.AnalysisService;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.MapperParsingException;
-import org.index.mapper.attachment.AttachmentMapper;
 import org.testng.annotations.Test;
+
 import java.io.IOException;
+
 import static org.elasticsearch.common.io.Streams.copyToBytesFromClasspath;
 import static org.elasticsearch.common.io.Streams.copyToStringFromClasspath;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;

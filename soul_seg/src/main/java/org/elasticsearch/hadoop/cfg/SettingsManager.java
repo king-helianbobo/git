@@ -6,8 +6,8 @@ import org.apache.hadoop.conf.Configuration;
 
 /**
  * Factory for loading settings based on various configuration objects, such as
- * Properties or Hadoop configuration. The factory main role is to minimize the
- * number of dependencies required at compilation time
+ * Properties or Hadoop configuration. It's role is to minimize the number of
+ * dependencies required at compilation time
  */
 public abstract class SettingsManager {
 
