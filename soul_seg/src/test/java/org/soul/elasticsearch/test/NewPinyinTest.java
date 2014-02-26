@@ -17,8 +17,8 @@ import org.elasticsearch.plugin.PinyinTokenFilter;
 import org.elasticsearch.plugin.SoulEdgeNGramTokenFilter;
 import org.elasticsearch.plugin.SoulIndexAnalyzer;
 import org.elasticsearch.plugin.SoulPinyinAnalyzer;
-import org.lionsoul.jcseg.pinyin.PinyinFormat;
-import org.lionsoul.jcseg.pinyin.PinyinHelper;
+import org.splitword.lionsoul.jcseg.pinyin.PinyinFormat;
+import org.splitword.lionsoul.jcseg.pinyin.PinyinHelper;
 import org.testng.annotations.*;
 
 public class NewPinyinTest {

@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
-import org.lionsoul.jcseg.pinyin.ChineseHelper;
+import org.splitword.lionsoul.jcseg.pinyin.ChineseHelper;
 import org.splitword.soul.analysis.NlpAnalysis;
 
 public class NlpAnalysiTest {

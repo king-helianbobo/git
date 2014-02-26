@@ -36,6 +36,8 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.ibm.icu.util.BytesTrie.Result;
+
 public class SoulHttpClient implements Closeable {
 
 	private static final Log log = LogFactory.getLog(SoulHttpClient.class);
@@ -140,34 +142,22 @@ public class SoulHttpClient implements Closeable {
 	@SuppressWarnings("unchecked")
 	public void simpleQuerySearch(String queryStr) {
 		try {
-			String json = this.simpleQueryStringJson(queryStr);
-			String query = "soul_mini/table/_search";
+			String json = simpleQueryStringJson(queryStr);
+			String query = "soul_mini/table/_search?pretty=true";
 			Map<String, Object> map = post(query, json);
 			map = (Map<String, Object>) map.get("hits");
 			List<Map<String, Object>> tmpResult = (List<Map<String, Object>>) map
 					.get("hits");
-			int size = tmpResult.size();
+			// int size = tmpResult.size();
 			int totalSize = (Integer) map.get("total");
 			log.info("totalSize = " + totalSize);
 			for (int i = 0; i < tmpResult.size(); i++) {
 				Map<String, Object> map1 = tmpResult.get(i);
+				double score = (Double) map1.get("_score");
 				Map<String, Object> map2 = (Map<String, Object>) map1
 						.get("_source");
-				log.info(map2.get("contenttitle"));
+				log.info(score + ", " + map2.get("contenttitle"));
 			}
-			while (size < totalSize) {
-				map = post(query, json);
-				map = (Map<String, Object>) map.get("hits");
-				tmpResult = (List<Map<String, Object>>) map.get("hits");
-				totalSize = (Integer) map.get("total");
-				size += tmpResult.size();
-				for (int i = 0; i < tmpResult.size(); i++) {
-					Map<String, Object> map1 = tmpResult.get(i);
-					Map<String, Object> map2 = (Map<String, Object>) map1
-							.get("_source");
-					log.info(map2.get("contenttitle"));
-				}
-			};
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -197,34 +187,84 @@ public class SoulHttpClient implements Closeable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void scrollSearch(String queryStr) {
+	public void scrollSearchWithoutSort(String queryStr) {
 		try {
-			String json = this.simpleQueryStringJson(queryStr);
+			String json = simpleQueryStringJson(queryStr);
 			log.info(json);
-			String firstQuery = "soul_mini/table/_search?search_type=scan&scroll=10m&size=10";
-			PostMethod method = new PostMethod(firstQuery);
-			StringRequestEntity requestEntity = new StringRequestEntity(json,
-					"application/json", "UTF-8");
-			method.setRequestEntity(requestEntity);
-			Map<String, Object> map = parseContent(execute(method));
+			String query1 = "soul_mini/table/_search?search_type=scan&scroll=4m&size=10";
+			Map<String, Object> map = post(query1, json);
 			String scrollId = (String) map.get("_scroll_id");
 			Map<String, Object> tmpMap = (Map<String, Object>) map.get("hits");
 			int totalSize = (Integer) tmpMap.get("total");
 			log.info("totalSize = " + totalSize);
-			String query = "_search/scroll?scroll=10m&size=10";
+			log.info("_scroll_id = " + scrollId);
 			int size = 0;
 			while (size < totalSize) {
-				map = post(query, scrollId);
+				String query = "_search/scroll?scroll=4m&scroll_id=" + scrollId;
+				map = post(query);
+				scrollId = (String) map.get("_scroll_id");
 				map = (Map<String, Object>) map.get("hits");
 				List<Map<String, Object>> tmpResult = (List<Map<String, Object>>) map
 						.get("hits");
 				size += tmpResult.size();
+				log.info("size = " + size + ", totalSize = " + totalSize
+						+ " , tmpResult.size()= " + tmpResult.size());
+				if (tmpResult.size() == 0)
+					break;
 				for (int i = 0; i < tmpResult.size(); i++) {
 					Map<String, Object> map1 = tmpResult.get(i);
+					double score = (Double) map1.get("_score");
 					Map<String, Object> map2 = (Map<String, Object>) map1
 							.get("_source");
-					log.info(map2.get("contenttitle"));
+					log.info(score + ", " + map2.get("contenttitle"));
 				}
+			};
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public void scrollSearchWithSort(String queryStr) {
+		try {
+			String json = simpleQueryStringJson(queryStr);
+			log.info(json);
+			String query1 = "soul_mini/table/_search?scroll=4m&size=7";
+			Map<String, Object> map = post(query1, json);
+			String scrollId = (String) map.get("_scroll_id");
+			Map<String, Object> tmpMap = (Map<String, Object>) map.get("hits");
+			List<Map<String, Object>> resut = (List<Map<String, Object>>) tmpMap
+					.get("hits");
+			int size = resut.size();
+			for (int i = 0; i < resut.size(); i++) {
+				Map<String, Object> map1 = resut.get(i);
+				double score = (Double) map1.get("_score");
+				Map<String, Object> map2 = (Map<String, Object>) map1
+						.get("_source");
+				log.info(score + ", " + map2.get("contenttitle"));
+			}
+			int totalSize = (Integer) tmpMap.get("total");
+			log.info("totalSize = " + totalSize);
+			log.info("_scroll_id = " + scrollId);
+			while (size < totalSize) {
+				String query = "_search/scroll?scroll=4m&scroll_id=" + scrollId;
+				map = post(query);
+				scrollId = (String) map.get("_scroll_id");
+				map = (Map<String, Object>) map.get("hits");
+				resut = (List<Map<String, Object>>) map.get("hits");
+				size += resut.size();
+				log.info("size = " + size + ", totalSize = " + totalSize
+						+ " , tmpResult.size()= " + resut.size());
+				if (resut.size() == 0)
+					break;
+				for (int i = 0; i < resut.size(); i++) {
+					Map<String, Object> map1 = resut.get(i);
+					double score = (Double) map1.get("_score");
+					Map<String, Object> map2 = (Map<String, Object>) map1
+							.get("_source");
+					log.info(score + ", " + map2.get("contenttitle"));
+				}
+				resut.clear();
 			};
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -277,52 +317,21 @@ public class SoulHttpClient implements Closeable {
 		}
 	}
 
-	// byte[] execute(HttpMethodBase method, boolean checkStatus) {
-	// try {
-	// int status = client.executeMethod(method);
-	// if (checkStatus && status >= HttpStatus.SC_MULTI_STATUS) {
-	// String body = "";
-	// try {
-	// InputStream rstream = method.getResponseBodyAsStream();
-	// BufferedReader br = new BufferedReader(
-	// new InputStreamReader(rstream));
-	// String line;
-	// while ((line = br.readLine()) != null) {
-	// body += line;
-	// }
-	// br.close();
-	// return body.getBytes();
-	// } catch (IOException ex) {
-	// body = "";
-	// }
-	// throw new IllegalStateException(String.format(
-	// "[%s] on [%s] failed; server[%s] returned [%s]", method
-	// .getName(), method.getURI(), client
-	// .getHostConfiguration().getHostURL(), body));
-	// }
-	// return method.getResponseBody();
-	// } catch (IOException io) {
-	// String target;
-	// try {
-	// target = method.getURI().toString();
-	// } catch (IOException ex) {
-	// target = method.getPath();
-	// }
-	// throw new IllegalStateException(String.format(
-	// "Cannot get response body for [%s][%s]", method.getName(),
-	// target));
-	// } finally {
-	// method.releaseConnection();
-	// }
-	// }
 	@SuppressWarnings("deprecation")
 	private Map<String, Object> post(String query, String json)
 			throws IOException {
 		PostMethod postMethod = new PostMethod(query);
-		StringRequestEntity requestEntity = new StringRequestEntity(json,
-				"application/json", "UTF-8");
-		postMethod.setRequestEntity(requestEntity);
+		if (json != null) {
+			StringRequestEntity requestEntity = new StringRequestEntity(json,
+					"application/json", "UTF-8");
+			postMethod.setRequestEntity(requestEntity);
+		}
 		return parseContent(execute(postMethod));
+	}
+
+	@SuppressWarnings("deprecation")
+	private Map<String, Object> post(String query) throws IOException {
+		return post(query, null);
 	}
 
 	@SuppressWarnings("unchecked")

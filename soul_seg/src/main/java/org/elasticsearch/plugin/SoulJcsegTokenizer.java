@@ -11,13 +11,13 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.elasticsearch.hadoop.util.StringUtils;
-import org.lionsoul.jcseg.core.ADictionary;
-import org.lionsoul.jcseg.core.DictionaryFactory;
-import org.lionsoul.jcseg.core.ISegment;
-import org.lionsoul.jcseg.core.IWord;
-import org.lionsoul.jcseg.core.JcsegException;
-import org.lionsoul.jcseg.core.JcsegTaskConfig;
-import org.lionsoul.jcseg.core.SegmentFactory;
+import org.splitword.lionsoul.jcseg.core.ADictionary;
+import org.splitword.lionsoul.jcseg.core.DictionaryFactory;
+import org.splitword.lionsoul.jcseg.core.ISegment;
+import org.splitword.lionsoul.jcseg.core.IWord;
+import org.splitword.lionsoul.jcseg.core.JcsegException;
+import org.splitword.lionsoul.jcseg.core.JcsegTaskConfig;
+import org.splitword.lionsoul.jcseg.core.SegmentFactory;
 
 public class SoulJcsegTokenizer extends Tokenizer {
 	private static Log log = LogFactory.getLog(SoulJcsegTokenizer.class);

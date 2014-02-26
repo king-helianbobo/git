@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.lionsoul.jcseg.pinyin.ChineseHelper;
+import org.splitword.lionsoul.jcseg.pinyin.ChineseHelper;
 import org.splitword.soul.crf.SplitWord;
 import org.splitword.soul.domain.NewWord;
 import org.splitword.soul.domain.Term;

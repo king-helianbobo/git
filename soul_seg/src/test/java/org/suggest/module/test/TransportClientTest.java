@@ -3,8 +3,10 @@ package org.suggest.module.test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.util.List;
+
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -14,11 +16,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.suggest.elasticsearch.action.restful.RefreshRequestBuilder;
+import org.suggest.elasticsearch.action.restful.StatisticRequestBuilder;
+import org.suggest.elasticsearch.action.restful.SuggestRequestBuilder;
 import org.suggest.elasticsearch.action.statistics.FstStats;
 import org.suggest.elasticsearch.action.suggest.SuggestResponse;
-import org.suggest.elasticsearch.client.action.SuggestRefreshRequestBuilder;
-import org.suggest.elasticsearch.client.action.SuggestRequestBuilder;
-import org.suggest.elasticsearch.client.action.SuggestStatisticsRequestBuilder;
 
 @RunWith(value = Parameterized.class)
 public class TransportClientTest extends AbstractSuggestTest {
@@ -85,14 +87,14 @@ public class TransportClientTest extends AbstractSuggestTest {
 
 	@Override
 	public void refreshAllSuggesters() throws Exception {
-		SuggestRefreshRequestBuilder builder = new SuggestRefreshRequestBuilder(
+		RefreshRequestBuilder builder = new RefreshRequestBuilder(
 				client);
 		builder.execute().actionGet();
 	}
 
 	@Override
 	public void refreshIndexSuggesters(String index) throws Exception {
-		SuggestRefreshRequestBuilder builder = new SuggestRefreshRequestBuilder(
+		RefreshRequestBuilder builder = new RefreshRequestBuilder(
 				client).setIndices(index);
 		builder.execute().actionGet();
 	}
@@ -100,14 +102,14 @@ public class TransportClientTest extends AbstractSuggestTest {
 	@Override
 	public void refreshFieldSuggesters(String index, String field)
 			throws Exception {
-		SuggestRefreshRequestBuilder builder = new SuggestRefreshRequestBuilder(
+		RefreshRequestBuilder builder = new RefreshRequestBuilder(
 				client).setIndices(index).setField(field);
 		builder.execute().actionGet();
 	}
 
 	@Override
 	public FstStats getStatistics() throws Exception {
-		SuggestStatisticsRequestBuilder builder = new SuggestStatisticsRequestBuilder(
+		StatisticRequestBuilder builder = new StatisticRequestBuilder(
 				client);
 		return builder.execute().actionGet().fstStats();
 	}

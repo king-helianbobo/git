@@ -27,8 +27,8 @@ import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.SimpleQueryStringBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.suggest.elasticsearch.action.restful.SuggestRequestBuilder;
 import org.suggest.elasticsearch.action.suggest.SuggestResponse;
-import org.suggest.elasticsearch.client.action.SuggestRequestBuilder;
 
 public class SoulTransportClient {
 	private final Log log = LogFactory.getLog(SoulTransportClient.class);

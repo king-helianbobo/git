@@ -158,13 +158,13 @@ public class SogouDataTest {
 		}
 		restClient.bulk(settings.getIndexType(), data.bytes(), data.size());
 	}
-	// @Test
+	@Test
 	public void testSimpleQueryStringOperation() {
 		// 使用soul_query分完词后，建立boolean查询，此时与顺序无关
 		// String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google",
 		// "雅虎北京",
 		// "奥斯卡 艺术"};
-		String queryStrs[] = {"Google雅虎"};
+		String queryStrs[] = {"Google中国"};
 		for (String queryStr : queryStrs) {
 			int size = 0;
 			long totalSize = 0;
@@ -183,8 +183,12 @@ public class SogouDataTest {
 				totalSize = searchResponse.getHits().getTotalHits();
 				size += searchResponse.getHits().getHits().length;
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
-					log.info(hit.getHighlightFields().get("contenttitle"));
-					log.info(hit.getHighlightFields().get("content"));
+					// log.info(hit.getHighlightFields().get("contenttitle"));
+					// log.info(hit.getHighlightFields().get("content"));
+
+					log.info(hit.getId() + ", " + hit.getScore() + ", "
+							+ hit.getSource().get("url") + ", "
+							+ hit.getSource().get("contenttitle"));
 				}
 			} while (size < totalSize);
 			log.info("******************* " + queryStr + "/" + totalSize
@@ -192,10 +196,12 @@ public class SogouDataTest {
 		}
 	}
 
-	// @Test
+	@Test
 	public void testSimpleScrollQueryThenFetch() throws Exception {
-		String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google", "雅虎北京",
-				"奥斯卡 艺术"};
+		// String queryStrs[] = {"Google雅虎", "Google雅虎责任编辑", "互联网Google",
+		// "雅虎北京",
+		// "奥斯卡 艺术"};
+		String queryStrs[] = {"Google中国"};
 		for (String queryStr : queryStrs) {
 			log.info("******************* " + queryStr + " *******************");
 			SimpleQueryStringBuilder strBuilder = simpleQueryString(queryStr)
@@ -207,9 +213,9 @@ public class SogouDataTest {
 					.setScroll(TimeValue.timeValueMinutes(4)).execute()
 					.actionGet();
 			for (SearchHit hit : searchResponse.getHits().getHits()) {
-				// log.info(hit.getId() + ", " + hit.getScore() + ", "
-				// + hit.getSource().get("url") + ", "
-				// + hit.getSource().get("contenttitle"));
+				log.info(hit.getId() + ", " + hit.getScore() + ", "
+						+ hit.getSource().get("url") + ", "
+						+ hit.getSource().get("contenttitle"));
 			}
 			int size = searchResponse.getHits().getHits().length;
 			long totalSize = searchResponse.getHits().getTotalHits();
@@ -219,9 +225,9 @@ public class SogouDataTest {
 						.setScroll(TimeValue.timeValueMinutes(4)).execute()
 						.actionGet();
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
-					// log.info(hit.getId() + ", " + hit.getScore() + ", "
-					// + hit.getSource().get("url") + ", "
-					// + hit.getSource().get("contenttitle"));
+					log.info(hit.getId() + ", " + hit.getScore() + ", "
+							+ hit.getSource().get("url") + ", "
+							+ hit.getSource().get("contenttitle"));
 				}
 				size += searchResponse.getHits().getHits().length;
 			};
@@ -262,7 +268,7 @@ public class SogouDataTest {
 		}
 	}
 
-	@Test
+	// @Test
 	public void testSuggestQuery() throws Exception {
 		// String queryStrs[] = {"互联网Google", "雅虎北京", "奥斯卡 艺术"};
 		String queryStrs[] = {"天呀"};

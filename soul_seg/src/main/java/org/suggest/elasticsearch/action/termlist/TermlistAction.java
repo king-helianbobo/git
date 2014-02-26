@@ -3,7 +3,7 @@ package org.suggest.elasticsearch.action.termlist;
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.internal.InternalGenericClient;
-import org.suggest.elasticsearch.client.action.TermlistRequestBuilder;
+import org.suggest.elasticsearch.action.restful.TermlistRequestBuilder;
 
 /**
  * The action class TermlistAction is a glue code that clamps together

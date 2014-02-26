@@ -2,17 +2,18 @@ package org.soul.splitWord.test;
 
 import java.io.IOException;
 import java.io.StringReader;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
 import org.junit.Test;
-import org.lionsoul.jcseg.core.ADictionary;
-import org.lionsoul.jcseg.core.DictionaryFactory;
-import org.lionsoul.jcseg.core.ISegment;
-import org.lionsoul.jcseg.core.IWord;
-import org.lionsoul.jcseg.core.JcsegException;
-import org.lionsoul.jcseg.core.JcsegTaskConfig;
-import org.lionsoul.jcseg.core.SegmentFactory;
+import org.splitword.lionsoul.jcseg.core.ADictionary;
+import org.splitword.lionsoul.jcseg.core.DictionaryFactory;
+import org.splitword.lionsoul.jcseg.core.ISegment;
+import org.splitword.lionsoul.jcseg.core.IWord;
+import org.splitword.lionsoul.jcseg.core.JcsegException;
+import org.splitword.lionsoul.jcseg.core.JcsegTaskConfig;
+import org.splitword.lionsoul.jcseg.core.SegmentFactory;
 
 public class JcsegTest {
 

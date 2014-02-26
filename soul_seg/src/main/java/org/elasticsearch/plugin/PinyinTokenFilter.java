@@ -11,8 +11,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.lionsoul.jcseg.JcSegment;
-import org.lionsoul.jcseg.pinyin.ChineseHelper;
+import org.splitword.lionsoul.jcseg.JcSegment;
+import org.splitword.lionsoul.jcseg.pinyin.ChineseHelper;
 import org.splitword.soul.utility.JcsegInstance;
 
 public class PinyinTokenFilter extends TokenFilter {

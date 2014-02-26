@@ -11,18 +11,18 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.analysis.AnalysisModule;
+import org.elasticsearch.module.AttachmentsIndexModule;
+import org.elasticsearch.module.ShardSuggestModule;
+import org.elasticsearch.module.SuggestClientModule;
+import org.elasticsearch.module.SuggestModule;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
+import org.suggest.elasticsearch.action.restful.RestRefreshAction;
+import org.suggest.elasticsearch.action.restful.RestStatisticAction;
+import org.suggest.elasticsearch.action.restful.RestSuggestAction;
+import org.suggest.elasticsearch.action.restful.RestTermlistAction;
 import org.suggest.elasticsearch.action.termlist.TermlistAction;
 import org.suggest.elasticsearch.action.termlist.TransportTermlistAction;
-import org.suggest.elasticsearch.module.AttachmentsIndexModule;
-import org.suggest.elasticsearch.module.ShardSuggestModule;
-import org.suggest.elasticsearch.module.SuggestClientModule;
-import org.suggest.elasticsearch.module.SuggestModule;
-import org.suggest.elasticsearch.rest.action.RestRefreshSuggestAction;
-import org.suggest.elasticsearch.rest.action.RestStatisticsAction;
-import org.suggest.elasticsearch.rest.action.RestSuggestAction;
-import org.suggest.elasticsearch.rest.action.RestTermlistAction;
 import org.suggest.elasticsearch.service.SuggestService;
 
 public class SoulAnalysisPlugin extends AbstractPlugin {
@@ -72,8 +72,8 @@ public class SoulAnalysisPlugin extends AbstractPlugin {
 
 	public void onModule(RestModule restModule) {
 		restModule.addRestAction(RestSuggestAction.class);
-		restModule.addRestAction(RestRefreshSuggestAction.class);
-		restModule.addRestAction(RestStatisticsAction.class);
+		restModule.addRestAction(RestRefreshAction.class);
+		restModule.addRestAction(RestStatisticAction.class);
 		restModule.addRestAction(RestTermlistAction.class);
 	}
 

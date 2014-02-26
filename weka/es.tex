@@ -358,8 +358,8 @@ TBLPROPERTIES('es.resource' = 'eshive/hive1/',
 );
 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
 \end{verbatim}
-\subsubsection{ElasticSearch Query}
-\paragraph{Scroll}
+\subsection{ElasticSearch Query}
+\subsubsection{Scroll Query}
 \par A search request can be scrolled by specifying the scroll parameter. The scroll parameter is a time value parameter (for example: scroll=5m), indicating for how long the nodes that participate in the search will maintain relevant resources in order to continue and support it. This is very similar in its idea to opening a cursor against a database.
 \par A scroll\_id is returned from the first search request (and from continuous) scroll requests. The scroll\_id should be used when scrolling (along with the scroll parameter, to stop the scroll from expiring). The scroll id can also be passed as part of the search request body. The scroll\_id changes for each scroll request and only the most recent one should be used.
 \begin{verbatim}
@@ -372,30 +372,27 @@ curl -XGET 'http://localhost:9200/twitter/tweet/_search?scroll=5m' -d '{
 }'
 curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM0NDg1ODpzRlBLc0FXNlNyNm5JWUc1'
 \end{verbatim}
-\par Scrolling is not intended for real time user requests, it is intended for cases like scrolling over large portions of data that exists within elasticsearch to reindex it for example. For more information on scrolling, see the scan search type.
-\par The scan search type allows to efficiently scroll a large result set. It’s used first by executing a search request with scrolling and a query:
+\par Scrolling is not intended for real time user requests, it is intended for cases like scrolling over large portions of data that exists within elasticsearch to reindex it for example. The scan search type allows to efficiently scroll a large result set. It’s used first by executing a search request with scrolling and a query:
 \begin{verbatim}
-curl -XGET 'localhost:9200/sogou_spellcheck/table/_search?search_type=scan&scroll=10m&size=50' -d '
-{
+curl -XGET 'localhost:9200/sogou_spellcheck/table/_search?search_type=scan&scroll=10m&size=50' -d '{
     "query" : {
         "match_all" : {}
     }
 }'
 \end{verbatim}
 \par The scroll parameter control the keep alive time of the scrolling request and initiates the scrolling process. The timeout applies per round trip (i.e. between the previous scan scroll request, to the next).
-\par The response will include no hits, with two important results, the total\_hits will include the total hits that match the query, and the scroll\_id that allows to start the scroll process. From this stage, the \_search/scroll endpoint should be used to scroll the hits, feeding the next scroll request with the previous search result scroll\_id. 
-\par 然后，利用上一步获得的scroll\_id，执行以后的scroll query，注意：\_search/scroll为一个endPoint:
+\par The response will include no hits, with two important results, the \textbf{total\_hits} will include the total hits that match the query, and the \textbf{scroll\_id} that allows to start the scroll process. 在后续阶段，必须使用\textbf{\_search/scroll}作为endPoint，然后使用第一步获得的\textbf{scroll\_id}作为查询参数。
 \begin{verbatim}
-curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'c2NhbjsxOjBLMzdpWEtqU2IyZHlmVURPeFJOZnc7MzowSzM3aVhLalNiMmR5ZlVET3hSTmZ3OzU6MEszN2lYS2pTYjJkeWZVRE94Uk5mdzsyOjBLMzdpWEtqU2IyZHlmVURPeFJOZnc7NDowSzM3aVhLalNiMmR5ZlVET3hSTmZ3Ow=='
+curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'cNh***TmZ=='
 \end{verbatim}
-\par Scroll requests will include a number of hits equal to the size multiplied by the number of primary shards.The "breaking" condition out of a scroll is when no hits has been returned. The total\_hits will be maintained between scroll requests.但是， scan search type does not support sorting (either on score or a field) or faceting.
-\paragraph{Search Type}
+\par 上例中，注意localhost:9200/\_search/scroll与localhost:9200/sogou\_spellcheck/table的区别。Scroll requests will include a number of hits equal to the size multiplied by the number of primary shards.The "breaking" condition out of a scroll is when no hits has been returned. The total\_hits will be maintained between scroll requests。但是， scan search type does not support sorting (either on score or a field) or faceting。
+\subsubsection{Search Type}
 \par There are different execution paths that can be done when executing a distributed search. The distributed search operation needs to be scattered to all the relevant shards and then all the results are gathered back. When doing scatter/gather type execution, there are several ways to do that, specifically with search engines.
 \par One of the questions when executing a distributed search is how much results to retrieve from each shard. For example, if we have 10 shards, the 1st shard might hold the most relevant results from 0 till 10, with other shards results ranking below it. For this reason, when executing a request, we will need to get results from 0 till 10 from all shards, sort them, and then return the results if we want to insure correct results.
 \par Another question, which relates to search engine, is the fact that each shard stands on its own. When a query is executed on a specific shard, it does not take into account term frequencies and other search engine information from other shards. If we want to support accurate ranking, we would need to first execute the query against all shards and gather the relevant term frequencies, and then, based on it, execute the query.
-\par Also, because of the need to sort the results, getting back a large document set, or even scrolling it, while maintaing the correct sorting behavior can be a very expensive operation. For large result set scrolling without sorting, the scan search type (explained below) is also available.
-\par Elasticsearch is very flexible and allows to control the type of search to execute on a per search request basis. The type can be configured by setting the search\_type parameter in the query string. 
-\paragraph{Prefix Query,N-Grams}
+\par Also, because of the need to sort the results, getting back a large document set, or even scrolling it, while maintaing the correct sorting behavior can be a very expensive operation. \textbf{For large result set scrolling without sorting, the scan search type is available.}
+\par Elasticsearch is very flexible and allows to control the type of search to execute on a per search request basis. The type can be configured by setting the search\_type parameter in the query string（如上例中的Scroll Query）。
+\subsubsection{Prefix Query,N-Grams}
 \par 假如索引中存在词组：[quick] [brown] [fox] [jump] [over] [lazy] [dog]。搜索“qu”时，Prefix Query查询所有前缀为“qu”的Term，因此如果索引中存在“quack”，“quote”和“quarter”等Term，那么查询将匹配到这些Term，查询结果为\textbf{quick OR quack OR quote OR quarter}。如果索引中存在很多类似Term时，查询效率很差。Prefix Query也不能匹配中间字符，如“ball”不能匹配“baseball”，虽然可以采用通配符（Wildcard query）进行功能修正，但伸缩能力十分有限。
 \par 如果输入英文时想匹配到目标串[quick]的任意前缀，应该对[quick]进行转换，其Term序列为：[q]/[qu]/[qui]/[quic]/[quick]，这种Analyzer称为Edge NGram。还有一种Analyzer称为N-Grams（字符串P的N-Gram是P中长度为N的所有子串），以“brown”这个单词为例，设置(minGram=1和maxGram=2)，N-Grams输出[b]/[r]/[o]/[w]/[n]/[br]/[ro]/[ow]/[wn]，而Edge NGram输出[b]/[br]（将maxGram设置为5，Edge NGram能输出[b]/[br]/[bro]/[brow]/[brown]）。针对document的不同域，应该设置不同的Analyzer，在英文网页中，一般只对标题和关键词建立NGrams索引。下面定义了名为autocomplete的\textbf{Analyzer}，然后通过\textbf{multi\_field}关键字添加了额外的autocomplete分析器。搜索时可使用name来访问name域的默认版本，或者使用name.autocomplete访问另外一个版本。
 \begin{verbatim}
@@ -431,7 +428,7 @@ curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'c2NhbjsxOjBLMzdpWEtqU2
   }
 }
 \end{verbatim}
-\paragraph{ElasticSearch打分机制}
+\subsubsection{ElasticSearch打分机制}
 \par The default scoring is the DefaultSimilarity algorithm in core Lucene, largely documented here. You can customize scoring by configuring your own Similarity, or using something like a custom\_score query.
 \par The odd score variation in the first five results shown seems small enough that it doesn't concern me much, as far as the validity of the query results and their ordering, but if you want to understand the cause of it, the explain api can show you exactly what is going on there.
 \subsection{ElasticSearch源码分析}

@@ -7,11 +7,11 @@ import static org.hamcrest.Matchers.is;
 import org.elasticsearch.common.Strings;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.suggest.elasticsearch.action.restful.RefreshRequestBuilder;
+import org.suggest.elasticsearch.action.restful.StatisticRequestBuilder;
+import org.suggest.elasticsearch.action.restful.SuggestRequestBuilder;
 import org.suggest.elasticsearch.action.statistics.FstStats;
 import org.suggest.elasticsearch.action.suggest.SuggestResponse;
-import org.suggest.elasticsearch.client.action.SuggestRefreshRequestBuilder;
-import org.suggest.elasticsearch.client.action.SuggestRequestBuilder;
-import org.suggest.elasticsearch.client.action.SuggestStatisticsRequestBuilder;
 
 import java.util.List;
 
@@ -57,25 +57,25 @@ public class SuggestBuildersTest extends AbstractSuggestTest {
 
     @Override
     public void refreshAllSuggesters() throws Exception {
-        SuggestRefreshRequestBuilder builder = new SuggestRefreshRequestBuilder(node.client());
+        RefreshRequestBuilder builder = new RefreshRequestBuilder(node.client());
         builder.execute().actionGet();
     }
 
     @Override
     public void refreshIndexSuggesters(String index) throws Exception {
-        SuggestRefreshRequestBuilder builder = new SuggestRefreshRequestBuilder(node.client()).setIndices(index);
+        RefreshRequestBuilder builder = new RefreshRequestBuilder(node.client()).setIndices(index);
         builder.execute().actionGet();
     }
 
     @Override
     public void refreshFieldSuggesters(String index, String field) throws Exception {
-        SuggestRefreshRequestBuilder builder = new SuggestRefreshRequestBuilder(node.client()).setIndices(index).setField(field);
+        RefreshRequestBuilder builder = new RefreshRequestBuilder(node.client()).setIndices(index).setField(field);
         builder.execute().actionGet();
     }
 
     @Override
     public FstStats getStatistics() throws Exception {
-        SuggestStatisticsRequestBuilder builder = new SuggestStatisticsRequestBuilder(node.client());
+        StatisticRequestBuilder builder = new StatisticRequestBuilder(node.client());
         return builder.execute().actionGet().fstStats();
     }
 }

@@ -28,7 +28,7 @@ import org.elasticsearch.index.mapper.DocumentMapperParser;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
 import org.elasticsearch.index.mapper.internal.TypeFieldMapper;
 import org.index.mapper.attachment.AttachmentMapper;
-import org.lionsoul.jcseg.ASegment;
+import org.splitword.lionsoul.jcseg.ASegment;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 

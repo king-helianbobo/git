@@ -2,24 +2,26 @@ package org.suggest.elasticsearch.action.statistics;
 
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
-import org.suggest.elasticsearch.client.action.SuggestStatisticsRequestBuilder;
+import org.suggest.elasticsearch.action.restful.StatisticRequestBuilder;
 
-public class SuggestStatisticsAction extends Action<SuggestStatisticsRequest, SuggestStatisticsResponse, SuggestStatisticsRequestBuilder> {
+public class SuggestStatisticsAction
+		extends
+			Action<SuggestStatisticsRequest, SuggestStatisticsResponse, StatisticRequestBuilder> {
 
-    public static final SuggestStatisticsAction INSTANCE = new SuggestStatisticsAction();
-    public static final String NAME = "suggestStatistics";
+	public static final SuggestStatisticsAction INSTANCE = new SuggestStatisticsAction();
+	public static final String NAME = "suggestStatisticsAction";
 
-    private SuggestStatisticsAction() {
-        super(NAME);
-    }
+	private SuggestStatisticsAction() {
+		super(NAME);
+	}
 
-    @Override
-    public SuggestStatisticsRequestBuilder newRequestBuilder(Client client) {
-        return new SuggestStatisticsRequestBuilder(client);
-    }
+	@Override
+	public StatisticRequestBuilder newRequestBuilder(Client client) {
+		return new StatisticRequestBuilder(client);
+	}
 
-    @Override
-    public SuggestStatisticsResponse newResponse() {
-        return new SuggestStatisticsResponse();
-    }
+	@Override
+	public SuggestStatisticsResponse newResponse() {
+		return new SuggestStatisticsResponse();
+	}
 }
