@@ -1,6 +1,8 @@
 package org.soul.elasticsearch.test;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,12 +16,19 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -28,9 +37,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.elasticsearch.plugin.*;
 import org.splitword.soul.analysis.BasicAnalysis;
 import org.testng.annotations.AfterClass;
@@ -38,7 +53,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 public class SoulTitleCacheTest {
-	private static Log log = LogFactory.getLog(SoulTitleCacheTest.class);
+
 	String[] texts = {
 			"厦门大学的大厦是长春人建立的",
 			"秋后的蚂蚱长不了",
@@ -52,23 +67,22 @@ public class SoulTitleCacheTest {
 			"转任汝南太守，开始参与军事，曾参与赤壁之战。", "后关羽围攻樊城，满宠协助曹仁守城，劝阻了弃城而逃的计划，成功坚持到援军到来。",
 			"曹丕在位期间，满宠驻扎在新野，负责荆州侧的对吴作战。", "曹睿在位期间，满宠转任到扬州，接替曹休负责东线对吴作战，屡有功劳",
 			"后因年迈调回中央担任太尉，数年后病逝。"};
-
+	private static Log log = LogFactory.getLog(SoulTitleCacheTest.class);
 	private static final String pinyinField = "pinyinField";
 	private static final String wordField = "wordField";
-	Directory directory = null;
+	private static final String idField = "ID";
+	private static final String indexPath = "/mnt/f/tmp/Lucene-2";
+	Directory ramDirectory = null;
 	IndexReader indexReader = null;
 	IndexSearcher indexSearcher = null;
 
-	@BeforeClass
-	public void beforeClass() {
+	public void createIndex(Directory directory) {
 		Map<String, Analyzer> analyzerMap = new HashMap<String, Analyzer>();
 		analyzerMap.put(pinyinField, new SoulPinyinAnalyzer());
 		analyzerMap.put(wordField, new SoulJcsegAnalyzer());
 		PerFieldAnalyzerWrapper wrapper = new PerFieldAnalyzerWrapper(
 				new StandardAnalyzer(EsStaticValue.LuceneVersion), analyzerMap);
-
 		IndexWriter indexWriter = null;
-		directory = new RAMDirectory();
 		IndexWriterConfig iwConfig = new IndexWriterConfig(
 				EsStaticValue.LuceneVersion, wrapper);
 		iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
@@ -76,21 +90,130 @@ public class SoulTitleCacheTest {
 			indexWriter = new IndexWriter(directory, iwConfig);
 			for (int i = 0; i < texts.length; i++) {
 				Document doc = new Document();
-				doc.add(new StringField("ID", String.valueOf(i + 1),
+				doc.add(new StringField(idField, String.valueOf(i + 1),
 						Field.Store.YES));
 				doc.add(new TextField(pinyinField, texts[i], Field.Store.YES));
 				// doc.add(new TextField(wordField, texts[i], Field.Store.YES));
 				indexWriter.addDocument(doc);
 			}
 			indexWriter.close();
-			indexReader = DirectoryReader.open(directory);
-			indexSearcher = new IndexSearcher(indexReader);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
+	// @Test
+	public void testMethod3() throws IOException {
+		Directory directory = FSDirectory.open(new File(indexPath));
+		createIndex(directory);
+	}
+
+	@BeforeClass
+	public void beforeClass() {
+		// ramDirectory = new RAMDirectory();
+		// createIndex(ramDirectory);
+		// try {
+		// indexReader = DirectoryReader.open(ramDirectory);
+		// indexSearcher = new IndexSearcher(indexReader);
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+	}
 	@Test
+	public void testMethod2() {
+		try {
+			Directory directory = FSDirectory.open(new File(indexPath));
+			IndexReader reader = DirectoryReader.open(directory);
+			HighFrequencyDictionary dict = new HighFrequencyDictionary(reader,
+					idField, 0);
+			IndexSearcher searcher = new IndexSearcher(
+					DirectoryReader.open(directory));
+			fillThisDictionary(dict, searcher);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	// @Test
+	public void testMethod4() {
+		try {
+			Directory directory = FSDirectory.open(new File(indexPath));
+			IndexReader reader = DirectoryReader.open(directory);
+			Bits liveDocs = MultiFields.getLiveDocs(reader);
+			for (int i = 0; i < reader.maxDoc(); i++) {
+				if (liveDocs != null && !liveDocs.get(i))
+					continue;
+				Document doc = reader.document(i);
+				log.info(doc.get(idField) + " Document content: "
+						+ doc.get(pinyinField));
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+	private void fillThisDictionary(Dictionary dictionary,
+			IndexSearcher searcher) {
+		try {
+			final Directory dir = new RAMDirectory();
+			Map<String, Analyzer> analyzerMap = new HashMap<String, Analyzer>();
+			analyzerMap.put(pinyinField, new SoulPinyinAnalyzer());
+			PerFieldAnalyzerWrapper wrapper = new PerFieldAnalyzerWrapper(
+					new StandardAnalyzer(EsStaticValue.LuceneVersion),
+					analyzerMap);
+			IndexWriterConfig iwConfig = new IndexWriterConfig(
+					EsStaticValue.LuceneVersion, wrapper);
+			iwConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
+			final IndexWriter writer = new IndexWriter(dir, iwConfig);
+			// IndexReader reader = DirectoryReader.open(dir);
+			final List<TermsEnum> termsEnums = new ArrayList<TermsEnum>();
+			// if (reader.maxDoc() > 0) {
+			// for (final AtomicReaderContext ctx : reader.leaves()) {
+			// Terms terms = ctx.reader().terms(pinyinField);
+			// if (terms != null)
+			// termsEnums.add(terms.iterator(null));
+			// }
+			// }
+			boolean isEmpty = termsEnums.isEmpty();
+			BytesRefIterator iter = dictionary.getWordsIterator();
+			BytesRef currentTerm;
+			terms : while ((currentTerm = iter.next()) != null) {
+				String word = currentTerm.utf8ToString();
+				log.info("This word is : " + word);
+				if ((word == null) || (word.equals("null"))
+						|| (word.equals("")))
+					continue;
+				if (!isEmpty) {
+					for (TermsEnum te : termsEnums) {
+						if (te.seekExact(currentTerm)) {
+							continue terms;
+						}
+					}
+				}
+				Term term = new Term(idField, word);
+				Query termQuery = new TermQuery(term);
+				TopDocs topDocs = searcher.search(termQuery, 100);
+				log.info("Hit: " + topDocs.totalHits);
+				ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+				if (topDocs == null || topDocs.totalHits <= 0)
+					continue;
+				for (int i = 0; i < topDocs.totalHits; i++) {
+					Document targetDoc = searcher.doc(scoreDocs[i].doc);
+					StringBuilder builder = new StringBuilder();
+					log.info("Score: " + scoreDocs[i].score
+							+ " Document content: "
+							+ targetDoc.get(pinyinField) + " ID: "
+							+ targetDoc.get(idField));
+				}
+				// Document doc = new Document();
+				// doc.add(new TextField(pinyinField, word, Field.Store.YES));
+				// writer.addDocument(doc);
+			}
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	// @Test
 	public void testMethod1() {
 		try {
 			String[] keywords = {"厦门大学", "满宠南阳下任", "guany"};
@@ -143,9 +266,9 @@ public class SoulTitleCacheTest {
 				e.printStackTrace();
 			}
 		}
-		if (directory != null) {
+		if (ramDirectory != null) {
 			try {
-				directory.close();
+				ramDirectory.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

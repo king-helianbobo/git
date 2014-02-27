@@ -98,27 +98,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 					}
 				});
 
-		// spellCheckerCache = CacheBuilder.newBuilder().build(
-		// new CacheLoader<String, SoulSpellChecker>() {
-		// @Override
-		// public SoulSpellChecker load(String field) throws Exception {
-		// // String dictionaryPath = "/mnt/f/tmp/lucene-dict.txt";
-		// // log.info("filed = " + field + "/dicPath= "
-		// // + dictionaryPath);
-		// SoulSpellChecker spellChecker = new SoulSpellChecker(
-		// ramDirectoryCache.get(field));
-		//
-		// IndexWriterConfig config = new IndexWriterConfig(
-		// EsStaticValue.LuceneVersion, null);
-		// config.setOpenMode(OpenMode.CREATE_OR_APPEND);
-		// spellChecker.indexDictionary(
-		// dictCache.getUnchecked(field), config, false);
-		// // spellChecker.indexDictionary(new PlainTextDictionary(
-		// // new File(dictionaryPath)), config, false);
-		// return spellChecker;
-		// }
-		// });
-
 		titleSuggestCache = CacheBuilder.newBuilder().build(
 				new CacheLoader<String, SoulTitleCache>() {
 					@Override
@@ -150,22 +129,6 @@ public class ShardSuggestService extends AbstractIndexShardComponent {
 						return spellChecker;
 					}
 				});
-
-		// spellCheckerCache = CacheBuilder.newBuilder().build(
-		// new CacheLoader<String, SpellChecker>() {
-		// @Override
-		// public SpellChecker load(String field) throws Exception {
-		// SpellChecker spellChecker = new SpellChecker(
-		// ramDirectoryCache.get(field));
-		// IndexWriterConfig indexWriterConfig = new IndexWriterConfig(
-		// Version.LUCENE_46, new WhitespaceAnalyzer(
-		// Version.LUCENE_46));
-		// spellChecker.indexDictionary(
-		// dictCache.getUnchecked(field),
-		// indexWriterConfig, false);
-		// return spellChecker;
-		// }
-		// });
 
 		lookupCache = CacheBuilder.newBuilder().build(
 				new CacheLoader<String, FSTCompletionLookup>() {
