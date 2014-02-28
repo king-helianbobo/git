@@ -2,6 +2,7 @@
 \par Elasticsearch是一个开源分布式搜索引擎，可以看作一个分布式Key-Value数据库，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
 \par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type的值将赋给每个Document的\textbf{\_type}域。
 \par 当index为cars，type为car时，ElasticSearch将自动为每个查询添加一个必须满足的条件（只有\textbf{\_type}域的值为car的Document才能匹配到查询），更新索引也是如此。This does mean that across types, having the same field name with different mappings types (for example, \textbf{'car'} has field \textbf{'Seat'} of type numeric, and 'bus' also has field \textbf{'Seat'} but of type string) should not be done (\textbf{car}和\textbf{bus}分别作为\textbf{type}的值). The type prefix when you define the field name should allow to only search on a field against that specific type.
+\par Each document indexed is associated with an id and a type, the internal \_uid field is the unique identifier of a document within an index and is composed of the type and the id (meaning that different types can have the same id and still maintain uniqueness).ElasticSearch Index每个分片（实际上是一独立的Lucene Index）中，内部域只有两个，分别是\_uid和\_source。The \_uid field is automatically used when \_type is not indexed to perform type based filtering, and does not require the \_id to be indexed（注意Java类：src/main/java/org/elasticsearch/index/mapper/Uid.java）.
 \subsection{What's a mapping?}
 \par A mapping not only tells ES what is in a field…it tells ES what terms are indexed and searchable.
 \par A mapping is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
@@ -489,6 +490,19 @@ transportClient = new TransportClient()
 						"localhost", 9300));
 \end{verbatim}
 使用transportClient.admin().cluster()可对集群（元数据）进行操作，使用transportClient.admin().indices()可对索引（元数据）进行管理，普通操作可通过类似transportClient.prepareSearch(indexName)等方式操作。还有一种直接使用http协议（即Restful）与ElasticSearch通信，这种方式借力于HttpClient（来自于org.apache.commons.httpclient.HttpClient包）。
+\subsubsection{ElasticSearch缓存}
+\par ElasticSearch缓存机制使用的库为Guava（Google Core Libraries for Java），LoadingCache<K,V>的refresh函数：
+\begin{enumerate}[(1)]
+\item Loads a new value for key, possibly asynchronously. While the new value is loading（当装载新的Value时，先前的Value继续被使用，直到新的Value装载完毕）， the previous value (if any) will continue to be returned by get(key) unless it is evicted. If the new value is loaded successfully it will replace the previous value in the cache; if an exception is thrown while refreshing the previous value will remain, and the exception will be logged (using Logger) and swallowed.
+\item Caches loaded by a CacheLoader will call CacheLoader.reload(K, V) if the cache currently contains a value for key, and CacheLoader.load(K) otherwise. Loading is asynchronous only if CacheLoader.reload(K, V) was overridden with an asynchronous implementation. 
+\item Returns without doing anything if another thread is currently loading the value for key. If the cache loader associated with this cache performs refresh asynchronously then this method may return before refresh completes.
+\end{enumerate}
+\par LoadingCache<K,V>的getUnchecked函数：
+\begin{enumerate}[(1)]
+\item Returns the value associated with key in this cache, first loading that value if necessary. No observable state associated with this cache is modified until loading completes. Unlike get(K), this method does not throw a checked exception, and thus should only be used in situations where checked exceptions are not thrown by the cache loader.
+\item If another call to get(K) or getUnchecked(K) is currently loading the value for key, simply waits for that thread to finish and returns its loaded value. Note that multiple threads can concurrently load values for distinct keys.
+\item Caches loaded by a CacheLoader will call CacheLoader.load(K) to load new values into the cache. Newly loaded values are added to the cache using Cache.asMap().putIfAbsent after loading has completed; if another value was associated with key while the new value was loading then a removal notification will be sent for the new value.
+\end{enumerate}
 \subsection{Nutch与ElasticSearch}
 \begin{enumerate}[(1)]
 \item 下载apache-nutch-1.7-src.tar.gz，并解压;
