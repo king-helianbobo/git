@@ -432,6 +432,31 @@ curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'cNh***TmZ=='
   }
 }
 \end{verbatim}
+\subsubsection{布尔查询}
+A query that matches documents matching boolean combinations of other queries. The bool query maps to Lucene BooleanQuery. It is built using one or more boolean clauses, each clause with a typed occurrence. 例如：
+\begin{verbatim}
+{
+    "from": 0, 
+    "size": 30,
+    "query": {
+        "bool": {
+            "must": [
+                {
+                   "simple_query_string": {
+                       "analyzer": "soul_query", 
+                       "default_operator": "and", 
+                       "fields": [ "content^1.0", "title^2.0" ], 
+                       "query": "中国"
+                   }
+                }, 
+                { 
+                   "term": { "tag": "行政服务" }
+                }
+            ]
+        }
+    } 
+}
+\end{verbatim}
 \subsection{ElasticSearch源码分析}
 \subsubsection{ES模块}
 \par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
