@@ -100,7 +100,7 @@ mapreduce/ESMapReduce/lib/
 \end{enumerate}
 \par 打算执行maven工程下某个类时，例如test目录下的某个类，执行命令如下：\textbf{mvn exec:java -X -Dexec.mainClass="org.ansj.liubo.test.test"  -Dexec.classpathScope=test}，其中的classpathScope=test告诉maven打算执行test类，而非工程的main类。执行test部分的某些类之前，必须执行\textbf{mvn test-compile}，以编译test部分的代码，如果没有,执行过程会报错。当准备向执行类添加参数时，使用如下命令。
 \begin{verbatim}
-mvn exec:java -Dexec.mainClass="org.ansj.liubo.test.test" 
+mvn exec:java -Dexec.mainClass="org.elasticsearch.application.WebDemo"
   -Dexec.args="/mnt/f/tmp/content.txt /mnt/f/tmp/result3.txt"  
   -Dexec.classpathScope=test
 \end{verbatim}
