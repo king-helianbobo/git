@@ -2,13 +2,11 @@
 \par Elasticsearch是一个开源分布式搜索引擎，可以看作一个分布式Key-Value数据库，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
 \par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type的值将赋给每个Document的\textbf{\_type}域。
 \par 当index为cars，type为car时，ElasticSearch将自动为每个查询添加一个必须满足的条件（只有\textbf{\_type}域的值为car的Document才能匹配到查询），更新索引也是如此。This does mean that across types, having the same field name with different mappings types (for example, \textbf{'car'} has field \textbf{'Seat'} of type numeric, and 'bus' also has field \textbf{'Seat'} but of type string) should not be done (\textbf{car}和\textbf{bus}分别作为\textbf{type}的值). The type prefix when you define the field name should allow to only search on a field against that specific type.
-\par Each document indexed is associated with an id and a type, the internal \_uid field is the unique identifier of a document within an index and is composed of the type and the id (meaning that different types can have the same id and still maintain uniqueness).ElasticSearch Index每个分片（实际上是一独立的Lucene Index）中，内部域只有两个，分别是\_uid和\_source。The \_uid field is automatically used when \_type is not indexed to perform type based filtering, and does not require the \_id to be indexed（注意Java类：src/main/java/org/elasticsearch/index/mapper/Uid.java）.
+\par Each document indexed is associated with an id and a type, the internal \_uid field is the unique identifier of a document within an index and is composed of the type and the id (meaning that different types can have the same id and still maintain uniqueness).ElasticSearch Index每个分片（实际上是一独立的Lucene Index）中，内部域只有两个（通过Document.getFields()函数获得，而MultiFields.getIndexedFields函数也可以获得多个域，现在还不清楚这两个函数什么区别），分别是\_uid和\_source。The \_uid field is automatically used when \_type is not indexed to perform type based filtering, and does not require the \_id to be indexed（注意Java类：src/main/java/org/elasticsearch/index/mapper/Uid.java）.
 \subsection{What's a mapping?}
-\par A mapping not only tells ES what is in a field…it tells ES what terms are indexed and searchable.
-\par A mapping is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
-\par Filters are easy to understand: a filter is a function that transforms data. Given a string, it returns another string (after some modifications). A function that converts strings to lowercase is a good example of a filter.
-\par An analyzer is simply a group of filters that are executed in-order. So an analyzer may first apply a lowercase filter, then apply a stop-word removal filter(中文分词作为其中一个filter). Once the analyzer is run, the remaining terms are indexed and stored in ES.因此: a mapping is simply a series of instructions on how to transform your input data into searchable, indexed terms.
-\par 使用\textbf{curl -XPUT http://localhost:9200/test/item/1 -d '\{"name":"zach", "description": "A Pretty cool guy."\}'}时，ES生成如下的mapping：
+\par A mapping tells ES what terms are indexed and searchable, is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
+\par Filters are easy to understand: a filter is a function that transforms data. Given a string, it returns another string (after some modifications). An analyzer is simply a group of filters that are executed in-order. So an analyzer may first apply a lowercase filter, then apply a stop-word removal filter（中文分词也可作为其中一个filter）。 Once the analyzer is run, the remaining terms are indexed and stored in ES。因此， a mapping is simply a series of instructions on how to transform your input data into searchable, indexed terms.
+\par 使用\textbf{curl -XPUT localhost:9200/test/item/1 -d '\{"name":"zach", "description": "A Pretty cool guy."\}'}时，ES生成如下的mapping：
 \begin{verbatim}
 mappings: {
    item: {
@@ -19,16 +17,11 @@ mappings: {
    }
 }
 \end{verbatim}
-\par ES猜测到"description"这列的类型为"string",When ES implicitly creates a "string" mapping, it applies the default global analyzer.除非显式地更改analyzer设置,否则ES将使用默认的Standard Analyzer.Standard Analyzer will apply the standard token filter, lowercase filter and stop token filter to your field. 这种情况下,句子末尾的.号和字符'A'将被丢弃.Importantly, even though ES continues to store the original document in it’s original form, the only parts that are searchable are the parts that have been run through an analyzer.So, mappings are not data-types , think of them as instructions on how you will eventually search your data. If you care about stop-words like 'a', you need to change the analyzer so that they aren’t removed.
-\subsection{Constructing more complicated mapping}
-\par Setting up proper analyzers in ES is all about thinking about the search query. You have to provide instructions to ES about the appropriate transformations so you can search intelligently.
+\par ES猜测到"description"列的类型为"string"，When ES implicitly creates a "string" mapping, it applies the default Standard Analyzer。除非显式地更改analyzer设置,否则ES将使用默认的Standard Analyzer。Standard Analyzer will apply the standard token filter, lowercase filter and stop token filter . 这种情况下，description列中的“.”号和字符“A”将被丢弃.Importantly, even though ES continues to store the original document in it’s original form, the only parts that are searchable are the parts that have been run through an analyzer.So, mappings are not data-types , think of them as instructions on how you will eventually search your data. If you care about stop-words like 'a', you need to change the analyzer so that they aren’t removed.
 \par The first thing that happens to an input query is tokenization , breaking an input query into smaller chunks called tokens. There are several tokenizers available, which you should explore on your own when you get a chance. The Standard tokenizer is being used in this example, which is a pretty good tokenizer for most English-language search problems. You can query ES to see how it tokenizes a sample sentence:
 \begin{verbatim}
 curl -X GET "http://localhost:9200/test/_analyze?tokenizer=standard&pretty=true" 
 -d 'The quick brown fox is jumping over the lazy dog.'
-\end{verbatim}
-\par Ok, so our input query has been turned into tokens. Referring back to the mapping, the next step is to apply filters to these tokens. In order, these filters are applied to each token: Standard Token Filter, Lowercase Filter, ASCII Folding Filter.
-\begin{verbatim}
 curl -X GET "http://localhost:9200/test/_analyze?filter=standard&pretty=true" 
 -d 'The quick brown fox is jumping over the lazy dog.'
 \end{verbatim}
@@ -104,7 +97,13 @@ curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
    }
 }'
 \end{verbatim}
-\subsection{ElasticSearch集群设置}
+\par 如果想查看ElasticSearch中有哪些index或index状态，可使用如下命令：
+\begin{verbatim}
+curl -XGET '192.168.50.75:9200/_status?pretty'
+curl -XGET '192.168.50.75:9200/official_mini/_status?pretty'
+curl -XGET 'http://localhost:9200/sogou_spellcheck/_mapping?pretty'
+\end{verbatim}
+\subsection{ES集群设置}
 This will print the number of open files the process can open on startup. Alternatively, you can retrieve the max\_file\_descriptors for each node using the Nodes Info API, with:\\
 \textbf{curl -XGET 'namenode:9200/\_nodes/process?pretty=true'}，下面是删除ES上名为jdbc的index的Restfule命令：\\
 \textbf{curl -XDELETE 'http://namenode:9200/jdbc/'}
@@ -436,26 +435,48 @@ curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'cNh***TmZ=='
 A query that matches documents matching boolean combinations of other queries. The bool query maps to Lucene BooleanQuery. It is built using one or more boolean clauses, each clause with a typed occurrence. 例如：
 \begin{verbatim}
 {
-    "from": 0, 
-    "size": 30,
     "query": {
         "bool": {
             "must": [
                 {
-                   "simple_query_string": {
-                       "analyzer": "soul_query", 
-                       "default_operator": "and", 
-                       "fields": [ "content^1.0", "title^2.0" ], 
-                       "query": "中国"
+                  "simple_query_string": {
+                      "analyzer": "soul_query", 
+                      "default_operator": "and", 
+                      "fields": [ "content^1.0", "title^2.0" ], 
+                      "query": "中国"
                    }
                 }, 
-                { 
-                   "term": { "tag": "行政服务" }
-                }
+                { "term": { "tag": "行政服务" } }
             ]
         }
     } 
 }
+\end{verbatim}
+\par 布尔查询的主要作用是可将多个查询组合起来，注意下面查询中的minimum\_should\_match，该变量必须设置should语句，否则不起作用，如果该变量没有提及，则默认为0。
+\begin{verbatim}
+curl -XGET 192.168.50.75:9200/official_mini/table/_search?pretty -d '{
+    "query": {
+        "bool": {
+            "must": [ {  "term": { "tag": "锡城资讯" } } ], 
+            "should": [
+                {
+                    "simple_query_string": {
+                        "analyzer": "soul_query", 
+                        "default_operator": "and", 
+                        "fields": [ "content^1.0", "contenttitle^2.0" ], 
+                        "query": "太湖春涛"
+                    }
+                }, 
+                {
+                    "term": {
+                        "contenttitle.untouched^4.0": "太湖春涛"
+                    }
+                }
+            ], 
+            "minimum_should_match" : 1
+        }
+    } 
+}'
 \end{verbatim}
 \subsection{ElasticSearch源码分析}
 \subsubsection{ES模块}
