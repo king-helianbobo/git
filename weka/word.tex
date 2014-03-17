@@ -148,7 +148,7 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \end{enumerate}
 \subsection{实施方案}
 \par 计划解决的问题
-\begin{enumerate}
+\begin{enumerate}[(1)]
 \item 繁简转换，（已实现，使用繁简转换表）
 \item 拼音转汉字，（现在没必要做）
 \item 同音词拼写错误，先把汉字转成拼音，然后进行可能的比对，比如输入中华人名共和国-->中华人民共和国。
@@ -177,5 +177,21 @@ shoujichongzhi&“手机冲值”, “手机充值”\\ \hline
 \par 英文拼写错误，在lucene中已有贡献者实现了spellchecker模块，主要算法有：Jaro Winkler distance，Levenstein Distance(Edit Distance)，NGram Distance。但Lucene中的实现过于简单，使用两两比较，时间复杂性是$O(n^2)$。
 \par 形近字错误，形近字一般是用户记错了形声字，或是使用五笔的用户输入错误。在网上可以下载SunWb\_mb文件，它里面包含五笔的编码和笔画的编码，但字根比如“马”比“口”笔画更多，也更有代表性，但在这种方法中却是相同的。
 \par 方言纠错,可以用soudex进行纠错
-\par 政府网站中的特殊字符：
+\par 政府网站中的特殊字符需要进行转换：
+\par 当对政府网站中的网页建立索引时，如果使用url作为文档id，相同内容的文档可能出现多次。下面两个url仅仅是字符大小写不同，却作为不同的id出现。解决办法是文档id一律小写。
+\begin{verbatim}
+http://www.wuxi.gov.cn/WebPortal/AskAnswer/Gov_AskAnswer_Info?
+AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
+http://www.wuxi.gov.cn/WEBPORTAL/AskAnswer/Gov_AskAnswer_Info?
+AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
+\end{verbatim}
+\par 如下两个url均包含了“$\backslash$”字符，其后跟随普通ASCII字符时，转化成一种特殊的转义字符，作为文档id会出错。
+\begin{verbatim}
+http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
+=4028818a28aff36d0128b3861a090c76&ChiefHallType=xk360ChromeURL\Shell\Open\Command
+http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
+=4028818a2fbfee4b012fc2fe529909ac&ChiefHallType=xk360ChromeURL\Shell\Open\Command
+\end{verbatim}
+\par 爬虫获得的网页内容中，如标题为《京杭大运河无锡段》，而内容为《京杭大运河无锡段 发布时间： 2011年11月23日 修改时间： 2013年10月22日 [ 大 中 小 ] 浏览次数：》，这部分内容重复，影响了检索的相关性，需将其过滤。
+
 
