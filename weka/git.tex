@@ -163,3 +163,56 @@ mvn clean package
 \begin{verbatim}
 hadoop jar ./target/releases/soul_seg-0.2-job.jar /hdfs
 \end{verbatim}
+\par 使用上述命令打包时，将会运行test目录下的测试类，十分耗时。为此，使用如下命令跳过测试。
+\begin{verbatim}
+mvn clean package -Dmaven.test.skip=true
+\end{verbatim}
+\subsection{构造Java后台程序}
+\par Lately I have been writing a Java program that needs to run in the back ground (like a daemon). These ideas probably only work in a Unix environment but they have been tested on Linux and Solaris. So you have your program and you want to start it such that it will not be killed when you log out of the shell in which you start it. You could use \textbf{nohup}, but \textbf{nohup} redirects the standard out and error to files, which is annoying because you are writing all output to a log file anyway. 
+\begin{verbatim}
+java -jar target/soul_seg-0.3.jar  <&- 1>/dev/null 2>&1 &
+\end{verbatim}
+\par 上面的命令runs the program in the background, closes standard in, and redirects standard out and error to the bit bucket. By closing standard in to the process the shell will not kill the program when it exits and it is running in the background so it will not interfere with other actions we might want to perform within this shell.
+\par 但后台程序发生错误时，上述方法不会提示，例如当监听端口被占用时。So let’s not redirect standard out and error。下面的方法可以工作，但shell一直挂起，a shell will not exit while there are still programs attached to its standard out and error。
+\begin{verbatim}
+java -jar target/soul_seg-0.3.jar  <&- &
+\end{verbatim}
+\par The solution is to have the Java program detach from standard out and error once its startup is complete. So we will create a method called daemonize() that we will call just before entering the infinite loop that is the main program logic.
+\begin{verbatim}
+static public void daemonize() {
+   getPidFile().deleteOnExit();
+   System.out.close();
+   System.err.close();
+}
+static public void main(String[] args) {
+   try {
+       // do sanity checks and startup actions
+       daemonize();
+   }
+   catch (Throwable e)  {
+       System.err.println("Startup failed.");
+       e.printStackTrace();
+   }
+   // do infinite loop
+}
+\end{verbatim}
+\par Now that the program is completely detached from the shell the only way to stop it is by killing the process. However, to do that you need to know the pid. Java has no way for a program to figure its pid directly — it is too system dependent. So we will create a shell script to launch our daemon and record its pid for future use.
+\begin{verbatim}
+#!/bin/sh
+java -cp your_class_path com.domain.main_class &lt;&amp;- &
+pid=$!
+echo ${pid} > mydaemon.pid
+\end{verbatim}
+\par This script launches the program and then writes the pid to the file ‘mydaemon.pid’. Now when you want to kill the program you can do
+\begin{verbatim}
+kill `cat mydaemon.pid`
+\end{verbatim}
+
+
+There are a couple of problems with this, one is that the pid file gets written even if the daemon failed to start successfully, another is that if the daemon crashes the pid file will still exist — which might lead you to believe it is still working.
+
+We can solve the pid file surviving daemon crash problem by passing it into the Java program like the following
+
+java -Ddaemon.pidfile=mydaemon.pid -cp your_class_path com.domain.main_class &lt;&amp;- &
+其中，getPidFile()方法返回一个 File object file specified by the system property “daemon.pidfile”. That way the pid file will be deleted when the VM exits.
+http://barelyenough.org/blog/2005/03/java-daemon/

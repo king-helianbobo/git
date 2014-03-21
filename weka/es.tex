@@ -478,6 +478,16 @@ curl -XGET 192.168.50.75:9200/official_mini/table/_search?pretty -d '{
     } 
 }'
 \end{verbatim}
+\subsubsection{Span Multi Term Query}
+\par Matches spans which are near one another. One can specify slop, the maximum number of intervening unmatched positions, as well as whether matches are required to be in-order. The span near query maps to Lucene SpanNearQuery. Here is an example:
+\par SpanNearQuery主要用作精确查询，比如某个term之后，是另一个term，term之间的距离可以自己设定，从而实现精确匹配。例如搜索包含了“共青团中央下发实施意见”字符串的文章。不妨设“共青团中央下发实施意见”分词为：“共青团中央”，“下发”，“实施意见”。当设置slop为0，inOrder为true时，代码如下：
+\begin{verbatim}
+SpanNearQueryBuilder span=QueryBuilders.spanNearQuery();
+span.clause(QueryBuilders.spanTermQuery("content","共青团中央") );
+span.clause(QueryBuilders.spanTermQuery("content","实施意见") );
+span.inOrder(true).slop(1);
+client.prepareSearch("test").setQuery(span).execute().actionGet();
+\end{verbatim}
 \subsection{ElasticSearch源码分析}
 \subsubsection{ES模块}
 \par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：

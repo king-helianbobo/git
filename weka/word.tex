@@ -185,7 +185,7 @@ AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
 http://www.wuxi.gov.cn/WEBPORTAL/AskAnswer/Gov_AskAnswer_Info?
 AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
 \end{verbatim}
-\par 如下两个url均包含了“$\backslash$”字符，其后跟随普通ASCII字符时，转化成一种特殊的转义字符，作为文档id会出错。
+\par 下面两个url均包含了“$\backslash$”字符，其后跟随普通ASCII字符时，转化成一种转义字符，作为文档id会出错。
 \begin{verbatim}
 http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
 =4028818a28aff36d0128b3861a090c76&ChiefHallType=xk360ChromeURL\Shell\Open\Command
@@ -193,5 +193,12 @@ http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
 =4028818a2fbfee4b012fc2fe529909ac&ChiefHallType=xk360ChromeURL\Shell\Open\Command
 \end{verbatim}
 \par 爬虫获得的网页内容中，如标题为《京杭大运河无锡段》，而内容为《京杭大运河无锡段 发布时间： 2011年11月23日 修改时间： 2013年10月22日 [ 大 中 小 ] 浏览次数：》，这部分内容重复，影响了检索的相关性，需将其过滤。
-
+\par 注意，json的array中的元素是保持顺序的，而其它类型不保持顺序。
+\par “春涛”这个词，结合上下文，分词结果不同，下面两个例子，前者分成了“春，涛”，后者分成了“春涛”。
+\begin{verbatim}
+curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '登太湖仙岛、观鼋渚春涛'
+curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '鼓浪屿上听春涛'
+易视腾
+买卖宝
+\end{verbatim}
 
