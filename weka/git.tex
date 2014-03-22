@@ -171,6 +171,7 @@ mvn clean package -Dmaven.test.skip=true
 \par Lately I have been writing a Java program that needs to run in the background (like a daemon). These ideas probably only work in a Unix environment but they have been tested on Linux and Solaris. So you have your program and you want to start it such that it will not be killed when you log out of the shell in which you start it. You could use \textbf{nohup}, but \textbf{nohup} redirects the standard out and error to files, which is annoying because you are writing all output to a log file anyway. 
 \begin{verbatim}
 java -jar target/soul_seg-0.3.jar  <&- 1>/dev/null 2>&1 &
+其中，<&-关闭标准输入，1>/dev/null 2>&1将标准输入重定向到/dev/null，最后一个&挂起该进程。
 \end{verbatim}
 \par 上面的命令runs the program in the background, closes standard in, and redirects standard out and error to the /dev/null. By closing standard in to the process the shell will not kill the program when it exits and it is running in the background so it will not interfere with other actions we might want to perform within this shell.
 \par 但后台程序发生错误时，上述方法不会提示，如当监听端口被占用时，因此，重定向stdout和stderr不合适。The solution is to have the Java program detach from standard out and error once its startup is complete. So we will create a method called daemonize() that we will call just before entering the infinite loop that is the main program logic.
