@@ -1,6 +1,6 @@
 \section{工具使用}
 \par json格式的array中的element是顺序保持的，而其它类型不保持顺序。
-\subsection{shell}
+\subsection{Linux Shell}
 \par 标准输入stdin，标准输出stdout，标准错误stderr，其文件描述符分别为0,1,2。>默认为将标准输出（stdout）重定向到其它地方，2>\&1表示将标准错误输出（stderr）重定向到标准输出（stdout）。\&>file表示把标准输出（stdout）和标准错误（stderr）都输出到文件file中。特别注意，2>1表示将stderr重定向到文件1中，而非stdout。
 \par let命令的替代表示形式是：((算术表达式))。例如，let 'j=i*6+2'等价于((j=i*6+2))。当表达式中有Shell的特殊字符时，必须用双引号或单引号将其括起来。例如,let ``val=a\textbar b''。如果不括起来，Shell会把命令行let val=a\textbar b中的''\textbar''看作管道符号，将其左右两边看成不同的命令，因此，将无法正确执行。 
 \par linux中除了常见的读（r）、写（w）、执行（x）权限以外，还有3个特殊的权限，分别是setuid、setgid和stick bit。
@@ -27,17 +27,16 @@ stick bit:chmod 1755 xxx
 \end{verbatim}  
 \end{minipage}
 \subsection{git基本命令}
-\par git add命令主要用于把要提交的文件的信息添加到索引库中,当我们使用\textbf{git commit}时，git将依据索引库中的内容来进行文件的提交。\textbf{git add <path>}表示add to index only files created or modified and not those deleted，因此\textbf{git add .}添加的文件不包括已经删除了的文件，<path>可以是文件也可以是目录。git不仅能判断出<path>中，修改（不包括已删除）了的文件，还能判断出新建的文件，并把它们的信息添加到索引库中。
-\par \textbf{git add -u [<path>]}表示add to index only files modified or deleted and not those created，即把<path>中所有tracked文件中被修改过或已删除文件的信息添加到索引库，它不会处理untracked的文件。\textbf{git add -A [<path>]}表示把<path>中所有tracked文件中被修改过或已删除文件和所有untracked的文件信息添加到索引库。省略<path>表示'.'，即当前目录。使用\textbf{git add .}后，如果打算撤销这次add，则使用命令：\textbf{git rm -r --cached ./}，打算忽略整个目录时，可以添加.gitignore文件，表示忽略当前目录下的\textbf{mapreduce/ESMapReduce/lib/}目录。
+\par git add命令主要用于把要提交的文件的信息添加到索引库中，当使用\textbf{git commit}时，git将依据索引库中的内容来进行文件的提交。\textbf{git add <path>}表示add to index only files created or modified and not those deleted，因此\textbf{git add <path>}添加的文件不包括已经删除了的文件，<path>可以是文件也可以是目录。git不仅能判断出<path>中，修改（不包括已删除）了的文件，还能判断出新建的文件，并把它们的信息添加到索引库中。
+\par \textbf{git add -u <path>}表示add to index only files modified or deleted and not those created，即把<path>中所有的tracked文件添加到索引库，它不会处理untracked的文件。\textbf{git add -A <path>}表示把<path>中所有的tracked文件和所有的untracked的文件信息添加到索引库。当省略<path>时，<path>等价于'./'（当前目录）。使用\textbf{git add .}后，如果打算撤销这次add，则使用命令：\textbf{git rm -r --cached ./}。如果忽略某些类型的文件或某些目录时，可在.gitignore文件中添加内容，下面最后一行了忽略\textbf{mapreduce/ESMapReduce/lib/}目录。
 \begin{verbatim}
 *.class
-# Package Files #
-mapreduce/ESMapReduce/lib/
 *.jar
-*.war
 *.ear
+mapreduce/ESMapReduce/lib/
 \end{verbatim}
-\par git提交环节，存在三大部分：working tree,index file,commit。working tree是工作所在的目录，每当在代码中进行了修改，working tree的状态就改变了。index file是索引文件，它是连接working tree和commit的桥梁，每当我们使用git add命令后，index file的内容就改变了，此时index file和working tree完成了同步。commit是代码的一次提交，只有完成提交，代码才真正地进入git仓库，使用git commit就是将index file里的内容提交到commit中。因此，\textbf{git diff}是查看working tree与index file的差别的，\textbf{git diff --cached}是查看index file与commit的差别的，\textbf{git diff HEAD}是查看working tree和commit的差别的（注意，HEAD代表最近一次commit）。
+\par git提交环节，存在三大部分：working tree,index file,commit。working tree是工作所在的目录，每当在代码中进行了修改，working tree的状态就改变了。index file是索引文件，它是连接working tree和commit的桥梁，每当使用git add命令后，index file的内容就改变了，此时index file和working tree完成了同步。commit是代码的一次提交，只有完成提交，代码才真正地进入git仓库，使用git commit就是将index file里的内容提交到commit中。因此，\textbf{git diff}是查看working tree与index file的差别的，\textbf{git diff --cached}是查看index file与commit的差别的，\textbf{git diff HEAD}是查看working tree和commit的差别的（注意，HEAD代表最近一次commit）。
+\par 发生错误时，如果想回到此前的一个版本，命令为\textbf{git reset --soft}。使用\textbf{git log}命令，查看日志中有哪些commit以及commit的ID，最后使用命令\textbf{git reset commitID}回退到该版本。
 \subsection{Maven使用初步}
 \begin{enumerate}[(1)]
 \item 配置maven环境，最主要的是设置环境变量：M2\_HOME，将其设置为maven安装目录，例子目录为：/usr/share/maven;
