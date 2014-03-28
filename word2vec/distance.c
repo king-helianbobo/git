@@ -41,8 +41,8 @@ int main(int argc, char **argv) {
     printf("Input file not found\n");
     return -1;
   }
-  fscanf(f, "%lld", &words);
-  fscanf(f, "%lld", &size);
+  fscanf(f, "%lld", &words); //represent number of words
+  fscanf(f, "%lld", &size); // dimension
   vocab = (char *)malloc((long long)words * max_w * sizeof(char));
   M = (float *)malloc((long long)words * (long long)size * sizeof(float));
   if (M == NULL) {

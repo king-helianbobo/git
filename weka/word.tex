@@ -146,15 +146,54 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 其中$V_{BB}$为标记B到标记B的转移特征的权重，这个也由训练得到。同样对于第二列的O,M,E也要计算$S_{2O}$，$S_{2M}$，$S_{2E}$。
 \item 一直计算到最后一列，从而获得每个字的所有标记分数，得到$S_{7B}$，$S_{7O}$，$S_{7M}$，$S_{7E}$。比较这四个值中的最大值，即为最优路径的分数，然后以该值的标记点为起始点，回溯得到最优路径（因此在计算过程中，要记录到达该标记的前一个标记，用于回溯）。
 \end{enumerate}
-\subsection{实施方案}
-\par 计划解决的问题
+\subsection{ICTCLAS汉语词性}
 \begin{enumerate}[(1)]
-\item 繁简转换，（已实现，使用繁简转换表）
-\item 拼音转汉字，（现在没必要做）
-\item 同音词拼写错误，先把汉字转成拼音，然后进行可能的比对，比如输入中华人名共和国-->中华人民共和国。
-\item 英文拼写错误，（暂时不作考虑，可以考虑使用开源的库）
+\item a 形容词，取英语形容词adjective的第1个字母（共34439个）。
+\item ad 直接作状语的形容词，形容词代码a和副词代码d并在一起。（5899）
+\item ag 形容词性语素，形容词代码为a，语素代码ｇ前面置以A。（311）
+\item an 名形词，具有名词功能的形容词。形容词代码a和名词代码n并在一起。（2838）
+\item b 区别词，取汉字“别”的声母。（8734）
+\item c 连词，取英语连词conjunction的第1个字母。（25473）
+\item d：副词，取adverb的第2个字母，因其第1个字母已用于形容词。（47714），dg：副词性语素，副词代码为d，语素代码g前面置以d。
+\item e 感叹词，取英语exclamation的第1个字母。
+\item f 方位词，取汉字“方”的首字母（17248）。
+\item g 语素，绝大多数语素都能作为合成词的“词根”，取汉字“根”的声母。（这里没有对应的）
+\item h：前接成分，取英语head的第1个字母。（48个）;k：后接成分（类似于h，共958个）。
+\item i，成语，取英语成语idiom的首字母（5001个）。
+\item j，简略字，取汉字“简”的声母（简称，比如“驾照”，共10293个）。
+\item l 习用语，习用语尚未成为成语，有点“临时性”，取“临”的声母。
+\item m，数字词，取numerical的第3个字母，nu已有他用（共41036个）。
+\item n 名词，取英语名词noun的第1个字母（很多，共237124个）。
+\item ng 名语素，名词性语素。名词代码为n，语素代码ｇ前面置以N。（4497）
+\item nr 人名，名词代码n和“人(ren)”的声母并在一起。（20061）
+\item ns 地名，名词代码n和处所词代码s(space)并在一起。（27777）
+\item nt 机构团体，“团”的声母为t，名词代码n和t并在一起。（3565）
+\item nz 专有名词，“专”的首字母为z，名词代码n和z并在一起。（3728）
+\item o 拟声词，取英语拟声词onomatopoeia的第1个字母。
+\item p 介词，取英语介词prepositional的第1个字母。（39906）
+\item q 量词，取英语quantity的第1个字母（24236个，如“倍”，“个”，“斗”）。
+\item r 代词，代名词pronoun的第2个字母，因p已用于介词（32367个）。
+\item s 处所词，取英语space的第1个字母。
+\item t：时间词，取英语time的第1个字母。tg：时语素，时间词性语素。时间词代码为t,在语素的代码g前面置以t。
+\item u 助词，取英语助词auxiliary。
+\item v 动词取英语动词verb的第一个字母。
+\item vd：副动词，直接作状语的动词。动词和副词的代码并在一起。
+\item vg：动词性语素。动词代码为v。在语素的代码g前面置以v。
+\item vn 名动词，指具有名词功能的动词。动词和名词的代码并在一起。
+\item w 标点符号（共173046个）。
+\item x 非语素字，非语素字只是一个符号，字母$x$通常用于代表未知数、符号。
+\item y 语气词，取汉字“语”的声母。
+\item z 状态词，取汉字“状”的声母的前一个字母。
+\end{enumerate}
+\subsection{实施方案}
+\begin{enumerate}[(1)]
+\item 繁简转换，（问题不难，使用繁简转换表）。
+\item 拼音转汉字，（属于优化的问题，现在没必要做）。
+\item 同音词拼写错误，先把汉字转成拼音，然后进行可能的比对，比如中华人名共和国-->中华人民共和国，这个已经实现。
+\item 英文拼写错误，（暂时不作考虑，可以考虑使用开源的库）。
 \item 形近词错误，（这个需要吗，当用户使用五笔或记错某个字的样子时）
 \end{enumerate}
+\subsubsection{拼写错误检查}
 \par 拼音转汉字想法是较为直接的，建立一个以拼音为term的查询词索引，posting list中只保存查询频率最高的K个查询词，如
 \begin{table}[h]
   \centering
@@ -177,7 +216,8 @@ shoujichongzhi&“手机冲值”, “手机充值”\\ \hline
 \par 英文拼写错误，在lucene中已有贡献者实现了spellchecker模块，主要算法有：Jaro Winkler distance，Levenstein Distance(Edit Distance)，NGram Distance。但Lucene中的实现过于简单，使用两两比较，时间复杂性是$O(n^2)$。
 \par 形近字错误，形近字一般是用户记错了形声字，或是使用五笔的用户输入错误。在网上可以下载SunWb\_mb文件，它里面包含五笔的编码和笔画的编码，但字根比如“马”比“口”笔画更多，也更有代表性，但在这种方法中却是相同的。
 \par 方言纠错,可以用soudex进行纠错
-\par 政府网站中的特殊字符需要进行转换：
+\subsubsection{网站群的一些问题}
+\par 政府网站中的特殊字符需要进行转换。
 \par 当对政府网站中的网页建立索引时，如果使用url作为文档id，相同内容的文档可能出现多次。下面两个url仅仅是字符大小写不同，却作为不同的id出现。解决办法是文档id一律小写。
 \begin{verbatim}
 http://www.wuxi.gov.cn/WebPortal/AskAnswer/Gov_AskAnswer_Info?
@@ -193,12 +233,14 @@ http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
 =4028818a2fbfee4b012fc2fe529909ac&ChiefHallType=xk360ChromeURL\Shell\Open\Command
 \end{verbatim}
 \par 爬虫获得的网页内容中，如标题为《京杭大运河无锡段》，而内容为《京杭大运河无锡段 发布时间： 2011年11月23日 修改时间： 2013年10月22日 [ 大 中 小 ] 浏览次数：》，这部分内容重复，影响了检索的相关性，需将其过滤。
-\par 注意，json的array中的元素是保持顺序的，而其它类型不保持顺序。
-\par “春涛”这个词，结合上下文，分词结果不同，下面两个例子，前者分成了“春，涛”，后者分成了“春涛”。
+\par “春涛”这个词，结合上下文，分词结果不同，下面两个例子，前者分成了“春，涛”，后者分成了“春涛”，还有词，比如：“易视腾”，“买卖宝”。
 \begin{verbatim}
 curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '登太湖仙岛、观鼋渚春涛'
 curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '鼓浪屿上听春涛'
-易视腾
-买卖宝
 \end{verbatim}
-
+\par 对2014年3月18号爬取的网站群数据，作分词处理后，共有164976个不同的词，总共的词个数是161630251个，使用word2vec代码如下，最后一行代码对SogouR.txt进行编码转换。
+\begin{verbatim}
+./word2vec -train /mnt/f/b.txt -output vectors.bin -cbow 0 -size 200 -window 7 -negative 0 -hs 1 -sample 1e-3 -threads 12 -binary 1
+./distance vectors.bin
+cat SogouR.txt | iconv -f gbk -t utf8 -c > SogouR-utf8.txt
+\end{verbatim}
