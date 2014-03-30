@@ -97,7 +97,7 @@ curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
    }
 }'
 \end{verbatim}
-\par 如果想查看ElasticSearch中有哪些index或index状态，可使用如下命令：
+\par 如想查看ElasticSearch中有哪些index或某个index的状态，可用如下命令：
 \begin{verbatim}
 curl -XGET '192.168.50.75:9200/_status?pretty'
 curl -XGET '192.168.50.75:9200/official_mini/_status?pretty'
