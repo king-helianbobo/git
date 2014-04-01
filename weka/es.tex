@@ -36,9 +36,7 @@ curl -X GET "http://localhost:9200/test/_analyze?filter=standard&pretty=true"
 \par The index analyzer is easy to understand. We want to break up our input fields into various tokens so we can later search it. So we instruct ES to use the new partial\_name analyzer that we built, so that it can create nGrams for us.
 \par The search analyzer is a little trickier to understand, but crucial to getting good relevance. Imagine querying for “Race”. We want that query to match “race”, “races” and “racecar”. When searching, we want to make sure ES eventually searches with the token “race”. The full\_name analyzer will give us the needed token to search with.
 \par If, however, we used the partial\_name nGram analyzer, we would generate a list of nGrams as our search query. The search query “Race” would turn into ["ra", "rac", "race"].Those tokens are then used to search the index. As you might guess, “ra” and “rac” will match a lot of things you don’t want, such as “racket” or “ratify” or “rapport”.
-\par So specifying different index and search analyzers is critical when working with things like ngrams. Make sure you always double check what you expect to query ES with…and what is actually being passed to ES.
-\subsection{Depth into ElasticSearch}
-\par 当使用如下命令搜索时：
+\par So specifying different index and search analyzers is critical when working with things like ngrams. Make sure you always double check what you expect to query ES with…and what is actually being passed to ES。使用如下命令搜索：
 \begin{verbatim}
 curl -XPOST "http://namenode:9200/_search" -d'
 {
@@ -62,7 +60,7 @@ curl -XPOST "http://namenode:9200/_search" -d'
     }
 }'
 \end{verbatim}
-\par 却能输出结果，What's going on here? When we index a document with ElasticSearch it (simplified) does two things: it stores the original data untouched for later retrieval in the form of \_source and it indexes each JSON property into one or more fields in a Lucene index. During the indexing it processes each field according to how the field is mapped. If it isn't mapped , default mappings depending on the fields type (string, number etc) is used.
+\par 却能输出结果，When we index a document with ElasticSearch it (simplified) does two things: it stores the original data untouched for later retrieval in the form of \_source and it indexes each JSON property into one or more fields in a Lucene index. During the indexing it processes each field according to how the field is mapped. If it isn't mapped , default mappings depending on the fields type (string, number etc) is used.
 \par As we haven't supplied any mappings for our index, ElasticSearch uses the default mappings for the director field. This means that in the index the director fields value isn't \textbf{"Francis Ford Coppola"}. Instead it's something like \textbf{["francis", "ford", "coppola"]}. We can verify that by modifying our filter to instead match "francis" (or "ford" or "coppola").
 \par 如果想精确匹配整个Text，必须修改Text的映射方式（mapping）。There are a number of ways to add mappings to ElasticSearch, through a HTTP request that creates by calling the \_mapping endpoint. Using this approach, we could fix the above issue by adding a mapping for the "director" field , to instruct ElasticSearch not to analyze (tokenize etc.) the field at all.
 \begin{verbatim}
@@ -72,14 +70,13 @@ curl -X PUT namenode:9200/movies/movie/_mapping -d'
       "properties": {
          "director": {
             "type": "string",
-            "index": "not_analyzed"
-             ## 不分析director域
+            "index": "not_analyzed" (不分析director域)
         }
       }
    }
 }'
 \end{verbatim}
-\par 有些时候无法修改索引的mapping，最简单的办法是删除原先的并重建索引，但这种方法无法同时满足两种查询（即精确匹配整个Text或仅仅匹配Text中的某个String），幸运地是可以设置director域的类型为"multi\_field"，也就是说，对文档中的同一个域可以生成多个别名域（每个别名域索引一次）。
+\par 有时无法修改索引的mapping，最简单的办法是删除原先的并重建索引，但这种方法无法同时满足两种查询（精确匹配整个Text或仅仅匹配Text中的某个string），此时可以设置director域的类型为"multi\_field"，也就是说，对文档中的同一个域可以生成多个别名（每个别名再索引一次）。
 \begin{verbatim}
 curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
 {
@@ -88,23 +85,29 @@ curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
          "director": {
             "type": "multi_field",
             "fields": {
-               "director": {"type": "string's"},
-               "original": {"type" : "string", "index" : "not_analyzed"}
-               ## 使用director.original访问这个域
+              "director": {"type": "string"},
+              "original": {"type" : "string","index" : "not_analyzed"}
+               (使用director.original访问这个域)
             }
          }
       }
    }
 }'
 \end{verbatim}
-\par 如想查看ElasticSearch中有哪些index或某个index的状态，可用如下命令：
+\subsection{Depth into ElasticSearch}
+\par 如果想查看ElasticSearch中某些或某几个index的状态，使用命令：
 \begin{verbatim}
 curl -XGET '192.168.50.75:9200/_status?pretty'
 curl -XGET '192.168.50.75:9200/official_mini/_status?pretty'
 curl -XGET 'http://localhost:9200/sogou_spellcheck/_mapping?pretty'
 \end{verbatim}
-\subsection{ES集群设置}
-This will print the number of open files the process can open on startup. Alternatively, you can retrieve the max\_file\_descriptors for each node using the Nodes Info API, with:\\
+\par Indices created within the cluster can provide their own settings. For example, the following creates an index with memory based storage instead of the default file system based one (尚且不清楚常驻内存的index在文件系统中是否有备份)，常驻内存的index必定耗费heap。
+\begin{verbatim}
+$ curl -XPUT localhost:9200/official_mini/ -d 'index.store.type:memory'
+\end{verbatim}
+\par 如果ES占用内存过多，则性能会急剧下降，此时可以修改Java虚拟机内存参数，ES默认的heap最大值为1024M。Elasticsearch comes with built in JAVA\_OPTS passed to the JVM started. The most important setting for that is the -Xmx to control the maximum allowed memory for the process, and -Xms to control the minimum allocated memory for the process (一般情况下，分配内存越多，性能越好)。 Most times it is better to ignore the default JAVA\_OPTS settings, and use the ES\_JAVA\_OPTS environment variable to set/change JVM settings。可以修改\textbf{elasticsearch.in.sh}文件中的两个环境变量：\textbf{ES\_MIN\_MEM} (默认值为256m)和\textbf{ES\_MAX\_MEM} (默认值为1024m)。
+\subsubsection{ES集群设置}
+\par This will print the number of open files the process can open on startup. Alternatively, you can retrieve the max\_file\_descriptors for each node using the Nodes Info API, with:\\
 \textbf{curl -XGET 'namenode:9200/\_nodes/process?pretty=true'}，下面是删除ES上名为jdbc的index的Restfule命令：\\
 \textbf{curl -XDELETE 'http://namenode:9200/jdbc/'}
 \par 配置文件在\textbf{\{\$ES\_HOME\}/config}文件夹下，\textbf{elasticsearch.yml}和\textbf{logging.yml}，修改\textbf{elasticsearch.yml}文件中的cluster.name，当集群名称相同时，每个ES节点将会搜索它的伙伴节点，因此必须保证集群内每个节点的cluster.name相同,下面是关闭ES集群的Restful命令:
@@ -169,7 +172,7 @@ curl -XPUT 'localhost:9200/_river/jiangsu/_meta' -d '{
     }
 }'
 \end{verbatim}
-\subsection{ES性能优化}
+\subsubsection{ES性能优化}
 \par 一个Elasticsearch节点会有多个线程池，但重要的是下面四个：
 \begin{itemize}
 \item 索引（index）：主要是索引数据和删除数据操作（默认是cached类型）;
@@ -268,7 +271,7 @@ protected TokenStreamComponents createComponents(String fieldName,
 }
 \end{verbatim}
 \par 上例中的fieldName没有用处，有两个类型的子类TokenFilter和Tokenizer（也可以继承CharTokenizer），Tokenizer通过读取汉字字符串创建词序列List<word>，其中每一word将作为Lucene索引的key，Tokenizer还记录每个word的偏移值，以及在文档中属于第几个word（$0,\cdots,n$）等，而TokenFilter则对产生的词序列进行转换(比如过滤等)。 
-\subsubsection{TokenStream和AttributeSource}
+\subsubsection{TokenStream}
 \par TokenStream是从Document的域（field）中或者查询条件中抽取一个个分词而组成的一个数据流，TokenStream中是一个个的分词（Token），而每个分词又是由一个个的属性（Attribute）组成。对所有的分词来说，每个属性只有一个实例，这些属性都保存在AttributeSource中，而AttributeSource正是TokenStream的父类。
 \par TokenStream的工作流程：（1）实例化TokenStream, 添加属性到AttributeSource，或从AttributeSource中获取属性；（2）调用reset()方法，设置stream的初始状态；（3）调用increamStoken()方法，获取下一个分词，这个方法会被docuemnt中的每一个分词调用；（4）调用end（）方法来完成一些收尾工作；（5）调用close()方法来释放stream拥有的一些资源。
 \par 一个AttributeSource中包含着一个由不同AttributeImpl组成的列表，以及添加和获取它们的一些方法。在同一个AttributeSource实例中，每个属性只有一个单实例。AttributeSource通过AttributeFactory来创建AttributeImpl的实例，通过State来标示每个AttributeImpl的状态。
