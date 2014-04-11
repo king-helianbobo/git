@@ -146,7 +146,8 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 其中$V_{BB}$为标记B到标记B的转移特征的权重，这个也由训练得到。同样对于第二列的O,M,E也要计算$S_{2O}$，$S_{2M}$，$S_{2E}$。
 \item 一直计算到最后一列，从而获得每个字的所有标记分数，得到$S_{7B}$，$S_{7O}$，$S_{7M}$，$S_{7E}$。比较这四个值中的最大值，即为最优路径的分数，然后以该值的标记点为起始点，回溯得到最优路径（因此在计算过程中，要记录到达该标记的前一个标记，用于回溯）。
 \end{enumerate}
-\subsection{ICTCLAS汉语词性}
+\subsection{ICTCLAS}
+\subsubsection{汉语词性}
 \begin{enumerate}[(1)]
 \item a 形容词，取英语形容词adjective的第1个字母（共34439个）。
 \item ad 直接作状语的形容词，形容词代码a和副词代码d并在一起。（5899）
@@ -154,7 +155,7 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item an 名形词，具有名词功能的形容词。形容词代码a和名词代码n并在一起。（2838）
 \item b 区别词，取汉字“别”的声母。（8734）
 \item c 连词，取英语连词conjunction的第1个字母。（25473）
-\item d：副词，取adverb的第2个字母，因其第1个字母已用于形容词。（47714），dg：副词性语素，副词代码为d，语素代码g前面置以d。
+\item d：副词，共47714个，取adverb的第2个字母，因其第1个字母已用于形容词。dg：副词性语素，副词代码为d，语素代码g前面置以d。
 \item e 感叹词，取英语exclamation的第1个字母。
 \item f 方位词，取汉字“方”的首字母（17248）。
 \item g 语素，绝大多数语素都能作为合成词的“词根”，取汉字“根”的声母。（这里没有对应的）
@@ -174,8 +175,8 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item q 量词，取英语quantity的第1个字母（24236个，如“倍”，“个”，“斗”）。
 \item r 代词，代名词pronoun的第2个字母，因p已用于介词（32367个）。
 \item s 处所词，取英语space的第1个字母。
-\item t：时间词，取英语time的第1个字母。tg：时语素，时间词性语素。时间词代码为t,在语素的代码g前面置以t。
-\item u 助词，取英语助词auxiliary。
+\item t：时间词，共20646个，取英语time的第1个字母。tg：时语素，时间词性语素。时间词代码为t,在语素的代码g前面置以t。
+\item u 助词，取英语助词auxiliary，共64711个。
 \item v 动词取英语动词verb的第一个字母。
 \item vd：副动词，直接作状语的动词。动词和副词的代码并在一起。
 \item vg：动词性语素。动词代码为v。在语素的代码g前面置以v。
@@ -185,6 +186,24 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item y 语气词，取汉字“语”的声母。
 \item z 状态词，取汉字“状”的声母的前一个字母。
 \end{enumerate}
+\subsubsection{scel格式}
+\par 搜狗的scel词库保存了文本的unicode编码，每两个字节一个字符（中文汉字或英文字母），找出其每部分的偏移位置即可。主要分为两部分:全局拼音表，貌似是所有的拼音组合，字典序格式为\{(index,len,pinyin)\}的列表。
+\begin{enumerate}[(1)]
+\item index:两个字节的整数，代表这个拼音的索引。
+\item len:两个字节的整数，拼音的字节长度。
+\item pinyin:当前的拼音，每个字符两个字节，总长度为len。
+\end{enumerate}
+\par 汉语词组表，格式为(same,py\_table\_len,py\_table,\{word\_len,word,ext\_len,ext\})的一个列表。
+\begin{verbatim}
+same:两个字节整数，同音词个数。
+py_table_len:两个字节整数。
+py_table:整数列表，每个整数两个字节，每个整数代表一个拼音的索引。
+word_len:两个字节整数，代表中文词组字节数长度。
+word:中文词组，每个中文汉字两个字节，总长度word_len。
+ext_len:两个字节整数，代表扩展信息的长度，好像都是10。
+ext:扩展信息，前两个字节是一个整数（可能是词频），后八个字节全是0。
+{word_len,word,ext_len,ext}一共重复same次，同音词的相同拼音表。
+\end{verbatim}
 \subsection{实施方案}
 \begin{enumerate}[(1)]
 \item 繁简转换，（问题不难，使用繁简转换表）。
@@ -243,4 +262,17 @@ curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d 
 ./word2vec -train /mnt/f/b.txt -output vectors.bin -cbow 0 -size 200 -window 7 -negative 0 -hs 1 -sample 1e-3 -threads 12 -binary 1
 ./distance vectors.bin
 cat SogouR.txt | iconv -f gbk -t utf8 -c > SogouR-utf8.txt
+\end{verbatim}
+\par synonym-new.txt中与synonym.txt没有交集的词条共5689个，与其有包含或被包含关系的词条共1464个（有效条目是1318个）,剩下的都是有交集的，扩展后的词条为12715个。synonym.txt中与synonym-new.txt没有交集的词条共1893个，最终的词条应该是21613个。
+\par 在ShardSuggestService中，有若干个隶属于IndexShard的cache，目前保存的cache主要有：用于拼写检查的spellCheckCache，用于智能提示的titleSuggestCache，用于统计每个term\footnote{Lucene术语，代表一个Token。}的document frequency（term的文档数目）和total frequency（term总共出现次数）的termListCache。使用如下命令，获取term“垃圾”的两个频率，当结合词性识别关键字时，该命令非常有用（命令中的size暂时没用）。
+\begin{verbatim}
+curl -XGET 'localhost:9200/official_mini/_termlist?pretty' -d '{
+    "action": "termlist", 
+    "fields": [
+        "content", 
+        "contenttitle"
+    ], 
+    "size": 0, 
+    "term": "垃圾"
+}'
 \end{verbatim}
