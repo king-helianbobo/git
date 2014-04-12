@@ -1,5 +1,6 @@
 \section{工具使用}
 \par json格式的array中的element是顺序保持的，而其它类型不保持顺序。
+\par Eclipse中删除无用的import：《Ctrl+ Shift + O》 do it manually or Window -> Preferences -> Java -> Editor -> Save Actions -> Organize Imports to have it organized automatically whenever save a class。或者在Package Explorer窗口中，使用《Ctrl+ Shift + O》快捷键。
 \subsection{Linux Shell}
 \par 标准输入stdin，标准输出stdout，标准错误stderr，其文件描述符分别为0,1,2。>默认为将标准输出（stdout）重定向到其它地方，2>\&1表示将标准错误输出（stderr）重定向到标准输出（stdout）。\&>file表示把标准输出（stdout）和标准错误（stderr）都输出到文件file中。特别注意，2>1表示将stderr重定向到文件1中，而非stdout。
 \par let命令的替代表示形式是：((算术表达式))。例如，let 'j=i*6+2'等价于((j=i*6+2))。当表达式中有Shell的特殊字符时，必须用双引号或单引号将其括起来。例如,let ``val=a\textbar b''。如果不括起来，Shell会把命令行let val=a\textbar b中的''\textbar''看作管道符号，将其左右两边看成不同的命令，因此，将无法正确执行。 

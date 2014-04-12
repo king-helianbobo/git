@@ -276,3 +276,78 @@ curl -XGET 'localhost:9200/official_mini/_termlist?pretty' -d '{
     "term": "垃圾"
 }'
 \end{verbatim}
+\par 使用如下命令，获取“驾驶证补办”的标题提示。
+\begin{verbatim}
+curl -X POST localhost:9200/official_mini/table/__suggest?pretty -d '{
+    "field": "contenttitle", 
+    "size": 15, 
+    "term": "驾驶证补办", 
+    "type": "synonym"
+}'
+\end{verbatim}
+\par 第一个命令，装载标题域《contenttitle》的cache，如果cache存在，则直接返回，否则装载之。第二个命令，刷新标题域《contenttitle》的cache，如果cache不存在，则返回，否则刷新该cache。
+\begin{verbatim}
+curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{
+    "action": "load", 
+    "field": "contenttitle", 
+    "type": "suggest"
+}'
+curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{   
+    "action": "refresh", 
+    "field": "contenttitle", 
+    "type": "suggest"
+}'
+\end{verbatim}
+\par http://ubuntuforums.org/showthread.php?t=1601843
+下面命令搜索第7页的国家主席，但是如何用自动精灵完成，什么是user agent
+http://curl.haxx.se/docs/httpscripting.html
+http://www.baidu.com/s?wd=%E5%9B%BD%E5%AE%B6%E4%B8%BB%E5%B8%AD&pn=60
+\begin{verbatim}
+***** 
+ECHO.
+echo 新 闻 =N 网 页 = W  贴 吧 = T   知 道= Z   MP3 = M     图 片 = P
+ECHO.
+SET/P N=请输入你要选择搜索的类型: 
+ECHO.
+SET/P P=请你输入要搜索的关键字: 
+ECHO [InternetShortcut]>bai.url
+IF /I "%N%"=="N" GOTO NEW
+IF /I "%N%"=="W" GOTO WEB
+IF /I "%N%"=="T" GOTO KWB
+IF /I "%N%"=="Z" GOTO KOU
+IF /I "%N%"=="M" GOTO MPF
+IF /I "%N%"=="P" GOTO PHO
+ECHO      对不起，您的选择有误，请按任意键返回!
+PAUSE>NUL
+GOTO START
+:NEW
+ECHO URL=http://news.baidu.com/ns?word=%p%>>bai.url
+START /W bai.url
+del /q/f bai.url
+GOTO START
+:WEB
+ECHO URL=http://www.baidu.com/s?cl=3^&wd=%p%>>bai.url
+START /W bai.url
+del /q/f bai.url
+GOTO START
+:KWB
+ECHO URL=http://post.baidu.com/f?kw=%p%>>bai.url
+START /W bai.url
+del /q/f bai.url
+GOTO START
+:KOU
+ECHO URL=http://zhidao.baidu.com/q?ct=17^&pn=0^&tn=ikaslist^&rn=10^&word=%p%>>bai.url
+START /W bai.url
+del /q/f bai.url
+GOTO START
+:MPF
+ECHO URL=http://mp3.baidu.com/m?tn=baidump3^&ct=134217728^&lm=-1^&word=%p%>>bai.url
+START /W bai.url
+del /q/f bai.url
+GOTO START
+:PHO
+ECHO URL=http://image.baidu.com/i?tn=baiduimage^&ct=201326592^&lm=-1^&cl=2^&word=%p%>>bai.url
+START /W bai.url
+del /q/f bai.url
+GOTO START
+\end{verbatim}
