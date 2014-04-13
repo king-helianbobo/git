@@ -187,23 +187,14 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item z 状态词，取汉字“状”的声母的前一个字母。
 \end{enumerate}
 \subsubsection{scel格式}
-\par 搜狗的scel词库保存了文本的unicode编码，每两个字节一个字符（中文汉字或英文字母），找出其每部分的偏移位置即可。主要分为两部分:全局拼音表，貌似是所有的拼音组合，字典序格式为\{(index,len,pinyin)\}的列表。
+\par 搜狗的scel词库保存了文本的unicode编码，每两个字节一个字符（中文汉字或英文字母），找出其每部分的偏移即可。主要分为两部分:全局拼音表，由一个个拼音组成，例如台湾的拼音taiwan，tai和wan各自代表一个拼音，字典序格式为\{(index,len,pinyin)\}的列表。汉语词组表，格式为(same,tableLen,py\_table,\{wordLen,word,extLen,ext\})的一个列表。
 \begin{enumerate}[(1)]
-\item index:两个字节的整数，代表这个拼音的索引。
-\item len:两个字节的整数，拼音的字节长度。
-\item pinyin:当前的拼音，每个字符两个字节，总长度为len。
+\item index:两个字节的整数，代表这个拼音在全局拼音表的索引。
+\item len:两个字节的整数，拼音的字节长度，如《tai》的长度为6。
+\item pinyin:当前拼音，每个字符两个字节，总长度为len，如[tai,a,ai,wan]。
+\item same:两字节整数，同音词的个数。tableLen:两字节整数，py\_table的长度。py\_table:整数列表，每个整数两字节，每个整数代表一个拼音的索引，如台湾的拼音为(tai,wan)，存储了两个整数索引，分别指向tai和wan。
+\item {wordLen,word,extLen,ext}一共重复same次，wordLen:两字节整数，代表中文词组字节数长度。word:中文词组，每个中文汉字两个字节，数组长度为wordLen。extLen:两个字节整数，代表扩展信息长度，貌似都是10。ext:扩展信息，前两个字节是一个整数（多半是词频），后八个字节全是0。
 \end{enumerate}
-\par 汉语词组表，格式为(same,py\_table\_len,py\_table,\{word\_len,word,ext\_len,ext\})的一个列表。
-\begin{verbatim}
-same:两个字节整数，同音词个数。
-py_table_len:两个字节整数。
-py_table:整数列表，每个整数两个字节，每个整数代表一个拼音的索引。
-word_len:两个字节整数，代表中文词组字节数长度。
-word:中文词组，每个中文汉字两个字节，总长度word_len。
-ext_len:两个字节整数，代表扩展信息的长度，好像都是10。
-ext:扩展信息，前两个字节是一个整数（可能是词频），后八个字节全是0。
-{word_len,word,ext_len,ext}一共重复same次，同音词的相同拼音表。
-\end{verbatim}
 \subsection{实施方案}
 \begin{enumerate}[(1)]
 \item 繁简转换，（问题不难，使用繁简转换表）。
