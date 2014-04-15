@@ -159,13 +159,14 @@ if __name__ == '__main__':
     # '歇后语集锦【官方推荐】.scel',
     # '饮食大全【官方推荐】.scel',
     # ]
-    o = ['无锡词汇.scel']
+    #o = ['无锡词汇.scel','搜狗标准词库.scel']
+    o = ['搜狗标准词库.scel']
     for f in o:
         #读取scel文件，获得拼音表和词表
         deal(f)
         
     #保存结果  
-    f = open('sougou.txt','w')
+    f = open('标准.txt','w')
     for count,py,word in GTable:
         # GTable保存着结果，是一个列表，每个元素是一个元组(词频,拼音,中文词组)
         # 没排序，所以结果是按照上面输入文件的顺序
