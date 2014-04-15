@@ -289,60 +289,14 @@ curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{
     "type": "suggest"
 }'
 \end{verbatim}
-\par http://ubuntuforums.org/showthread.php?t=1601843
-下面命令搜索第7页的国家主席，但是如何用自动精灵完成，什么是user agent
-http://curl.haxx.se/docs/httpscripting.html
-http://www.baidu.com/s?wd=%E5%9B%BD%E5%AE%B6%E4%B8%BB%E5%B8%AD&pn=60
+\par 使用curl命令搜索第7页（注意pn=60，百度默认一个页面10条记录）的“成奎安”，
 \begin{verbatim}
-***** 
-ECHO.
-echo 新 闻 =N 网 页 = W  贴 吧 = T   知 道= Z   MP3 = M     图 片 = P
-ECHO.
-SET/P N=请输入你要选择搜索的类型: 
-ECHO.
-SET/P P=请你输入要搜索的关键字: 
-ECHO [InternetShortcut]>bai.url
-IF /I "%N%"=="N" GOTO NEW
-IF /I "%N%"=="W" GOTO WEB
-IF /I "%N%"=="T" GOTO KWB
-IF /I "%N%"=="Z" GOTO KOU
-IF /I "%N%"=="M" GOTO MPF
-IF /I "%N%"=="P" GOTO PHO
-ECHO      对不起，您的选择有误，请按任意键返回!
-PAUSE>NUL
-GOTO START
-:NEW
-ECHO URL=http://news.baidu.com/ns?word=%p%>>bai.url
-START /W bai.url
-del /q/f bai.url
-GOTO START
-:WEB
-ECHO URL=http://www.baidu.com/s?cl=3^&wd=%p%>>bai.url
-START /W bai.url
-del /q/f bai.url
-GOTO START
-:KWB
-ECHO URL=http://post.baidu.com/f?kw=%p%>>bai.url
-START /W bai.url
-del /q/f bai.url
-GOTO START
-:KOU
-ECHO URL=http://zhidao.baidu.com/q?ct=17^&pn=0^&tn=ikaslist^&rn=10^&word=%p%>>bai.url
-START /W bai.url
-del /q/f bai.url
-GOTO START
-:MPF
-ECHO URL=http://mp3.baidu.com/m?tn=baidump3^&ct=134217728^&lm=-1^&word=%p%>>bai.url
-START /W bai.url
-del /q/f bai.url
-GOTO START
-:PHO
-ECHO URL=http://image.baidu.com/i?tn=baiduimage^&ct=201326592^&lm=-1^&cl=2^&word=%p%>>bai.url
-START /W bai.url
-del /q/f bai.url
-GOTO START
-\end{verbatim}
-\begin{verbatim}
-http://blog.sina.com.cn/s/blog_a9d3c71c0101aq8l.html
-http://www.iamlintao.com/tag/verify-baidu-com/
+http://www.baidu.com/s?wd=成奎安&pn=60
+先将cookies存入文件cookie.txt（位于当前目录）
+curl -c cookie.txt www.baidu.com
+cat cookie.txt
+当前url使用指定的cookies文件，-A后的字符串为user agent，该agent拷贝自FireFox。
+curl -v --cookie ./cookie.txt  -A "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)"  "http://www.baidu.com/s?^&wd=成奎安&pn=0";
+《url为http://www.baidu.com/s?cl=3^&wd=×××》貌似也可。
+如被百度防御系统封闭，考虑删除cookies文件，再重新生成cookies文件。
 \end{verbatim}
