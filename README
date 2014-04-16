@@ -4,3 +4,4 @@ git direcotry
 (2)weka:平时的工作总结，latex文件格式；
 (3)elasticsearch:搜索引擎源码，用于平时分析；
 ================================================
+tar zcvf soul_seg.tar.gz --exclude=library --exclude=src/main/resources/crf soul_seg/ 
