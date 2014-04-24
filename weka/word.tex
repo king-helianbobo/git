@@ -158,14 +158,14 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item d：副词，共47714个，取adverb的第2个字母，因其第1个字母已用于形容词。dg：副词性语素，副词代码为d，语素代码g前面置以d。
 \item e 感叹词，取英语exclamation的第1个字母。
 \item f 方位词，取汉字“方”的首字母（17248）。
-\item g 语素，绝大多数语素都能作为合成词的“词根”，取汉字“根”的声母。（这里没有对应的）
+\item g 语素，绝大多数语素都能作为合成词的“词根”，取汉字“根”的声母，不太清楚词根是什么意思。default.dic中有gg，gi等类型，如“计算机管理”，“环境保护”，“超级服务器”等。
 \item h：前接成分，取英语head的第1个字母。（48个）;k：后接成分（类似于h，共958个）。
 \item i，成语，取英语成语idiom的首字母（5001个）。
 \item j，简略字，取汉字“简”的声母（简称，比如“驾照”，“省纪委”，共10293个），但某些词，比如“中纪委”却不具备这个词性。
 \item l 习用语，习用语尚未成为成语，有点“临时性”，取“临”的声母。
 \item m，数字词，取numerical的第3个字母，nu已有他用（共41036个）。
-\item n 名词，取英语名词noun的第1个字母（很多，共237124个）。
-\item ng 名语素，名词性语素。名词代码为n，语素代码ｇ前面置以N。（4497）
+\item n 名词，取英语名词noun的第1个字母（共237124个）。
+\item ng 名词性语素。名词代码为n，语素代码g前面置以n（共4497个）。
 \item nr 人名，名词代码n和“人(ren)”的声母并在一起。（20061）
 \item ns 地名，名词代码n和处所词代码s(space)并在一起。（27777）
 \item nt 机构团体，“团”的声母为t，名词代码n和t并在一起。（3565）
@@ -180,7 +180,7 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item v 动词取英语动词verb的第一个字母。
 \item vd：副动词，直接作状语的动词。动词和副词的代码并在一起。
 \item vg：动词性语素。动词代码为v。在语素的代码g前面置以v。
-\item vn 名动词，指具有名词功能的动词。动词和名词的代码并在一起。
+\item vn 动名词，如“服务”，“批准”，“申请”等，指具有名词功能的动词，词性识别中我偏向于将其设置为名词。
 \item w 标点符号（共173046个）。
 \item x 非语素字，非语素字只是一个符号，字母$x$通常用于代表未知数、符号。
 \item y 语气词，取汉字“语”的声母。
@@ -276,7 +276,7 @@ curl -X POST localhost:9200/official_mini/table/__suggest?pretty -d '{
     "type": "synonym"
 }'
 \end{verbatim}
-\par 第一个命令，装载标题域《contenttitle》的cache，如果cache存在，则直接返回，否则装载之。第二个命令，刷新标题域《contenttitle》的cache，如果cache不存在，则返回，否则刷新该cache。
+\par 第一个命令，装载标题域《contenttitle》的cache，如果cache存在，则直接返回，否则装载之。第二个命令，刷新标题域《contenttitle》的cache，如果cache不存在，则返回，否则刷新该cache。type为suggest表示装载titleSuggestCache，如果为spell，表示装载spellCheckCache。
 \begin{verbatim}
 curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{
     "action": "load", 

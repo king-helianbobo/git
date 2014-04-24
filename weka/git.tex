@@ -168,6 +168,24 @@ hadoop jar ./target/releases/soul_seg-0.2-job.jar /hdfs
 \begin{verbatim}
 mvn clean package -Dmaven.test.skip=true
 \end{verbatim}
+\subsection{编译打包Hadoop2.2.0}
+\par 从网上下载hadoop-2.2.0-src.tar.gz，解压之，然后执行\textbf{mvn clean install -DskipTests}命令。可能遇到的错误是protoc包没有安装，执行如下几个命令安装protoc。
+\begin{verbatim}
+wget https://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz
+./configure --prefix=/usr
+make
+make check
+make install
+protoc --version
+\end{verbatim}
+如果提示libprotoc版本仍然是2.4.1,而hadoop要求的版本为2.5.0，mvn编译将不能通过，此时需要配置
+\begin{verbatim}
+emacs /etc/profile
+export PROTOC_HOME=/opt/protobuf-2.5.0
+export PATH=$PATH:$PROTOC_HOME/src
+\end{verbatim}
+\par 使用命令\textbf{mvn package -Pdist -DskipTests -Dtar}生成可运行的hadoop二进制包，如果没有错误，生成的tar.gz文件应在./hadoop-dist/target目录下。
+\par 如果想导入Eclipse，则进入hadoop-maven-plugins目录，执行命令\textbf{mvn install}。返回basedir目录，执行命令\textbf{mvn eclipse:eclipse -DskipTests}生成Eclipse Project描述文件。
 \subsection{构造Java后台程序}
 \par Lately I have been writing a Java program that needs to run in the background (like a daemon). These ideas probably only work in a Unix environment but they have been tested on Linux and Solaris. So you have your program and you want to start it such that it will not be killed when you log out of the shell in which you start it. You could use \textbf{nohup}, but \textbf{nohup} redirects the standard out and error to files, which is annoying because you are writing all output to a log file anyway. 
 \begin{verbatim}

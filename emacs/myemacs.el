@@ -1,4 +1,4 @@
-;;Last Modified: 2013-12-15 12:46:18.
+;;Last Modified: 2014-04-24 11:54:48.
 (require 'unicad);;多个字符集在emacs下显示的问题
 (require 'sdcv);;emacs下的字典接口
 (require 'init-emms)
