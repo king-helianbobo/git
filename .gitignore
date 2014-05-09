@@ -58,3 +58,7 @@ elasticsearch/target/
 elasticsearch/test-output/
 synonym/target/
 synonym/test-output/
+
+## ignore below directories
+fnlp/fnlp-app/target/
+fnlp/fnlp-core/target/

@@ -186,7 +186,7 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item y 语气词，取汉字“语”的声母。
 \item z 状态词，取汉字“状”的声母的前一个字母。
 \end{enumerate}
-\subsubsection{scel格式}
+\subsubsection{搜狗scel格式}
 \par 搜狗的scel词库保存了文本的unicode编码，每两个字节一个字符（中文汉字或英文字母），找出其每部分的偏移即可。主要分为两部分:全局拼音表，由一个个拼音组成，例如台湾的拼音taiwan，tai和wan各自代表一个拼音，字典序格式为\{(index,len,pinyin)\}的列表。汉语词组表，格式为(same,tableLen,py\_table,\{wordLen,word,extLen,ext\})的一个列表。
 \begin{enumerate}[(1)]
 \item index:两个字节的整数，代表这个拼音在全局拼音表的索引。
@@ -195,108 +195,32 @@ E   \>E   \>E   \>E   \>E   \>E   \>E\\
 \item same:两字节整数，同音词的个数。tableLen:两字节整数，py\_table的长度。py\_table:整数列表，每个整数两字节，每个整数代表一个拼音的索引，如台湾的拼音为(tai,wan)，存储了两个整数索引，分别指向tai和wan。
 \item {wordLen,word,extLen,ext}一共重复same次，wordLen:两字节整数，代表中文词组字节数长度。word:中文词组，每个中文汉字两个字节，数组长度为wordLen。extLen:两个字节整数，代表扩展信息长度，貌似都是10。ext:扩展信息，前两个字节是一个整数（多半是词频），后八个字节全是0。
 \end{enumerate}
-\subsection{实施方案}
-\begin{enumerate}[(1)]
-\item 繁简转换，（问题不难，使用繁简转换表）。
-\item 拼音转汉字，（属于优化的问题，现在没必要做）。
-\item 同音词拼写错误，先把汉字转成拼音，然后进行可能的比对，比如中华人名共和国-->中华人民共和国，这个已经实现。
-\item 英文拼写错误，（暂时不作考虑，可以考虑使用开源的库）。
-\item 形近词错误，（这个需要吗，当用户使用五笔或记错某个字的样子时）
-\end{enumerate}
-\subsubsection{拼写错误检查}
-\par 拼音转汉字想法是较为直接的，建立一个以拼音为term的查询词索引，posting list中只保存查询频率最高的K个查询词，如
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|l|l|}
-\hline
-jiujingkaoyan &“久经考验”,“酒精考验”\\ \hline
-zhijiucaotang & “子九草堂', “子久草堂” \\ \hline
-xufuniuza & “徐福牛杂”,“许府牛杂”,“徐府牛杂”\\ \hline
-shoujichongzhi&“手机冲值”, “手机充值”\\ \hline
-  \end{tabular}
-\end{table}
-\par 这一步可以在自动提示中使用，但自动提示与它的区别是，自动提示在拼音输入了一部分的情况下也要提示，比如输入 “xufu”就要提示“许府牛杂”。
-\par 同音词拼写错误也基于同样的想法，但是需要一个可能出错的查询词列表，这个列表可以为借鉴于下列几种情况：
-\begin{enumerate}[(1)]
-\item 以carot为例，返回有carot的文档，也返回一些包含纠错后的term carrot和torot的文档。
-\item 与(1)相似，但仅当carot不在词典中时，返回纠错后的结果。
-\item 与(1)相似，但仅当包含carot的文档数小于一个预定义的阈值时，即当原始查询返回文档数小于预定义的阈值时，搜索引擎给出纠错后的词列表。
-\end{enumerate}
-\par 情况(1)相当于是对所有查询都进行纠错处理，发现那些搜索比较少的，就给出一个纠错提示，比如“天浴”搜索次数比较少，而“天娱”搜索次数比较多，那么在用户搜索“天浴”时就提示“天娱”，即使“天浴”也是一个正常的查询词。情况(2)就是当查询没有获得文档，才对它进行纠错处理，然后查询相应结果。情况(3)是一个查询它返回的文档数少于一个预定义阈值时，才进行纠错处理。
-\par 英文拼写错误，在lucene中已有贡献者实现了spellchecker模块，主要算法有：Jaro Winkler distance，Levenstein Distance(Edit Distance)，NGram Distance。但Lucene中的实现过于简单，使用两两比较，时间复杂性是$O(n^2)$。
-\par 形近字错误，形近字一般是用户记错了形声字，或是使用五笔的用户输入错误。在网上可以下载SunWb\_mb文件，它里面包含五笔的编码和笔画的编码，但字根比如“马”比“口”笔画更多，也更有代表性，但在这种方法中却是相同的。
-\par 方言纠错,可以用soudex进行纠错
-\subsubsection{网站群的一些问题}
-\par 政府网站中的特殊字符需要进行转换。
-\par 当对政府网站中的网页建立索引时，如果使用url作为文档id，相同内容的文档可能出现多次。下面两个url仅仅是字符大小写不同，却作为不同的id出现。解决办法是文档id一律小写。
+\subsection{关键词提取}
+\par TF-IDF（term frequency,inverse document frequency）是一种用于信息检索与文本挖掘的常用加权技术。TF-IDF是一种统计方法，用以评估某个词对于一个文件集或一个语料库中的其中一份文件的重要程度。字词的重要性随着它在文件中出现的次数成正比增加，但同时会随着它在语料库中出现的频率成反比下降。TF-IDF加权的各种形式常被搜索引擎应用，作为文件与用户查询之间相关程度的度量或评级。除了TF-IDF以外，互联网上的搜寻引擎还会使用基于链接分析的评级方法(page rank算法)，以确定文件在搜寻结果中出现的顺序。
+\par TF-IDF的主要思想是：如果某个词或短语在一篇文章中出现的频率TF高，并且在其他文章中很少出现，则认为此词或者短语具有很好的类别区分能力，适合用来分类。TF表示词条在文档d中出现的频率。IDF的思想是：如果包含词条t的文档越少，也就是n越小，IDF越大，则说明词条t具有很好的类别区分能力。如果某一类文档C中包含词条t的文档数为m，而其它类包含t的文档总数为k，显然所有包含t的文档数n=m+k，当m大的时候，n也大，按照IDF公式得到的IDF的值会小，就说明该词条t类别区分能力不强。
+\par 如果一个词条在一个类的文档中频繁出现，则说明该词条能够很好代表这个类的文本的特征，这样的词条应该给它们赋予较高的权重，并选来作为该类文本的特征词以区别于其它类文档。这就是IDF的不足之处，在一份给定的文件里，词频（term frequency，TF）指的是某一个给定的词语在该文件中出现的频率。这个数字是对词数(term count)的归一化，以防止它偏向长的文件。（同一个词语在长文件里可能会比短文件有更高的词数，而不管该词语重要与否。）对于在某一特定文件里的词语 $t_i$来说，它的重要性可表示为：
+$$tf_{i,j} = \frac{n_{i,j}}{\sum_k n_{k,j}}$$
+\par 以上式子中$n_{i,j}$是该词在文件$d_j$中的出现次数，而分母则是文件$d_j$中所有词($\forall t_k$)的出现次数之和。逆向文件频率（inverse document frequency，IDF）是一个词语普遍重要性的度量。某一特定词语的IDF，可以由总文件数目除以包含该词语之文件的数目，再将得到的商取对数得到：
+$$idf_i = \log\frac{|D|}{|\{j: t_{i} \in d_{j}\}|}$$
+\par 其中$|D|$：语料库中的文件总数，$|\{j: t_{i} \in d_{j}\}|$：包含词语$t_i$的文件数目（即$n_{i,j} \neq 0$的文件数目）如果该词语不在语料库中，就会导致被除数为零，因此一般情况下使用$1 + |\{j : t_i \in d_j\}|$，然后$tfidf_{i,j} = tf_{i,j} \times idf_{i}$。某一特定文件内的高频率词语，以及该词语在整个文件集合中的低文档频率，可产生出高权重的TF-IDF。因此，TF-IDF倾向于过滤掉常见的词语，保留重要的词语。
+\par 一：有很多不同的数学公式可以用来计算TF-IDF，词频 (TF) 是一词语出现的次数除以该文件的总词语数。假如一篇文件的总词语数是100个，而词语“母牛”出现了3次，那么“母牛”一词在该文件中的词频就是3/100=0.03。一个计算文件频率 (DF) 的方法是测定有多少份文件出现过“母牛”一词，然后除以文件集里包含的文件总数。所以，如果“母牛”一词在1,000份文件出现过，而文件总数是10,000,000份的话，其逆向文件频率就是 log(10,000,000 / 1,000)=4。最后的TF-IDF的分数为0.03*4=0.12。
+\par 二：根据关键字k1,k2,k3进行搜索结果的相关性就变成TF1*IDF1 + TF2*IDF2 + TF3*IDF3。比如document1的term总量为1000，k1,k2,k3在document1出现的次数是100，200，50。包含了 k1, k2, k3的document总量分别是 1000， 10000，5000。document set的总量为10000。 
+\begin{eqnarray*}
+TF_1 = \frac{100}{1000} = 0.1 & IDF_1 = log\frac{10000}{1000} = log(10) = 2.3 \\
+TF_2 = \frac{200}{1000} = 0.2 & IDF_2 = log\frac{10000}{10000} = log(1) = 0; \\
+TF_3 = \frac{50}{1000} = 0.05 & IDF_3 = log\frac{10000}{5000} = log(2) = 0.69
+\end{eqnarray*}
+\par 这样关键字k1,k2,k3与document1的相关性$R=0.1\times 2.3 + 0.2\times 0 + 0.05\times 0.69 = 0.2645$，其中k1比k3的比重在document1要大，k2的比重是0。
+\par 三：在某个一共有一千词的网页中“原子能”、“的”和“应用”分别出现了 2 次、35 次 和 5 次，那么它们的词频就分别是 0.002、0.035 和 0.005。 我们将这三个数相加，其和 0.042 就是相应网页和查询“原子能的应用” 相关性的一个简单的度量。概括地讲，如果一个查询包含关键词 w1,w2,...,wN, 它们在一篇特定网页中的词频分别是:TF1, TF2, ..., TFN。 （TF: term frequency)。 那么，这个查询和该网页的相关性就是:TF1 + TF2 + ... + TFN。
+\par 在上面的例子中，词“的”词频很大，而它对确定网页的主题几乎没用。称这种词叫“停用词”（Stopwords)，也就是说在度量相关性时不应考虑它们的频率。在汉语中，停用词还有“是”、“和”、“中”、“地”、“得”等几十个。忽略这些停用词后，上述网页的相似度就变成了0.007，其中“原子能”贡献了 0.002，“应用”贡献了 0.005。细心的读者可能还会发现另一个小的漏洞。在汉语中，“应用”是个很通用的词，而“原子能”是个很专业的词，后者在相关性排名中比前者重要。因此需要给汉语中的每一个词一个权重，这个权重的设定必须满足下面两个条件：
 \begin{verbatim}
-http://www.wuxi.gov.cn/WebPortal/AskAnswer/Gov_AskAnswer_Info?
-AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
-http://www.wuxi.gov.cn/WEBPORTAL/AskAnswer/Gov_AskAnswer_Info?
-AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
+1.一个词预测主题能力越强，权重就越大，反之，权重就越小。
+2.应删除词的权重应该是零。
 \end{verbatim}
-\par 下面两个url均包含了“$\backslash$”字符，其后跟随普通ASCII字符时，转化成一种转义字符，作为文档id会出错。
-\begin{verbatim}
-http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
-=4028818a28aff36d0128b3861a090c76&ChiefHallType=xk360ChromeURL\Shell\Open\Command
-http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID
-=4028818a2fbfee4b012fc2fe529909ac&ChiefHallType=xk360ChromeURL\Shell\Open\Command
-\end{verbatim}
-\par 爬虫获得的网页内容中，如标题为《京杭大运河无锡段》，而内容为《京杭大运河无锡段 发布时间： 2011年11月23日 修改时间： 2013年10月22日 [ 大 中 小 ] 浏览次数：》，这部分内容重复，影响了检索的相关性，需将其过滤。
-\par “春涛”这个词，结合上下文，分词结果不同，下面两个例子，前者分成了“春，涛”，后者分成了“春涛”，还有词，比如：“易视腾”，“买卖宝”。
-\begin{verbatim}
-curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '登太湖仙岛、观鼋渚春涛'
-curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '鼓浪屿上听春涛'
-\end{verbatim}
-\par 对2014年3月18号爬取的网站群数据，作分词处理后，共有164976个不同的词，总共的词个数是161630251个，使用word2vec代码如下，最后一行代码对SogouR.txt进行编码转换。
-\begin{verbatim}
-./word2vec -train /mnt/f/b.txt -output vectors.bin -cbow 0 -size 200 -window 7 -negative 0 -hs 1 -sample 1e-3 -threads 12 -binary 1
-./distance vectors.bin
-cat SogouR.txt | iconv -f gbk -t utf8 -c > SogouR-utf8.txt
-\end{verbatim}
-\par synonym-new.txt中与synonym.txt没有交集的词条共5689个，与其有包含或被包含关系的词条共1464个（有效条目是1318个）,剩下的都是有交集的，扩展后的词条为12715个。synonym.txt中与synonym-new.txt没有交集的词条共1893个，最终的词条应该是21613个。
-\par 在ShardSuggestService中，有若干个隶属于IndexShard的cache，目前保存的cache主要有：用于拼写检查的spellCheckCache，用于智能提示的titleSuggestCache，用于统计每个term\footnote{Lucene术语，代表一个Token。}的document frequency（term的文档数目）和total frequency（term总共出现次数）的termListCache。使用如下命令，获取term“垃圾”的两个频率，当结合词性识别关键字时，该命令非常有用（命令中的size暂时没用）。
-\begin{verbatim}
-curl -XGET 'localhost:9200/official_mini/_termlist?pretty' -d '{
-    "action": "termlist", 
-    "fields": [
-        "content", 
-        "contenttitle"
-    ], 
-    "size": 0, 
-    "term": "垃圾"
-}'
-\end{verbatim}
-\par 使用如下命令，获取“驾驶证补办”的标题提示。
-\begin{verbatim}
-curl -X POST localhost:9200/official_mini/table/__suggest?pretty -d '{
-    "field": "contenttitle", 
-    "size": 15, 
-    "term": "驾驶证补办", 
-    "type": "synonym"
-}'
-\end{verbatim}
-\par 第一个命令，装载标题域《contenttitle》的cache，如果cache存在，则直接返回，否则装载之。第二个命令，刷新标题域《contenttitle》的cache，如果cache不存在，则返回，否则刷新该cache。type为suggest表示装载titleSuggestCache，如果为spell，表示装载spellCheckCache。
-\begin{verbatim}
-curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{
-    "action": "load", 
-    "field": "contenttitle", 
-    "type": "suggest"
-}'
-curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{   
-    "action": "refresh", 
-    "field": "contenttitle", 
-    "type": "suggest"
-}'
-\end{verbatim}
-\par 使用curl命令搜索第7页（注意pn=60，百度默认一个页面10条记录）的“成奎安”，
-\begin{verbatim}
-http://www.baidu.com/s?wd=成奎安&pn=60
-先将cookies存入文件cookie.txt（位于当前目录）
-curl -c cookie.txt www.baidu.com
-cat cookie.txt
-当前url使用指定的cookies文件，-A后的字符串为user agent，该agent拷贝自FireFox。
-curl -v --cookie ./cookie.txt  -A "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)"  "http://www.baidu.com/s?^&wd=成奎安&pn=0";
-《url为http://www.baidu.com/s?cl=3^&wd=×××》貌似也可。
-如被百度防御系统封闭，考虑删除cookies文件，再重新生成cookies文件。
-\end{verbatim}
+\par 在网页中看到“原子能”这个词，或多或少地能了解网页的主题。看到“应用”一词，对主题基本上还是一无所知。因此，“原子能“的权重应该比应用大。如果一个关键词只在很少的网页中出现，通过它就容易锁定搜索目标，它的权重也就应该大。反之如果一个词在大量网页中出现，看到它仍然不清楚要找什么内容，因此它应该小。概括地讲，假定一个关键词$w$在$D$个网页中出现过，那么$D$越大，$w$的权重越小，反之亦然。信息检索中，使用最多的权重是IDF。假定中文网页数是10亿，停用词“的”在所有的网页中都出现，那么它的IDF为零。假如专用词“原子能”在两百万个网页中出现，则它的权重IDF为6.2。又假定通用词“应用”，出现在五亿个网页中，它的权重IDF只有0.7。也就只说，在网页中找到一个“原子能”的比配相当于找到九个“应用”的匹配。利用IDF，上述相关性计算公式就由词频的简单求和变成了加权求和，即$tf_1\times idf_1+tf_2\times idf_2+ \cdots+tf_n\times idf_n$。上例中，该网页和“原子能的应用”的相关性为0.0161，其中“原子能”贡献了0.0126，而“应用”只贡献了0.0035。
+\par TF-IDF权重计算方法经常会和余弦相似性（cosine similarity）一同使用于向量空间模型中，用以判断两份文件之间的相似性。
+\par TF-IDF是建立在这样一个假设之上的：对区别文档最有意义的词语应该是那些在文档中出现频率高，而在整个文档集合的其他文档中出现频率少的词语，所以如果特征空间取TF词频作为测度，就可以体现同类文本的特点。另外考虑到单词区别不同类别的能力，TF-IDF认为一个单词出现的文本频数越小，它区别不同类别文本的能力就越大。因此引入了逆文本频度IDF的概念，以TF和IDF的乘积作为特征空间的取值测度，并用它完成对权值TF的调整，调整权值的目的在于突出重要单词，抑制次要单词。但是在本质上IDF是一种试图抑制噪声的加权，并且单纯地认为文本频率小的单词就越重要，文本频率大的单词就越无用，显然这并不完全正确。IDF的简单结构并不能有效地反映单词的重要程度和特征词的分布情况，使其无法很好地完成对权值调整的功能。
+\par 在TF-IDF中并没有体现出单词的位置信息，对web文档，权重的计算方法应该体现出HTML的结构特征。特征词在不同的标记符中对文章内容的反映程度不同，其权重的计算方法也应不同。因此应该对于处于网页不同位置的特征词赋予不同的系数，然后乘以特征词的词频，以提高文本表示的效果。
+
+
+
