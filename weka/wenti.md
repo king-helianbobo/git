@@ -56,14 +56,14 @@
 	http://www.wuxi.gov.cn/WebPortal/AskAnswer/Gov_AskAnswer_Info?AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
 	http://www.wuxi.gov.cn/WEBPORTAL/AskAnswer/Gov_AskAnswer_Info?AnswerID=9174e3c9-4bb6-41cd-ba75-6465a3aa490c
 	
-下面两个url均包含了“\”字符，其后跟随普通ASCII字符时，转化成一种转义字符，作为文档id会出错。
+下面两个url均包含了“\”字符，其后跟随普通ASCII字符时，此时将转化成一转义字符，作为文档id会出错。
 
 	http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID=4028818a28aff36d0128b3861a090c76&ChiefHallType=xk360ChromeURL\Shell\Open\Command
 	http://www.wuxi.gov.cn/WEBPORTAL/ChiefHall/ChiefHallInfoDetailsXK?SystemID=4028818a2fbfee4b012fc2fe529909ac&ChiefHallType=xk360ChromeURL\Shell\Open\Command
 
-爬虫获得的网页内容中，如标题为《京杭大运河无锡段》，而内容为《京杭大运河无锡段 发布时间： 2011年11月23日 修改时间： 2013年10月22日 [ 大 中 小 ] 浏览次数：》，这部分内容重复，影响了检索的相关性，需将其过滤。
+爬虫获得的网页内容中，如标题为《京杭大运河无锡段》，而内容为《京杭大运河无锡段 发布时间： 2011年11月23日 修改时间： 2013年10月22日 [ 大 中 小 ] 浏览次数：》，这部分内容重复，影响了检索的相关性，需将标题，发布时间，修改时间和浏览次数过滤掉。
 
-春涛”这个词，结合上下文，分词结果不同，下面两个例子，前者分成了“春，涛”，后者分成了“春涛”，还有词，比如：“易视腾”，“买卖宝”。
+春涛”这个词，结合上下文，分词结果不同，下面两个例子，前者分成了“春，涛”，后者分成了“春涛”（这个词被错误的识别为人名）。
 
 	curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '登太湖仙岛、观鼋渚春涛'
 	curl -XGET 'namenode:9200/official_mini/_analyze?analyzer=soul_index&pretty' -d '鼓浪屿上听春涛'
@@ -76,20 +76,39 @@
 
 synonym-new.txt中与synonym.txt没有交集的词条共5689个，与其有包含或被包含关系的词条共1464个（有效条目是1318个）,剩下的都是有交集的，扩展后的词条为12715个。synonym.txt中与synonym-new.txt没有交集的词条共1893个，最终的词条应该是21613个。
 
-在ShardSuggestService中，有若干个隶属于IndexShard的cache，目前保存的cache主要有：用于拼写检查的spellCheckCache，用于智能提示的titleSuggestCache，用于统计每个term\footnote{Lucene术语，代表一个Token。}的document frequency（term的文档数目）和total frequency（term总共出现次数）的termListCache。使用如下命令，获取term“垃圾”的两个频率，当结合词性识别关键字时，该命令非常有用（命令中的size暂时没用）。
+## ShardSuggestService模块
+
+ShardSuggestService中，有若干个隶属于IndexShard的cache，目前保存的cache主要有：
+
+* 用于拼写检查的spellCheckCache
+* 用于智能提示的titleSuggestCache
+* 用于统计每个term的document frequency（term的文档数目）和total frequency（term总共出现次数）的termListCache。
+
+使用如下命令，获取term“垃圾”的两个频率，当结合词性识别关键字时，该命令非常有用（命令中的size暂时没有用处）。
 
 	curl -XGET 'localhost:9200/official_mini/_termlist?pretty' -d '{
     "action": "termlist", 
     "fields": [
-        "content", 
-        "contenttitle"
+     	"contenttitle",
+        "content" 
+    ], 
+    "size": 0, 
+    "term": "垃圾"
+	}'
+
+下面的命令用于更新索引的关键字
+
+	curl -XGET 'localhost:9200/official_mini/_termlist?pretty' -d '{
+    "action": "keywords", 
+    "fields": [
+     	"contenttitle",
+        "content" 
     ], 
     "size": 0, 
     "term": "垃圾"
 	}'
 	
 使用如下命令，获取“驾驶证补办”的标题提示。
-
 
 	curl -X POST localhost:9200/official_mini/table/__suggest?pretty -d '{
     "field": "contenttitle", 
@@ -98,7 +117,7 @@ synonym-new.txt中与synonym.txt没有交集的词条共5689个，与其有包含或被包含关系的词
     "type": "synonym"
 	}'
 
-第一个命令，装载标题域《contenttitle》的cache，如果cache存在，则直接返回，否则装载之。第二个命令，刷新标题域《contenttitle》的cache，如果cache不存在，则返回，否则刷新该cache。type为suggest表示装载titleSuggestCache，如果为spell，表示装载spellCheckCache。
+下面的第一个命令，装载标题域*contenttitle*的cache，如果cache存在，则不做什么动作，直接返回，否则装载cache。第二个命令，刷新标题域*contenttitle*的cache，如果cache不存在，则返回，否则刷新该cache。type为suggest表示装载titleSuggestCache，如果为spell，表示装载spellCheckCache。
 
 	curl -XPOST localhost:9200/official_mini/table/__suggestRefresh -d'{
     "action": "load", 
@@ -111,17 +130,20 @@ synonym-new.txt中与synonym.txt没有交集的词条共5689个，与其有包含或被包含关系的词
     "field": "contenttitle", 
     "type": "suggest"
 	}'
+	
+##自动搜索百度
 
 使用curl命令搜索第7页（注意pn=60，百度默认一个页面10条记录）的“成奎安”
 
 	http://www.baidu.com/s?wd=成奎安&pn=60
 	
-1. 先将cookies存入文件cookie.txt（位于当前目录）
-2. curl -c cookie.txt www.baidu.com
-3. cat cookie.txt
+* 先将cookies存入文件cookie.txt（位于当前目录）
+* curl -c cookie.txt www.baidu.com
+* cat cookie.txt
 
 当前url使用指定的cookies文件，-A后的字符串为user agent，该agent拷贝自FireFox。
+
 	curl -v --cookie ./cookie.txt  -A "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)"  "http://www.baidu.com/s?^&wd=成奎安&pn=0";
 	
-《url为http://www.baidu.com/s?cl=3^&wd=×××》貌似也可。如被百度防御系统封闭，考虑删除cookies文件，再重新生成cookies文件。
+url为<http://www.baidu.com/s?cl=3^&wd=×××>貌似也可，如被百度防御系统封闭，可删除cookies文件，再重新生成，然后调用上述命令。
 
