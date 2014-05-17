@@ -103,11 +103,13 @@ mapreduce/ESMapReduce/lib/
 </mirrors>
 \end{verbatim}
 \end{enumerate}
-\par 打算执行maven工程下某个类时，例如test目录下的某个类，执行命令如下：\textbf{mvn exec:java -X -Dexec.mainClass="org.ansj.liubo.test.test"  -Dexec.classpathScope=test}，其中的classpathScope=test告诉maven打算执行test类，而非工程的main类。执行test部分的某些类之前，必须执行\textbf{mvn test-compile}，以编译test部分的代码，如果没有,执行过程会报错。当准备向执行类添加参数时，使用如下命令。
+\par 打算执行maven工程下某个类时，例如test目录下的某个类，执行命令如下：\textbf{mvn exec:java -X -Dexec.mainClass="org.ansj.liubo.test.test"  -Dexec.classpathScope=test}，其中的classpathScope=test告诉maven执行test类，而非main类。执行test部分的某些类之前，必须执行\textbf{mvn test-compile}，以编译test部分的代码（test类中必须有main函数），如没有编译，则执行会报错。当准备向执行类添加参数时，使用如下命令。
 \begin{verbatim}
 mvn exec:java -Dexec.mainClass="org.elasticsearch.application.WebDemo"
   -Dexec.args="/mnt/f/tmp/content.txt /mnt/f/tmp/result3.txt"  
   -Dexec.classpathScope=test
+## 如下命令执行junit框架中的test类(没有main函数)
+mvn test -Dtest="com.soul.elasticsearch.test.OfficialDataTest"
 \end{verbatim}
 \subsection{Maven常用插件}
 \par Maven本质上是一个插件框架，其核心并不执行任何具体的构建任务，所有这些任务都交给插件完成，例如编译源代码由maven-compiler-plugin完成。进一步说，每个任务对应一个插件，每个插件会有一个或者多个目标（goal），例如maven-compiler-plugin的compile目标用来编译src/main/java/目录的code，而testCompile目标则用来编译src/test/java/目录的code。
