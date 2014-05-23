@@ -3,6 +3,12 @@
 \par Eclipse中删除无用的import：《Ctrl+ Shift + O》 do it manually or Window -> Preferences -> Java -> Editor -> Save Actions -> Organize Imports to have it organized automatically whenever save a class。或者在Package Explorer窗口中，使用《Ctrl+ Shift + O》快捷键。
 \subsection{Linux Shell}
 \par 安装Mate桌面环境后，会碰到没有声音的情况，此时可以删除pulseaudio，执行命令后重启机器。
+\par 使用nutch时，如果目录中文件太多，且包含了很多不需要的类型（如音频，视频），可使用rsync命令，保持源文件夹目录结构，同时只提取指定类型。
+\begin{verbatim}
+rsync -av --exclude='path1/exclude' --exclude='path2/exclude' [source] [dest]
+rsync -av --include='*.shtml' --include='*.doc' --include='*.pdf' --include='*/' --exclude='*' /mnt/d data/
+\end{verbatim}
+\par 注意[source]与[source/]不同，前者表示拷贝source目录，后者表示拷贝目录下的内容。如果需要过滤的文件太多，可使用[--exclude-from=FILE]参数，其中FILE存储需过滤的文件或目录。也可过滤类型，如[--exclude=*/.svn*]。
 \begin{verbatim}
 sudo apt-get autoremove pulseaudio
 \end{verbatim}
