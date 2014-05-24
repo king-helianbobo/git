@@ -741,9 +741,8 @@ client.UpdateSettings(indexName, settings);
 \end{verbatim}
 Only do this though if you are indexing into a clean new index, if its an index that is actively posted new documents/updates than those might not be available untill the next flush.
 \begin{verbatim}
-http://blog.sematext.com/2013/07/08/elasticsearch-refresh-interval-vs-indexing-performance/ gives a good indication what the refresh_interval does to indexing performance.
+http://blog.sematext.com/2013/07/08/elasticsearch-refresh-interval-vs-indexing-performance/ 
 \end{verbatim}
-\par Having said all of that if your batch size is 200 it seems very strange that you are hitting the queue limit.
+\par gives a good indication what the refresh\_interval does to indexing performance. Having said all of that if your batch size is 200 it seems very strange that you are hitting the queue limit.
 \par How many documents are you indexing and what is your batchsize? What also helps is logging the bulk response times (.Took property on the IBulkResponse) to see if there is a pattern somehow i.e is it a ramp up or are there are a couple of rogue calls?
-Also following the calls with Fiddler might give some more insights into whats going on.
-http://fiddler2.com/documentation/Configure-Fiddler/Tasks/ConfigureDotNETApp
+\par Also following the calls with Fiddler might give some more insights into whats going on.http://fiddler2.com/documentation/Configure-Fiddler/Tasks/ConfigureDotNETApp
