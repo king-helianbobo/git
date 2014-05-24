@@ -109,12 +109,12 @@ ShardSuggestService中，有若干个隶属于IndexShard的cache，目前保存的cache主要有：
 	}'
 	
 使用如下命令，获取“驾驶证补办”的标题提示。
-
-	curl -X POST localhost:9200/official_mini/table/__suggest?pretty -d '{
+	
+	curl -X POST 192.168.50.70:9200/official_mini/table/__suggest?pretty -d '{
     "field": "contenttitle", 
     "size": 15, 
     "term": "驾驶证补办", 
-    "type": "synonym"
+    "type": "suggest"
 	}'
 
 下面的第一个命令，装载标题域*contenttitle*的cache，如果cache存在，则不做什么动作，直接返回，否则装载cache。第二个命令，刷新标题域*contenttitle*的cache，如果cache不存在，则返回，否则刷新该cache。type为suggest表示装载titleSuggestCache，如果为spell，表示装载spellCheckCache。

@@ -94,6 +94,7 @@ curl -XPUT "namenode:9200/movies/movie/_mapping" -d'
    }
 }'
 \end{verbatim}
+
 \subsection{Depth into ElasticSearch}
 \par 如果想查看ElasticSearch中某些或某几个index的状态，使用命令：
 \begin{verbatim}
@@ -729,3 +730,20 @@ curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
 }'
 \end{verbatim}
 \end{enumerate}
+\subsection{}
+\par Its the total number of bulk calls that are allowed to be queued for execution irregardless of how many operations you put in each.
+\par Each elasticsearch node has (N cores * 5) fixed dedicated threads doing the bulk index work, if all of them are busy then calls are put in the queue, if that queue reaches 50 it starts bouncing request with the exception you just saw.
+\par Without knowing the exact details of your request (how big is the json, how many ops are per bulk request) my main suspect for poor indexing performance is that you still have the index.refresh\_interval set to 1s this means it will perform a flush on the data every second. Out of the box this is what you want and gives elasticsearch its NRT characteristics with regards to POST'ing a document and it turning up on your searches. But if you are doing bulk operations it is probably a good practice to turn this off prior to indexing (by setting it to -1) and turning it on again afterwards.
+\begin{verbatim}
+var settings = new IndexSettings();
+settings["refresh_interval"] = "-1";
+client.UpdateSettings(indexName, settings);
+\end{verbatim}
+Only do this though if you are indexing into a clean new index, if its an index that is actively posted new documents/updates than those might not be available untill the next flush.
+\begin{verbatim}
+http://blog.sematext.com/2013/07/08/elasticsearch-refresh-interval-vs-indexing-performance/ gives a good indication what the refresh_interval does to indexing performance.
+\end{verbatim}
+\par Having said all of that if your batch size is 200 it seems very strange that you are hitting the queue limit.
+\par How many documents are you indexing and what is your batchsize? What also helps is logging the bulk response times (.Took property on the IBulkResponse) to see if there is a pattern somehow i.e is it a ramp up or are there are a couple of rogue calls?
+Also following the calls with Fiddler might give some more insights into whats going on.
+http://fiddler2.com/documentation/Configure-Fiddler/Tasks/ConfigureDotNETApp
