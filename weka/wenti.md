@@ -147,3 +147,5 @@ ShardSuggestService中，有若干个隶属于IndexShard的cache，目前保存的cache主要有：
 	
 url为<http://www.baidu.com/s?cl=3^&wd=×××>貌似也可，如被百度防御系统封闭，可删除cookies文件，再重新生成，然后调用上述命令。
 
+
+
