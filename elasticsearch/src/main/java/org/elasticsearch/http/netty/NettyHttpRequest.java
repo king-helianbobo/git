@@ -94,7 +94,7 @@ public class NettyHttpRequest extends AbstractRestRequest implements HttpRequest
     }
 
     @Override
-    public String rawPath() {
+    public String rawPath() {oo
         return rawPath;
     }
 
