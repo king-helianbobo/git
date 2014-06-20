@@ -198,7 +198,7 @@ dfs.namenode.data.dir   &   /home/hadoop-2.4.0/data\\ \hline
 mapreduce.framework.name &  yarn \\ \hline
   \end{tabular}
 \end{table}
-\par 上表中的主机名也可换成对应IP，如192.168.50.70:9001，fs.defaultFS中的端口地址必须和dfs.namenode.rpc-address相同，如果没有配置dfs.namenode.rpc-address，则启动时会报错，而且必须同时指定IP和端口。
+\par 上表中的主机名也可换成对应IP，如192.168.50.70:9001\footnote{建议配置成IP方式，方便局域网内查看。}，fs.defaultFS中的端口地址必须和dfs.namenode.rpc-address相同，如果没有配置dfs.namenode.rpc-address，则启动时会报错，而且必须同时指定IP和端口。
 \item 启动运行，首先格式化NameNode，然后分别启动hdfs和yarn。
 \begin{verbatim}
 hdfs namenode -format
@@ -209,6 +209,13 @@ hdfs namenode -format
 \begin{verbatim}
 export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native
 export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib"
+\end{verbatim}
+\item 发布hadoop jar包，编译完后的tar.gz包在hadoop-dist/target/目录下。
+\begin{verbatim}
+## 不带natice code
+$ mvn package -Pdist -DskipTests -Dtar
+## 带natice code，推荐方式
+$ mvn package -Pdist,native -DskipTests -Dtar
 \end{verbatim}
 \end{enumerate}
 
