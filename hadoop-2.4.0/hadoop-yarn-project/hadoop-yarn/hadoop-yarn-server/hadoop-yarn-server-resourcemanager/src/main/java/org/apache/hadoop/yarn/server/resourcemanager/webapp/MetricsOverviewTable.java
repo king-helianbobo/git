@@ -64,13 +64,13 @@ public class MetricsOverviewTable extends HtmlBlock {
     table("#metricsoverview").
     thead().$class("ui-widget-header").
       tr().
-        th().$class("ui-state-default")._("Apps Submitted")._().
+        th().$class("ui-state-default")._("提交作业")._().
         th().$class("ui-state-default")._("Apps Pending")._().
-        th().$class("ui-state-default")._("Apps Running")._().
-        th().$class("ui-state-default")._("Apps Completed")._().
+        th().$class("ui-state-default")._("运行作业")._().
+        th().$class("ui-state-default")._("完成作业")._().
         th().$class("ui-state-default")._("Containers Running")._().
-        th().$class("ui-state-default")._("Memory Used")._().
-        th().$class("ui-state-default")._("Memory Total")._().
+        th().$class("ui-state-default")._("使用的内存")._().
+        th().$class("ui-state-default")._("总共的内存")._().
         th().$class("ui-state-default")._("Memory Reserved")._().
         th().$class("ui-state-default")._("Active Nodes")._().
         th().$class("ui-state-default")._("Decommissioned Nodes")._().
@@ -110,13 +110,13 @@ public class MetricsOverviewTable extends HtmlBlock {
         table("#usermetricsoverview").
         thead().$class("ui-widget-header").
           tr().
-            th().$class("ui-state-default")._("Apps Submitted")._().
+            th().$class("ui-state-default")._("提交作业")._().
             th().$class("ui-state-default")._("Apps Pending")._().
-            th().$class("ui-state-default")._("Apps Running")._().
-            th().$class("ui-state-default")._("Apps Completed")._().
-            th().$class("ui-state-default")._("Containers Running")._().
+            th().$class("ui-state-default")._("运行作业")._().
+            th().$class("ui-state-default")._("已完成作业")._().
+            th().$class("ui-state-default")._("运行进程数目")._().
             th().$class("ui-state-default")._("Containers Pending")._().
-            th().$class("ui-state-default")._("Containers Reserved")._().
+            th().$class("ui-state-default")._("保留进程数目")._().
             th().$class("ui-state-default")._("Memory Used")._().
             th().$class("ui-state-default")._("Memory Pending")._().
             th().$class("ui-state-default")._("Memory Reserved")._().

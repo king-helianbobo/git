@@ -62,3 +62,4 @@ synonym/test-output/
 ## ignore below directories
 fnlp/
 soul-all/
+hadoop-2.4.0/

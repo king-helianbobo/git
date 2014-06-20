@@ -31,7 +31,7 @@ if (job.getNumReduceTasks() == 0) {
 }
 \end{verbatim}
 \par 也就是说，如果没有ReduceTask，则RecordWriter对MapTask负责，反之，RecordWriter对ReduceTask负责，NewOutputCollector将负责MapTask的输出，它调用MapOutputBuffer来输出其中间结果，这种情况下，中间结果将写入本地文件系统，避免了写入HDFS带来的较大开销，但这种情况下，中间结果对用户是不可见的。
-\subsection{Mapreduce中的两个Mapper}
+\subsection{两个Mapper}
 \par MapReduce中存在两种API，旧的API来自于包org.apache.hadoop.mapred，新的API来自于包org.apache.hadoop.mapreduce。新的API有Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT>类，调用者通过继承Mapper类，并重载void map(KEYIN key, VALUEIN value, Context context) 函数，以执行map任务。
 \par Context类继承了MapContext<KEYIN,VALUEIN,KEYOUT,VALUEOUT>,是Mapper中核心类，给MapTask,ReduceTask提供包括：
 \begin{itemize}
@@ -41,7 +41,7 @@ if (job.getNumReduceTasks() == 0) {
 \item 调用不同的RecordReader，Old API调用getRecordReader(InputSplit split, JobConf job, Reporter reporter)，New API调用createRecordReader(InputSplit split, TaskAttemptContext context)函数。
 \item 调用不同的RecordWriter，旧API调用getRecordWriter(FileSystem ignored, JobConf job, String name, Progressable progress)函数，新API调用getRecordWriter(TaskAttemptContext context)函数。
 \end{itemize}
-\subsection{Hadoop中配置log4j}
+\subsection{配置log4j}
 开发MapReduce作业时，使用System.out.print()方式和将日志输出到本地文件中比较麻烦，因此使用log4j库打印日志。但使用Hadoop库时，自己写的log4j.xml(或log4j.properties)文件会被MapReduce框架覆盖掉，从而不起作用，此时只能使用Hadoop提供的log4j.properties文件。在自己写的类的main()函数中，可以显式地加载log4j.xml或log4j.properties文件，代码为：\textbf{DOMConfigurator.configure("src/log4j.xml");}或者\textbf{PropertyConfigurator.configure("src/log4j.properties");}
 \par 修改\$\{HADOOP\_HOME\}/etc/hadoop/目录下的log4j.properties文件，在文件末尾添加如下几句：
 \begin{verbatim}
@@ -119,3 +119,96 @@ property.setProperty("HADOOP_USER_NAME", "root");
 \end{verbatim}
 \par 以这种方式，就可以读写hdfs目录下的任何文件了。从这里也能看出，hdfs的安全机制十分薄弱，必须依赖于宿主操作系统的安全机制。
 \end{enumerate}
+\section{Hadoop-2.4.0安装}
+\subsection{前言}
+\par 本文目的是为当前最新版本的Hadoop 2.4.0提供详细的安装说明，以帮助减少安装困难，并对一些错误原因进行说明。安装只涉及了hadoop-common、hadoop-hdfs、hadoop-mapreduce与hadoop-yarn,并不包含其它技术。
+\par 共3台机器,部署如下所示,在shell中可通过hostname Slave1修改IP地址为71的主机名。
+\begin{itemize}
+\item 192.168.50.70(Master),角色为用于hdfs的NameNode,SecondaryNameNode以及用于Yarn框架的ResourceManager与NodeManager.
+\item 192.168.50.71(Slave1),角色为DataNode,NodeManager.
+\item 192.168.50.72(Slave2),角色为DataNode,NodeManager.
+\end{itemize}
+\subsection{安装Java与Hadoop}
+\begin{enumerate}[(1)]
+\item 下载jdk-Version.tar.gz(本例中jdk版本是1.7.0\_60),解压缩jdk至/home/java目录；
+\item 在/root/.bash\_profile文件末尾写入:
+\begin{verbatim}
+JAVA_HOME=/home/java/jdk1.7.0_60
+PATH=$PATH:$JAVA_HOME/bin
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export JAVA_HOME PATH CLASSPATH
+\end{verbatim}
+\item 保存文件并执行(source /root/.bash\_profile)使配置生效，执行java -version，如果java版本正确,则安装成功。
+\end{enumerate}
+\par Hadoop安装与配置类似于jdk，解压缩后配置下环境变量即可，执行hadoop version，如果版本符合期望值，安装成功。
+\subsection{配置ssh}
+\par 由于开启与关闭Hadoop均在Master上执行，为方便与Slaves的交互，需要配置Master无密码登录所有的Slave节点。
+\begin{enumerate}[(1)]
+\item 在Master机器上生成密码对(ssh-keygen),采用默认路径(/root/.ssh/id\_rsa)保存。
+\item 将id\_rsa.pub写入到信任key列表中,注意中间符号为\textbf{>>},而非\textbf{>}.
+\begin{verbatim}
+## 实际上是对localhost免密码登录
+cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+\end{verbatim}
+\item 修改文件"authorized\_keys"权限，使得只有root具备读写权限。
+\begin{verbatim}
+chmod 600 /root/.ssh/authorized_keys
+\end{verbatim}
+\item 配置ssh，在/etc/ssh/sshd\_config文件中写入如下内容，并重启Dameon进程(service sshd restart)。
+\begin{verbatim}
+RSAAuthentication yes # 启用 RSA 认证
+PubkeyAuthentication yes # 启用公钥私钥配对认证方式
+AuthorizedKeysFile .ssh/authorized_keys # 公钥文件路径
+\end{verbatim}
+\item 把Master公钥复制到所有的Slave机器，以192.168.50.71为例，执行如下步骤：
+\begin{verbatim}
+## Master上执行:scp root/.ssh/id_rsa.pub root@192.168.50.71:/tmp
+## 50.71上执行:cat /tmp/id_rsa.pub >> /root/.ssh/authorized_keys
+## 50.71上执行:chmod 600 /root/.ssh/authorized_keys
+\end{verbatim}
+\end{enumerate}
+\par 至此已经实现了Matser到Slave1的无密码登陆，Matser无密码登陆Slave2可重复上面的步骤。Slave无密码登录Master和Slave间相互无密码登录原理相同，重要的是把一方机器的公钥追加到另一机器的"/root/.ssh/authorized\_keys"中.
+\subsection{集群配置}
+\begin{enumerate}[(1)]
+\item 每台机器上执行命令，确保每台机器时间同步(所谓同步，按照我的理解，任意两台机器的时间差控制在一定范围内)，否则MapReduce作业运行时会出现Token超时等错误。
+\begin{verbatim}
+# 与时间服务器同步
+ntpdate time.nist.gov
+# 将本地时间从EDT（美国东部时间）变为CST
+mv /etc/localtime /etc/localtime.bak
+ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+\end{verbatim}
+\item 修改etc/hadoop/slaves文件
+\begin{verbatim}
+localhost
+Slave1
+Slave2
+\end{verbatim}
+\item 修改core-site.xml,hdfs-site.xml,mapred-sit.xml
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|l|l|}
+\hline
+fs.defaultFS &hdfs://Master:9001 \\ \hline
+hadoop.tmp.dir & /home/hadoop-2.4.0/tmp \\ \hline
+dfs.namenode.rpc-address & Master:9001\\ \hline
+dfs.namenode.secondary.http-address& Master:50090 \\ \hline
+dfs.namenode.name.dir   & /home/hadoop-2.4.0/name\\ \hline
+dfs.namenode.data.dir   &   /home/hadoop-2.4.0/data\\ \hline
+mapreduce.framework.name &  yarn \\ \hline
+  \end{tabular}
+\end{table}
+\par 上表中的主机名也可换成对应IP，如192.168.50.70:9001，fs.defaultFS中的端口地址必须和dfs.namenode.rpc-address相同，如果没有配置dfs.namenode.rpc-address，则启动时会报错，而且必须同时指定IP和端口。
+\item 启动运行，首先格式化NameNode，然后分别启动hdfs和yarn。
+\begin{verbatim}
+hdfs namenode -format
+./sbin/start-dfs.sh
+./sbin/start-yarn.sh
+\end{verbatim}
+\item 如果在启动出现如下错误，可以在hadoop-env.sh 加入下面两句话，使用JDK提供的jps命令\footnote{简单察看当前机器上java进程的一些情况。}，查看相应的进程是否启动。
+\begin{verbatim}
+export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native
+export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib"
+\end{verbatim}
+\end{enumerate}
+

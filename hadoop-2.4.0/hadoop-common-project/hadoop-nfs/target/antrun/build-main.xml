@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project name="maven-antrun-" default="main"  >
 <target name="main">
-  <mkdir dir="/home/liubo/git/hadoop-2.4.0-src/hadoop-common-project/hadoop-nfs/target/test-dir"/>
-  <mkdir dir="/home/liubo/git/hadoop-2.4.0-src/hadoop-common-project/hadoop-nfs/target/test-dir"/>
+  <mkdir dir="/home/liubo/git/hadoop-2.4.0/hadoop-common-project/hadoop-nfs/target/test-dir"/>
+  <mkdir dir="/home/liubo/git/hadoop-2.4.0/hadoop-common-project/hadoop-nfs/target/test-dir"/>
 </target>
 </project>
