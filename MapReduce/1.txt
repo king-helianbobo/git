@@ -1,0 +1,16 @@
+TaskTracker中与任务有关的线程（launchThread，TaskRunner）的错误处理流程
+（1）当launchThread生成TaskRunner线程后，已不再需要它了，如果中间过程出错，即Task发起失败，则杀死、清除任务，调用tip.kill(true)与tip.cleanup(true)函数，其中，tip代表需要执行的TaskInProgress对象。launchThread将任务交给TaskRunner线程后进入死亡状态，而TaskRunner起始于Map/Reduce任务发起，终止于Map/Reduce任务结束，它伴随着整个任务的执行。
+（2）如果任务正常执行，执行完毕时，TaskTracker进程必然收到了Mapper/Reducer子进程发送的done消息，在响应done消息过程中，TaskTracker进程设置任务进展为1.0，改变任务状态，即FAILED_UNCLEAN-->FAILED，KILLED_UNCLEAN-->KILLED，COMMIT_PENDING-->SUCCEEDED，然后停止JvmRunner，唤醒等待任务完成的TaskRunner。被唤醒的TaskRunner则检查任务是否还需要cleanup，如果需要cleanup，则调用cleanup函数，然后，释放MapSlot或ReduceSlot。
+（3）如果Mapper/Reducer执行过程中，TaskRunner捕获到异常，则调用tip.kill(true)函数杀死任务，kill函数主要功能包括（a）改变任务状态（状态改变是因为错误发生）；（b）通知TaskRunner退出运行；（c）释放MapSlot或ReduceSlot。接着，调用tip.cleanup(true)函数，cleanup函数主要功能包括：（a）移除TaskTracker上该TaskInProgress对象；（b）删除与任务有关的作业文件，最后设置任务进展为0.0。
+（4）当TaskRunner无法处理异常时，即TaskRunner既看到任务没有done，也没有被killed，这时设置任务进展为0.0，并改变任务状态（状态改变是因为错误发生），然后检查任务是否还需要cleanup（状态为FAILED，KILLED，FAILED_UNCLEAN，KILLED_UNCLEAN的任务需要清除），如果需要cleanup，则调用cleanup函数。
+
+
+
+
+
+
+
+
+
+Mapper/Reducer进程主动上报的错误
+

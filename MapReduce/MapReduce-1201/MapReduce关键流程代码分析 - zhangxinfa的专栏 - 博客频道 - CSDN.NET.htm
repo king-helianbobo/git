@@ -1,0 +1,671 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0055)http://blog.csdn.net/zhangxinfa/article/details/7477501 -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET</title>
+
+<meta name="description" content="我这里主要是结合代码来介绍MapR的一些关键流程，咱们需要将XXX系统移植到hadoop系统，虽然之前也对Hadoop的工作原理及使用方法有了一些了解，但真正开工的时候，还是会出现一些大大小小的问题，主要是对Hadoop的一些关键流程的实现不够清楚，因此将MapR的某些代码又粗略得读了一遍，做了一下笔记(绝大部分代码只是通读，并没有实际去调试，完全是结合Hadoop权威指南上的内容，代码，以及注释">
+<script type="text/javascript" async="" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ga.js"></script><script src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/jquery.js" type="text/javascript"></script>
+<script src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/plugins.js" type="text/javascript"></script>
+<script src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/common.js" type="text/javascript"></script>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ad.js"></script>
+<link rel="Stylesheet" type="text/css" href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/style.css">
+<link id="RSSLink" title="RSS" type="application/rss+xml" rel="alternate" href="http://blog.csdn.net/zhangxinfa/rss/list">
+<link rel="shortcut icon" href="http://blog.csdn.net/favicon.ico">
+<link type="text/css" rel="stylesheet" href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/default.css">
+</head>
+<body>
+<script src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/pub_topnav_2011.js" type="text/javascript"></script><link rel="stylesheet" type="text/css" href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/navtop_2012.css">
+<div class="nav_top_2011">
+<p><span style="color:red;">您还未登录！</span>|<a href="https://passport.csdn.net/account/login" target="_top">登录</a>|<a href="https://passport.csdn.net/account/register" target="_top">注册</a>|<a href="https://passport.csdn.net/help/faq" target="_blank">帮助</a></p><ul>
+<li><a href="http://www.csdn.net/" target="_blank">首页</a></li>
+<li><a href="http://news.csdn.net/" target="_blank">业界</a></li>
+<li><a href="http://mobile.csdn.net/" target="_blank">移动</a></li>
+<li><a href="http://cloud.csdn.net/" target="_blank">云计算</a></li>
+<li><a href="http://sd.csdn.net/" target="_blank">研发</a></li>
+<li><a href="http://bbs.csdn.net/" target="_blank">论坛</a></li>
+<li><a href="http://blog.csdn.net/" target="_blank">博客</a></li>
+<li><a href="http://download.csdn.net/" target="_blank">下载</a></li>
+<li class="more"><h2 id="topnav_btnmore" onclick="showNavMore(this)"><a href="javascript:void(0);">更多</a></h2>
+<div id="topnav_hidlist">
+<iframe name="nav_frm" src="about:blank" width="92" height="178" scrolling="no" frameborder="no"></iframe>
+</div>
+</li>
+</ul>
+</div>
+
+
+<div id="container">
+<div id="header">
+    <div class="header">
+        <div id="blog_title">
+            <h1><a href="http://blog.csdn.net/zhangxinfa">zhangxinfa的专栏</a></h1>
+            <h2></h2>
+            <div class="clear"></div>
+        </div>
+        <div class="clear"></div>
+    </div>
+</div>
+<div id="navigator">
+    <div class="navigator_bg"></div>
+    <div class="navigator">
+        <ul>
+            <li id="btnContents"><a href="http://blog.csdn.net/zhangxinfa?viewmode=contents"><span><img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ico_list.gif">目录视图</span></a></li>
+            <li id="btnView"><a href="http://blog.csdn.net/zhangxinfa?viewmode=list"><span><img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ico_summary.gif">摘要视图</span></a></li>
+            <li id="btnRss"><a href="http://blog.csdn.net/zhangxinfa/rss/list"><span><img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ico_rss.gif">订阅</span></a></li>
+</ul>
+    </div>
+</div>
+<script type="text/javascript">
+    var username = "zhangxinfa";
+    var blog_address = "http://blog.csdn.net/zhangxinfa";
+    var static_host = "http://static.blog.csdn.net";
+    var currentUserName = "";
+</script>
+        
+<div id="body">
+<div id="main">
+<div class="main">
+<div class="notice"> 
+
+<a href="http://blog.csdn.net/csdnproduct/article/details/8206587" target="_blank">
+<font color="red">
+公告：CSDN 搜索第二版正式上线！  </font></a>
+
+&nbsp;&nbsp;
+
+<a href="http://bbs.csdn.net/topics/390296252" target="_blank"><font color="red">CSDN大会PPT合集下载，纯干货！  </font></a>
+
+&nbsp;&nbsp;&nbsp;
+
+<a href="http://blog.csdn.net/zhangoi391/article/details/8161343" target="_blank">
+<font color="red">2000元大奖征异构开发博文  </font></a>
+
+<br>
+
+
+
+
+
+<a href="http://blog.csdn.net/csdnproduct/article/details/8140597" target="_blank">
+<font color="red">CSDN博客频道搬家功能改版正式上线！ </font></a>
+
+&nbsp;&nbsp;
+
+<a href="http://events.csdn.net/DR2012/roadshow/index.html" target="_blank">
+<font color="red">【免费】解读海外市场营销奥秘   </font></a>
+
+&nbsp;&nbsp;
+
+<a href="http://blog.csdn.net/csdnproduct/article/details/8101993" target="_blank">
+<font color="red">CSDN博客频道推出TAG功能  </font></a>
+
+</div><div id="article_details" class="details">
+    <div class="article_title">
+    <span class="ico ico_type_Original"></span>
+    <h3>
+        <span class="link_title"><a href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET.htm">
+        MapReduce关键流程代码分析
+        </a></span>
+    </h3>
+</div>
+
+        
+    <div class="article_manage">
+        <span class="link_categories">
+        分类：
+            <a href="http://blog.csdn.net/zhangxinfa/article/category/1081290">Hadoop</a> 
+        </span>
+    <span class="link_postdate">2012-04-19 14:32</span>
+    <span class="link_view" title="阅读次数">168人阅读</span>
+    <span class="link_comments" title="评论次数"><a href="http://blog.csdn.net/zhangxinfa/article/details/7477501#comments">评论</a>(0)</span>
+    <span class="link_collect"><a href="javascript:void(0);" onclick="javascript:collectArticle(&#39;MapReduce关键流程代码分析&#39;,&#39;7477501&#39;);return false;" title="收藏">收藏</a></span>
+    <span class="link_report"><a href="http://blog.csdn.net/zhangxinfa/article/details/7477501#report" onclick="javascript:report(7477501,2);return false;" title="举报">举报</a></span>
+    
+</div>
+
+
+    
+<div id="article_content" class="article_content">
+
+<p><br>
+</p>
+<p>&nbsp;&nbsp;&nbsp; 我这里主要是结合代码来介绍MapR的一些关键流程，咱们需要将XXX系统移植到hadoop系统，虽然之前也对Hadoop的工作原理及使用方法有了一些了解，但真正开工的时候，还是会出现一些大大小小的问题，主要是对Hadoop的一些关键流程的实现不够清楚，因此将MapR的某些代码又粗略得读了一遍，做了一下笔记(绝大部分代码只是通读，并没有实际去调试，完全是结合Hadoop权威指南上的内容，代码，以及注释这三部分做的理解，可能有不准确的地方，希望大家能指出，一起进步~~)</p>
+<p>&nbsp;&nbsp;&nbsp; 本文从以下几个方面做介绍：</p>
+<p>1，TaskTracker和Child的代码实现流程，Child部分仅介绍流程，至于MapRduce的具体调用逻辑已经有很多文章介绍了，这里并没有做详细介绍；</p>
+<p>2，Child进程的生命周期代码分析；</p>
+<p>3，任务运行状态上报以及状态转换；</p>
+<p>4，MapR系统出错情况代码分析(包括任务，TaskTracker出错情况下MapR系统的处理)；</p>
+<p>5，对Job的恢复处理；</p>
+<p><a name="OLE_LINK4"></a><a name="OLE_LINK3">6，Hadoop</a>网络拓扑及任务调度</p>
+<p>在具体介绍之前，有必要介绍一下本文中所涉及到的一些基本概念的表述方法；</p>
+<p>1，TaskTracker, 本文可能会出现对它的缩写TT</p>
+<p>2，JobTracker，可能会有JT缩写</p>
+<p>3，关于Job的描述，Hadoop在代码中使用JobInProgress这个类来描述一切与Job相关的信息；</p>
+<p>4，关于任务的描述，Hadoop中使用类TaskInProgress来描述一个MapR任务，它是对一个Job任务划分的描述，我们可以称之为Job的子任务(下文可能会用子任务，tip等字眼来描述)；而Task描述了任务的某一次执行，因为一个Job子任务可能会被执行多次(执行失败，或需要有额外的Speculative task),Task即任务的某一次执行实体。一个TaskInProgress包含一系列用来存储任务执行体的数据结构；</p>
+<p>&nbsp;</p>
+<p>第一部分 ：TaskTracker和Child</p>
+<p>TaskTracker实现了Runnable接口，他的run函数的主要逻辑在offerService函数里，是一个循环，保持和JobTracker的心跳通信，如果TaskTracker当前有空余的Task槽位(Task的最大槽位数由TaskTracker上的配置文件中的mapred.tasktracker.map.tasks.maximum及mapred.tasktracker.reduce.tasks.maximum来决定的，在mapred-site.xml中配置)，则在心跳消息里附带上Task任务申请信息（心跳消息的封装在
+ transmitHeartBeat(）函数里），如果JobTracker收到此类心跳，且有未分配的Task，则会将适当的Task(这里在JobTracker端有一个Task调度的过程)通过心跳响应回给TaskTracker，</p>
+<p>TaskTrackerAction[] actions = heartbeatResponse.getActions();</p>
+<p>action有以下几类： LAUNCH_TASK,KILL_TASK,KILL_JOB, REINIT_TRACKER,COMMIT_TASK</p>
+<p>actions是TaskTracker收到响应后根据对应的类型创建的，并不是JobTracker直接传过来的；</p>
+<p>正常情况下，收到的第一个action都是LaunchTaskAction，根据任务类型，将该action放到对应的TaskLauncher中去，假设当前是一个Map Task,则mapLauncher.addToTaskQueue(action);这个函数里会生成一个TaskInProgresstip，将tip放置到任务启动队列：List&lt;TaskInProgress&gt;tasksToLaunch，并通知其他线程(实际是TaskLaucher这个线程)有任务需要处理，tasksToLaunch.notifyAll()，这将导致run函数里的等待返回；</p>
+<p>TaskLaucher本身是一个线程，他的run函数不断从tasksToLaunch里获取任务进行处理，如果没有，则等待，流程如下：</p>
+<p>1，取tasksToLaunch里的任务，没有，则等待，有则取出来进行处理；</p>
+<p>2，判断当前TaskTracker是否有空闲的任务槽位，没有，则等待；</p>
+<p>3，如果有空闲槽位，则startNewTask(tip) 开始处理这个任务；</p>
+<p>startNewTask的主要逻辑位于localizeJob函数里，他所做的工作如下:</p>
+<p>1，将要处理的任务放到所属job里(当然，对于Job的第一个task而言，需要新创建一个RunningJob实例，并放置到RunningJob Map里)；</p>
+<p>2，创建Job相关的工作路径(jobcache路径以及当前job的子路径：包括job路径，即以jobID命名的路径，用来存放job运行所需资源，如job.xml、Job的work路径、存放jar包的路径)并下载资源；</p>
+<p>具体举例看一下这些路径的关系：</p>
+<p>假设当前taskracker的目录：/home/xxx/hadoop/tmp/mapred/local/taskTracker</p>
+<p>下面的/home/xxx/hadoop/tmp/mapred/local用～代替</p>
+<p>则有jobcache目录 : ～/taskTracker/jobcache;</p>
+<p>当前job路径： ～/taskTracker/jobcache/job_201202101537_0001 (job.xml下载到这里)</p>
+<p>jar包路径 : ～/taskTracker/jobcache/job_201202101537_0001/jars (jar包下载并解压缩到这里)</p>
+<p>work路径 ：～/taskTracker/jobcache/job_201202101537_0001/work</p>
+<p>3，重新生成job.xml（因为在这里可能新添加了一些配置信息，这些配置信息需要应用到后面的Child JVM中），解压缩job.jar;</p>
+<p>4，启动任务launchTaskForJob，实际是调用里TaskInProgress的launchTask()：</p>
+<p>TaskInProgress::launchTask这个函数的流程如下：</p>
+<p>4.1，localizeTask(),做一些与该任务相关的本地化工作，包括创建任务路径，添加路径配置信息，并生成新的配置文件；</p>
+<p>当前task路径：</p>
+<p>～/taskTracker/jobcache/job_201202101537_0001/attempt_201202101537_0001_m_000002_0</p>
+<p>当前task的work路径 ： </p>
+<p>～/taskTracker/jobcache/job_201202101537_0001/attempt_201202101537_0001_m_000002_0/work</p>
+<p>这里还生成与该task相关的job.xml,放到当前task路径下</p>
+<p>4.2，根据task类型创建TaskRunner，并开始TaskRunner线程运行；</p>
+<p>TaskRunner继承Thread类，本身是一个线程类，在他的run函数里真正开始启动任务执行进程，主要执行步骤如下:</p>
+<p>4.2.1，创建任务执行的工作路径，这个工作路径实际是真正执行MapR任务的Child JVM的工作路径，会在启动子进程的时候传递给ProcessBuilder;</p>
+<p>4.2.2拷贝分布式缓存中的资源到本地(有些业务处理会使用一些共用资源，为了避免手动的把这些资源拷到各个TaskTracker上，可以使用分布式缓存，jobclient将这些资源拷到分布式缓存，各个task再将这些资源本地化，可能涉及到资源文件以及一些jar包)</p>
+<p>这些文件拷贝到～/archive下；</p>
+<p>4.2.3，拷贝完后，更新当前task目录下的job.xml（因为加入一些新的路径配置信息）；</p>
+<p>4.2.4 ，然后是将当前job.jar路径添加到classPath,把分布式缓存中的jar包和class文件路径也添加到classpath（如果有的话）；将当前task的work路径添加到classpath;添加子进程的JVM运行参数；设置LD_LIBRARAY_PATH;生成task的tmp路径；添加其他参数；生成pid文件</p>
+<p>几个比较重要的参数需要传给Child进程:taskTracker的RPC服务器地址，当前的taskId；</p>
+<p>4.2.5，把当前task的信息添加到内存管理器；重定向子进程的输入输出log；</p>
+<p>4.2.6，最后开始启动task运行子进程：</p>
+<p>jvmManager.launchJvm(this, </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jvmManager.constructJvmEnv(setup,vargs,stdout,stderr,logSize, </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; workDir,env, pidFile, conf));</p>
+<p>我们进这个函数看看，有两种类型的JvmManager,假设现在是Task任务，则mapJvmManager.reapJvm(t, env);</p>
+<p>JvmManager::reapJvm()函数，下面我们基于该函数分析子进程的调度规则：</p>
+<p>1，判断当前TaskTracker启动的子JVM(子进程)数是否达到最大数(maxJvms是由Task的槽位数决定的)</p>
+<p>int numJvmsSpawned = jvmIdToRunner.size();jvmIdToRunner是JVMId和JvmRunner之间的映射，记录了当前TaskTracker正在使用的子JVM；</p>
+<p>通过读代码，可以看到子JVMd的生成规则如下:</p>
+<p>a, 如果当前运行进程达到了最大进程数，遍历所有的运行进程，如果该进程运行的任务与即将运行的任务属于同一个job,并且该进程处于空闲状态(一个子JVM可运行多个任务，最大任务数由jobtracker上mapred-site.xml里的mapred.job.reuse.jvm.num.tasks配置，注意：子JVM并不是并行运行多个任务的，他是串行的去taskTracker上取可运行的任务的)，并且该进程运行的任务数还没达到最大，则使用这个进程去运行当前任务，setRunningTaskForJvm(jvmRunner.jvmId,
+ t)，即：</p>
+<p>&nbsp;jvmToRunningTask.put(jvmId, t); //进程标示符与任务之间的映射，子进程会根据jvmId将任务取出来</p>
+<p>&nbsp;runningTaskToJvm.put(t,jvmId);&nbsp; //任务与进程标示符之间的映射</p>
+<p>&nbsp;jvmIdToRunner.get(jvmId).setBusy(true); //重新将该进程的状态置为忙</p>
+<p>jvmId是当前选取的进程的id号；</p>
+<p>那么子进程是怎么获得这个运行任务的呢？顺便进Child代码里看看：</p>
+<p>Child获得父进程(TaskTracker进程)传进来的参数，有几个参数比较重要:</p>
+<p>1, TaskTracker的RPC服务器地址，Child根据这个地址生成一个TaskUmbilicalProtocol代理(TaskTracker实现了该代理的所有接口)，那么以后，Child与TaskTracker之间的所有通信都是通过这个代理来完成的；</p>
+<p>2，同时父进程传进来的另外一个非常重要的参数是jvmIdInt，这个Id是一个整数类型，是父进程最初创建该jvmRunner时生成的，他是一个随机数，联合jobID一起标示了一个运行特定job任务的特定进程；</p>
+<p>Child然后生成一个jvmId，这个jvmId用来标示当前子进程，即子进程通过这个ID去TaskTracker上获得由他来运行的任务，即JvmTask myTask =umbilical.getTask(jvmId);</p>
+<p>在getTask里，正是根据jvmId到jvmToRunningTask获得需要由当前进程运行的任务的；</p>
+<p>getTask里有几个异常处理情况：</p>
+<p>1，当前jvmId无效，则return new JvmTask(null, true)，导致该进程结束；</p>
+<p>2，runningJobs里已经不存在这个jvmId对应的job了，则也会结束进程（有一种情况，job结束时，job的清理工作会移除runningJobs里的该job,导致该进程退出，这是正常的退出流程）；</p>
+<p>3，能找到子任务，但该子任务已经无效了，则Child进程会Sleep一段时间再getTask;</p>
+<p>取出task之后，即开始run了：task.run(job, umbilical);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // run the task</p>
+<p>至于run里面的代码，就涉及到MapR的执行流程，这部分网络上已经有很多人做了介绍，就不再一一分析了；</p>
+<p>Child分析先暂时到这里，后面会继续Child其他方面的流程分析；</p>
+<p>继续TaskTracker中子进程选取规则讨论：</p>
+<p>b,还是遍历所有的运行子进程，如果该进程运行的任务与即将运行的任务属于同一个job，并且该进程运行的任务数达到最大，或者，该进程是运行其他job任务的进程，且处于空闲状态，则直接干掉这个进程！并且新创建一个进程。</p>
+<p>到此为止，TaskTracker从被分配任务到启动Child JVM来运行该任务的过程已经完成；</p>
+<p>&nbsp;</p>
+<p>第二部分：子进程的生命周期</p>
+<p>先看任务的几种阶段</p>
+<p>jobsetup阶段：jobTracker一般会先为一种类型的任务生成一个setup任务，做一些初始化工作，他也会由子进程来运行；这个任务实际上是jobSetup任务；</p>
+<p>还有jobCleanup，taskCleanup任务，也是由子进程来运行；</p>
+<p>其他的任务就是正常的Map/Reduce任务了；</p>
+<p>每个任务完成之后，都会调用done(umbilical, reporter)函数 通知TaskTracker，这个函数会发送update状态信息，且向TaskTracker::reportDone()，主要通过tip.reportDone()完成，这个函数的主要功能有：</p>
+<p>1，设置任务运行状态</p>
+<p>2，jvmManager.taskFinished(runner)；即移除jvmToRunningTask，runningTaskToJvm里与该任务相关的项，并且将该进程实例运行的任务数加1，且将其设置为空闲状态；</p>
+<p>3，runner.signalDone();通知TaskRunner该任务运行完毕；注意：TaskRunner launchJvm之后并不是立即返回，而是在等待该任务被子进程运行之后才返回；</p>
+<p>synchronized (lock) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while (!done) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lock.wait();</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;}</p>
+<p>有一个地方需要注意的：</p>
+<p>寻找运行新任务的子进程有两种情况，一是运用已有的进程，二是新创建一个进程，当spawNewJVM时，会创建一个新线程来启动子JVM，这个线程实际上是JvmRunner，在这个线程类的run函数里启动进程，并等待进程结束(注意，并不是等待进程运行的任务结束，这个是在TaskRunner launchJvm之后等待的)，等待结束之后， updateOnJvmExit(jvmId, exitCode,killed);在这里清理掉与进程相关的任务信息，并通知TaskRunner（也就是说TaskRunner可能会被通知两次，但也有可能只被通知一次，如程序运行异常或出错时，导致进程被干掉，而不是正常退出）；</p>
+<p>子进程在以下情况下将被干掉；</p>
+<p>1，当发生一些异常情况时，我们在分析Child代码时提到过；</p>
+<p>2，其他任务运行找不到合适的子进程，且本子进程处于空闲状态时，上面也提到过；</p>
+<p>3，job结束时；</p>
+<p>job是什么结束的？</p>
+<p>正常来说，jobtracker给TaskTracker分配的任务顺序是：</p>
+<p>JobSetUp Task,MapR Task, CommitTaskAction，KillTaskAction ，JobCleanUp Task,JobKillAction</p>
+<p>1，2，4属于LaunchTaskAction；3，5属于KillAction</p>
+<p>CommitTaskAction是当前任务完成之后的输出结果的提交状态</p>
+<p>有一个TaskCleanUp Task,这个一般用在取消某个Task或Task运行失败时，Task正常运行时不会出现这个状态</p>
+<p>KillTaskAction的处理函数为purgeTask,在这里将把本Task信息从Job信息中删除，设置任务运行的结果状态，并移除所分配的JVM运行内存和所占用的槽位数；</p>
+<p>看最后一个JobKillAction</p>
+<p>TaskTracker将其放置到 BlockingQueue&lt;TaskTrackerAction&gt; tasksToCleanup里，然后有一个Thread taskCleanupThread 专门来做清理工作，这里的清理工作有一个比较关键的是清理目录，有专门的目录清理线程在处理；还一个比较重要的是在runningJobs里把该job移除了，这个比较关键：子进程在下一次getTask时，会发现从runningJobs里</p>
+<p>没有该job了，从而杀掉该子进程，正常退出，即Child getTask里的 </p>
+<p>RunningJob rjob = runningJobs.get(jvmId.getJobId());</p>
+<p>&nbsp;&nbsp;&nbsp; if (rjob == null) {//kill the JVM since the job is dead</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LOG.info("Killing JVM " + jvmId + " since job " +jvmId.getJobId() +</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " isdead");</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jvmManager.killJvm(jvmId);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return newJvmTask(null, true);</p>
+<p>&nbsp;&nbsp;&nbsp; }</p>
+<p>killJvm里会将该子进程destroy掉，并在jvmIdToRunner里移除该进程：jvmIdToRunner.remove(jvmId);</p>
+<p>注意：并不是子进程自己把自己destroy掉，getTask实际是运行在TaskTracker进程上，Child通过RPC来调用该函数；</p>
+<p>&nbsp;</p>
+<p>第三部分：任务运行状态的转换</p>
+<p>前一节开头大概介绍了任务的几个状态，这一节介绍这几个状态之间的转换过程：</p>
+<p>我们从Jobtracker端来看这几个状态的运行过程：</p>
+<p>jobclient通过RPC函数调用“JobStatus submitJob(JobID jobId)“来向jobtracker提交job,jobtracker为该job新建一个JobInProgress,构造函数主要流程如下：</p>
+<p>1，构造jobstatus,初始化JobStatus = JobStatus.PREP;</p>
+<p>2,构造运行job相关的hdfs及本地目录文件，并拷贝相关资源文件到本地(job.xml,job.jar)；</p>
+<p>3,从配置文件中(在jobClient中计算得到保存到job.xml中的)获得mapR任务数及允许的出错率；</p>
+<p>4，构造一系列用来缓存job中的Task信息的数据结构；</p>
+<p>之后submitJob函数中会检查权限及运行job所需的内存，最后将Job放到Map&lt;JobID, JobInProgress&gt; jobs中，并通知JobInProgressListener有jobAdded事情发生；</p>
+<p>之后是等待TaskTracker发送请求执行任务的心跳，在JobTracker::heartbeat函数里，我们来看一下这部分的代码，从if (recoveryManager.shouldSchedule() &amp;&amp; acceptNewTasks&amp;&amp; !isBlacklisted)开始</p>
+<p>heartbeat函数会传进来一个 TaskTrackerStatus类型参数，记录了发送心跳的TaskTracker的一些信息，比较重要的有当前TaskTracker执行的任务数，总的任务槽数，以及</p>
+<p>上报的任务状态信息等；</p>
+<p>遍历JobTracker上所有的job：</p>
+<p>1，该job是否可以被setup(主要是一些初始化参数的判断)；</p>
+<p>2，判断该job是否适合在发送请求的TaskTracker上运行；</p>
+<p>3，根据slot类型获取TaskInProgress(是map的setup还是reduce的setup)(TaskInProgress 是在Job初始化时就构造好的，包括SetUp，CleanUp以及MapR类型的TaskInProgress)；</p>
+<p>4，从list&lt;TaskInProgress&gt;中选取一个适合运行的tip（这时候实际就是setup Task）;</p>
+<p>5,为该tip创建Task实例；</p>
+<p>[[再次说一下关于hadoop中与任务有关的几个概念：</p>
+<p>Task：描述任务的一次执行，因此任务可能会被执行多次（任务失败，或该任务标示为speculative task）,这个Task即任务的某一次执行实体；</p>
+<p>TaskInProgress:维持了一个任务在其生命周期内的所有信息,即它可能包含了一个任务的多个执行实体id（TaskAttempId:一个任务的执行实体Id）</p>
+<p>sepculative task:MapR模型将job分解成多个子任务，但如果某个子任务执行的非常缓慢，将会影响整个job的运行时间，因此，如果检测到一个任务运行比预期缓慢(或比其他同样类型的子任务缓慢)时，将会为该任务启动另一个任务执行体作为备份；这样一个任务会同时有多个任务执行体在运行(即该任务可能同时被重复运行)，只要有一个执行体运行成功，则任何正在运行的重复任务都将被终止(如果原任务执行体在备份(speculative)任务之前完成，则speculative任务也终止)</p>
+<p>默认选项是打开，配置项：mapred.map（reduce）.tasks.speculative.execution]]</p>
+<p>&nbsp;</p>
+<p>假设第一次TaskTracker申请到的是jobSetup Task;</p>
+<p>下一次申请时，jobtracker会为其分配真正的MapR 任务(taskScheduler.assignTasks)，具体的分配过程由任务调度器执行；</p>
+<p>所有任务执行完毕后，之后是jobcleanup Task,KILLJobAction。</p>
+<p>可以看到，这些任务的状态转换触发条件如下：</p>
+<p>1，根据初始条件创建jobsetup Task;</p>
+<p>2, TT再次请求时，给其分配MapR Task；</p>
+<p>3，在TT执行Task的过程中，会通过心跳消息给JT上报TT中执行任务的进度，heartbeat的ProcessHeartbeat函数会调用updateTaskStatuses更新JT记录的任务进度；</p>
+<p>4，updateTaskStatuses便利所有上报Task，并调用 job.updateTaskStatus(tip, (TaskStatus)report.clone())来处理状态更新信息，如发现该任务的状态为成功，</p>
+<p>if (state == TaskStatus.State.SUCCEEDED) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;completedTask(tip, status);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>则将finishedMapTasks，或finishedReduceTasks累加；</p>
+<p>5，之后在申请jobcleanup任务时，根据canLaunchJobCleanupTask来判断是否可申请该类型任务，该函数实际上是通过判断一系列状态以及finishedMapTasks/finishedReduceTasks是否达到了完成该任务所需的任务数来决定的，如果判断成功，则表明该job所有的任务已成功执行，则开始执行cleanupTask;</p>
+<p>6,下一次状态报告，cleanupTask执行成功，又进入completedTask函数，这时候发现是一个cleanupTask，则调用jobComplete()，这里会做一些job的清理工作，最重要的是将job放到cleanup队列中：trackerToJobsToCleanup.put(taskTracker, jobsToKill);</p>
+<p>7，接下来执行到申请KILLJobAction时，会到trackerToJobsToCleanup里找到所有的对象，找到的会则生成KillJobAction,这样本次TT就会申请到一个KillJobAction的任务；</p>
+<p>&nbsp;</p>
+<p>由上分析可以看到，各种状态的任务生成主要是由TT上报的执行任务运行状态来决定的，TT的当前任务状态决定了他下一次申请的任务的类型！</p>
+<p>TT上报的执行任务运行状态借助心跳上报：</p>
+<p>HeartbeatResponse heartbeat(TaskTrackerStatus status, booleanrestarted,</p>
+<p>&nbsp;&nbsp; boolean initialContact,booleanacceptNewTasks, short responseId) </p>
+<p>第一个参数即TT上报的任务状态(当然也包括进度)</p>
+<p>调用顺序为：</p>
+<p>processHeartbeat(status, initialContact)-&gt;updateTaskStatuses(trackerStatus)-&gt;job.updateTaskStatus(tip,(TaskStatus)report.clone());</p>
+<p>这些状态信息最终用来更新JobInProgress的JobStatus status成员(包括MapR的进度更新)：</p>
+<p>&nbsp;if(!tip.isJobCleanupTask() &amp;&amp; !tip.isJobSetupTask()) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; double progressDelta= tip.getProgress() - oldProgress;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (tip.isMapTask()){</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.status.setMapProgress((float) (this.status.mapProgress() +</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;progressDelta /maps.length));</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } else {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.status.setReduceProgress((float) (this.status.reduceProgress() + </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(progressDelta / reduces.length)));</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>这些状态信息会被JobClient使用，以便被用户方便查看，如进度信息，在</p>
+<p>JobClient::monitorAndPrintJob()函数里：</p>
+<p>&nbsp;while (!job.isComplete()){</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; ...</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String report = </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (" map "+ StringUtils.formatPercent(job.mapProgress(), 0)+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " reduce" + </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;StringUtils.formatPercent(job.reduceProgress(), 0));</p>
+<p>&nbsp;&nbsp;&nbsp; ...</p>
+<p>}</p>
+<p>job是一个NetWorkJob，它的status成员和JobTracker上的JobInProgress中的成员是同一个；</p>
+<p>&nbsp;</p>
+<p>那么TT上的任务状态信息又是怎么得来的呢？我们知道，任务真正的运行是在Child JVM之上，因此可以猜测，TT上的任务状态信息可能来自Child JVM；</p>
+<p>我们在MapTask和ReduceTask的run函数里可以看到，每次执行完一种类型的任务之后，都会调用umbilical.statusUpdate(getTaskID(), taskStatus))和done(umbilical, reporter)这样的函数，即通过这样的RPC函数通知TT更新状态信息，TT会找到对应的TaskInProgresstip,并调用tip的tip.reportDone()来更新状态信息；</p>
+<p>而MapR的进度信息是通过Task的pingThread来上报给TT的，这个线程除了上报进度外，还每隔一段时间到TT里去寻找当前Task，如果没找到，说明TT有可能重启了，这时候，该Child JVM应该退出。</p>
+<p>TT上所有运行任务的状态信息都保存在status成员里，它会通过心跳发送给jobtracker!</p>
+<p>&nbsp;</p>
+<p>第四部分：出错处理</p>
+<p>以上是Hadoop系统正常运行情况，下面介绍一下它对运行出错情况的处理：</p>
+<p>1，任务失败</p>
+<p>任务失败分三种情况：一是用户特定业务代码逻辑出现问题导致抛出异常(即MapR逻辑)，二是JVM自身出现异常退出，三是任务执行超时或磁盘空间不够；</p>
+<p>1.1业务代码出现的异常将会被Child::main捕获到，并执行taskCleanup，将其执行阶段置为TaskStatus.Phase.CLEANUP，同时main函数也会记录异常作为诊断信息发送给TT，之后Child JVM退出，回到TT的JVMRunner，执行JVMRunner::updateOnJvmExit，做一些清理工作，并t.signalDone()通知TaskRunner::launchJvm后的等待可以返回了，因为此时的task退出并没有调用done函数且执行阶段为TaskStatus.Phase.CLEANUP，因此在之后的reportTaskFinished函数里，会将此任务标示为TaskStatus.Status.FAILED，并做一些清理工作（具体看taskFinished函数），并释放槽位；</p>
+<p>注意执行阶段和状态的区别：</p>
+<p>public static enum Phase{STARTING, MAP, SHUFFLE, SORT, REDUCE,CLEANUP}</p>
+<p>public static enum State {RUNNING, SUCCEEDED, FAILED,UNASSIGNED, KILLED, </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COMMIT_PENDING, FAILED_UNCLEAN, KILLED_UNCLEAN}</p>
+<p>2.2子JVM异常退出（例如子JVM在运行的时候，我们给它发一个KILL信号），(或子任务里调用了Sytem.exit(非零码))，这时候的退出码为非0，TT会注意到子JVM退出(异常退出也会调用JVMRunner::updateOnJvmExit)，与第一步不同的是此时的执行阶段为TaskStatus.Phase.MAP（REDUCE），那么在reportTaskFinished里会将其状态置为TaskStatus.Status.FAILED_UNCLEAN(没有清理不用担心，JobTracker会针对这种状态生成一个TaskCleanUp任务)</p>
+<p>2.3taskTracker的offerService循环里，收到来自jobtracker带有任务信息的心跳信息（actions!=NULL）时，会去遍历当前TT上所有任务，如果TT已经有一段时间没有收到该任务的进度更新，则会将Child JVM kill掉，并将其标为TaskStatus.State.FAILED_UNCLEAN(默认是10分钟，通过mapred.task.timeout配置)；磁盘空间不够时，也会选择一个任务被kill掉，将其状态设为TaskStatus.State.FAILED_UNCLEAN,reduce类型任务会被优先选择，并且当前TT不能申请新的任务；具体流程参考markUnresponsiveTasks();killOverflowingTasks();</p>
+<p>&nbsp;</p>
+<p>我们来看JT端是怎么处理出错任务的(TT上出错任务数可能会影响该TT，因此下面介绍会顺便提到对TT的影响)：</p>
+<p>主要处理代码在processHeartbeat(status, initialContact)的updateTaskStatuses里，我们来仔细分析这个函数：</p>
+<p>遍历TT上所有上报状态的Task，</p>
+<p>1，expireLaunchingTasks，将该Task从expireLaunchingTasks队列里删除(每个任务执行体 在创建的时候都会将其记录到expireLaunchingTasks里，expireLaunchingTasks是一个线程类，它会每隔一段时间去处理队列里的Task，如果该Task从创建开始到TASKTRACKER_EXPIRY_INTERVAL之后的时间都没上报其状态给JT，则将其标示为失败，并从该队列删除)，表示JT已经收到该任务的状态报告了，防止被超时处理线程处理；</p>
+<p>2，如果该任务所属JOB为空，或还未初始化，则该任务可能是一个Stray类型任务(就是闲荡漂流，无家可归的任务，谁知道这种任务是怎么生成的？有可能是JT挂掉了又重新启动？)，则把这个任务放到待清除队列里去；</p>
+<p>3，在JT里是否能找到该Task对应的TaskInProgress,找不到的话，从Job里找出赋值给JT的job记录数据结构；</p>
+<p>4，之后是job.updateTaskStatus(tip,(TaskStatus)report.clone())，我们只看任务失败的处理情况：</p>
+<p>4.1如果任务已经完成(失败或成功)||当前任务是一个要被KILL掉的任务(可能是有用户发起的KILL操作)&amp;&amp;即使当前上报的任务执行体的状态为成功，则标示该任务状态为KILLED；</p>
+<p>4.2如果Job已经完成||或job失败||或job已被kill掉，且任务还未针对该任务生成CleanUp任务，且任务状态为FAILED_UNCLEAN，则将其标示为FAILED(即在后面不会将该任务ID放到CleanUpTasks中，也即不会为这种任务生成一个CleanUp任务，很容易理解：job都完了，还要CleanUp任务干吗，直接Kill掉就行了(FAILED状态将导致生成一个TaskKillAction));</p>
+<p>4.3状态发生变化时，当前任务状态为FAILED_UNCLEAN时，进tip.incompleteSubTask(taskid,this.status)，这个函数是用来处理TaskInProgress中的任务执行体已经Fail的情况，我们进去看看：</p>
+<p>4.3.1tasksToKill.remove(taskid)判断是否是用户手动Kiil或fail掉当前任务，如果是则将其标示为FAILED(如果之前状态已经是FAILED或KILLED了)或FAILED_CLEANUP（如果之前状态不是FAILED或KILLED）；</p>
+<p>4.3.2如果当前状态不是KILL或FAIL系列状态，则统一设置成FAILED（因为该函数就是用来处理FAIL任务的）；</p>
+<p>4.3.3 把当前任务从activeTasks中移除(此任务执行体已经不是一个活跃任务了)；</p>
+<p>4.3.4如果job还没完成，且当前为Map任务,如果这个任务执行体以前成功过，则需要将整个TaskInProgress的成功任务执行体数减一(因为可能用户觉得这个Map任务虽然成功了，但执行得不合他的心意，如于是他手动发起KILL掉这个任务，让这个任务重新跑)，当然如果是Reduce任务就没必要了，结果都出来了，干吗还要杀掉它呢！,而且结果已经输出到HDFS上了，想干掉它都不可能了。</p>
+<p>4.3.5累加该TaskInProgress已经执行失败的任务执行体个数(也就是该任务失败的次数)，将TT记录到machinesWhereFailed，如果运行跳过记录的话，则记录Skipping信息，如果当前是被KILLED,则累加numKilledTasks，任务执行体被KILLED和任务执行体失败是不同的概念；</p>
+<p>4.3.6如果TaskInProgress中尝试任务执行失败次数已经达到最大值了(默认是4)，则这个子任务就失败了，设置一些成员变量值(调用kill()，注意：首先会判断该TaskInProgress是否已经成功了，这种情况发生在speculative task时，对于备份任务而言，可能会针对一个任务同时起多个任务执行体，因为我们的RPC服务是多线程处理的，有可能其中的一个成功的任务执行体已经被其他线程给处理了，使得TaskInProgress状态为成功，这种情况下，就不要干掉这个TIP了)；</p>
+<p>跳出这个函数，回到updateTaskStatus，继续4.3：将taskid放到CleanUpTasks中，方便后面生成TaskCleanUp任务；</p>
+<p>4.4 如果Task是KILLED或FAILED状态，进failedask看看：</p>
+<p>4.4.1 也是先调用tip.incompleteSubTask，做一些状态转变及失败信息记录；</p>
+<p>4.4.2除了tip.incompleteSubTask，下面主要是针对Job层面更新一些信息，如更新finishedMapTasks，failedMapTasks，failedReduceTasks等，这些信息都会用来判断当前job是否已经完成了(成功或失败)；</p>
+<p>4.4.3 如果当前任务FAILED，来看一个与TT相关的判断，addTrackerTaskFailure(taskTrackerName)：</p>
+<p>在这里将会累加该TT上失败的任务数，如果该TT失败次数达到一个上限，则运行该job的flakyTaskTrackers累加(flaky即脆弱的，也就是说有这个TT比较脆弱，运行Task经常失败),这个数越大，则说明该Job的子任务越不是很适合在这个TT上运行(严格来说不是TT,而是运行该TT的主机，因为可能一个主机上运行多个TT,从代码中也可以看到，是trackerToFailuresMap.put(trackerHostName,++trackerFailures)，而不是trackerName);</p>
+<p>4.4.4如果tip.isFailed()(incompleteSubTask函数里判断，即重试次数超过4)，则failTIPs累加，及Job的失败子任务数累加，如果你运行一个job有一定的失败任务比例，那么判断失败任务数是否达到了上限，当然，默认是不允许有失败任务(通过mapred.max.map.failures.percent和mapred.max.reduce.failures.percent配置)，如果达到上限，则Job也需要被Kill掉；</p>
+<p>跳出这个函数，继续4.5：</p>
+<p>4.5如果TaskInProgress判定为失败，则修改其状态为TaskCompletionEvent.Status.TIPFAILED，更新taskCompletionEvents列表(被jobclient使用)；</p>
+<p>4.6顺便提一下：completedTask有一个分支比较特殊，if(tip.isComplete()),前面提到过，这种情况发生在speculativetask时，这时候，如果job已经停止工作了，则不管该任务执行体目前的状态(不管成功或失败)，直接返回(因为这个任务已经被成功执行了，当前任务执行体来得太晚了)；</p>
+<p>4.7 最后是更新进度，前面提到过。</p>
+<p>&nbsp;</p>
+<p>2，下面来分析heartbeat函数中对TaskTracker处理的情况(包括失败和异常)：</p>
+<p>在讨论下面内容之前，我们对TaskTracker的重启和重新初始化做一个简单的介绍：</p>
+<p>重启：是用户手动发起，先Kill掉TT,再启动</p>
+<p>重新初始化：TT并不会被干掉，只是把它的一些存储数据结构及一些任务路径清空；</p>
+<p>两个变量： justStarted，justInited，默认都是TRUE；</p>
+<p>区别是:前者只要TT启动起来，且开始发送第一条心跳之后，它的值一直是FALSE,即这个值可以用来判断TT是否是重启；</p>
+<p>后者，TT启动起来后，开始发送心跳，其值变为FALSE，但如果之后又一次调用了TT的Initialize函数(JT的要求导致)，它会重新变成TRUE，它在和JT交互过程中用来标示是否是和JT第一次通信；</p>
+<p>&nbsp;</p>
+<p>2.1 首先根据允许hosts和不允许hosts列表来判断发心条的TT是否是JT可允许的；</p>
+<p>2.2 如果该TT是重启的，则从potentiallyFaultyTrackers里移除该TT(即如果该TT曾经被判定为易出错的TT，则TT重启后，将其标示为正常TT，且如果该TT还曾被列入黑名单，则更新系统任务容量参数，该TT所属主机对应的TT数目，总的黑名单TT数目，也就说，被列为黑名单的TT可以通过重启来将它移除)；</p>
+<p>我们来看一下potentiallyFaultyTrackers这个Map，它记录了一些可能易出错的TT(不一定被列入黑名单了)，那怎样才会判断一个TT是易出错的呢？</p>
+<p>我们先看trackerToFailuresMap，它记录了在运行某个JOB过程中，运行该JOB的子任务的所有TT主机与在此主机上运行子任务失败数目之间的映射(一个主机可能同时运行了多个TT，一般来说，在实际运行过程中，我们在一台TT主机上只会配置一个TT,后面分析中所有的TT所属主机就直接当作TT看待)，上面提到过，如果某次任务执行体执行失败，则在addTrackerTaskFailure中更新trackerToFailuresMap(即某个TT上运行失败任务数加1)，如果这个失败任务数达到上限，则++flakyTaskTrackers，即脆弱的TT数加1，这个变量就是就是用来更新trackerToFailuresMap，在JobTracker::finalizeJob函数中：</p>
+<p>if (job.getNoOfBlackListedTrackers() &gt; 0) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (StringhostName : job.getBlackListedTrackers()) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;faultyTrackers.incrementFaults(hostName);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>}</p>
+<p>job.getNoOfBlackListedTrackers()即我们刚才分析的满足运行该job任务失败次数大于上限的TT数，job.getBlackListedTrackers()实际也是获取满足刚才所提到那个条件的TT列表(这里的BlackList只是针对该job而言，他不一定会被列入全局黑名单)，那么在faultyTrackers.incrementFaults(hostName)就要开始判断该TT是否满足全局黑名单(针对job的黑名单而言，后面简称黑名单)条件了，即将TT加入易出错TT列表，并更新numFaults(即该TT如果被某个Job判断为脆弱TT,则numFaults++),numFaults越大，这说明这个TT越易出错，如果shouldBlacklist(hostName,numFaults)返回真，则将其加到黑名单去，且更新系统任务容量。判断一个TT是否该被列入黑名单的标准是：该TT的numFaults是否大于所有平均numFaults的(1+AVERAGE_BLACKLIST_THRESHOLD(由mapred.cluster.average.blacklist.threshold配置)）倍；</p>
+<p>2.3 如果该TT不是重新启动的，则判断该TT是否适合分配任务：</p>
+<p>首先，如果该TT不是在易出错Map里，肯定是适合分配任务的；</p>
+<p>如果在的话，再判断从上次出错信息更新到现在是否超过了一天，如果一天都没有被任意Job判断为脆弱TT,则将其numFaults减1，且把他从黑名单中拉走(如果之前进了黑名单的话)，更新系统容量和FaultInfo信息，如果numFaults为0的话，则直接从易出错Map里remove掉；这样就直接返回fi.isBlacklisted()就可以了；</p>
+<p>2.4如果TT不是第一次和JT通信，但JT里并没有记录以前的响应信息，则JT可能重启了(比较严重的故障，可以使用ZooKeeper来协调多个运行的JT来避免)，如果JT开启了recovery机制，且有需要恢复的job，则这里仅仅设置addRestartInfo=true，即告诉当前TT不需要在你上面做job的恢复工作，你可以把你上面的需要恢复Job的任务相关信息重置，既然不需要当前TT参与Job恢复工作，那么就将它从recoveredTrackers里去掉吧；否则的话，就必须强制性要求TT重新初始化自己；</p>
+<p>如果前面的正常，但发现传过来上次心跳响应Id和JT里保存的Id不一样</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; a.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TT------&gt;JT（生成Id1,通过响应发到TT，并保存下来）</p>
+<p>b.（收到响应Id1，并在下一次心跳发过去）&nbsp;&nbsp; TT&lt;------JT</p>
+<p>&nbsp;&nbsp;&nbsp; c.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TT------&gt;JT（收到的心跳里获得的响应Id1应该与保存下来的Id一致）</p>
+<p>则有可能是TT没有收到响应，重复发送心跳，此时JT只需要回应上次保存好的响应即可</p>
+<p>2.5 进processHeartbeat看看关于TT的代码：</p>
+<p>2.5.1：如果TT说它是第一次和JT通信，而JT又曾经记录过TT,说明是TT重新初始化了(被JT要求或是TT运行失败导致重新初始化)或者是重启了，那么把本地存储的与该TT相关的一些正在运行的Task记录全清掉(也就是说本来这些Task应该是要在TT上执行，但TT执行到一半时却失败了，这些task称为lostTask)，遍历所有的lostTask,1：如果该Task所属的TIP还没运行完，或者2：虽然运行完了，但是一个Map任务(且不处于setup阶段)，且这个job还需要运行reduce任务，则3：当该Job正在运行或处于PREP状态时，将该Task置为KILLED（或KILLED_UNCLEAN）,且对该task做fail工作。这很好理解，一个Job如果需要运行reduce任务，那么肯定需要读取map任务的输出(假如map已经成功运行完毕)，但TT在重启或重新初始化的时候这些中间输出已经被清空了，那么整个job也就无法完成，所以，这种情况下，即使是成功的map也需要重新被调度；另外运行中的任务突然被终止，肯定也是需要重新被调度的！之后还要更新Job的TrackerTaskFailure信息(毕竟任务失败了)；也要删除“TT上正在运行的Task映射”中key=当前TT这个记录；这是对lostTracker的处理；如果是老黑的TT又回来了(如果是重启不会出现这种情况，因为JT在之前就将重启的TT从黑名单里移除了)，那么将黑名单TT数目加1(因为我们在判断它lost时减1了的)；</p>
+<p>2.5.2 如果不是第一次向JT报到，而JT又没见过它，那么JT不知道这个TT是干吗的(实际上可以推测JT重启了，这在前面已经强制性要求TT重新初始化自己了)，将这个TT从taskTrackers里移除；</p>
+<p>2.5.3 如果TT是第一次和JT通信：将TT加到相关数据结构里；addNewTracker做两件事，1，将TT添加到trackerExpiryQueue，这是用来监测TT是否长时间不向JT发心跳；2，如果hostnameToNodeMap里还没有这个节点，则resolveAndAddToTopology(status.getHost())解析当前TT的网络拓扑结构，这个目前还没有仔细研究，以后有时间了再看看；</p>
+<p>2.5.4：如果不是第一次和JT通信，那么就需要updateTaskTrackerStatus，这个很简单，不说了；</p>
+<p>2.5.5：更新Task状态，这是个大家伙，前面简单介绍过，就不说了； </p>
+<p>有一个专门的线程来处理TT超时，ExpireTrackers，他会从trackerExpiryQueue里取TT并做判断，当然，肯定是要从leastRecent的TT开始取起，如果判断TT超时，且这个TT还没有被干掉(if(newProfile != null))，则对它执行lostTaskTracker操作吧，且在updateTaskTrackerStatus把它从taskTrackers里移除；</p>
+<p>&nbsp;</p>
+<p>第五部分：下面简单来看一下JT的recovery过程(由mapred.jobtracker.restart.recover配置)：</p>
+<p>recovery主要是针对保留在JT上的还未执行完毕的Job的重新调度(即JT可能重启了，而之前的Job还有未执行完的，需要JT自动恢复这些Job的执行)，通过创建jobtracker.info来达到目的，JT第一次启动时，会创建一个jobtracker.info文件，并把0写进去，以后JT每次重启，都会将这个文件里的数字+1再写到里面，如果这个文件被谁删掉了,那么就不执行job恢复过程，这个数字将作为恢复job的restartount，在创建Task的attemptId时要用到；</p>
+<p>如果启动Job恢复配置，在JT的构造函数里，会去添加需要恢复的Job(JT在systemDirData下创建以这些Job的Id命名的文件)；</p>
+<p>之后就是recoveryManager.recover()了，这里面创建JobInProgress,提交Job，和从jobClient提交差不多（当然，如果开启了job恢复功能，运行该job所需要的一些资源不能被清掉，应该是保存在history目录下吧，没有仔细看过这部分代码）；</p>
+<p>&nbsp;</p>
+<p>第六部分：Hadoop网络拓扑及任务调度</p>
+<p>Hadoop网络拓扑一般分为三层，数据中心--&gt;机架--&gt;数据节点，为三级结构(没将根节点包含在内)， 其字符串表述为/datacenterName/rackName/dataNodeName</p>
+<p>Hadoop系统会根据当前的网络拓扑优化复制的数据块，并且在分配Map任务时，优先考虑离数据块近的Map任务(即优先将数据块位于请求任务TaskTracker上的任务分配给该TaskTracker)，这个过程叫做Hadoop的机架感知过程；Hadoop并不能智能到自动获取网络拓扑信息，这个信息是需要用户通过配置脚本告诉Hadoop的！</p>
+<p>需做以下配置：</p>
+<p>&lt;property&gt;</p>
+<p>&nbsp;&lt;name&gt;topology.script.file.name&lt;/name&gt;</p>
+<p>&nbsp;&lt;value&gt;/scriptpath&lt;/value&gt;</p>
+<p>&lt;/property&gt;</p>
+<p>Hadoop系统会调用/scriptpath脚本文件来解析datanode（HDFS过程）或者taskTracker(MapR过程），将一个数据节点映射成一个网络拓扑位置字符串(准确说是该数据节点所属的datacenter/rack描述)，然后系统会将这个字符串解析成网络拓扑节点NodeBase实例；</p>
+<p>如果没有提供该脚本的话，则只有两级，为/default-rack/datanode;</p>
+<p>Hadoop中关于网络拓扑以及拓扑节点的类有：</p>
+<p>NetworkTopology</p>
+<p>Node:节点类的接口</p>
+<p>NodeBase: 该类实例实际标示了一个数据节点(datanode),即叶子节点；</p>
+<p>InnerNode：该类标示了内部节点(可以理解为datacenter以及rack节点)；</p>
+<p>还有一个根节点：InnerNode clusterMap = new InnerNode(InnerNode.ROOT); </p>
+<p>大概画一下拓扑图如下：</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /(root)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-------------------------------------</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;|</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datacenter1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;datacenterN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---------------------&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rack&nbsp;&nbsp;&nbsp;&nbsp; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rackN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |</p>
+<p>&nbsp; -------------&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...</p>
+<p>&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|</p>
+<p>&nbsp;datanode&nbsp;&nbsp;&nbsp; ...</p>
+<p>&nbsp;</p>
+<p>在JobTracker的构造函数中构造节点映射类，并提供级数：</p>
+<p>&nbsp;this.dnsToSwitchMapping =ReflectionUtils.newInstance(</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;conf.getClass("topology.node.switch.mapping.impl",ScriptBasedMapping.class,</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DNSToSwitchMapping.class), conf);</p>
+<p>&nbsp;&nbsp;&nbsp; this.numTaskCacheLevels= conf.getInt("mapred.task.cache.levels", </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NetworkTopology.DEFAULT_HOST_LEVEL);</p>
+<p>默认的是ScriptBasedMapping，该类真正的执行者是RawScriptBasedMapping类；</p>
+<p>如果没有提供脚本执行文件，则默认的Cache级数是2级，即/default-rack/datanode；</p>
+<p>JT里存放该映射关系的数据结构是hostnameToNodeMap</p>
+<p>以后每有一个TT接入时，则会解析该TT：</p>
+<p>if (getNode(status.getTrackerName()) == null) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Making thenetwork location resolution inline .. </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;resolveAndAddToTopology(status.getHost());</p>
+<p>&nbsp;&nbsp;&nbsp; }</p>
+<p>resolveAndAddToTopology调用顺序：dnsToSwitchMapping.resolve(tmpList)</p>
+<p>--&gt;rawMapping.resolve(unCachedHosts)进入RawScriptBasedMapping的resolve函数，如果映射脚本文件为null，则返回默认的机架描述(/default-rack)，否则，调用脚本文件，获得脚本文件中所定义的机架描述字符串；</p>
+<p>之后将TT的IPAddr和该TT所属机架描述映射关系缓存起来，存到cache中；</p>
+<p>回到jobtracker，对该TT构造数据节点NodeBase，并添加到网络拓扑clusterMap中，最后缓存起来 hostnameToNodeMap.put(host, node);</p>
+<p>并将最大层次节点(即dataNode节点)的父节点缓存起来&nbsp; nodesAtMaxLevel.</p>
+<p>add(getParentNode(node, getNumTaskCacheLevels() - 1));</p>
+<p>随着TT的不断加入，整个Hadoop系统的网络拓扑也就慢慢形成了！</p>
+<p>假设现在要提交一个Job，则在初始化任务的时候会将该Job的输入数据所处主机位置和任务关联起来，下面来介绍一下：</p>
+<p>我们知道，在JobClient提交Job之前，会对输入数据进行划分，生成Split信息，每个Split对应一个Map任务，Split信息包括：该数据段所在主机名，IP地址(IPAddr:port),</p>
+<p>在整个输入文件中的偏移量，该数据段长度，以及在网络拓扑中的拓扑路径；</p>
+<p>然后在JT中初始化JobInProgress，给该Job生成TaskInProgress时会用到这些信息：</p>
+<p>在JobInProgress的createCache函数中，会将该Job的Map TaskInProgress和拓扑节点关联起来(即某个拓扑节点适合执行哪些任务，原因是该拓扑节点保存有该任务所需要的数据输入源)，Map&lt;Node, List&lt;TaskInProgress&gt;&gt; nonRunningMapCache 记录了这种关联关系！注意Node是所有的除根节点之外的节点，不仅仅是叶子节点，举个例子，如果一个rack下有4个datanode，每个datanode适合执行的任务有(t1,t2),(t1,t2),(t3,t4),(t3,t4)，那么该rack适合执行的任务则有(t1,t2,t3,t4),这些信息都会通过Node映射被记录下来,同理，如果该rack属于datacenter1,那么(t1,t2,t3,t4)是该数据中心适合执行的子任务的一个子集(这一块不知道理解的对不对，需要验证)。</p>
+<p>再看一看assignTasks函数里，obtainNew(Non)LocalMapTask，为当前TT分配任务，所遵循的原则就是尽量数据本地化，判断的依据就是上面描述的节点任务映射，我们进去看一看，进findNewMapTask里：</p>
+<p>首先遍历nonRunningMapCache，它会从它数据节点那一层开始匹配，以宽度优先的方式，从下往上遍历开始搜索该TT数据节点，如果找不到合适的未运行任务，那只有取非本地任务了，非本地任务也不是随便取的，我们优先选择nodesAtMaxLevel层的节点，前面介绍过，这一层实际是数据节点的父节点，即rack层，如果在这一层里找到了和nonRunningMapCache匹配的任务，则选择它，这说明该任务至少是local-rack的；如果还找不到，则只能从非本地节点缓存nonLocalMaps里去找了；</p>
+<p>我们顺便看一下每次TT申请任务时，应该给它分配多少任务(负载均衡)，以map任务的分配为例：</p>
+<p>可分配给该TT的任务数=该TT所能运行的Map任务负载-TT上正在运行的Map任务数目</p>
+<p>该TT所能运行的Map任务负载=min(整个集群系统map任务负载因子*当前TT的Map容量，当前TT的Map容量)；</p>
+<p>集群系统map任务负载因子=剩下总的未运行map任务数/集群系统的总的Map容量；</p>
+<p>集群中的Map任务容易及运行数目都是通过clusterStatus获取的，这个值可能会随着TT的接入及退出(或将其拉入黑名单而不断更新)；</p>
+<p>每个TT都会留有一定的任务槽数供运行失败任务，或备份任务使用，因此如果这些预留任务数目已经不够了，那么就只获取一个map任务就好了；</p>
+
+</div>
+<div class="share_buttons" id="sharePanel"><span>分享到：</span> <a name="sina" class="share_sina" title="分享到新浪微博"></a><a name="qq" class="share_qq" title="分享到腾讯微博"></a></div>
+<!--192.168.1.236-->
+<div class="article_next_prev">
+    <li class="next_article"><span>下一篇：</span><a href="http://blog.csdn.net/zhangxinfa/article/details/7477506">怎样搭建hadoop环境及调试hadoop代码</a></li>
+</div>
+
+
+    
+</div>
+<div id="ad_cen"><iframe id="ad_frm_0" frameborder="0" scrolling="no" style="border-width: 0px; overflow: hidden; width: 732px; height: 96px; " src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ad(1).htm"></iframe></div>
+<script type="text/javascript">
+    new Ad(4, 'ad_cen');
+</script>
+<div id="comment_title" class="panel_head">查看评论<a name="comments"></a></div>
+<div id="comment_list"><br>&nbsp;&nbsp;暂无评论<br><br><div class="clear"></div></div>
+<div id="comment_bar"></div>
+<div id="comment_form"><div class="guest_link">您还没有登录,请<a href="http://passport.csdn.net/account/login?from=http%3A%2F%2Fblog.csdn.net%2Fzhangxinfa%2Farticle%2Fdetails%2F7477501">[登录]</a>或<a href="http://passport.csdn.net/account/register?from=http%3A%2F%2Fblog.csdn.net%2Fzhangxinfa%2Farticle%2Fdetails%2F7477501">[注册]</a></div></div>
+<div class="announce">* 以上用户言论只代表其个人观点，不代表CSDN网站的观点或立场<a name="reply"></a><a name="quote"></a></div>
+<script type="text/javascript">
+    var fileName = '7477501';
+    var commentscount = 0;
+    var islock = false
+</script>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/comment.js"></script>
+<div id="ad_bot"><iframe id="ad_frm_1" frameborder="0" scrolling="no" style="border-width: 0px; overflow: hidden; width: 732px; height: 167px; " src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ad(2).htm"></iframe></div>
+<script type="text/javascript">
+    new Ad(5, 'ad_bot');
+</script>
+<div id="report_dialog"></div>
+
+<div id="d-top">
+<a href="http://blog.csdn.net/zhangxinfa/article/details/7477501#" onclick="javascript:document.body.scrollTop=0;document.documentElement.scrollTop=0;this.blur();return false;" title="回到顶部">
+<img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/top.png" alt="TOP"></a>
+</div>
+
+
+
+<div class="clear"></div>
+</div>
+</div>
+
+<div id="side">
+<div class="side">
+<div id="panel_Profile" class="panel">
+    <ul class="panel_head"><span>个人资料</span></ul>
+    <ul class="panel_body profile">
+        <div id="blog_userface">
+            <a href="http://my.csdn.net/zhangxinfa" target="_blank">
+            <img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/1_zhangxinfa.jpg" title="访问我的空间" style="max-width:90%">
+            </a>
+            <br>
+            <span><a href="http://my.csdn.net/zhangxinfa" class="user_name" target="_blank">zhangxinfa</a></span>
+        </div>
+<div class="interact">
+<!--<a href="#" class="attented" title="已关注"></a>-->
+<a href="http://blog.csdn.net/zhangxinfa/article/details/7477501#" class="attent" id="span_add_follow" title="[加关注]"></a>
+<a href="http://my.csdn.net/my/letter/send/zhangxinfa" class="letter" title="[发私信]"></a>
+</div>
+        <div id="blog_medal">
+        <div id="bms_box"></div></div>
+        <ul id="blog_rank">
+            <li>访问：<span>373次</span></li>
+            <li>积分：<span>22分</span></li>
+            <li>排名：<span>千里之外</span></li>
+        </ul>
+        <ul id="blog_statistics">
+            <li>原创：<span>2篇</span></li>
+            <li>转载：<span>0篇</span></li>
+            <li>译文：<span>0篇</span></li>
+            <li>评论：<span>0条</span></li>
+        </ul>
+    </ul>
+</div>
+<script type="text/javascript">
+    var _blogger = 'zhangxinfa';
+</script>
+<script type="text/javascript">
+$(document).ready(function () {
+    var un = getUN().toLowerCase();
+    if (un == _blogger.toLowerCase()) {
+        $('.interact').hide();
+    } else if(un) {
+        var url = "http://my.csdn.net/index.php/follow/check_is_followed/" + encodeURIComponent(un) + "/" + encodeURIComponent(_blogger) + "?jsonpcallback=?";
+        $.getJSON(url, {}, function (data) {
+            if (data.succ == 1 && data.info == 1) {
+                $('#span_add_follow').attr('class', 'attented');
+            } else {
+                $('#span_add_follow').click(guanzhu);
+            }
+        }, 'json');
+    }
+});
+function guanzhu() {
+    var url = "http://my.csdn.net/index.php/follow/do_follow?jsonpcallback=?";
+    $.getJSON(url, { "username": _blogger }, function (data) {
+        if (data.succ == 1) {
+            alert('关注成功！');
+            $('#span_add_follow').attr('class', 'attented').click(function () { return false; });
+        } else {
+            alert(data.msg);
+        }
+    });
+    return false;
+}
+function getUN() {
+    var m = document.cookie.match(new RegExp("(^| )UserName=([^;]*)(;|$)"));
+    if (m) return m[2];
+    else return '';
+}
+</script>
+
+<div class="panel" id="panel_Search">
+    <ul class="panel_head"><span>文章搜索</span></ul>
+    <ul class="panel_body">
+        <form id="frmSearch" action="http://so.csdn.net/search" class="form_search" target="_blank">
+        <span><input id="inputSearch" type="text" class="blogsearch" title="请输入关键字"></span>
+        <input id="btnSubmit" type="submit" value="搜索" title="search in blog">
+        <input type="hidden" name="q" id="inputQ">
+        <input type="hidden" name="t" value="blog">
+        <a id="btnSearchBlog" target="_blank"></a>
+        </form>
+    </ul>
+</div><div id="panel_Category" class="panel">
+    <ul class="panel_head"><span>文章分类</span></ul>
+    <ul class="panel_body">
+        <li>
+        <a href="http://blog.csdn.net/zhangxinfa/article/category/1081290">Hadoop</a><span>(2)</span>
+        </li>
+    </ul>
+</div><div id="panel_Archive" class="panel">
+    <ul class="panel_head"><span>文章存档</span></ul>
+    <ul class="panel_body">
+        <div id="archive_list">
+        <!--归档统计-->
+        <li><a href="http://blog.csdn.net/zhangxinfa/article/month/2012/04">2012年04月</a><span>(2)</span></li>
+        </div>
+    </ul>
+</div>
+<div id="hotarticls" class="panel">
+    <ul class="panel_head"><span>阅读排行</span></ul>
+    <ul class="panel_body itemlist">
+        <li>
+            <a href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET.htm" title="MapReduce关键流程代码分析">MapReduce关键流程代码分析</a><span>(168)</span>
+        </li>
+        <li>
+            <a href="http://blog.csdn.net/zhangxinfa/article/details/7477506" title="怎样搭建hadoop环境及调试hadoop代码">怎样搭建hadoop环境及调试hadoop代码</a><span>(168)</span>
+        </li>
+    </ul>
+</div>
+<div id="hotarticls2" class="panel">
+    <ul class="panel_head"><span>评论排行</span></ul>
+    <ul class="panel_body itemlist">
+        <li>
+            <a href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET.htm" title="MapReduce关键流程代码分析">MapReduce关键流程代码分析</a><span>(0)</span>
+        </li>
+        <li>
+            <a href="http://blog.csdn.net/zhangxinfa/article/details/7477506" title="怎样搭建hadoop环境及调试hadoop代码">怎样搭建hadoop环境及调试hadoop代码</a><span>(0)</span>
+        </li>
+    </ul>
+</div>
+<div id="homepageArticles" class="panel">
+    <ul class="panel_head"><span>推荐文章</span></ul>
+    <ul class="panel_body" id="ad_commend">
+    <iframe id="ad_frm_2" frameborder="0" scrolling="no" style="border-width: 0px; overflow: hidden; width: 183px; height: 227px; " src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ad.htm"></iframe></ul>
+</div>
+<script type="text/javascript">
+    new Ad(12, 'ad_commend');
+</script></div>
+<div class="clear"></div>
+</div>
+
+<div class="clear"></div>
+</div>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/shCore-src.js"></script>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ZeroClipboard.js"></script>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/article_code.js"></script>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/cnick.js"></script>
+
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/show.js"></script>
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/showblogmedal.ashx"></script>
+
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/publib_footer.js"></script><link rel="stylesheet" type="text/css" href="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/pub_footer_2012.css"><div class="pub_footerall"><dl><dt></dt> <dd><a href="http://www.csdn.net/company/about.html" target="_blank">公司简介</a>|<a href="http://www.csdn.net/company/recruit.html" target="_blank">招贤纳士</a>|<a href="http://www.csdn.net/company/marketing.html" target="_blank">广告服务</a>|<a href="http://www.csdn.net/company/account.html" target="_blank">银行汇款帐号</a>|<a href="http://www.csdn.net/company/contact.html" target="_blank">联系方式</a>|<a href="http://www.csdn.net/company/statement.html" target="_blank">版权声明</a>|<a href="http://www.csdn.net/company/layer.html" target="_blank">法律顾问</a>|<a href="mailto:webmaster@csdn.net">问题报告</a></dd><dd>京&nbsp;ICP&nbsp;证&nbsp;070598&nbsp;号</dd><dd>北京创新乐知信息技术有限公司 版权所有</dd><dd><img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ico_email.gif" alt="" title=""> 联系邮箱：webmaster(at)csdn.net</dd><dd>Copyright © 1999-2012, CSDN.NET, All Rights Reserved&nbsp;<a href="http://www.hd315.gov.cn/beian/view.asp?bianhao=010202001032100010" target="_blank"><img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/gongshang_logos.gif" alt="GongshangLogo" title=""></a></dd></dl></div>
+
+<script type="text/javascript">document.write("<img src=http://counter.csdn.net/pv.aspx?id=24 border=0 width=0 height=0>");</script><img src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/pv.aspx" border="0" width="0" height="0">
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/counter.js"></script><script type="text/javascript" charset="UTF-8" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/msg.popup.js"></script>
+
+<!--ad.csdn.net-->
+<script type="text/javascript" src="./MapReduce关键流程代码分析 - zhangxinfa的专栏 - 博客频道 - CSDN.NET_files/ad-blog.js"></script>
+
+
+
+</div>
+
+</body></html>

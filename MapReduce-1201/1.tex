@@ -1,0 +1,18 @@
+MapTask或ReduceTask真实的执行载体是Child类，该类包含一个 main函数，进程执行时会将相关参数传进来，它会拆解这些参数，并通过getTask(jvmId)向父进程索取任务，以构造出相关的Task实例，然后使用Task的run()启动任务。当Map任务输出中间结果时，如果输出数据量很大，那么使用系统提供的缓冲机制，效率将十分低下，因此MapReduce产品使用MapOutputBuffer来输出中间结果，它维护了三个缓冲区（包括kvoffsets、kvindices和kvbuffer），其总的大小默认为100M字节，当缓冲区中存储的记录数达到一定比例时，则将中间结果spill到本地文件系统，而非HDFS。
+MapOutputBuffer维护了一个spillThread线程，它用于将缓冲区中的数据spill到本地文件系统，kvstart和kvend（标识kvoffset中spill的起始和结束位置）以及bufstart和bufend（标识kvbuffer中spill的起始和结束位置），用于确保spill的同时，使得Mapper子进程仍然可以向kvbuffer中写入key/value。当执行Mapper定义的collect函数时，执行如下步骤：
+（1）如果内存缓冲区的充满度已达到一定比例，且当前spillThread线程不处于活动状态，则启动spill过程；
+（2）如果当前spillThread活动，但kvoffsets中已不能存放索引记录时，则阻塞当前主线程，并等待spill过程完成；
+（3）此时kvoffsets可以存放索引记录，则将key和value序列化到kvbuffer中，并在kvoffsets和kvindices中记录所属reduce序号，key和value在kvbuffer中的起始位置；
+（4）在将key/value序列化到kvbuffer时，如果kvbuffer中缓冲区不能存放当前key或value时，则可能会触发spill过程，但如果spill正在运行，则等待spill完成，否则触发spill过程；
+（5）如果当前key或value占用空间过大，导致整个kvbuffer不能存放key或value，则抛出MapBufferTooSmallException异常，捕获异常后调用spillSingleRecord方法，将当前key与value一起spill到本地文件系统。
+spillThread通过spillDone信号量通知主线程spill已经完成，而主线程则通过spillReady信号量通知spillThread，它可以开始spill。kvstart等于kvend表明spill线程没有活动，如果不相等，则表明spill线程正在活动，spill的执行过程描述如下：（1）生成spill'i'.out(i=0,1,2,...)文件，然后排序kvbuffer中需要spill的数据，排序时，kvindices和kvbuffer中的数据不需移动，而只移动kvoffsets中的记录，通过移动kvoffsets中记录，达到排序目的。（2）新建SpillRecord记录，用于保存每个partition的起始位置、原始长度和压缩后长度。（3）根据kvoffsets、kvindices和kvbuffer，获取一对对key/value，并向spill'i'.out文件写入这一对对key/value。（4）将kvstart赋值为kvend，将bufstart赋值为bufend。
+当Mapper子进程向kvbuffer输出全部的中间结果后，需将缓冲区中的内容全部持久化到本地文件系统，调用flush方法，执行过程描述如下。
+（1）如果spill线程正在活动，则等待spill过程完成；
+（2）如果缓冲区中还有中间结果没有spill到本地文件系统，则spill到本地文件系统。
+（3）中止spill线程，清空kvbuffer，合并spill过程生成的若干文件（形如spill'i'.out(i=0,1,2,...)的文件）到名为fill.out的文件中。
+
+
+
+
+
+
