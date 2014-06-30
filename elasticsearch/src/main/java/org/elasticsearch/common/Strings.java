@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,8 +24,9 @@ import com.google.common.collect.Iterables;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.common.io.FastStringReader;
+import org.elasticsearch.common.util.CollectionUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -50,8 +51,7 @@ public class Strings {
     private static final char EXTENSION_SEPARATOR = '.';
 
     public static void tabify(int tabs, String from, StringBuilder to) throws Exception {
-        final BufferedReader reader = new BufferedReader(new FastStringReader(from));
-        try {
+        try (BufferedReader reader = new BufferedReader(new FastStringReader(from))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 for (int i = 0; i < tabs; i++) {
@@ -59,14 +59,11 @@ public class Strings {
                 }
                 to.append(line).append('\n');
             }
-        } finally {
-            reader.close();
         }
     }
 
     public static void spaceify(int spaces, String from, StringBuilder to) throws Exception {
-        final BufferedReader reader = new BufferedReader(new FastStringReader(from));
-        try {
+        try (BufferedReader reader = new BufferedReader(new FastStringReader(from))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 for (int i = 0; i < spaces; i++) {
@@ -74,8 +71,6 @@ public class Strings {
                 }
                 to.append(line).append('\n');
             }
-        } finally {
-            reader.close();
         }
     }
 
@@ -91,7 +86,7 @@ public class Strings {
      * @param decode    decode backslash escaping
      */
     public static List<String> splitSmart(String s, String separator, boolean decode) {
-        ArrayList<String> lst = new ArrayList<String>(2);
+        ArrayList<String> lst = new ArrayList<>(2);
         StringBuilder sb = new StringBuilder();
         int pos = 0, end = s.length();
         while (pos < end) {
@@ -142,7 +137,7 @@ public class Strings {
 
 
     public static List<String> splitWS(String s, boolean decode) {
-        ArrayList<String> lst = new ArrayList<String>(2);
+        ArrayList<String> lst = new ArrayList<>(2);
         StringBuilder sb = new StringBuilder();
         int pos = 0, end = s.length();
         while (pos < end) {
@@ -774,7 +769,7 @@ public class Strings {
         }
 
         String[] pathArray = delimitedListToStringArray(pathToUse, FOLDER_SEPARATOR);
-        List<String> pathElements = new LinkedList<String>();
+        List<String> pathElements = new LinkedList<>();
         int tops = 0;
 
         for (int i = pathArray.length - 1; i >= 0; i--) {
@@ -915,7 +910,7 @@ public class Strings {
         if (isEmpty(array2)) {
             return array1;
         }
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         result.addAll(Arrays.asList(array1));
         for (String str : array2) {
             if (!result.contains(str)) {
@@ -1000,7 +995,7 @@ public class Strings {
         if (isEmpty(array)) {
             return array;
         }
-        Set<String> set = new TreeSet<String>();
+        Set<String> set = new TreeSet<>();
         set.addAll(Arrays.asList(array));
         return toStringArray(set);
     }
@@ -1022,7 +1017,7 @@ public class Strings {
             }
         }
         // TODO (MvG): No push: hppc or jcf?
-        final Set<String> result = new HashSet<String>(count);
+        final Set<String> result = new HashSet<>(count);
         final int len = chars.length;
         int start = 0;  // starting index in chars of the current substring.
         int pos = 0;    // current index in chars.
@@ -1199,7 +1194,7 @@ public class Strings {
             return null;
         }
         StringTokenizer st = new StringTokenizer(str, delimiters);
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         while (st.hasMoreTokens()) {
             String token = st.nextToken();
             if (trimTokens) {
@@ -1249,7 +1244,7 @@ public class Strings {
         if (delimiter == null) {
             return new String[]{str};
         }
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         if ("".equals(delimiter)) {
             for (int i = 0; i < str.length(); i++) {
                 result.add(deleteAny(str.substring(i, i + 1), charsToDelete));
@@ -1287,7 +1282,7 @@ public class Strings {
      * @return a Set of String entries in the list
      */
     public static Set<String> commaDelimitedListToSet(String str) {
-        Set<String> set = new TreeSet<String>();
+        Set<String> set = new TreeSet<>();
         String[] tokens = commaDelimitedListToStringArray(str);
         set.addAll(Arrays.asList(tokens));
         return set;
@@ -1424,7 +1419,9 @@ public class Strings {
                     }
                     changed = true;
                 }
-                sb.append(Character.toUpperCase(value.charAt(++i)));
+                if (i < value.length() - 1) {
+                    sb.append(Character.toUpperCase(value.charAt(++i)));
+                }
             } else {
                 if (changed) {
                     sb.append(c);
@@ -1545,7 +1542,34 @@ public class Strings {
             // we always have padding of two at the end, encode it differently
             return new String(encoded, 0, encoded.length - 2, Base64.PREFERRED_ENCODING);
         } catch (IOException e) {
-            throw new ElasticSearchIllegalStateException("should not be thrown");
+            throw new ElasticsearchIllegalStateException("should not be thrown");
         }
     }
+
+    /**
+     * Return substring(beginIndex, endIndex) that is impervious to string length.
+     */
+    public static String substring(String s, int beginIndex, int endIndex) {
+        if (s == null) {
+            return s;
+        }
+
+        int realEndIndex = s.length() > 0 ? s.length() - 1 : 0;
+
+        if (endIndex > realEndIndex) {
+            return s.substring(beginIndex);
+        } else {
+            return s.substring(beginIndex, endIndex);
+        }
+    }
+
+    /**
+     * If an array only consists of zero or one element, which is "*" or "_all" return an empty array
+     * which is usually used as everything
+     */
+    public static boolean isAllOrWildcard(String[] data) {
+        return CollectionUtils.isEmpty(data) ||
+               data.length == 1 && ("_all".equals(data[0]) || "*".equals(data[0]));
+    }
+
 }

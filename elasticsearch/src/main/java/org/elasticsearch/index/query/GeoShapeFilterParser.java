@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,8 +22,8 @@ package org.elasticsearch.index.query;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
-import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.internal.Nullable;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -80,7 +80,7 @@ public class GeoShapeFilterParser implements FilterParser {
         String fieldName = null;
         ShapeRelation shapeRelation = ShapeRelation.INTERSECTS;
         String strategyName = null;
-        Shape shape = null;
+        ShapeBuilder shape = null;
         boolean cache = false;
         CacheKeyFilter.Key cacheKey = null;
         String filterName = null;
@@ -88,7 +88,7 @@ public class GeoShapeFilterParser implements FilterParser {
         String id = null;
         String type = null;
         String index = DEFAULTS.INDEX_NAME;
-        String shapeFieldName = DEFAULTS.SHAPE_FIELD_NAME;
+        String shapePath = DEFAULTS.SHAPE_FIELD_NAME;
 
         XContentParser.Token token;
         String currentFieldName = null;
@@ -105,7 +105,7 @@ public class GeoShapeFilterParser implements FilterParser {
 
                         token = parser.nextToken();
                         if ("shape".equals(currentFieldName)) {
-                            shape = GeoJSONShapeParser.parse(parser);
+                            shape = ShapeBuilder.parse(parser);
                         } else if ("relation".equals(currentFieldName)) {
                             shapeRelation = ShapeRelation.getRelationByName(parser.text());
                             if (shapeRelation == null) {
@@ -124,8 +124,8 @@ public class GeoShapeFilterParser implements FilterParser {
                                         type = parser.text();
                                     } else if ("index".equals(currentFieldName)) {
                                         index = parser.text();
-                                    } else if ("shape_field_name".equals(currentFieldName)) {
-                                        shapeFieldName = parser.text();
+                                    } else if ("path".equals(currentFieldName)) {
+                                        shapePath = parser.text();
                                     }
                                 }
                             }
@@ -134,7 +134,9 @@ public class GeoShapeFilterParser implements FilterParser {
                             } else if (type == null) {
                                 throw new QueryParsingException(parseContext.index(), "Type for indexed shape not provided");
                             }
-                            shape = fetchService.fetch(id, type, index, shapeFieldName);
+                            shape = fetchService.fetch(id, type, index, shapePath);
+                        }  else {
+                            throw new QueryParsingException(parseContext.index(), "[geo_shape] filter does not support [" + currentFieldName + "]");
                         }
                     }
                 }
@@ -145,6 +147,8 @@ public class GeoShapeFilterParser implements FilterParser {
                     cache = parser.booleanValue();
                 } else if ("_cache_key".equals(currentFieldName)) {
                     cacheKey = new CacheKeyFilter.Key(parser.text());
+                } else {
+                    throw new QueryParsingException(parseContext.index(), "[geo_shape] filter does not support [" + currentFieldName + "]");
                 }
             }
         }
@@ -165,7 +169,6 @@ public class GeoShapeFilterParser implements FilterParser {
         if (!(fieldMapper instanceof GeoShapeFieldMapper)) {
             throw new QueryParsingException(parseContext.index(), "Field [" + fieldName + "] is not a geo_shape");
         }
-
 
         GeoShapeFieldMapper shapeFieldMapper = (GeoShapeFieldMapper) fieldMapper;
         PrefixTreeStrategy strategy = shapeFieldMapper.defaultStrategy();

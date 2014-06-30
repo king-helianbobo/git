@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.index.fielddata.fieldcomparator;
 
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+import org.elasticsearch.search.MultiValueMode;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ public final class FloatValuesComparator extends DoubleValuesComparatorBase<Floa
 
     private final float[] values;
 
-    public FloatValuesComparator(IndexNumericFieldData<?> indexFieldData, float missingValue, int numHits, SortMode sortMode) {
+    public FloatValuesComparator(IndexNumericFieldData<?> indexFieldData, float missingValue, int numHits, MultiValueMode sortMode) {
         super(indexFieldData, missingValue, sortMode);
         assert indexFieldData.getNumericType().requiredBits() <= 32;
         this.values = new float[numHits];

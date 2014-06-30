@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.index.fielddata.fieldcomparator;
 
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+import org.elasticsearch.search.MultiValueMode;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ public final class LongValuesComparator extends LongValuesComparatorBase<Long> {
 
     private final long[] values;
 
-    public LongValuesComparator(IndexNumericFieldData<?> indexFieldData, long missingValue, int numHits, SortMode sortMode) {
+    public LongValuesComparator(IndexNumericFieldData<?> indexFieldData, long missingValue, int numHits, MultiValueMode sortMode) {
         super(indexFieldData, missingValue, sortMode);
         this.values = new long[numHits];
         assert indexFieldData.getNumericType().requiredBits() <= 64;
@@ -39,7 +39,7 @@ public final class LongValuesComparator extends LongValuesComparatorBase<Long> {
     public int compare(int slot1, int slot2) {
         final long v1 = values[slot1];
         final long v2 = values[slot2];
-        return compare(v1, v2);
+        return Long.compare(v1, v2);
     }
 
     @Override

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -59,18 +59,22 @@ public class TransportMultiGetAction extends TransportAction<MultiGetRequest, Mu
 
         clusterState.blocks().globalBlockedRaiseException(ClusterBlockLevel.READ);
 
-        final AtomicArray<MultiGetItemResponse> responses = new AtomicArray<MultiGetItemResponse>(request.items.size());
+        final AtomicArray<MultiGetItemResponse> responses = new AtomicArray<>(request.items.size());
 
-        Map<ShardId, MultiGetShardRequest> shardRequests = new HashMap<ShardId, MultiGetShardRequest>();
+        Map<ShardId, MultiGetShardRequest> shardRequests = new HashMap<>();
         for (int i = 0; i < request.items.size(); i++) {
             MultiGetRequest.Item item = request.items.get(i);
             if (!clusterState.metaData().hasConcreteIndex(item.index())) {
                 responses.set(i, new MultiGetItemResponse(null, new MultiGetResponse.Failure(item.index(), item.type(), item.id(), "[" + item.index() + "] missing")));
                 continue;
             }
+            if (item.routing() == null && clusterState.getMetaData().routingRequired(item.index(), item.type())) {
+                responses.set(i, new MultiGetItemResponse(null, new MultiGetResponse.Failure(item.index(), item.type(), item.id(), "routing is required, but hasn't been specified")));
+                continue;
+            }
 
             item.routing(clusterState.metaData().resolveIndexRouting(item.routing(), item.index()));
-            item.index(clusterState.metaData().concreteIndex(item.index()));
+            item.index(clusterState.metaData().concreteSingleIndex(item.index()));
             ShardId shardId = clusterService.operationRouting()
                     .getShards(clusterState, item.index(), item.type(), item.id(), item.routing(), null).shardId();
             MultiGetShardRequest shardRequest = shardRequests.get(shardId);
@@ -82,7 +86,7 @@ public class TransportMultiGetAction extends TransportAction<MultiGetRequest, Mu
 
                 shardRequests.put(shardId, shardRequest);
             }
-            shardRequest.add(i, item.type(), item.id(), item.fields());
+            shardRequest.add(i, item.type(), item.id(), item.fields(), item.version(), item.versionType(), item.fetchSourceContext());
         }
 
         if (shardRequests.size() == 0) {

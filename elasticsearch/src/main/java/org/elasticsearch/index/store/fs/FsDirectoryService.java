@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.index.store.fs;
 
 import org.apache.lucene.store.*;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.io.FileSystemUtils;
 import org.elasticsearch.common.metrics.CounterMetric;
 import org.elasticsearch.common.settings.Settings;
@@ -64,7 +64,7 @@ public abstract class FsDirectoryService extends AbstractIndexShardComponent imp
         LockFactory lockFactory = NoLockFactory.getNoLockFactory();
         if (fsLock.equals("native")) {
             // TODO LUCENE MONITOR: this is not needed in next Lucene version
-            lockFactory = new NativeFSLockFactory();
+            lockFactory = new XNativeFSLockFactory();
         } else if (fsLock.equals("simple")) {
             lockFactory = new SimpleFSLockFactory();
         } else if (fsLock.equals("none")) {
@@ -77,7 +77,7 @@ public abstract class FsDirectoryService extends AbstractIndexShardComponent imp
     public final void renameFile(Directory dir, String from, String to) throws IOException {
         final FSDirectory fsDirectory = DirectoryUtils.getLeaf(dir, FSDirectory.class);
         if (fsDirectory == null) {
-            throw new ElasticSearchIllegalArgumentException("Can not rename file on non-filesystem based directory ");
+            throw new ElasticsearchIllegalArgumentException("Can not rename file on non-filesystem based directory ");
         }
         File directory = fsDirectory.getDirectory();
         File old = new File(directory, from);
@@ -111,7 +111,7 @@ public abstract class FsDirectoryService extends AbstractIndexShardComponent imp
     public final void fullDelete(Directory dir) throws IOException {
         final FSDirectory fsDirectory = DirectoryUtils.getLeaf(dir, FSDirectory.class);
         if (fsDirectory == null) {
-            throw new ElasticSearchIllegalArgumentException("Can not fully delete on non-filesystem based directory");
+            throw new ElasticsearchIllegalArgumentException("Can not fully delete on non-filesystem based directory");
         }
         FileSystemUtils.deleteRecursively(fsDirectory.getDirectory());
         // if we are the last ones, delete also the actual index

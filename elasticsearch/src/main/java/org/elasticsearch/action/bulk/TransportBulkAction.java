@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,6 +22,8 @@ package org.elasticsearch.action.bulk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequest;
@@ -45,6 +47,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.util.concurrent.AtomicArray;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.BaseTransportRequestHandler;
 import org.elasticsearch.transport.TransportChannel;
@@ -54,7 +57,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -89,92 +91,142 @@ public class TransportBulkAction extends TransportAction<BulkRequest, BulkRespon
     @Override
     protected void doExecute(final BulkRequest bulkRequest, final ActionListener<BulkResponse> listener) {
         final long startTime = System.currentTimeMillis();
-        Set<String> indices = Sets.newHashSet();
-        for (ActionRequest request : bulkRequest.requests) {
-            if (request instanceof IndexRequest) {
-                IndexRequest indexRequest = (IndexRequest) request;
-                if (!indices.contains(indexRequest.index())) {
-                    indices.add(indexRequest.index());
-                }
-            } else if (request instanceof DeleteRequest) {
-                DeleteRequest deleteRequest = (DeleteRequest) request;
-                if (!indices.contains(deleteRequest.index())) {
-                    indices.add(deleteRequest.index());
-                }
-            } else if (request instanceof UpdateRequest) {
-                UpdateRequest updateRequest = (UpdateRequest) request;
-                if (!indices.contains(updateRequest.index())) {
-                    indices.add(updateRequest.index());
-                }
-            }
-        }
+        final AtomicArray<BulkItemResponse> responses = new AtomicArray<BulkItemResponse>(bulkRequest.requests.size());
 
         if (autoCreateIndex.needToCheck()) {
+            final Set<String> indices = Sets.newHashSet();
+            for (ActionRequest request : bulkRequest.requests) {
+                if (request instanceof IndexRequest) {
+                    IndexRequest indexRequest = (IndexRequest) request;
+                    if (!indices.contains(indexRequest.index())) {
+                        indices.add(indexRequest.index());
+                    }
+                } else if (request instanceof DeleteRequest) {
+                    DeleteRequest deleteRequest = (DeleteRequest) request;
+                    if (!indices.contains(deleteRequest.index())) {
+                        indices.add(deleteRequest.index());
+                    }
+                } else if (request instanceof UpdateRequest) {
+                    UpdateRequest updateRequest = (UpdateRequest) request;
+                    if (!indices.contains(updateRequest.index())) {
+                        indices.add(updateRequest.index());
+                    }
+                } else {
+                    throw new ElasticsearchException("Parsed unknown request in bulk actions: " + request.getClass().getSimpleName());
+                }
+            }
+
             final AtomicInteger counter = new AtomicInteger(indices.size());
-            final AtomicBoolean failed = new AtomicBoolean();
             ClusterState state = clusterService.state();
-            for (String index : indices) {
+            for (final String index : indices) {
                 if (autoCreateIndex.shouldAutoCreate(index, state)) {
                     createIndexAction.execute(new CreateIndexRequest(index).cause("auto(bulk api)"), new ActionListener<CreateIndexResponse>() {
                         @Override
                         public void onResponse(CreateIndexResponse result) {
                             if (counter.decrementAndGet() == 0) {
-                                executeBulk(bulkRequest, startTime, listener);
+                                executeBulk(bulkRequest, startTime, listener, responses);
                             }
                         }
 
                         @Override
                         public void onFailure(Throwable e) {
-                            if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
-                                // we have the index, do it
-                                if (counter.decrementAndGet() == 0) {
-                                    executeBulk(bulkRequest, startTime, listener);
+                            if (!(ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException)) {
+                                // fail all requests involving this index, if create didnt work
+                                for (int i = 0; i < bulkRequest.requests.size(); i++) {
+                                    ActionRequest request = bulkRequest.requests.get(i);
+                                    if (setResponseFailureIfIndexMatches(responses, i, request, index, e)) {
+                                        bulkRequest.requests.set(i, null);
+                                    }
                                 }
-                            } else if (failed.compareAndSet(false, true)) {
-                                listener.onFailure(e);
+                            }
+                            if (counter.decrementAndGet() == 0) {
+                                executeBulk(bulkRequest, startTime, listener, responses);
                             }
                         }
                     });
                 } else {
                     if (counter.decrementAndGet() == 0) {
-                        executeBulk(bulkRequest, startTime, listener);
+                        executeBulk(bulkRequest, startTime, listener, responses);
                     }
                 }
             }
         } else {
-            executeBulk(bulkRequest, startTime, listener);
+            executeBulk(bulkRequest, startTime, listener, responses);
         }
     }
 
-    private void executeBulk(final BulkRequest bulkRequest, final long startTime, final ActionListener<BulkResponse> listener) {
+    private boolean setResponseFailureIfIndexMatches(AtomicArray<BulkItemResponse> responses, int idx, ActionRequest request, String index, Throwable e) {
+        if (request instanceof IndexRequest) {
+            IndexRequest indexRequest = (IndexRequest) request;
+            if (index.equals(indexRequest.index())) {
+                responses.set(idx, new BulkItemResponse(idx, "index", new BulkItemResponse.Failure(indexRequest.index(), indexRequest.type(), indexRequest.id(), e)));
+                return true;
+            }
+        } else if (request instanceof DeleteRequest) {
+            DeleteRequest deleteRequest = (DeleteRequest) request;
+            if (index.equals(deleteRequest.index())) {
+                responses.set(idx, new BulkItemResponse(idx, "index", new BulkItemResponse.Failure(deleteRequest.index(), deleteRequest.type(), deleteRequest.id(), e)));
+                return true;
+            }
+        } else if (request instanceof UpdateRequest) {
+            UpdateRequest updateRequest = (UpdateRequest) request;
+            if (index.equals(updateRequest.index())) {
+                responses.set(idx, new BulkItemResponse(idx, "index", new BulkItemResponse.Failure(updateRequest.index(), updateRequest.type(), updateRequest.id(), e)));
+                return true;
+            }
+        } else {
+            throw new ElasticsearchException("Parsed unknown request in bulk actions: " + request.getClass().getSimpleName());
+        }
+        return false;
+    }
+
+    /**
+     * This method executes the {@link BulkRequest} and calls the given listener once the request returns.
+     * This method will not create any indices even if auto-create indices is enabled.
+     *
+     * @see #doExecute(BulkRequest, org.elasticsearch.action.ActionListener)
+     */
+    public void executeBulk(final BulkRequest bulkRequest, final ActionListener<BulkResponse> listener) {
+        final long startTime = System.currentTimeMillis();
+        executeBulk(bulkRequest, startTime, listener, new AtomicArray<BulkItemResponse>(bulkRequest.requests.size()));
+    }
+
+    private void executeBulk(final BulkRequest bulkRequest, final long startTime, final ActionListener<BulkResponse> listener, final AtomicArray<BulkItemResponse> responses ) {
         ClusterState clusterState = clusterService.state();
         // TODO use timeout to wait here if its blocked...
         clusterState.blocks().globalBlockedRaiseException(ClusterBlockLevel.WRITE);
 
         MetaData metaData = clusterState.metaData();
-        for (ActionRequest request : bulkRequest.requests) {
+        for (int i = 0; i < bulkRequest.requests.size(); i++) {
+            ActionRequest request = bulkRequest.requests.get(i);
             if (request instanceof IndexRequest) {
                 IndexRequest indexRequest = (IndexRequest) request;
                 String aliasOrIndex = indexRequest.index();
-                indexRequest.index(clusterState.metaData().concreteIndex(indexRequest.index()));
+                indexRequest.index(clusterState.metaData().concreteSingleIndex(indexRequest.index()));
 
                 MappingMetaData mappingMd = null;
                 if (metaData.hasIndex(indexRequest.index())) {
                     mappingMd = metaData.index(indexRequest.index()).mappingOrDefault(indexRequest.type());
                 }
-                indexRequest.process(metaData, aliasOrIndex, mappingMd, allowIdGeneration);
+                try {
+                    indexRequest.process(metaData, aliasOrIndex, mappingMd, allowIdGeneration);
+                } catch (ElasticsearchParseException e) {
+                    BulkItemResponse.Failure failure = new BulkItemResponse.Failure(indexRequest.index(), indexRequest.type(), indexRequest.id(), e);
+                    BulkItemResponse bulkItemResponse = new BulkItemResponse(i, "index", failure);
+                    responses.set(i, bulkItemResponse);
+                    // make sure the request gets never processed again
+                    bulkRequest.requests.set(i, null);
+                }
             } else if (request instanceof DeleteRequest) {
                 DeleteRequest deleteRequest = (DeleteRequest) request;
                 deleteRequest.routing(clusterState.metaData().resolveIndexRouting(deleteRequest.routing(), deleteRequest.index()));
-                deleteRequest.index(clusterState.metaData().concreteIndex(deleteRequest.index()));
+                deleteRequest.index(clusterState.metaData().concreteSingleIndex(deleteRequest.index()));
             } else if (request instanceof UpdateRequest) {
                 UpdateRequest updateRequest = (UpdateRequest) request;
                 updateRequest.routing(clusterState.metaData().resolveIndexRouting(updateRequest.routing(), updateRequest.index()));
-                updateRequest.index(clusterState.metaData().concreteIndex(updateRequest.index()));
+                updateRequest.index(clusterState.metaData().concreteSingleIndex(updateRequest.index()));
             }
         }
-        final AtomicArray<BulkItemResponse> responses = new AtomicArray<BulkItemResponse>(bulkRequest.requests.size());
-
 
         // first, go over all the requests and create a ShardId -> Operations mapping
         Map<ShardId, List<BulkItemRequest>> requestsByShard = Maps.newHashMap();
@@ -257,19 +309,20 @@ public class TransportBulkAction extends TransportAction<BulkRequest, BulkRespon
                 public void onFailure(Throwable e) {
                     // create failures for all relevant requests
                     String message = ExceptionsHelper.detailedMessage(e);
+                    RestStatus status = ExceptionsHelper.status(e);
                     for (BulkItemRequest request : requests) {
                         if (request.request() instanceof IndexRequest) {
                             IndexRequest indexRequest = (IndexRequest) request.request();
                             responses.set(request.id(), new BulkItemResponse(request.id(), indexRequest.opType().toString().toLowerCase(Locale.ENGLISH),
-                                    new BulkItemResponse.Failure(indexRequest.index(), indexRequest.type(), indexRequest.id(), message)));
+                                    new BulkItemResponse.Failure(indexRequest.index(), indexRequest.type(), indexRequest.id(), message, status)));
                         } else if (request.request() instanceof DeleteRequest) {
                             DeleteRequest deleteRequest = (DeleteRequest) request.request();
                             responses.set(request.id(), new BulkItemResponse(request.id(), "delete",
-                                    new BulkItemResponse.Failure(deleteRequest.index(), deleteRequest.type(), deleteRequest.id(), message)));
+                                    new BulkItemResponse.Failure(deleteRequest.index(), deleteRequest.type(), deleteRequest.id(), message, status)));
                         } else if (request.request() instanceof UpdateRequest) {
                             UpdateRequest updateRequest = (UpdateRequest) request.request();
                             responses.set(request.id(), new BulkItemResponse(request.id(), "update",
-                                    new BulkItemResponse.Failure(updateRequest.index(), updateRequest.type(), updateRequest.id(), message)));
+                                    new BulkItemResponse.Failure(updateRequest.index(), updateRequest.type(), updateRequest.id(), message, status)));
                         }
                     }
                     if (counter.decrementAndGet() == 0) {

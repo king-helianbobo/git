@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -56,9 +56,15 @@ public class FsStats implements Iterable<FsStats.Info>, Streamable, ToXContent {
         double diskQueue = -1;
         double diskServiceTime = -1;
 
+        static public Info readInfoFrom(StreamInput in) throws IOException {
+            Info i = new Info();
+            i.readFrom(in);
+            return i;
+        }
+
         @Override
         public void readFrom(StreamInput in) throws IOException {
-            path = in.readString();
+            path = in.readOptionalString();
             mount = in.readOptionalString();
             dev = in.readOptionalString();
             total = in.readLong();
@@ -74,7 +80,7 @@ public class FsStats implements Iterable<FsStats.Info>, Streamable, ToXContent {
 
         @Override
         public void writeTo(StreamOutput out) throws IOException {
-            out.writeString(path);
+            out.writeOptionalString(path); // total aggregates do not have a path
             out.writeOptionalString(mount);
             out.writeOptionalString(dev);
             out.writeLong(total);
@@ -286,12 +292,16 @@ public class FsStats implements Iterable<FsStats.Info>, Streamable, ToXContent {
         this.total = null;
     }
 
+    public Info getTotal() {
+        return total();
+    }
+
     public Info total() {
         if (total != null) {
             return total;
         }
         Info res = new Info();
-        Set<String> seenDevices = new HashSet<String>(infos.length);
+        Set<String> seenDevices = new HashSet<>(infos.length);
         for (Info subInfo : infos) {
             if (subInfo.dev != null) {
                 if (!seenDevices.add(subInfo.dev)) {
@@ -324,8 +334,7 @@ public class FsStats implements Iterable<FsStats.Info>, Streamable, ToXContent {
         timestamp = in.readVLong();
         infos = new Info[in.readVInt()];
         for (int i = 0; i < infos.length; i++) {
-            infos[i] = new Info();
-            infos[i].readFrom(in);
+            infos[i] = Info.readInfoFrom(in);
         }
     }
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.benchmark.aliases;
 
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequestBuilder;
-import org.elasticsearch.action.admin.indices.alias.get.IndicesGetAliasesResponse;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.common.Strings;
@@ -125,7 +125,7 @@ public class AliasesBenchmark {
     }
 
     private static int countAliases(Client client) {
-        IndicesGetAliasesResponse response = client.admin().indices().prepareGetAliases("*")
+        GetAliasesResponse response = client.admin().indices().prepareGetAliases("*")
                 .addIndices(INDEX_NAME)
                 .execute().actionGet();
         if (response.getAliases().isEmpty()) {

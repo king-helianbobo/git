@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.support.replication;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.WriteConsistencyLevel;
@@ -45,6 +46,7 @@ public abstract class ShardReplicationOperationRequest<T extends ShardReplicatio
     private boolean threadedOperation = true;
     private ReplicationType replicationType = ReplicationType.DEFAULT;
     private WriteConsistencyLevel consistencyLevel = WriteConsistencyLevel.DEFAULT;
+    private boolean canHaveDuplicates = false;
 
     protected ShardReplicationOperationRequest() {
 
@@ -61,6 +63,17 @@ public abstract class ShardReplicationOperationRequest<T extends ShardReplicatio
         this.threadedOperation = request.operationThreaded();
         this.replicationType = request.replicationType();
         this.consistencyLevel = request.consistencyLevel();
+    }
+
+    void setCanHaveDuplicates() {
+        this.canHaveDuplicates = true;
+    }
+
+    /**
+     * Is this request can potentially be dup on a single shard.
+     */
+    public boolean canHaveDuplicates() {
+        return canHaveDuplicates;
     }
 
     /**
@@ -161,7 +174,10 @@ public abstract class ShardReplicationOperationRequest<T extends ShardReplicatio
         replicationType = ReplicationType.fromId(in.readByte());
         consistencyLevel = WriteConsistencyLevel.fromId(in.readByte());
         timeout = TimeValue.readTimeValue(in);
-        index = in.readString();
+        index = in.readSharedString();
+        if (in.getVersion().onOrAfter(Version.V_1_2_0)) {
+            canHaveDuplicates = in.readBoolean();
+        }
         // no need to serialize threaded* parameters, since they only matter locally
     }
 
@@ -171,7 +187,10 @@ public abstract class ShardReplicationOperationRequest<T extends ShardReplicatio
         out.writeByte(replicationType.id());
         out.writeByte(consistencyLevel.id());
         timeout.writeTo(out);
-        out.writeString(index);
+        out.writeSharedString(index);
+        if (out.getVersion().onOrAfter(Version.V_1_2_0)) {
+            out.writeBoolean(canHaveDuplicates);
+        }
     }
 
     /**

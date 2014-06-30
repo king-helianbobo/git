@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -46,7 +46,7 @@ public class TransportSearchQueryAndFetchAction extends TransportSearchTypeActio
 
     @Inject
     public TransportSearchQueryAndFetchAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
-            SearchServiceTransportAction searchService, SearchPhaseController searchPhaseController) {
+                                              SearchServiceTransportAction searchService, SearchPhaseController searchPhaseController) {
         super(settings, threadPool, clusterService, searchService, searchPhaseController);
     }
 
@@ -67,8 +67,7 @@ public class TransportSearchQueryAndFetchAction extends TransportSearchTypeActio
         }
 
         @Override
-        protected void sendExecuteFirstPhase(DiscoveryNode node, ShardSearchRequest request,
-                SearchServiceListener<QueryFetchSearchResult> listener) {
+        protected void sendExecuteFirstPhase(DiscoveryNode node, ShardSearchRequest request, SearchServiceListener<QueryFetchSearchResult> listener) {
             searchService.sendExecuteFetch(node, request, listener);
         }
 
@@ -86,14 +85,13 @@ public class TransportSearchQueryAndFetchAction extends TransportSearchTypeActio
         }
 
         private void innerFinishHim() throws IOException {
-            sortedShardList = searchPhaseController.sortDocs(firstResults);
+            sortedShardList = searchPhaseController.sortDocs(request, useSlowScroll, firstResults);
             final InternalSearchResponse internalResponse = searchPhaseController.merge(sortedShardList, firstResults, firstResults);
             String scrollId = null;
             if (request.scroll() != null) {
                 scrollId = buildScrollId(request.searchType(), firstResults, null);
             }
-            listener.onResponse(new SearchResponse(internalResponse, scrollId, expectedSuccessfulOps, successulOps.get(),
-                    buildTookInMillis(), buildShardFailures()));
+            listener.onResponse(new SearchResponse(internalResponse, scrollId, expectedSuccessfulOps, successfulOps.get(), buildTookInMillis(), buildShardFailures()));
         }
     }
 }

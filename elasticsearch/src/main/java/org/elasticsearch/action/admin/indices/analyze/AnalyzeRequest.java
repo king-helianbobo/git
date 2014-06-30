@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,12 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.action.admin.indices.analyze;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.support.single.custom.SingleCustomOperationRequest;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 
@@ -30,8 +31,8 @@ import java.io.IOException;
 import static org.elasticsearch.action.ValidateActions.addValidationError;
 
 /**
- * A request to analyze a text associated with a specific index. Allow to
- * provide the actual analyzer name to perform the analysis with.
+ * A request to analyze a text associated with a specific index. Allow to provide
+ * the actual analyzer name to perform the analysis with.
  */
 public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest> {
 
@@ -43,7 +44,9 @@ public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest>
 
     private String tokenizer;
 
-    private String[] tokenFilters;
+    private String[] tokenFilters = Strings.EMPTY_ARRAY;
+
+    private String[] charFilters = Strings.EMPTY_ARRAY;
 
     private String field;
 
@@ -53,9 +56,8 @@ public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest>
 
     /**
      * Constructs a new analyzer request for the provided text.
-     * 
-     * @param text
-     *            The text to analyze
+     *
+     * @param text The text to analyze
      */
     public AnalyzeRequest(String text) {
         this.text = text;
@@ -63,11 +65,9 @@ public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest>
 
     /**
      * Constructs a new analyzer request for the provided index and text.
-     * 
-     * @param index
-     *            The index name
-     * @param text
-     *            The text to analyze
+     *
+     * @param index The index name
+     * @param text  The text to analyze
      */
     public AnalyzeRequest(@Nullable String index, String text) {
         this.index = index;
@@ -114,6 +114,15 @@ public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest>
         return this.tokenFilters;
     }
 
+    public AnalyzeRequest charFilters(String... charFilters) {
+        this.charFilters = charFilters;
+        return this;
+    }
+
+    public String[] charFilters() {
+        return this.charFilters;
+    }
+
     public AnalyzeRequest field(String field) {
         this.field = field;
         return this;
@@ -129,6 +138,12 @@ public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest>
         if (text == null) {
             validationException = addValidationError("text is missing", validationException);
         }
+        if (tokenFilters == null) {
+            validationException = addValidationError("token filters must not be null", validationException);
+        }
+        if (charFilters == null) {
+            validationException = addValidationError("char filters must not be null", validationException);
+        }
         return validationException;
     }
 
@@ -139,30 +154,23 @@ public class AnalyzeRequest extends SingleCustomOperationRequest<AnalyzeRequest>
         text = in.readString();
         analyzer = in.readOptionalString();
         tokenizer = in.readOptionalString();
-        int size = in.readVInt();
-        if (size > 0) {
-            tokenFilters = new String[size];
-            for (int i = 0; i < size; i++) {
-                tokenFilters[i] = in.readString();
-            }
+        tokenFilters = in.readStringArray();
+        if (in.getVersion().onOrAfter(Version.V_1_1_0)) {
+            charFilters = in.readStringArray();
         }
         field = in.readOptionalString();
     }
 
     @Override
-    public void writeTo(StreamOutput out) throws IOException { // 将请求写入outputstream中
+    public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
         out.writeOptionalString(index);
         out.writeString(text);
         out.writeOptionalString(analyzer);
         out.writeOptionalString(tokenizer);
-        if (tokenFilters == null) {
-            out.writeVInt(0);
-        } else {
-            out.writeVInt(tokenFilters.length);
-            for (String tokenFilter : tokenFilters) {
-                out.writeString(tokenFilter);
-            }
+        out.writeStringArray(tokenFilters);
+        if (out.getVersion().onOrAfter(Version.V_1_1_0)) {
+            out.writeStringArray(charFilters);
         }
         out.writeOptionalString(field);
     }

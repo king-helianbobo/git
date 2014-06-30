@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,11 +21,12 @@ package org.elasticsearch.index.query;
 
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.lucene.search.Queries;
 import org.elasticsearch.common.lucene.search.XConstantScoreQuery;
 import org.elasticsearch.common.lucene.search.XFilteredQuery;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -150,13 +151,16 @@ public class NestedFilterParser implements FilterParser {
                 //}
                 parentFilter = parseContext.cacheFilter(parentFilter, null);
             }
+            // if the filter cache is disabled, then we still have a filter that is not cached while ToParentBlockJoinQuery
+            // expects FixedBitSet instances
+            parentFilter = new FixedBitSetCachingWrapperFilter(parentFilter);
 
             Filter nestedFilter;
             if (join) {
                 ToParentBlockJoinQuery joinQuery = new ToParentBlockJoinQuery(query, parentFilter, ScoreMode.None);
-                nestedFilter = new QueryWrapperFilter(joinQuery);
+                nestedFilter = Queries.wrap(joinQuery);
             } else {
-                nestedFilter = new QueryWrapperFilter(query);
+                nestedFilter = Queries.wrap(query);
             }
 
             if (cache) {

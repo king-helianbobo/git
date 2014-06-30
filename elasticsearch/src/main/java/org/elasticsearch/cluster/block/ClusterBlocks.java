@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -34,13 +34,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Represents current cluster level blocks to block dirty operations done
- * against the cluster.
+ * Represents current cluster level blocks to block dirty operations done against the cluster.
  */
 public class ClusterBlocks {
 
-    public static final ClusterBlocks EMPTY_CLUSTER_BLOCK = new ClusterBlocks(ImmutableSet.<ClusterBlock> of(),
-            ImmutableMap.<String, ImmutableSet<ClusterBlock>> of());
+    public static final ClusterBlocks EMPTY_CLUSTER_BLOCK = new ClusterBlocks(ImmutableSet.<ClusterBlock>of(), ImmutableMap.<String, ImmutableSet<ClusterBlock>>of());
 
     private final ImmutableSet<ClusterBlock> global;
 
@@ -60,6 +58,7 @@ public class ClusterBlocks {
                     globalBuilder.add(block);
                 }
             }
+
 
             ImmutableMap.Builder<String, ImmutableSet<ClusterBlock>> indicesBuilder = ImmutableMap.builder();
             for (Map.Entry<String, ImmutableSet<ClusterBlock>> entry : indicesBlocks.entrySet()) {
@@ -94,8 +93,7 @@ public class ClusterBlocks {
     }
 
     /**
-     * Returns <tt>true</tt> if one of the global blocks as its disable state
-     * persistence flag set.
+     * Returns <tt>true</tt> if one of the global blocks as its disable state persistence flag set.
      */
     public boolean disableStatePersistence() {
         for (ClusterBlock clusterBlock : global) {
@@ -194,8 +192,7 @@ public class ClusterBlocks {
 
     static class ImmutableLevelHolder {
 
-        static final ImmutableLevelHolder EMPTY = new ImmutableLevelHolder(ImmutableSet.<ClusterBlock> of(),
-                ImmutableMap.<String, ImmutableSet<ClusterBlock>> of());
+        static final ImmutableLevelHolder EMPTY = new ImmutableLevelHolder(ImmutableSet.<ClusterBlock>of(), ImmutableMap.<String, ImmutableSet<ClusterBlock>>of());
 
         private final ImmutableSet<ClusterBlock> global;
         private final ImmutableMap<String, ImmutableSet<ClusterBlock>> indices;
@@ -231,7 +228,7 @@ public class ClusterBlocks {
             global.addAll(blocks.global());
             for (Map.Entry<String, ImmutableSet<ClusterBlock>> entry : blocks.indices().entrySet()) {
                 if (!indices.containsKey(entry.getKey())) {
-                    indices.put(entry.getKey(), Sets.<ClusterBlock> newHashSet());
+                    indices.put(entry.getKey(), Sets.<ClusterBlock>newHashSet());
                 }
                 indices.get(entry.getKey()).addAll(entry.getValue());
             }
@@ -269,7 +266,7 @@ public class ClusterBlocks {
 
         public Builder addIndexBlock(String index, ClusterBlock block) {
             if (!indices.containsKey(index)) {
-                indices.put(index, Sets.<ClusterBlock> newHashSet());
+                indices.put(index, Sets.<ClusterBlock>newHashSet());
             }
             indices.get(index).add(block);
             return this;

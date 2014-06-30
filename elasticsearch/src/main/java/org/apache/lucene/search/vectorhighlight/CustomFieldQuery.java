@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,6 +21,7 @@ package org.apache.lucene.search.vectorhighlight;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.BlendedTermQuery;
 import org.apache.lucene.queries.FilterClause;
 import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.search.*;
@@ -53,7 +54,7 @@ public class CustomFieldQuery extends FieldQuery {
         }
     }
 
-    public static final ThreadLocal<Boolean> highlightFilters = new ThreadLocal<Boolean>();
+    public static final ThreadLocal<Boolean> highlightFilters = new ThreadLocal<>();
 
     public CustomFieldQuery(Query query, IndexReader reader, FastVectorHighlighter highlighter) throws IOException {
         this(query, reader, highlighter.isPhraseHighlight(), highlighter.isFieldMatch());
@@ -66,16 +67,8 @@ public class CustomFieldQuery extends FieldQuery {
 
     @Override
     void flatten(Query sourceQuery, IndexReader reader, Collection<Query> flatQueries) throws IOException {
-        if (sourceQuery instanceof DisjunctionMaxQuery) {
-            DisjunctionMaxQuery dmq = (DisjunctionMaxQuery) sourceQuery;
-            for (Query query : dmq) {
-                flatten(query, reader, flatQueries);
-            }
-        } else if (sourceQuery instanceof SpanTermQuery) {
-            TermQuery termQuery = new TermQuery(((SpanTermQuery) sourceQuery).getTerm());
-            if (!flatQueries.contains(termQuery)) {
-                flatQueries.add(termQuery);
-            }
+        if (sourceQuery instanceof SpanTermQuery) {
+            super.flatten(new TermQuery(((SpanTermQuery) sourceQuery).getTerm()), reader, flatQueries);
         } else if (sourceQuery instanceof ConstantScoreQuery) {
             ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) sourceQuery;
             if (constantScoreQuery.getFilter() != null) {
@@ -97,10 +90,13 @@ public class CustomFieldQuery extends FieldQuery {
             flatten(((FiltersFunctionScoreQuery) sourceQuery).getSubQuery(), reader, flatQueries);
         } else if (sourceQuery instanceof MultiPhraseQuery) {
             MultiPhraseQuery q = ((MultiPhraseQuery) sourceQuery);
-            convertMultiPhraseQuery(0, new int[q.getTermArrays().size()] , q, q.getTermArrays(), q.getPositions(), reader, flatQueries);
+            convertMultiPhraseQuery(0, new int[q.getTermArrays().size()], q, q.getTermArrays(), q.getPositions(), reader, flatQueries);
+        } else if (sourceQuery instanceof BlendedTermQuery) {
+            final BlendedTermQuery blendedTermQuery = (BlendedTermQuery) sourceQuery;
+            flatten(blendedTermQuery.rewrite(reader), reader, flatQueries);
         } else {
             super.flatten(sourceQuery, reader, flatQueries);
-        } 
+        }
     }
     
     private void convertMultiPhraseQuery(int currentPos, int[] termsIdx, MultiPhraseQuery orig, List<Term[]> terms, int[] pos, IndexReader reader, Collection<Query> flatQueries) throws IOException {

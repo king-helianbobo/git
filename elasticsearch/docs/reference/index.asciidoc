@@ -1,7 +1,11 @@
 [[elasticsearch-reference]]
 = Reference
 
+include::getting-started.asciidoc[]
+
 include::setup.asciidoc[]
+
+include::migration/migrate_1_0.asciidoc[]
 
 include::api-conventions.asciidoc[]
 
@@ -10,6 +14,8 @@ include::docs.asciidoc[]
 include::search.asciidoc[]
 
 include::indices.asciidoc[]
+
+include::cat.asciidoc[]
 
 include::cluster.asciidoc[]
 
@@ -23,5 +29,9 @@ include::modules.asciidoc[]
 
 include::index-modules.asciidoc[]
 
+include::testing.asciidoc[]
+
 include::glossary.asciidoc[]
+
+
 

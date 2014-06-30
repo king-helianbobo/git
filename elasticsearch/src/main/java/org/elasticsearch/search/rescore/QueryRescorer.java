@@ -1,12 +1,11 @@
-package org.elasticsearch.search.rescore;
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -17,12 +16,15 @@ package org.elasticsearch.search.rescore;
  * specific language governing permissions and limitations
  * under the License.
  */
+
+package org.elasticsearch.search.rescore;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IntroSorter;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentParser.Token;
 import org.elasticsearch.index.query.ParsedQuery;
@@ -41,6 +43,7 @@ public final class QueryRescorer implements Rescorer {
             public float combine(float primary, float secondary) {
                 return (primary + secondary) / 2;
             }
+
             @Override
             public String toString() {
                 return "avg";
@@ -51,6 +54,7 @@ public final class QueryRescorer implements Rescorer {
             public float combine(float primary, float secondary) {
                 return Math.max(primary, secondary);
             }
+
             @Override
             public String toString() {
                 return "max";
@@ -61,6 +65,7 @@ public final class QueryRescorer implements Rescorer {
             public float combine(float primary, float secondary) {
                 return Math.min(primary, secondary);
             }
+
             @Override
             public String toString() {
                 return "min";
@@ -71,6 +76,7 @@ public final class QueryRescorer implements Rescorer {
             public float combine(float primary, float secondary) {
                 return primary + secondary;
             }
+
             @Override
             public String toString() {
                 return "sum";
@@ -81,6 +87,7 @@ public final class QueryRescorer implements Rescorer {
             public float combine(float primary, float secondary) {
                 return primary * secondary;
             }
+
             @Override
             public String toString() {
                 return "product";
@@ -99,34 +106,34 @@ public final class QueryRescorer implements Rescorer {
     }
 
     @Override
-    public void rescore(TopDocs topDocs, SearchContext context, RescoreSearchContext rescoreContext) throws IOException{
+    public void rescore(TopDocs topDocs, SearchContext context, RescoreSearchContext rescoreContext) throws IOException {
         assert rescoreContext != null;
-        QueryRescoreContext rescore = ((QueryRescoreContext) rescoreContext);
-        TopDocs queryTopDocs = context.queryResult().topDocs();
-        if (queryTopDocs == null || queryTopDocs.totalHits == 0 || queryTopDocs.scoreDocs.length == 0) {
+        if (topDocs == null || topDocs.totalHits == 0 || topDocs.scoreDocs.length == 0) {
             return;
         }
 
+        QueryRescoreContext rescore = (QueryRescoreContext) rescoreContext;
         ContextIndexSearcher searcher = context.searcher();
-        topDocs = searcher.search(rescore.query(), new TopDocsFilter(queryTopDocs), queryTopDocs.scoreDocs.length);
-        context.queryResult().topDocs(merge(queryTopDocs, topDocs, rescore));
+        TopDocsFilter filter = new TopDocsFilter(topDocs, rescoreContext.window());
+        TopDocs rescored = searcher.search(rescore.query(), filter, rescoreContext.window());
+        context.queryResult().topDocs(merge(topDocs, rescored, rescore));
     }
 
     @Override
-    public Explanation explain(int topLevelDocId, SearchContext context, RescoreSearchContext rescoreContext) throws IOException {
-        QueryRescoreContext rescore = ((QueryRescoreContext) context.rescore());
+    public Explanation explain(int topLevelDocId, SearchContext context, RescoreSearchContext rescoreContext,
+            Explanation sourceExplanation) throws IOException {
+        QueryRescoreContext rescore = ((QueryRescoreContext) rescoreContext);
         ContextIndexSearcher searcher = context.searcher();
-        Explanation primaryExplain = searcher.explain(context.query(), topLevelDocId);
-        if (primaryExplain == null) {
+        if (sourceExplanation == null) {
             // this should not happen but just in case
-            return  new ComplexExplanation(false, 0.0f, "nothing matched");
+            return new ComplexExplanation(false, 0.0f, "nothing matched");
         }
         Explanation rescoreExplain = searcher.explain(rescore.query(), topLevelDocId);
         float primaryWeight = rescore.queryWeight();
-        ComplexExplanation prim = new ComplexExplanation(primaryExplain.isMatch(),
-                primaryExplain.getValue() * primaryWeight,
+        ComplexExplanation prim = new ComplexExplanation(sourceExplanation.isMatch(),
+                sourceExplanation.getValue() * primaryWeight,
                 "product of:");
-        prim.addDetail(primaryExplain);
+        prim.addDetail(sourceExplanation);
         prim.addDetail(new Explanation(primaryWeight, "primaryWeight"));
         if (rescoreExplain != null && rescoreExplain.isMatch()) {
             float secondaryWeight = rescore.rescoreQueryWeight();
@@ -161,9 +168,9 @@ public final class QueryRescorer implements Rescorer {
                     rescoreContext.setParsedQuery(parsedQuery);
                 }
             } else if (token.isValue()) {
-                if("query_weight".equals(fieldName)) {
+                if ("query_weight".equals(fieldName)) {
                     rescoreContext.setQueryWeight(parser.floatValue());
-                } else if("rescore_query_weight".equals(fieldName)) {
+                } else if ("rescore_query_weight".equals(fieldName)) {
                     rescoreContext.setRescoreQueryWeight(parser.floatValue());
                 } else if ("score_mode".equals(fieldName)) {
                     String sScoreMode = parser.text();
@@ -178,18 +185,18 @@ public final class QueryRescorer implements Rescorer {
                     } else if ("multiply".equals(sScoreMode)) {
                         rescoreContext.setScoreMode(ScoreMode.Multiply);
                     } else {
-                        throw new ElasticSearchIllegalArgumentException("[rescore] illegal score_mode [" + sScoreMode + "]");
+                        throw new ElasticsearchIllegalArgumentException("[rescore] illegal score_mode [" + sScoreMode + "]");
                     }
                 } else {
-                    throw new ElasticSearchIllegalArgumentException("rescore doesn't support [" + fieldName + "]");
+                    throw new ElasticsearchIllegalArgumentException("rescore doesn't support [" + fieldName + "]");
                 }
             }
         }
         return rescoreContext;
     }
-    
+
     public static class QueryRescoreContext extends RescoreSearchContext {
-        
+
         public QueryRescoreContext(QueryRescorer rescorer) {
             super(NAME, 10, rescorer);
             this.scoreMode = ScoreMode.Total;
@@ -203,15 +210,15 @@ public final class QueryRescorer implements Rescorer {
         public void setParsedQuery(ParsedQuery parsedQuery) {
             this.parsedQuery = parsedQuery;
         }
-        
+
         public Query query() {
             return parsedQuery.query();
         }
-        
+
         public float queryWeight() {
             return queryWeight;
         }
-        
+
         public float rescoreQueryWeight() {
             return rescoreQueryWeight;
         }
@@ -231,10 +238,10 @@ public final class QueryRescorer implements Rescorer {
         public void setScoreMode(ScoreMode scoreMode) {
             this.scoreMode = scoreMode;
         }
-        
+
     }
-    
-    
+
+
     private TopDocs merge(TopDocs primary, TopDocs secondary, QueryRescoreContext context) {
         DocIdSorter sorter = new DocIdSorter();
         sorter.array = primary.scoreDocs;
@@ -260,10 +267,11 @@ public final class QueryRescorer implements Rescorer {
         primary.setMaxScore(primaryDocs[0].score);
         return primary;
     }
-    
+
     private static final class DocIdSorter extends IntroSorter {
         private ScoreDoc[] array;
         private ScoreDoc pivot;
+
         @Override
         protected void swap(int i, int j) {
             ScoreDoc scoreDoc = array[i];
@@ -279,16 +287,16 @@ public final class QueryRescorer implements Rescorer {
         @Override
         protected void setPivot(int i) {
             pivot = array[i];
-            
+
         }
 
         @Override
         protected int comparePivot(int j) {
             return compareDocId(pivot, array[j]);
         }
-        
+
     }
-    
+
     private static final int compareDocId(ScoreDoc left, ScoreDoc right) {
         if (left.doc < right.doc) {
             return 1;
@@ -297,10 +305,11 @@ public final class QueryRescorer implements Rescorer {
         }
         return -1;
     }
-    
+
     private static final class ScoreSorter extends IntroSorter {
         private ScoreDoc[] array;
         private ScoreDoc pivot;
+
         @Override
         protected void swap(int i, int j) {
             ScoreDoc scoreDoc = array[i];
@@ -317,7 +326,7 @@ public final class QueryRescorer implements Rescorer {
         @Override
         protected void setPivot(int i) {
             pivot = array[i];
-            
+
         }
 
         @Override
@@ -325,64 +334,67 @@ public final class QueryRescorer implements Rescorer {
             int cmp = Float.compare(array[j].score, pivot.score);
             return cmp == 0 ? compareDocId(pivot, array[j]) : cmp;
         }
-        
+
     }
-      
+
     private static final class TopDocsFilter extends Filter {
 
         private final int[] docIds;
-        public TopDocsFilter(TopDocs topDocs) {
-            this.docIds = new int[topDocs.scoreDocs.length];
+
+        public TopDocsFilter(TopDocs topDocs, int max) {
             ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-            for (int i = 0; i < scoreDocs.length; i++) {
+            max = Math.min(max, scoreDocs.length);
+            this.docIds = new int[max];
+            for (int i = 0; i < max; i++) {
                 docIds[i] = scoreDocs[i].doc;
             }
             Arrays.sort(docIds);
-            
         }
+
         @Override
         public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
             final int docBase = context.docBase;
-            int limit  = docBase + context.reader().maxDoc();
+            int limit = docBase + context.reader().maxDoc();
             int offset = Arrays.binarySearch(docIds, docBase);
-            if (offset < 0 ) {
-                offset = (-offset)-1;
+            if (offset < 0) {
+                offset = (-offset) - 1;
             }
             int end = Arrays.binarySearch(docIds, limit);
             if (end < 0) {
-                end = (-end)-1; 
-            } 
+                end = (-end) - 1;
+            }
             final int start = offset;
             final int stop = end;
-            
+
             return new DocIdSet() {
-                
+
                 @Override
                 public DocIdSetIterator iterator() throws IOException {
                     return new DocIdSetIterator() {
                         private int current = start;
                         private int docId = NO_MORE_DOCS;
-                        
+
                         @Override
                         public int nextDoc() throws IOException {
                             if (current < stop) {
-                                return docId = docIds[current++]-docBase;
+                                return docId = docIds[current++] - docBase;
                             }
                             return docId = NO_MORE_DOCS;
                         }
-                        
+
                         @Override
                         public int docID() {
                             return docId;
                         }
-                        
+
                         @Override
                         public int advance(int target) throws IOException {
                             if (target == NO_MORE_DOCS) {
                                 current = stop;
                                 return docId = NO_MORE_DOCS;
                             }
-                            while(nextDoc() < target) {}
+                            while (nextDoc() < target) {
+                            }
                             return docId;
                         }
 
@@ -394,12 +406,12 @@ public final class QueryRescorer implements Rescorer {
                 }
             };
         }
-        
+
     }
 
     @Override
     public void extractTerms(SearchContext context, RescoreSearchContext rescoreContext, Set<Term> termsSet) {
-        ((QueryRescoreContext) context.rescore()).query().extractTerms(termsSet);        
+        ((QueryRescoreContext) rescoreContext).query().extractTerms(termsSet);
     }
 
 }

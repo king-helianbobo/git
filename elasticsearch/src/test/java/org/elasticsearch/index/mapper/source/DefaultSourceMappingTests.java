@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -137,7 +137,7 @@ public class DefaultSourceMappingTests extends ElasticsearchTestCase {
             mapper = MapperTestUtils.newParser().parse(null, null, defaultMapping);
             assertThat(mapper.type(), equalTo("my_type"));
             assertThat(mapper.sourceMapper().enabled(), equalTo(false));
-            assert false;
+            fail();
         } catch (MapperParsingException e) {
             // all is well
         }
@@ -145,7 +145,7 @@ public class DefaultSourceMappingTests extends ElasticsearchTestCase {
             mapper = MapperTestUtils.newParser().parse(null, "{}", defaultMapping);
             assertThat(mapper.type(), equalTo("my_type"));
             assertThat(mapper.sourceMapper().enabled(), equalTo(false));
-            assert false;
+            fail();
         } catch (MapperParsingException e) {
             assertThat(e.getMessage(), equalTo("malformed mapping no root object found"));
             // all is well

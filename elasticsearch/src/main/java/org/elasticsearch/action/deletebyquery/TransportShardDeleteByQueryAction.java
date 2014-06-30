@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,9 +21,10 @@ package org.elasticsearch.action.deletebyquery;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.search.Filter;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.action.support.replication.TransportShardReplicationOperationAction;
 import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.cache.recycler.PageCacheRecycler;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.action.shard.ShardStateAction;
@@ -33,12 +34,14 @@ import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardIterator;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.util.BigArrays;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.query.ParsedQuery;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.search.internal.DefaultSearchContext;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.threadpool.ThreadPool;
@@ -49,16 +52,23 @@ import org.elasticsearch.transport.TransportService;
  */
 public class TransportShardDeleteByQueryAction extends TransportShardReplicationOperationAction<ShardDeleteByQueryRequest, ShardDeleteByQueryRequest, ShardDeleteByQueryResponse> {
 
+    public final static String DELETE_BY_QUERY_API = "delete_by_query";
+
     private final ScriptService scriptService;
     private final CacheRecycler cacheRecycler;
+    private final PageCacheRecycler pageCacheRecycler;
+    private final BigArrays bigArrays;
 
     @Inject
     public TransportShardDeleteByQueryAction(Settings settings, TransportService transportService,
                                              ClusterService clusterService, IndicesService indicesService, ThreadPool threadPool,
-                                             ShardStateAction shardStateAction, ScriptService scriptService, CacheRecycler cacheRecycler) {
+                                             ShardStateAction shardStateAction, ScriptService scriptService, CacheRecycler cacheRecycler,
+                                             PageCacheRecycler pageCacheRecycler, BigArrays bigArrays) {
         super(settings, transportService, clusterService, indicesService, threadPool, shardStateAction);
         this.scriptService = scriptService;
         this.cacheRecycler = cacheRecycler;
+        this.pageCacheRecycler = pageCacheRecycler;
+        this.bigArrays = bigArrays;
     }
 
     @Override
@@ -107,19 +117,19 @@ public class TransportShardDeleteByQueryAction extends TransportShardReplication
         IndexService indexService = indicesService.indexServiceSafe(shardRequest.request.index());
         IndexShard indexShard = indexService.shardSafe(shardRequest.shardId);
 
-        SearchContext.setCurrent(new SearchContext(0, new ShardSearchRequest().types(request.types()), null,
-                indexShard.acquireSearcher("delete_by_query", IndexShard.Mode.WRITE), indexService, indexShard, scriptService, cacheRecycler));
+        SearchContext.setCurrent(new DefaultSearchContext(0, new ShardSearchRequest().types(request.types()).nowInMillis(request.nowInMillis()), null,
+                indexShard.acquireSearcher(DELETE_BY_QUERY_API), indexService, indexShard, scriptService, cacheRecycler,
+                pageCacheRecycler, bigArrays));
         try {
-            Engine.DeleteByQuery deleteByQuery = indexShard.prepareDeleteByQuery(request.querySource(), request.filteringAliases(), request.types())
-                    .origin(Engine.Operation.Origin.PRIMARY);
+            Engine.DeleteByQuery deleteByQuery = indexShard.prepareDeleteByQuery(request.source(), request.filteringAliases(), Engine.Operation.Origin.PRIMARY, request.types());
             SearchContext.current().parsedQuery(new ParsedQuery(deleteByQuery.query(), ImmutableMap.<String, Filter>of()));
             indexShard.deleteByQuery(deleteByQuery);
         } finally {
-            SearchContext searchContext = SearchContext.current();
-            searchContext.clearAndRelease();
-            SearchContext.removeCurrent();
+            try (SearchContext searchContext = SearchContext.current()) {
+                SearchContext.removeCurrent();
+            }
         }
-        return new PrimaryResponse<ShardDeleteByQueryResponse, ShardDeleteByQueryRequest>(shardRequest.request, new ShardDeleteByQueryResponse(), null);
+        return new PrimaryResponse<>(shardRequest.request, new ShardDeleteByQueryResponse(), null);
     }
 
 
@@ -129,17 +139,17 @@ public class TransportShardDeleteByQueryAction extends TransportShardReplication
         IndexService indexService = indicesService.indexServiceSafe(shardRequest.request.index());
         IndexShard indexShard = indexService.shardSafe(shardRequest.shardId);
 
-        SearchContext.setCurrent(new SearchContext(0, new ShardSearchRequest().types(request.types()), null,
-                indexShard.acquireSearcher("delete_by_query", IndexShard.Mode.WRITE), indexService, indexShard, scriptService, cacheRecycler));
+        SearchContext.setCurrent(new DefaultSearchContext(0, new ShardSearchRequest().types(request.types()).nowInMillis(request.nowInMillis()), null,
+                indexShard.acquireSearcher(DELETE_BY_QUERY_API, IndexShard.Mode.WRITE), indexService, indexShard, scriptService,
+                cacheRecycler, pageCacheRecycler, bigArrays));
         try {
-            Engine.DeleteByQuery deleteByQuery = indexShard.prepareDeleteByQuery(request.querySource(), request.filteringAliases(), request.types())
-                    .origin(Engine.Operation.Origin.REPLICA);
+            Engine.DeleteByQuery deleteByQuery = indexShard.prepareDeleteByQuery(request.source(), request.filteringAliases(), Engine.Operation.Origin.REPLICA, request.types());
             SearchContext.current().parsedQuery(new ParsedQuery(deleteByQuery.query(), ImmutableMap.<String, Filter>of()));
             indexShard.deleteByQuery(deleteByQuery);
         } finally {
-            SearchContext searchContext = SearchContext.current();
-            searchContext.clearAndRelease();
-            SearchContext.removeCurrent();
+            try (SearchContext searchContext = SearchContext.current();) {
+                SearchContext.removeCurrent();
+            }
         }
     }
 
@@ -151,6 +161,6 @@ public class TransportShardDeleteByQueryAction extends TransportShardReplication
                 return shardIt;
             }
         }
-        throw new ElasticSearchIllegalStateException("No shards iterator found for shard [" + request.shardId() + "]");
+        throw new ElasticsearchIllegalStateException("No shards iterator found for shard [" + request.shardId() + "]");
     }
 }

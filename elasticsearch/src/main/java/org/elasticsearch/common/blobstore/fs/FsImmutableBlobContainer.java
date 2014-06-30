@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.common.blobstore.fs;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.common.blobstore.BlobPath;
 import org.elasticsearch.common.blobstore.ImmutableBlobContainer;
 import org.elasticsearch.common.blobstore.support.BlobStores;
@@ -40,57 +40,42 @@ public class FsImmutableBlobContainer extends AbstractFsBlobContainer implements
     }
 
     @Override
-    public void writeBlob(final String blobName, final InputStream is, final long sizeInBytes, final WriterListener listener) {
+    public void writeBlob(final String blobName, final InputStream stream, final long sizeInBytes, final WriterListener listener) {
         blobStore.executor().execute(new Runnable() {
             @Override
             public void run() {
-                File file = new File(path, blobName);
-                RandomAccessFile raf;
+                final File file = new File(path, blobName);
+                boolean success = false;
                 try {
-                    raf = new RandomAccessFile(file, "rw");
-                    // clean the file if it exists
-                    raf.setLength(0);
-                } catch (Exception e) {
-                    listener.onFailure(e);
-                    return;
-                }
-                try {
-                    try {
+                    try (final RandomAccessFile raf = new RandomAccessFile(file, "rw");
+                         final InputStream is = stream) {
+                        // clean the file if it exists
+                        raf.setLength(0);
                         long bytesWritten = 0;
-                        byte[] buffer = new byte[blobStore.bufferSizeInBytes()];
+                        final byte[] buffer = new byte[blobStore.bufferSizeInBytes()];
                         int bytesRead;
                         while ((bytesRead = is.read(buffer)) != -1) {
                             raf.write(buffer, 0, bytesRead);
                             bytesWritten += bytesRead;
                         }
                         if (bytesWritten != sizeInBytes) {
-                            listener.onFailure(new ElasticSearchIllegalStateException("[" + blobName + "]: wrote [" + bytesWritten + "], expected to write [" + sizeInBytes + "]"));
-                            return;
+                            throw new ElasticsearchIllegalStateException("[" + blobName + "]: wrote [" + bytesWritten + "], expected to write [" + sizeInBytes + "]");
                         }
-                    } finally {
-                        try {
-                            is.close();
-                        } catch (IOException ex) {
-                            // do nothing
-                        }
-                        try {
-                            raf.close();
-                        } catch (IOException ex) {
-                            // do nothing
-                        }
+                        // fsync the FD we are done with writing
+                        raf.getFD().sync();
+                        // try to fsync the directory to make sure all metadata is written to
+                        // the storage device - NOTE: if it's a dir it will not throw any exception
+                        FileSystemUtils.syncFile(path, true);
                     }
-                    FileSystemUtils.syncFile(file);
-                    listener.onCompleted();
-                } catch (Exception e) {
-                    // just on the safe size, try and delete it on failure
-                    try {
-                        if (file.exists()) {
-                            file.delete();
-                        }
-                    } catch (Exception e1) {
-                        // ignore
-                    }
+                    success = true;
+                } catch (Throwable e) {
                     listener.onFailure(e);
+                    // just on the safe size, try and delete it on failure
+                    FileSystemUtils.tryDeleteFile(file);
+                } finally {
+                   if (success) {
+                       listener.onCompleted();
+                   }
                 }
             }
         });

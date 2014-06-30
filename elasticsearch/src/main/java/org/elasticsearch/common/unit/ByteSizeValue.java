@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,8 +19,8 @@
 
 package org.elasticsearch.common.unit;
 
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
-import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -28,11 +28,20 @@ import org.elasticsearch.common.io.stream.Streamable;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Locale;
 
 /**
  *
  */
 public class ByteSizeValue implements Serializable, Streamable {
+    /**
+     * Largest size possible for Guava caches to prevent overflow. Guava's
+     * caches use integers to track weight per segment and we always 16 segments
+     * so caches of 32GB would always overflow that integer and they'd never be
+     * evicted by size. We set this to 31.9GB leaving 100MB of headroom to
+     * prevent overflow.
+     */
+    public static final ByteSizeValue MAX_GUAVA_CACHE_SIZE = new ByteSizeValue(32 * ByteSizeUnit.C3 - 100 * ByteSizeUnit.C2);
 
     private long size;
 
@@ -51,10 +60,10 @@ public class ByteSizeValue implements Serializable, Streamable {
         this.sizeUnit = sizeUnit;
     }
 
-    public int bytesAsInt() throws ElasticSearchIllegalArgumentException {
+    public int bytesAsInt() throws ElasticsearchIllegalArgumentException {
         long bytes = bytes();
         if (bytes > Integer.MAX_VALUE) {
-            throw new ElasticSearchIllegalArgumentException("size [" + toString() + "] is bigger than max int");
+            throw new ElasticsearchIllegalArgumentException("size [" + toString() + "] is bigger than max int");
         }
         return (int) bytes;
     }
@@ -91,6 +100,22 @@ public class ByteSizeValue implements Serializable, Streamable {
         return gb();
     }
 
+    public long tb() {
+        return sizeUnit.toTB(size);
+    }
+
+    public long getTb() {
+        return tb();
+    }
+
+    public long pb() {
+        return sizeUnit.toPB(size);
+    }
+
+    public long getPb() {
+        return pb();
+    }
+
     public double kbFrac() {
         return ((double) bytes()) / ByteSizeUnit.C1;
     }
@@ -115,12 +140,34 @@ public class ByteSizeValue implements Serializable, Streamable {
         return gbFrac();
     }
 
+    public double tbFrac() {
+        return ((double) bytes()) / ByteSizeUnit.C4;
+    }
+
+    public double getTbFrac() {
+        return tbFrac();
+    }
+
+    public double pbFrac() {
+        return ((double) bytes()) / ByteSizeUnit.C5;
+    }
+
+    public double getPbFrac() {
+        return pbFrac();
+    }
+
     @Override
     public String toString() {
         long bytes = bytes();
         double value = bytes;
         String suffix = "b";
-        if (bytes >= ByteSizeUnit.C3) {
+        if (bytes >= ByteSizeUnit.C5) {
+            value = pbFrac();
+            suffix = "pb";
+        } else if (bytes >= ByteSizeUnit.C4) {
+            value = tbFrac();
+            suffix = "tb";
+        } else if (bytes >= ByteSizeUnit.C3) {
             value = gbFrac();
             suffix = "gb";
         } else if (bytes >= ByteSizeUnit.C2) {
@@ -133,35 +180,44 @@ public class ByteSizeValue implements Serializable, Streamable {
         return Strings.format1Decimals(value, suffix);
     }
 
-    public static ByteSizeValue parseBytesSizeValue(String sValue) throws ElasticSearchParseException {
+    public static ByteSizeValue parseBytesSizeValue(String sValue) throws ElasticsearchParseException {
         return parseBytesSizeValue(sValue, null);
     }
 
-    public static ByteSizeValue parseBytesSizeValue(String sValue, ByteSizeValue defaultValue) throws ElasticSearchParseException {
+    public static ByteSizeValue parseBytesSizeValue(String sValue, ByteSizeValue defaultValue) throws ElasticsearchParseException {
         if (sValue == null) {
             return defaultValue;
         }
         long bytes;
         try {
-            if (sValue.endsWith("k") || sValue.endsWith("K")) {
+            String lastTwoChars = sValue.substring(sValue.length() - Math.min(2, sValue.length())).toLowerCase(Locale.ROOT);
+            if (lastTwoChars.endsWith("k")) {
                 bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 1)) * ByteSizeUnit.C1);
-            } else if (sValue.endsWith("kb")) {
+            } else if (lastTwoChars.endsWith("kb")) {
                 bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 2)) * ByteSizeUnit.C1);
-            } else if (sValue.endsWith("m") || sValue.endsWith("M")) {
+            } else if (lastTwoChars.endsWith("m")) {
                 bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 1)) * ByteSizeUnit.C2);
-            } else if (sValue.endsWith("mb")) {
+            } else if (lastTwoChars.endsWith("mb")) {
                 bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 2)) * ByteSizeUnit.C2);
-            } else if (sValue.endsWith("g") || sValue.endsWith("G")) {
+            } else if (lastTwoChars.endsWith("g")) {
                 bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 1)) * ByteSizeUnit.C3);
-            } else if (sValue.endsWith("gb")) {
+            } else if (lastTwoChars.endsWith("gb")) {
                 bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 2)) * ByteSizeUnit.C3);
-            } else if (sValue.endsWith("b")) {
+            } else if (lastTwoChars.endsWith("t")) {
+                bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 1)) * ByteSizeUnit.C4);
+            } else if (lastTwoChars.endsWith("tb")) {
+                bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 2)) * ByteSizeUnit.C4);
+            } else if (lastTwoChars.endsWith("p")) {
+                bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 1)) * ByteSizeUnit.C5);
+            } else if (lastTwoChars.endsWith("pb")) {
+                bytes = (long) (Double.parseDouble(sValue.substring(0, sValue.length() - 2)) * ByteSizeUnit.C5);
+            } else if (lastTwoChars.endsWith("b")) {
                 bytes = Long.parseLong(sValue.substring(0, sValue.length() - 1));
             } else {
                 bytes = Long.parseLong(sValue);
             }
         } catch (NumberFormatException e) {
-            throw new ElasticSearchParseException("Failed to parse [" + sValue + "]", e);
+            throw new ElasticsearchParseException("Failed to parse [" + sValue + "]", e);
         }
         return new ByteSizeValue(bytes, ByteSizeUnit.BYTES);
     }

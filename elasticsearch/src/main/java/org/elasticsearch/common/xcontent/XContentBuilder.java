@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -84,7 +84,7 @@ public final class XContentBuilder implements BytesStream {
 
     private StringBuilder cachedStringBuilder;
 
-    private boolean humanReadable = true;
+    private boolean humanReadable = false;
 
     /**
      * Constructs a new builder using the provided xcontent and an OutputStream. Make sure
@@ -858,6 +858,14 @@ public final class XContentBuilder implements BytesStream {
         return this;
     }
 
+    public XContentBuilder dateValueField(XContentBuilderString rawFieldName, XContentBuilderString readableFieldName, long rawTimestamp) throws IOException {
+        if (humanReadable) {
+            field(readableFieldName, defaultDatePrinter.print(rawTimestamp));
+        }
+        field(rawFieldName, rawTimestamp);
+        return this;
+    }
+
     public XContentBuilder byteSizeField(XContentBuilderString rawFieldName, XContentBuilderString readableFieldName, ByteSizeValue byteSizeValue) throws IOException {
         if (humanReadable) {
             field(readableFieldName, byteSizeValue.toString());
@@ -1036,6 +1044,14 @@ public final class XContentBuilder implements BytesStream {
         return this;
     }
 
+    public XContentBuilder latlon(String name, double lat, double lon) throws IOException {
+        return startObject(name).field("lat", lat).field("lon", lon).endObject();
+    }
+    
+    public XContentBuilder latlon(double lat, double lon) throws IOException {
+        return startObject().field("lat", lat).field("lon", lon).endObject();
+    }
+        
     public XContentBuilder copyCurrentStructure(XContentParser parser) throws IOException {
         generator.copyCurrentStructure(parser);
         return this;
@@ -1148,6 +1164,8 @@ public final class XContentBuilder implements BytesStream {
             generator.writeString(XContentBuilder.defaultDatePrinter.print(((Date) value).getTime()));
         } else if (value instanceof Calendar) {
             generator.writeString(XContentBuilder.defaultDatePrinter.print((((Calendar) value)).getTimeInMillis()));
+        } else if (value instanceof ReadableInstant) {
+            generator.writeString(XContentBuilder.defaultDatePrinter.print((((ReadableInstant) value)).getMillis()));
         } else if (value instanceof BytesReference) {
             BytesReference bytes = (BytesReference) value;
             if (!bytes.hasArray()) {
@@ -1200,7 +1218,7 @@ public final class XContentBuilder implements BytesStream {
             // if this is a "value" object, like enum, DistanceUnit, ..., just toString it
             // yea, it can be misleading when toString a Java class, but really, jackson should be used in that case
             generator.writeString(value.toString());
-            //throw new ElasticSearchIllegalArgumentException("type not supported for generic value conversion: " + type);
+            //throw new ElasticsearchIllegalArgumentException("type not supported for generic value conversion: " + type);
         }
     }
 }

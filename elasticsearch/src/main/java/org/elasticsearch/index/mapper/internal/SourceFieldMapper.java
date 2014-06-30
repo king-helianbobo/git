@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,7 +25,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
-import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
@@ -195,8 +195,8 @@ public class SourceFieldMapper extends AbstractFieldMapper<byte[]> implements In
 
     protected SourceFieldMapper(String name, boolean enabled, String format, Boolean compress, long compressThreshold,
                                 String[] includes, String[] excludes) {
-        super(new Names(name, name, name, name), Defaults.BOOST, new FieldType(Defaults.FIELD_TYPE),
-                Lucene.KEYWORD_ANALYZER, Lucene.KEYWORD_ANALYZER, null, null, null); // Only stored.
+        super(new Names(name, name, name, name), Defaults.BOOST, new FieldType(Defaults.FIELD_TYPE), null,
+                Lucene.KEYWORD_ANALYZER, Lucene.KEYWORD_ANALYZER, null, null, null, null, null, null); // Only stored.
         this.enabled = enabled;
         this.compress = compress;
         this.compressThreshold = compressThreshold;
@@ -230,6 +230,11 @@ public class SourceFieldMapper extends AbstractFieldMapper<byte[]> implements In
     }
 
     @Override
+    public boolean hasDocValues() {
+        return false;
+    }
+
+    @Override
     public void preParse(ParseContext context) throws IOException {
         super.parse(context);
     }
@@ -244,24 +249,20 @@ public class SourceFieldMapper extends AbstractFieldMapper<byte[]> implements In
     }
 
     @Override
-    public void validate(ParseContext context) throws MapperParsingException {
-    }
-
-    @Override
     public boolean includeInObject() {
         return false;
     }
 
     @Override
-    protected Field parseCreateField(ParseContext context) throws IOException {
+    protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
         if (!enabled) {
-            return null;
+            return;
         }
         if (!fieldType.stored()) {
-            return null;
+            return;
         }
         if (context.flyweight()) {
-            return null;
+            return;
         }
         BytesReference source = context.source();
 
@@ -336,8 +337,10 @@ public class SourceFieldMapper extends AbstractFieldMapper<byte[]> implements In
                 }
             }
         }
-        assert source.hasArray();
-        return new StoredField(names().indexName(), source.array(), source.arrayOffset(), source.length());
+        if (!source.hasArray()) {
+            source = source.toBytesArray();
+        }
+        fields.add(new StoredField(names().indexName(), source.array(), source.arrayOffset(), source.length()));
     }
 
     @Override
@@ -354,7 +357,7 @@ public class SourceFieldMapper extends AbstractFieldMapper<byte[]> implements In
         try {
             return CompressorFactory.uncompressIfNeeded(bValue).toBytes();
         } catch (IOException e) {
-            throw new ElasticSearchParseException("failed to decompress source", e);
+            throw new ElasticsearchParseException("failed to decompress source", e);
         }
     }
 

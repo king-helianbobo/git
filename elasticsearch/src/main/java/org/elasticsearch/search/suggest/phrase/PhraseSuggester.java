@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -58,7 +58,7 @@ public final class PhraseSuggester extends Suggester<PhraseSuggestionContext> {
 
         List<PhraseSuggestionContext.DirectCandidateGenerator>  generators = suggestion.generators();
         final int numGenerators = generators.size();
-        final List<CandidateGenerator> gens = new ArrayList<CandidateGenerator>(generators.size());
+        final List<CandidateGenerator> gens = new ArrayList<>(generators.size());
         for (int i = 0; i < numGenerators; i++) {
             PhraseSuggestionContext.DirectCandidateGenerator generator = generators.get(i);
             DirectSpellChecker directSpellChecker = SuggestUtils.getDirectSpellChecker(generator);
@@ -112,7 +112,7 @@ public final class PhraseSuggester extends Suggester<PhraseSuggestionContext> {
 
     @Override
     public SuggestContextParser getContextParser() {
-        return new PhraseSuggestParser();
+        return new PhraseSuggestParser(this);
     }
 
 }

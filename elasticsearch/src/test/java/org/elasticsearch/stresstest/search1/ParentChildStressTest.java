@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -128,7 +128,7 @@ public class ParentChildStressTest {
             }
         }
 
-        ArrayList<String> results = new ArrayList<String>();
+        ArrayList<String> results = new ArrayList<>();
         if (response != null) {
             for (SearchHit hit : response.getHits()) {
                 String sourceStr = hit.sourceAsString();
@@ -145,10 +145,10 @@ public class ParentChildStressTest {
     public String indexDoc() throws IOException {
         String id = UUID.randomUUID().toString();
 
-        Map<String, Object> objectMap = new HashMap<String, Object>();
+        Map<String, Object> objectMap = new HashMap<>();
         objectMap.put("title", "this is a document");
 
-        Map<String, Object> objectMap2 = new HashMap<String, Object>();
+        Map<String, Object> objectMap2 = new HashMap<>();
         objectMap2.put("description", "child test");
 
         this.indexParent(id, objectMap);
@@ -172,7 +172,7 @@ public class ParentChildStressTest {
                         "\"type\":\"contentFiles\"}}}";
 
         int numTries = 0;
-        List<String> items = new ArrayList<String>();
+        List<String> items = new ArrayList<>();
 
         while (items.size() != 1 && numTries < 20) {
             items = executeSearch(dslString);

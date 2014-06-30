@@ -65,22 +65,32 @@ There is a specific list of settings that can be updated, those include:
 
 [float]
 ===== Balanced Shards
+All these values are relative to one another.  The first three are used to
+compose a three separate weighting functions into one.  The cluster is balanced
+when no allowed action can bring the weights of each node closer together by
+more then the fourth setting.  Actions might not be allowed, for instance,
+due to forced awareness or allocation filtering.
 
 `cluster.routing.allocation.balance.shard`::
-     Defines the weight factor for shards allocated on a node 
-     (float). Defaults to `0.45f`.
+     Defines the weight factor for shards allocated on a node
+     (float). Defaults to `0.45f`.  Raising this raises the tendency to
+     equalize the number of shards across all nodes in the cluster.
 
 `cluster.routing.allocation.balance.index`::
-     Defines a factor to the number of shards per index allocated 
-      on a specific node (float). Defaults to `0.5f`.
+     Defines a factor to the number of shards per index allocated
+      on a specific node (float). Defaults to `0.5f`.  Raising this raises the
+      tendency to equalize the number of shards per index across all nodes in
+      the cluster.
 
 `cluster.routing.allocation.balance.primary`::
-      defines a weight factor for the number of primaries of a specific index 
-      allocated on a node (float). `0.05f`.
+     Defines a weight factor for the number of primaries of a specific index
+      allocated on a node (float). `0.05f`.  Raising this raises the tendency
+      to equalize the number of primary shards across all nodes in the cluster.
 
 `cluster.routing.allocation.balance.threshold`::
-      minimal optimization value of operations that should be performed (non 
-      negative float). Defaults to `1.0f`.
+     Minimal optimization value of operations that should be performed (non
+      negative float). Defaults to `1.0f`.  Raising this will cause the cluster
+      to be less aggressive about optimizing the shard balance.
 
 [float]
 ===== Concurrent Rebalance
@@ -93,6 +103,11 @@ There is a specific list of settings that can be updated, those include:
 [float]
 ===== Disable allocation
 
+added[1.0.0.RC1]
+
+All the disable allocation settings have been deprecated in favour for
+`cluster.routing.allocation.enable` setting.
+
 `cluster.routing.allocation.disable_allocation`::
      See <<modules-cluster>>.
 
@@ -100,6 +115,12 @@ There is a specific list of settings that can be updated, those include:
      See <<modules-cluster>>.
 
 `cluster.routing.allocation.disable_new_allocation`::
+     See <<modules-cluster>>.
+
+[float]
+===== Enable allocation
+
+`cluster.routing.allocation.enable`::
      See <<modules-cluster>>.
 
 [float]
@@ -120,7 +141,7 @@ There is a specific list of settings that can be updated, those include:
 `cluster.routing.allocation.exclude.*`::
      See <<modules-cluster>>.
 
-`cluster.routing.allocation.require.*` (from 0.90)::
+`cluster.routing.allocation.require.*` 
      See <<modules-cluster>>.
 
 [float]
@@ -133,6 +154,9 @@ There is a specific list of settings that can be updated, those include:
 ==== Discovery
 
 `discovery.zen.minimum_master_nodes`::
+     See <<modules-discovery-zen>>
+
+`discovery.zen.publish_timeout` added[1.1.0, The setting existed before but wasn't dynamic]::
      See <<modules-discovery-zen>>
 
 [float]
@@ -179,10 +203,7 @@ There is a specific list of settings that can be updated, those include:
      See <<modules-indices>>
 
 `indices.recovery.max_bytes_per_sec`::
-     Since 0.90.1. See <<modules-indices>>
-
-`indices.recovery.max_size_per_sec`::
-    Deprecated since 0.90.1. See `max_bytes_per_sec` instead.
+     See <<modules-indices>>
 
 [float]
 ==== Store level throttling

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.fa.PersianNormalizationFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilter;
@@ -46,6 +47,7 @@ import org.elasticsearch.indices.analysis.IndicesAnalysisModule;
 import org.elasticsearch.indices.analysis.IndicesAnalysisService;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.hamcrest.MatcherAssert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
@@ -64,10 +66,12 @@ public class AnalysisModuleTests extends ElasticsearchTestCase {
 
     public AnalysisService getAnalysisService(Settings settings) {
         Index index = new Index("test");
-        Injector parentInjector = new ModulesBuilder().add(new SettingsModule(settings), new EnvironmentModule(new Environment(settings)),
-                new IndicesAnalysisModule()).createInjector();
-        injector = new ModulesBuilder().add(new IndexSettingsModule(index, settings), new IndexNameModule(index),
-                new AnalysisModule(settings, parentInjector.getInstance(IndicesAnalysisService.class))).createChildInjector(parentInjector);
+        Injector parentInjector = new ModulesBuilder().add(new SettingsModule(settings), new EnvironmentModule(new Environment(settings)), new IndicesAnalysisModule()).createInjector();
+        injector = new ModulesBuilder().add(
+                new IndexSettingsModule(index, settings),
+                new IndexNameModule(index),
+                new AnalysisModule(settings, parentInjector.getInstance(IndicesAnalysisService.class)))
+                .createChildInjector(parentInjector);
 
         return injector.getInstance(AnalysisService.class);
     }
@@ -83,7 +87,7 @@ public class AnalysisModuleTests extends ElasticsearchTestCase {
         Settings settings = settingsBuilder().loadFromClasspath("org/elasticsearch/index/analysis/test1.yml").build();
         testSimpleConfiguration(settings);
     }
-
+    
     @Test
     public void testDefaultFactoryTokenFilters() {
         assertTokenFilter("keyword_repeat", KeywordRepeatFilter.class);
@@ -124,8 +128,7 @@ public class AnalysisModuleTests extends ElasticsearchTestCase {
     }
 
     private void assertTokenFilter(String name, Class clazz) {
-        AnalysisService analysisService = AnalysisTestsHelper
-                .createAnalysisServiceFromSettings(ImmutableSettings.settingsBuilder().build());
+        AnalysisService analysisService = AnalysisTestsHelper.createAnalysisServiceFromSettings(ImmutableSettings.settingsBuilder().build());
         TokenFilterFactory tokenFilter = analysisService.tokenFilter(name);
         Tokenizer tokenizer = new WhitespaceTokenizer(Version.CURRENT.luceneVersion, new StringReader("foo bar"));
         TokenStream stream = tokenFilter.create(tokenizer);
@@ -143,22 +146,19 @@ public class AnalysisModuleTests extends ElasticsearchTestCase {
 
         StopTokenFilterFactory stop1 = (StopTokenFilterFactory) custom1.tokenFilters()[0];
         assertThat(stop1.stopWords().size(), equalTo(1));
-        // assertThat((Iterable<char[]>) stop1.stopWords(),
-        // hasItem("test-stop".toCharArray()));
+        //assertThat((Iterable<char[]>) stop1.stopWords(), hasItem("test-stop".toCharArray()));
 
         analyzer = analysisService.analyzer("custom2").analyzer();
         assertThat(analyzer, instanceOf(CustomAnalyzer.class));
         CustomAnalyzer custom2 = (CustomAnalyzer) analyzer;
 
-        // HtmlStripCharFilterFactory html = (HtmlStripCharFilterFactory)
-        // custom2.charFilters()[0];
-        // assertThat(html.readAheadLimit(),
-        // equalTo(HTMLStripCharFilter.DEFAULT_READ_AHEAD));
-        //
-        // html = (HtmlStripCharFilterFactory) custom2.charFilters()[1];
-        // assertThat(html.readAheadLimit(), equalTo(1024));
+//        HtmlStripCharFilterFactory html = (HtmlStripCharFilterFactory) custom2.charFilters()[0];
+//        assertThat(html.readAheadLimit(), equalTo(HTMLStripCharFilter.DEFAULT_READ_AHEAD));
+//
+//        html = (HtmlStripCharFilterFactory) custom2.charFilters()[1];
+//        assertThat(html.readAheadLimit(), equalTo(1024));
 
-        // verify characters mapping
+        // verify characters  mapping
         analyzer = analysisService.analyzer("custom5").analyzer();
         assertThat(analyzer, instanceOf(CustomAnalyzer.class));
         CustomAnalyzer custom5 = (CustomAnalyzer) analyzer;
@@ -182,34 +182,25 @@ public class AnalysisModuleTests extends ElasticsearchTestCase {
         CustomAnalyzer custom4 = (CustomAnalyzer) analyzer;
         assertThat(custom4.tokenFilters()[0], instanceOf(MyFilterTokenFilterFactory.class));
 
-        // // verify Czech stemmer
-        // analyzer =
-        // analysisService.analyzer("czechAnalyzerWithStemmer").analyzer();
-        // assertThat(analyzer, instanceOf(CustomAnalyzer.class));
-        // CustomAnalyzer czechstemmeranalyzer = (CustomAnalyzer) analyzer;
-        // assertThat(czechstemmeranalyzer.tokenizerFactory(),
-        // instanceOf(StandardTokenizerFactory.class));
-        // assertThat(czechstemmeranalyzer.tokenFilters().length, equalTo(4));
-        // assertThat(czechstemmeranalyzer.tokenFilters()[3],
-        // instanceOf(CzechStemTokenFilterFactory.class));
-        //
-        // // check dictionary decompounder
-        // analyzer =
-        // analysisService.analyzer("decompoundingAnalyzer").analyzer();
-        // assertThat(analyzer, instanceOf(CustomAnalyzer.class));
-        // CustomAnalyzer dictionaryDecompounderAnalyze = (CustomAnalyzer)
-        // analyzer;
-        // assertThat(dictionaryDecompounderAnalyze.tokenizerFactory(),
-        // instanceOf(StandardTokenizerFactory.class));
-        // assertThat(dictionaryDecompounderAnalyze.tokenFilters().length,
-        // equalTo(1));
-        // assertThat(dictionaryDecompounderAnalyze.tokenFilters()[0],
-        // instanceOf(DictionaryCompoundWordTokenFilterFactory.class));
+//        // verify Czech stemmer
+//        analyzer = analysisService.analyzer("czechAnalyzerWithStemmer").analyzer();
+//        assertThat(analyzer, instanceOf(CustomAnalyzer.class));
+//        CustomAnalyzer czechstemmeranalyzer = (CustomAnalyzer) analyzer;
+//        assertThat(czechstemmeranalyzer.tokenizerFactory(), instanceOf(StandardTokenizerFactory.class));
+//        assertThat(czechstemmeranalyzer.tokenFilters().length, equalTo(4));
+//        assertThat(czechstemmeranalyzer.tokenFilters()[3], instanceOf(CzechStemTokenFilterFactory.class));
+//
+//        // check dictionary decompounder
+//        analyzer = analysisService.analyzer("decompoundingAnalyzer").analyzer();
+//        assertThat(analyzer, instanceOf(CustomAnalyzer.class));
+//        CustomAnalyzer dictionaryDecompounderAnalyze = (CustomAnalyzer) analyzer;
+//        assertThat(dictionaryDecompounderAnalyze.tokenizerFactory(), instanceOf(StandardTokenizerFactory.class));
+//        assertThat(dictionaryDecompounderAnalyze.tokenFilters().length, equalTo(1));
+//        assertThat(dictionaryDecompounderAnalyze.tokenFilters()[0], instanceOf(DictionaryCompoundWordTokenFilterFactory.class));
 
         Set<?> wordList = Analysis.getWordSet(null, settings, "index.analysis.filter.dict_dec.word_list", Lucene.VERSION);
         MatcherAssert.assertThat(wordList.size(), equalTo(6));
-        // MatcherAssert.assertThat(wordList, hasItems("donau", "dampf",
-        // "schiff", "spargel", "creme", "suppe"));
+//        MatcherAssert.assertThat(wordList, hasItems("donau", "dampf", "schiff", "spargel", "creme", "suppe"));
     }
 
     @Test
@@ -222,7 +213,7 @@ public class AnalysisModuleTests extends ElasticsearchTestCase {
 
         Set<?> wordList = Analysis.getWordSet(env, settings, "index.word_list", Lucene.VERSION);
         MatcherAssert.assertThat(wordList.size(), equalTo(6));
-        // MatcherAssert.assertThat(wordList, hasItems(words));
+//        MatcherAssert.assertThat(wordList, hasItems(words));
     }
 
     private File generateWordList(String[] words) throws Exception {

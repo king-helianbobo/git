@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -27,25 +27,23 @@ import org.elasticsearch.cluster.routing.RoutingNodes;
 import org.elasticsearch.cluster.routing.RoutingTable;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.junit.Test;
 
 import static org.elasticsearch.cluster.routing.ShardRoutingState.*;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 /**
  *
  */
-public class ReplicaAllocatedAfterPrimaryTests extends ElasticsearchTestCase {
+public class ReplicaAllocatedAfterPrimaryTests extends ElasticsearchAllocationTestCase {
 
     private final ESLogger logger = Loggers.getLogger(ReplicaAllocatedAfterPrimaryTests.class);
 
     @Test
     public void testBackupIsAllocatedAfterPrimary() {
-        AllocationService strategy = new AllocationService(settingsBuilder().put("cluster.routing.allocation.concurrent_recoveries", 10).build());
+        AllocationService strategy = createAllocationService(settingsBuilder().put("cluster.routing.allocation.concurrent_recoveries", 10).build());
 
         logger.info("Building initial routing table");
 
@@ -57,7 +55,7 @@ public class ReplicaAllocatedAfterPrimaryTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         assertThat(routingTable.index("test").shards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).size(), equalTo(2));
@@ -73,13 +71,15 @@ public class ReplicaAllocatedAfterPrimaryTests extends ElasticsearchTestCase {
         RoutingTable prevRoutingTable = routingTable;
         routingTable = strategy.reroute(clusterState).routingTable();
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
+        final String nodeHoldingPrimary = routingTable.index("test").shard(0).primaryShard().currentNodeId();
+
 
         assertThat(prevRoutingTable != routingTable, equalTo(true));
         assertThat(routingTable.index("test").shards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).size(), equalTo(2));
         assertThat(routingTable.index("test").shard(0).shards().size(), equalTo(2));
         assertThat(routingTable.index("test").shard(0).primaryShard().state(), equalTo(INITIALIZING));
-        assertThat(routingTable.index("test").shard(0).primaryShard().currentNodeId(), equalTo("node1"));
+        assertThat(routingTable.index("test").shard(0).primaryShard().currentNodeId(), equalTo(nodeHoldingPrimary));
         assertThat(routingTable.index("test").shard(0).replicaShards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).replicaShards().get(0).state(), equalTo(UNASSIGNED));
         assertThat(routingTable.index("test").shard(0).replicaShards().get(0).currentNodeId(), nullValue());
@@ -87,18 +87,19 @@ public class ReplicaAllocatedAfterPrimaryTests extends ElasticsearchTestCase {
         logger.info("Start all the primary shards");
         RoutingNodes routingNodes = clusterState.routingNodes();
         prevRoutingTable = routingTable;
-        routingTable = strategy.applyStartedShards(clusterState, routingNodes.node("node1").shardsWithState(INITIALIZING)).routingTable();
+        routingTable = strategy.applyStartedShards(clusterState, routingNodes.node(nodeHoldingPrimary).shardsWithState(INITIALIZING)).routingTable();
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
-
+        final String nodeHoldingReplica = routingTable.index("test").shard(0).replicaShards().get(0).currentNodeId();
+        assertThat(nodeHoldingPrimary, not(equalTo(nodeHoldingReplica)));
         assertThat(prevRoutingTable != routingTable, equalTo(true));
         assertThat(routingTable.index("test").shards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).size(), equalTo(2));
         assertThat(routingTable.index("test").shard(0).shards().size(), equalTo(2));
         assertThat(routingTable.index("test").shard(0).primaryShard().state(), equalTo(STARTED));
-        assertThat(routingTable.index("test").shard(0).primaryShard().currentNodeId(), equalTo("node1"));
+        assertThat(routingTable.index("test").shard(0).primaryShard().currentNodeId(), equalTo(nodeHoldingPrimary));
         assertThat(routingTable.index("test").shard(0).replicaShards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).replicaShards().get(0).state(), equalTo(INITIALIZING));
-        assertThat(routingTable.index("test").shard(0).replicaShards().get(0).currentNodeId(), equalTo("node2"));
+        assertThat(routingTable.index("test").shard(0).replicaShards().get(0).currentNodeId(), equalTo(nodeHoldingReplica));
 
     }
 }

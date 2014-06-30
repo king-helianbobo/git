@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,11 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.action.admin.indices.warmer.delete;
 
 import com.google.common.collect.Lists;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.master.TransportMasterNodeOperationAction;
 import org.elasticsearch.cluster.AckedClusterStateUpdateTask;
@@ -43,6 +42,7 @@ import org.elasticsearch.search.warmer.IndexWarmersMetaData;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -79,7 +79,7 @@ public class TransportDeleteWarmerAction extends TransportMasterNodeOperationAct
     @Override
     protected void doExecute(DeleteWarmerRequest request, ActionListener<DeleteWarmerResponse> listener) {
         // update to concrete indices
-        request.indices(clusterService.state().metaData().concreteIndices(request.indices()));
+        request.indices(clusterService.state().metaData().concreteIndices(request.indicesOptions(), request.indices()));
         super.doExecute(request, listener);
     }
 
@@ -89,8 +89,8 @@ public class TransportDeleteWarmerAction extends TransportMasterNodeOperationAct
     }
 
     @Override
-    protected void masterOperation(final DeleteWarmerRequest request, final ClusterState state, final ActionListener<DeleteWarmerResponse> listener) throws ElasticSearchException {
-        clusterService.submitStateUpdateTask("delete_warmer [" + request.name() + "]", new AckedClusterStateUpdateTask() {
+    protected void masterOperation(final DeleteWarmerRequest request, final ClusterState state, final ActionListener<DeleteWarmerResponse> listener) throws ElasticsearchException {
+        clusterService.submitStateUpdateTask("delete_warmer [" + Arrays.toString(request.names()) + "]", new AckedClusterStateUpdateTask() {
 
             @Override
             public boolean mustAck(DiscoveryNode discoveryNode) {
@@ -119,7 +119,7 @@ public class TransportDeleteWarmerAction extends TransportMasterNodeOperationAct
 
             @Override
             public void onFailure(String source, Throwable t) {
-                logger.debug("failed to delete warmer [{}] on indices [{}]", t, request.name(), request.indices());
+                logger.debug("failed to delete warmer [{}] on indices [{}]", t, Arrays.toString(request.names()), request.indices());
                 listener.onFailure(t);
             }
 
@@ -137,10 +137,16 @@ public class TransportDeleteWarmerAction extends TransportMasterNodeOperationAct
                     if (warmers != null) {
                         List<IndexWarmersMetaData.Entry> entries = Lists.newArrayList();
                         for (IndexWarmersMetaData.Entry entry : warmers.entries()) {
-                            if (request.name() == null || Regex.simpleMatch(request.name(), entry.name())) {
-                                globalFoundAtLeastOne = true;
-                                // don't add it...
-                            } else {
+                            boolean keepWarmer = true;
+                            for (String warmer : request.names()) {
+                                if (Regex.simpleMatch(warmer, entry.name()) || warmer.equals("_all")) {
+                                    globalFoundAtLeastOne = true;
+                                    keepWarmer =  false;
+                                    // don't add it...
+                                    break;
+                                } 
+                            }
+                            if (keepWarmer) {
                                 entries.add(entry);
                             }
                         }
@@ -154,11 +160,7 @@ public class TransportDeleteWarmerAction extends TransportMasterNodeOperationAct
                 }
 
                 if (!globalFoundAtLeastOne) {
-                    if (request.name() == null) {
-                        // full match, just return with no failure
-                        return currentState;
-                    }
-                    throw new IndexWarmerMissingException(request.name());
+                    throw new IndexWarmerMissingException(request.names());
                 }
 
                 if (logger.isInfoEnabled()) {
@@ -170,8 +172,10 @@ public class TransportDeleteWarmerAction extends TransportMasterNodeOperationAct
                         IndexWarmersMetaData warmers = indexMetaData.custom(IndexWarmersMetaData.TYPE);
                         if (warmers != null) {
                             for (IndexWarmersMetaData.Entry entry : warmers.entries()) {
-                                if (Regex.simpleMatch(request.name(), entry.name())) {
-                                    logger.info("[{}] delete warmer [{}]", index, entry.name());
+                                for (String warmer : request.names()) {
+                                    if (Regex.simpleMatch(warmer, entry.name()) || warmer.equals("_all")) {
+                                        logger.info("[{}] delete warmer [{}]", index, entry.name());
+                                    }
                                 }
                             }
                         }

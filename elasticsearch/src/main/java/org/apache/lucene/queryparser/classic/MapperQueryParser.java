@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -28,8 +28,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.automaton.RegExp;
 import org.elasticsearch.common.lucene.Lucene;
+import org.elasticsearch.common.lucene.search.MatchNoDocsQuery;
 import org.elasticsearch.common.lucene.search.Queries;
 import org.elasticsearch.common.lucene.search.XFilteredQuery;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.index.query.QueryParseContext;
@@ -124,6 +126,7 @@ public class MapperQueryParser extends QueryParser {
         setDefaultOperator(settings.defaultOperator());
         setFuzzyMinSim(settings.fuzzyMinSim());
         setFuzzyPrefixLength(settings.fuzzyPrefixLength());
+        setLocale(settings.locale());
         this.analyzeWildcard = settings.analyzeWildcard();
     }
 
@@ -181,7 +184,7 @@ public class MapperQueryParser extends QueryParser {
                 }
                 return disMaxQuery;
             } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+                List<BooleanClause> clauses = new ArrayList<>();
                 for (String mField : fields) {
                     Query q = getFieldQuerySingle(mField, queryText, quoted);
                     if (q != null) {
@@ -295,7 +298,7 @@ public class MapperQueryParser extends QueryParser {
                 }
                 return disMaxQuery;
             } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+                List<BooleanClause> clauses = new ArrayList<>();
                 for (String mField : fields) {
                     Query q = super.getFieldQuery(mField, queryText, slop);
                     if (q != null) {
@@ -333,35 +336,35 @@ public class MapperQueryParser extends QueryParser {
             return getRangeQuerySingle(fields.iterator().next(), part1, part2, startInclusive, endInclusive);
         }
 
-            if (settings.useDisMax()) {
-                DisjunctionMaxQuery disMaxQuery = new DisjunctionMaxQuery(settings.tieBreaker());
-                boolean added = false;
-                for (String mField : fields) {
-                    Query q = getRangeQuerySingle(mField, part1, part2, startInclusive, endInclusive);
-                    if (q != null) {
-                        added = true;
-                        applyBoost(mField, q);
-                        disMaxQuery.add(q);
-                    }
+        if (settings.useDisMax()) {
+            DisjunctionMaxQuery disMaxQuery = new DisjunctionMaxQuery(settings.tieBreaker());
+            boolean added = false;
+            for (String mField : fields) {
+                Query q = getRangeQuerySingle(mField, part1, part2, startInclusive, endInclusive);
+                if (q != null) {
+                    added = true;
+                    applyBoost(mField, q);
+                    disMaxQuery.add(q);
                 }
-                if (!added) {
-                    return null;
-                }
-                return disMaxQuery;
-            } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
-                for (String mField : fields) {
-                    Query q = getRangeQuerySingle(mField, part1, part2, startInclusive, endInclusive);
-                    if (q != null) {
-                        applyBoost(mField, q);
-                        clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
-                    }
-                }
-                if (clauses.size() == 0)  // happens for stopwords
-                    return null;
-                return getBooleanQuery(clauses, true);
             }
+            if (!added) {
+                return null;
+            }
+            return disMaxQuery;
+        } else {
+            List<BooleanClause> clauses = new ArrayList<>();
+            for (String mField : fields) {
+                Query q = getRangeQuerySingle(mField, part1, part2, startInclusive, endInclusive);
+                if (q != null) {
+                    applyBoost(mField, q);
+                    clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
+                }
+            }
+            if (clauses.size() == 0)  // happens for stopwords
+                return null;
+            return getBooleanQuery(clauses, true);
         }
+    }
 
     private Query getRangeQuerySingle(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
         currentMapper = null;
@@ -414,7 +417,7 @@ public class MapperQueryParser extends QueryParser {
                 }
                 return disMaxQuery;
             } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+                List<BooleanClause> clauses = new ArrayList<>();
                 for (String mField : fields) {
                     Query q = getFuzzyQuerySingle(mField, termStr, minSimilarity);
                     applyBoost(mField, q);
@@ -435,7 +438,7 @@ public class MapperQueryParser extends QueryParser {
             if (currentMapper != null) {
                 try {
                     //LUCENE 4 UPGRADE I disabled transpositions here by default - maybe this needs to be changed
-                    Query fuzzyQuery = currentMapper.fuzzyQuery(termStr, minSimilarity, fuzzyPrefixLength, settings.fuzzyMaxExpansions(), false);
+                    Query fuzzyQuery = currentMapper.fuzzyQuery(termStr, Fuzziness.build(minSimilarity), fuzzyPrefixLength, settings.fuzzyMaxExpansions(), false);
                     return wrapSmartNameQuery(fuzzyQuery, fieldMappers, parseContext);
                 } catch (RuntimeException e) {
                     if (settings.lenient()) {
@@ -484,7 +487,7 @@ public class MapperQueryParser extends QueryParser {
                 }
                 return disMaxQuery;
             } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+                List<BooleanClause> clauses = new ArrayList<>();
                 for (String mField : fields) {
                     Query q = getPrefixQuerySingle(mField, termStr);
                     if (q != null) {
@@ -554,7 +557,7 @@ public class MapperQueryParser extends QueryParser {
         } catch (IOException e) {
             return super.getPrefixQuery(field, termStr);
         }
-        List<String> tlist = new ArrayList<String>();
+        List<String> tlist = new ArrayList<>();
         CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
 
         while (true) {
@@ -576,7 +579,7 @@ public class MapperQueryParser extends QueryParser {
             return super.getPrefixQuery(field, tlist.get(0));
         } else {
             // build a boolean query with prefix on each one...
-            List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+            List<BooleanClause> clauses = new ArrayList<>();
             for (String token : tlist) {
                 clauses.add(new BooleanClause(super.getPrefixQuery(field, token), BooleanClause.Occur.SHOULD));
             }
@@ -636,7 +639,7 @@ public class MapperQueryParser extends QueryParser {
                 }
                 return disMaxQuery;
             } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+                List<BooleanClause> clauses = new ArrayList<>();
                 for (String mField : fields) {
                     Query q = getWildcardQuerySingle(mField, termStr);
                     if (q != null) {
@@ -772,7 +775,7 @@ public class MapperQueryParser extends QueryParser {
                 }
                 return disMaxQuery;
             } else {
-                List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+                List<BooleanClause> clauses = new ArrayList<>();
                 for (String mField : fields) {
                     Query q = getRegexpQuerySingle(mField, termStr);
                     if (q != null) {
@@ -868,5 +871,15 @@ public class MapperQueryParser extends QueryParser {
             fields = settings.fields();
         }
         return fields;
+    }
+
+    public Query parse(String query) throws ParseException {
+        if (query.trim().isEmpty()) {
+            // if the query string is empty we return no docs / empty result
+            // the behavior is simple to change in the client if all docs is required
+            // or a default query
+            return new MatchNoDocsQuery();
+        }
+        return super.parse(query);
     }
 }

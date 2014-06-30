@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.support.PlainActionFuture;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.component.AbstractComponent;
@@ -49,11 +49,10 @@ public class TransportActionNodeProxy<Request extends ActionRequest, Response ex
         super(settings);
         this.action = action;
         this.transportService = transportService;
-        this.transportOptions = action.transportOptions(settings); 
-        //设置请求的参数
+        this.transportOptions = action.transportOptions(settings);
     }
 
-    public ActionFuture<Response> execute(DiscoveryNode node, Request request) throws ElasticSearchException {
+    public ActionFuture<Response> execute(DiscoveryNode node, Request request) throws ElasticsearchException {
         PlainActionFuture<Response> future = newFuture();
         request.listenerThreaded(false);
         execute(node, request, future);

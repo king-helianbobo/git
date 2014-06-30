@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -33,6 +33,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.discovery.AckClusterStatePublishResponseHandler;
 import org.elasticsearch.discovery.ClusterStatePublishResponseHandler;
 import org.elasticsearch.discovery.Discovery;
+import org.elasticsearch.discovery.DiscoverySettings;
 import org.elasticsearch.discovery.zen.DiscoveryNodesProvider;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.*;
@@ -59,18 +60,15 @@ public class PublishClusterStateAction extends AbstractComponent {
     private final TransportService transportService;
     private final DiscoveryNodesProvider nodesProvider;
     private final NewClusterStateListener listener;
-
-    private final TimeValue publishTimeout;
+    private final DiscoverySettings discoverySettings;
 
     public PublishClusterStateAction(Settings settings, TransportService transportService, DiscoveryNodesProvider nodesProvider,
-                                     NewClusterStateListener listener) {
+                                     NewClusterStateListener listener, DiscoverySettings discoverySettings) {
         super(settings);
         this.transportService = transportService;
         this.nodesProvider = nodesProvider;
         this.listener = listener;
-
-        this.publishTimeout = settings.getAsTime("discovery.zen.publish_timeout", Discovery.DEFAULT_PUBLISH_TIMEOUT);
-
+        this.discoverySettings = discoverySettings;
         transportService.registerHandler(PublishClusterStateRequestHandler.ACTION, new PublishClusterStateRequestHandler());
     }
 
@@ -137,6 +135,7 @@ public class PublishClusterStateAction extends AbstractComponent {
             }
         }
 
+        TimeValue publishTimeout = discoverySettings.getPublishTimeout();
         if (publishTimeout.millis() > 0) {
             // only wait if the publish timeout is configured...
             try {
@@ -171,6 +170,7 @@ public class PublishClusterStateAction extends AbstractComponent {
             }
             in.setVersion(request.version());
             ClusterState clusterState = ClusterState.Builder.readFrom(in, nodesProvider.nodes().localNode());
+            clusterState.status(ClusterState.ClusterStateStatus.RECEIVED);
             logger.debug("received cluster state version {}", clusterState.version());
             listener.onNewClusterState(clusterState, new NewClusterStateListener.NewStateProcessed() {
                 @Override

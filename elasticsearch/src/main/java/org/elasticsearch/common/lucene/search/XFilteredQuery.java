@@ -41,7 +41,7 @@ import java.util.Set;
  */
 // Changes are marked with //CHANGE:
 // Delegate to FilteredQuery - this version fixes the bug in LUCENE-4705 and uses ApplyAcceptedDocsFilter internally
-public class XFilteredQuery extends Query {
+public final class XFilteredQuery extends Query {
     private final Filter rawFilter;
     private final FilteredQuery delegate;
     private final FilterStrategy strategy;
@@ -67,7 +67,11 @@ public class XFilteredQuery extends Query {
      * @see FilterStrategy
      */
     public XFilteredQuery(Query query, Filter filter, FilterStrategy strategy) {
-        delegate = new FilteredQuery(query, new ApplyAcceptedDocsFilter(filter), strategy);
+        this(new FilteredQuery(query, new ApplyAcceptedDocsFilter(filter), strategy), filter, strategy);
+    }
+
+    private XFilteredQuery(FilteredQuery delegate, Filter filter, FilterStrategy strategy) {
+        this.delegate = delegate;
         // CHANGE: we need to wrap it in post application of accepted docs
         this.rawFilter = filter;
         this.strategy = strategy;
@@ -207,26 +211,26 @@ public class XFilteredQuery extends Query {
         }
 
         @Override
-        public Scorer filteredScorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Weight weight, DocIdSet docIdSet) throws IOException {
+        public Scorer filteredScorer(AtomicReaderContext context, Weight weight, DocIdSet docIdSet) throws IOException {
             // CHANGE: If threshold is 0, always pass down the accept docs, don't pay the price of calling nextDoc even...
             if (threshold == 0) {
                 final Bits filterAcceptDocs = docIdSet.bits();
                 if (filterAcceptDocs != null) {
-                    return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
+                    return weight.scorer(context, filterAcceptDocs);
                 } else {
-                    return FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY.filteredScorer(context, scoreDocsInOrder, topScorer, weight, docIdSet);
+                    return FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY.filteredScorer(context, weight, docIdSet);
                 }
             }
 
             // CHANGE: handle "default" value
             if (threshold == -1) {
                 // default  value, don't iterate on only apply filter after query if its not a "fast" docIdSet
-                if (!DocIdSets.isFastIterator(docIdSet)) {
-                    return FilteredQuery.QUERY_FIRST_FILTER_STRATEGY.filteredScorer(context, scoreDocsInOrder, topScorer, weight, docIdSet);
+                if (!DocIdSets.isFastIterator(ApplyAcceptedDocsFilter.unwrap(docIdSet))) {
+                    return FilteredQuery.QUERY_FIRST_FILTER_STRATEGY.filteredScorer(context, weight, docIdSet);
                 }
             }
 
-            return super.filteredScorer(context, scoreDocsInOrder, topScorer, weight, docIdSet);
+            return super.filteredScorer(context, weight, docIdSet);
         }
 
         /**
@@ -247,6 +251,11 @@ public class XFilteredQuery extends Query {
             //TODO once we have a cost API on filters and scorers we should rethink this heuristic
             return firstFilterDoc < threshold;
         }
+    }
+
+    @Override
+    public Query clone() {
+        return new XFilteredQuery((FilteredQuery) delegate.clone(), rawFilter, strategy);
     }
 
 }

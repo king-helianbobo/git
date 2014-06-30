@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -53,6 +53,14 @@ public final class ImmutableOpenMap<KType, VType> implements Iterable<ObjectObje
      */
     public VType get(KType key) {
         return map.get(key);
+    }
+
+    /**
+     * @return Returns the value associated with the given key or the provided default value if the
+     * key is not associated with any value.
+     */
+    public VType getOrDefault(KType key, VType defaultValue) {
+        return map.getOrDefault(key, defaultValue);
     }
 
     /**
@@ -182,15 +190,15 @@ public final class ImmutableOpenMap<KType, VType> implements Iterable<ObjectObje
     }
 
     public static <KType, VType> Builder<KType, VType> builder() {
-        return new Builder<KType, VType>();
+        return new Builder<>();
     }
 
     public static <KType, VType> Builder<KType, VType> builder(int size) {
-        return new Builder<KType, VType>(size);
+        return new Builder<>(size);
     }
 
     public static <KType, VType> Builder<KType, VType> builder(ImmutableOpenMap<KType, VType> map) {
-        return new Builder<KType, VType>(map);
+        return new Builder<>(map);
     }
 
     public static class Builder<KType, VType> implements ObjectObjectMap<KType, VType> {
@@ -203,7 +211,7 @@ public final class ImmutableOpenMap<KType, VType> implements Iterable<ObjectObje
         }
 
         public Builder(int size) {
-            this.map = new ObjectObjectOpenHashMap<KType, VType>(size);
+            this.map = new ObjectObjectOpenHashMap<>(size);
         }
 
         public Builder(ImmutableOpenMap<KType, VType> map) {
@@ -216,7 +224,7 @@ public final class ImmutableOpenMap<KType, VType> implements Iterable<ObjectObje
         public ImmutableOpenMap<KType, VType> build() {
             ObjectObjectOpenHashMap<KType, VType> map = this.map;
             this.map = null; // nullify the map, so any operation post build will fail! (hackish, but safest)
-            return new ImmutableOpenMap<KType, VType>(map);
+            return new ImmutableOpenMap<>(map);
         }
 
         /**

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -214,7 +214,7 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
                     // we found a match
                     changed = true;
                     // make sure we create one with the version from the recovered state
-                    node.add(new MutableShardRouting(shard, highestVersion));
+                    allocation.routingNodes().assign(new MutableShardRouting(shard, highestVersion), node.nodeId());
                     unassignedIterator.remove();
 
                     // found a node, so no throttling, no "no", and break out of the loop
@@ -234,7 +234,7 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
                     // we found a match
                     changed = true;
                     // make sure we create one with the version from the recovered state
-                    node.add(new MutableShardRouting(shard, highestVersion));
+                    allocation.routingNodes().assign(new MutableShardRouting(shard, highestVersion), node.nodeId());
                     unassignedIterator.remove();
                 }
             } else {
@@ -311,8 +311,9 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
                 }
 
                 if (!shard.primary()) {
-                    MutableShardRouting primaryShard = routingNodes.findPrimaryForReplica(shard);
-                    if (primaryShard != null && primaryShard.active()) {
+                    MutableShardRouting primaryShard = routingNodes.activePrimary(shard);
+                    if (primaryShard != null) {
+                        assert primaryShard.active();
                         DiscoveryNode primaryNode = nodes.get(primaryShard.currentNodeId());
                         if (primaryNode != null) {
                             TransportNodesListShardStoreMetaData.StoreFilesMetaData primaryNodeStore = shardStores.get(primaryNode);
@@ -351,12 +352,11 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
                     }
                     // we found a match
                     changed = true;
-                    lastNodeMatched.add(shard);
+                    allocation.routingNodes().assign(shard, lastNodeMatched.nodeId());
                     unassignedIterator.remove();
                 }
             }
         }
-
         return changed;
     }
 
@@ -364,7 +364,7 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
         ObjectLongOpenHashMap<DiscoveryNode> shardStates = cachedShardsState.get(shard.shardId());
         ObjectOpenHashSet<String> nodeIds;
         if (shardStates == null) {
-            shardStates = new ObjectLongOpenHashMap<DiscoveryNode>();
+            shardStates = new ObjectLongOpenHashMap<>();
             cachedShardsState.put(shard.shardId(), shardStates);
             nodeIds = ObjectOpenHashSet.from(nodes.dataNodes().keys());
         } else {

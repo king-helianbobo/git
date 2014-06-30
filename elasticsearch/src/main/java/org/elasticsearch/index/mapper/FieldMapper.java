@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,6 +19,7 @@
 
 package org.elasticsearch.index.mapper;
 
+import com.google.common.base.Strings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.Term;
@@ -27,9 +28,12 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.unit.Fuzziness;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.fielddata.IndexFieldDataService;
+import org.elasticsearch.index.mapper.core.AbstractFieldMapper;
 import org.elasticsearch.index.query.QueryParseContext;
 import org.elasticsearch.index.similarity.SimilarityProvider;
 
@@ -39,6 +43,8 @@ import java.util.List;
  *
  */
 public interface FieldMapper<T> extends Mapper {
+
+    public static final String DOC_VALUES_FORMAT = "doc_values_format";
 
     public static class Names {
 
@@ -117,6 +123,72 @@ public interface FieldMapper<T> extends Mapper {
         public Term createIndexNameTerm(BytesRef value) {
             return new Term(indexName, value);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Names names = (Names) o;
+
+            if (!fullName.equals(names.fullName)) return false;
+            if (!indexName.equals(names.indexName)) return false;
+            if (!indexNameClean.equals(names.indexNameClean)) return false;
+            if (!name.equals(names.name)) return false;
+            if (!sourcePath.equals(names.sourcePath)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = name.hashCode();
+            result = 31 * result + indexName.hashCode();
+            result = 31 * result + indexNameClean.hashCode();
+            result = 31 * result + fullName.hashCode();
+            result = 31 * result + sourcePath.hashCode();
+            return result;
+        }
+    }
+
+    public static enum Loading {
+        LAZY {
+            @Override
+            public String toString() {
+                return LAZY_VALUE;
+            }
+        },
+        EAGER {
+            @Override
+            public String toString() {
+                return EAGER_VALUE;
+            }
+        },
+        EAGER_GLOBAL_ORDINALS {
+            @Override
+            public String toString() {
+                return EAGER_GLOBAL_ORDINALS_VALUE;
+            }
+        };
+
+        public static final String KEY = "loading";
+        public static final String EAGER_GLOBAL_ORDINALS_VALUE = "eager_global_ordinals";
+        public static final String EAGER_VALUE = "eager";
+        public static final String LAZY_VALUE = "lazy";
+
+        public static Loading parse(String loading, Loading defaultValue) {
+            if (Strings.isNullOrEmpty(loading)) {
+                return defaultValue;
+            } else if (EAGER_GLOBAL_ORDINALS_VALUE.equalsIgnoreCase(loading)) {
+                return EAGER_GLOBAL_ORDINALS;
+            } else if (EAGER_VALUE.equalsIgnoreCase(loading)) {
+                return EAGER;
+            } else if (LAZY_VALUE.equalsIgnoreCase(loading)) {
+                return LAZY;
+            } else {
+                throw new MapperParsingException("Unknown [" + KEY + "] value: [" + loading + "]");
+            }
+        }
+
     }
 
     Names names();
@@ -144,6 +216,11 @@ public interface FieldMapper<T> extends Mapper {
      * Similarity used for scoring queries on the field
      */
     SimilarityProvider similarity();
+
+    /**
+     * List of fields where this field should be copied to
+     */
+    public AbstractFieldMapper.CopyTo copyTo();
 
     /**
      * Returns the actual value of the field.
@@ -178,7 +255,7 @@ public interface FieldMapper<T> extends Mapper {
 
     Filter rangeFilter(Object lowerTerm, Object upperTerm, boolean includeLower, boolean includeUpper, @Nullable QueryParseContext context);
 
-    Query fuzzyQuery(String value, String minSim, int prefixLength, int maxExpansions, boolean transpositions);
+    Query fuzzyQuery(String value, Fuzziness fuzziness, int prefixLength, int maxExpansions, boolean transpositions);
 
     Query prefixQuery(Object value, @Nullable MultiTermQuery.RewriteMethod method, @Nullable QueryParseContext context);
 
@@ -204,7 +281,14 @@ public interface FieldMapper<T> extends Mapper {
 
     PostingsFormatProvider postingsFormatProvider();
 
+    DocValuesFormatProvider docValuesFormatProvider();
+
     boolean isNumeric();
 
     boolean isSortable();
+
+    boolean hasDocValues();
+
+    Loading normsLoading(Loading defaultLoading);
+
 }

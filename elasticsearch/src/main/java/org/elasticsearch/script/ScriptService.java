@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,7 +23,7 @@ import com.google.common.base.Charsets;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.component.AbstractComponent;
@@ -75,7 +75,7 @@ public class ScriptService extends AbstractComponent {
         logger.debug("using script cache with max_size [{}], expire [{}]", cacheMaxSize, cacheExpire);
 
         this.defaultLang = componentSettings.get("default_lang", "mvel");
-        this.disableDynamic = componentSettings.getAsBoolean("disable_dynamic", false);
+        this.disableDynamic = componentSettings.getAsBoolean("disable_dynamic", true);
 
         CacheBuilder cacheBuilder = CacheBuilder.newBuilder();
         if (cacheMaxSize >= 0) {
@@ -129,7 +129,7 @@ public class ScriptService extends AbstractComponent {
         if (lang == null) {
             lang = defaultLang;
         }
-        if (dynamicScriptDisabled(lang)) {
+        if (!dynamicScriptEnabled(lang)) {
             throw new ScriptException("dynamic scripting disabled");
         }
         CacheKey cacheKey = new CacheKey(lang, script);
@@ -140,7 +140,7 @@ public class ScriptService extends AbstractComponent {
         // not the end of the world if we compile it twice...
         ScriptEngineService service = scriptEngines.get(lang);
         if (service == null) {
-            throw new ElasticSearchIllegalArgumentException("script_lang not supported [" + lang + "]");
+            throw new ElasticsearchIllegalArgumentException("script_lang not supported [" + lang + "]");
         }
         compiled = new CompiledScript(lang, service.compile(script));
         cache.put(cacheKey, compiled);
@@ -175,12 +175,17 @@ public class ScriptService extends AbstractComponent {
         cache.invalidateAll();
     }
 
-    private boolean dynamicScriptDisabled(String lang) {
-        if (!disableDynamic) {
-            return false;
+    private boolean dynamicScriptEnabled(String lang) {
+        ScriptEngineService service = scriptEngines.get(lang);
+        if (service == null) {
+            throw new ElasticsearchIllegalArgumentException("script_lang not supported [" + lang + "]");
         }
-        // we allow "native" executions since they register through plugins, so they are "allowed"
-        return !"native".equals(lang);
+        // Templating languages and native scripts are always allowed
+        // "native" executions are registered through plugins
+        if (service.sandboxed() || "native".equals(lang)) {
+            return true;
+        }
+        return !disableDynamic;
     }
 
     private class ScriptChangesListener extends FileChangesListener {
@@ -191,7 +196,7 @@ public class ScriptService extends AbstractComponent {
             if (extIndex != -1) {
                 String ext = scriptPath.substring(extIndex + 1);
                 String scriptName = scriptPath.substring(0, extIndex).replace(File.separatorChar, '_');
-                return new Tuple<String, String>(scriptName, ext);
+                return new Tuple<>(scriptName, ext);
             } else {
                 return null;
             }
@@ -207,7 +212,7 @@ public class ScriptService extends AbstractComponent {
                         if (s.equals(scriptNameExt.v2())) {
                             found = true;
                             try {
-                                logger.trace("compiling script file " + file.getAbsolutePath());
+                                logger.info("compiling script file [{}]", file.getAbsolutePath());
                                 String script = Streams.copyToString(new InputStreamReader(new FileInputStream(file), Charsets.UTF_8));
                                 staticCache.put(scriptNameExt.v1(), new CompiledScript(engineService.types()[0], engineService.compile(script)));
                             } catch (Throwable e) {
@@ -234,7 +239,7 @@ public class ScriptService extends AbstractComponent {
         @Override
         public void onFileDeleted(File file) {
             Tuple<String, String> scriptNameExt = scriptNameExt(file);
-            logger.trace("removing script file " + file.getAbsolutePath());
+            logger.info("removing script file [{}]", file.getAbsolutePath());
             staticCache.remove(scriptNameExt.v1());
         }
 

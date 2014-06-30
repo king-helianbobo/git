@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.cluster.action.index;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.node.DiscoveryNodes;
 import org.elasticsearch.common.component.AbstractComponent;
@@ -41,7 +41,7 @@ public class NodeIndexDeletedAction extends AbstractComponent {
 
     private final ThreadPool threadPool;
     private final TransportService transportService;
-    private final List<Listener> listeners = new CopyOnWriteArrayList<Listener>();
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
 
     @Inject
     public NodeIndexDeletedAction(Settings settings, ThreadPool threadPool, TransportService transportService) {
@@ -60,7 +60,7 @@ public class NodeIndexDeletedAction extends AbstractComponent {
         listeners.remove(listener);
     }
 
-    public void nodeIndexDeleted(final ClusterState clusterState, final String index, final String nodeId) throws ElasticSearchException {
+    public void nodeIndexDeleted(final ClusterState clusterState, final String index, final String nodeId) throws ElasticsearchException {
         DiscoveryNodes nodes = clusterState.nodes();
         if (nodes.localNodeMaster()) {
             threadPool.generic().execute(new Runnable() {
@@ -75,7 +75,7 @@ public class NodeIndexDeletedAction extends AbstractComponent {
         }
     }
 
-    public void nodeIndexStoreDeleted(final ClusterState clusterState, final String index, final String nodeId) throws ElasticSearchException {
+    public void nodeIndexStoreDeleted(final ClusterState clusterState, final String index, final String nodeId) throws ElasticsearchException {
         DiscoveryNodes nodes = clusterState.nodes();
         if (nodes.localNodeMaster()) {
             threadPool.generic().execute(new Runnable() {

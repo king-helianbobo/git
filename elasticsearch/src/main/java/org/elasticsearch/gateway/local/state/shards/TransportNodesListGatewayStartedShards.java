@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.gateway.local.state.shards;
 
 import com.google.common.collect.Lists;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.action.support.nodes.*;
@@ -108,6 +108,8 @@ public class TransportNodesListGatewayStartedShards extends TransportNodesOperat
                 nodesList.add((NodeLocalGatewayStartedShards) resp);
             } else if (resp instanceof FailedNodeException) {
                 failures.add((FailedNodeException) resp);
+            } else {
+                logger.warn("unknown response type [{}], expected NodeLocalGatewayStartedShards or FailedNodeException", resp);
             }
         }
         return new NodesLocalGatewayStartedShards(clusterName, nodesList.toArray(new NodeLocalGatewayStartedShards[nodesList.size()]),
@@ -115,7 +117,7 @@ public class TransportNodesListGatewayStartedShards extends TransportNodesOperat
     }
 
     @Override
-    protected NodeLocalGatewayStartedShards nodeOperation(NodeRequest request) throws ElasticSearchException {
+    protected NodeLocalGatewayStartedShards nodeOperation(NodeRequest request) throws ElasticsearchException {
         try {
             ShardStateInfo shardStateInfo = shardsState.loadShardInfo(request.shardId);
             if (shardStateInfo != null) {
@@ -123,7 +125,7 @@ public class TransportNodesListGatewayStartedShards extends TransportNodesOperat
             }
             return new NodeLocalGatewayStartedShards(clusterService.localNode(), -1);
         } catch (Exception e) {
-            throw new ElasticSearchException("failed to load started shards", e);
+            throw new ElasticsearchException("failed to load started shards", e);
         }
     }
 

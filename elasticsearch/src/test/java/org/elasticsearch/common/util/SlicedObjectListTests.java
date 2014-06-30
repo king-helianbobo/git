@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -23,7 +23,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 /**
  * Tests for {@link SlicedObjectList}
@@ -46,7 +45,7 @@ public class SlicedObjectListTests extends ElasticsearchTestCase {
 
         @Override
         public void grow(int newLength) {
-            assert offset == 0; // NOTE: senseless if offset != 0
+            assertThat(offset, equalTo(0)); // NOTE: senseless if offset != 0
             if (values.length >= newLength) {
                 return;
             }
@@ -124,12 +123,12 @@ public class SlicedObjectListTests extends ElasticsearchTestCase {
         TestList list = new TestList(5);
         try {
             list.set(0, (double)4);
-            assert false;
+            fail();
         } catch (UnsupportedOperationException ex) {
         }
         try {
             list.add((double)4);
-            assert false;
+            fail();
         } catch (UnsupportedOperationException ex) {
         }
     }

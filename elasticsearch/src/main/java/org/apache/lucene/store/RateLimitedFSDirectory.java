@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -81,9 +81,10 @@ public final class RateLimitedFSDirectory extends FilterDirectory{
         private final BufferedIndexOutput bufferedDelegate;
         private final RateLimiter rateLimiter;
         private final StoreRateLimiting.Listener rateListener;
+        private long bytesSinceLastRateLimit;
 
         RateLimitedIndexOutput(final RateLimiter rateLimiter, final StoreRateLimiting.Listener rateListener, final IndexOutput delegate) {
-            // TODO if Lucene exposed in BufferedIndexOutput#getBufferSize, we could initialize it if the delegate is buffered
+            super(delegate instanceof BufferedIndexOutput ? ((BufferedIndexOutput) delegate).getBufferSize() : BufferedIndexOutput.DEFAULT_BUFFER_SIZE);
             if (delegate instanceof BufferedIndexOutput) {
                 bufferedDelegate = (BufferedIndexOutput) delegate;
                 this.delegate = delegate;
@@ -97,7 +98,12 @@ public final class RateLimitedFSDirectory extends FilterDirectory{
 
         @Override
         protected void flushBuffer(byte[] b, int offset, int len) throws IOException {
-            rateListener.onPause(rateLimiter.pause(len));
+            bytesSinceLastRateLimit += len;
+            if (bytesSinceLastRateLimit >= rateLimiter.getMinPauseCheckBytes()) {
+                long pause = rateLimiter.pause(bytesSinceLastRateLimit);
+                bytesSinceLastRateLimit = 0;
+                rateListener.onPause(pause);
+            }
             if (bufferedDelegate != null) {
                 bufferedDelegate.flushBuffer(b, offset, len);
             } else {
@@ -124,6 +130,11 @@ public final class RateLimitedFSDirectory extends FilterDirectory{
             } finally {
                 delegate.flush();
             }
+        }
+
+        @Override
+        public void setLength(long length) throws IOException {
+            delegate.setLength(length);
         }
 
         @Override

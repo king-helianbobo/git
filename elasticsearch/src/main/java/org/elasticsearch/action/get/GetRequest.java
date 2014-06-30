@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,6 +25,9 @@ import org.elasticsearch.action.support.single.shard.SingleShardOperationRequest
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.lucene.uid.Versions;
+import org.elasticsearch.index.VersionType;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 
 import java.io.IOException;
 
@@ -48,9 +51,14 @@ public class GetRequest extends SingleShardOperationRequest<GetRequest> {
 
     private String[] fields;
 
+    private FetchSourceContext fetchSourceContext;
+
     private boolean refresh = false;
 
     Boolean realtime;
+
+    private VersionType versionType = VersionType.INTERNAL;
+    private long version = Versions.MATCH_ANY;
 
     GetRequest() {
         type = "_all";
@@ -86,6 +94,10 @@ public class GetRequest extends SingleShardOperationRequest<GetRequest> {
         }
         if (id == null) {
             validationException = ValidateActions.addValidationError("id is missing", validationException);
+        }
+        if (!versionType.validateVersionForReads(version)) {
+            validationException = ValidateActions.addValidationError("illegal version value [" + version + "] for version type [" + versionType.name() + "]",
+                    validationException);
         }
         return validationException;
     }
@@ -156,6 +168,18 @@ public class GetRequest extends SingleShardOperationRequest<GetRequest> {
     }
 
     /**
+     * Allows setting the {@link FetchSourceContext} for this request, controlling if and how _source should be returned.
+     */
+    public GetRequest fetchSourceContext(FetchSourceContext context) {
+        this.fetchSourceContext = context;
+        return this;
+    }
+
+    public FetchSourceContext fetchSourceContext() {
+        return fetchSourceContext;
+    }
+
+    /**
      * Explicitly specify the fields that will be returned. By default, the <tt>_source</tt>
      * field will be returned.
      */
@@ -195,10 +219,35 @@ public class GetRequest extends SingleShardOperationRequest<GetRequest> {
         return this;
     }
 
+    /**
+     * Sets the version, which will cause the get operation to only be performed if a matching
+     * version exists and no changes happened on the doc since then.
+     */
+    public long version() {
+        return version;
+    }
+
+    public GetRequest version(long version) {
+        this.version = version;
+        return this;
+    }
+
+    /**
+     * Sets the versioning type. Defaults to {@link org.elasticsearch.index.VersionType#INTERNAL}.
+     */
+    public GetRequest versionType(VersionType versionType) {
+        this.versionType = versionType;
+        return this;
+    }
+
+    public VersionType versionType() {
+        return this.versionType;
+    }
+
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        type = in.readString();
+        type = in.readSharedString();
         id = in.readString();
         routing = in.readOptionalString();
         preference = in.readOptionalString();
@@ -216,12 +265,17 @@ public class GetRequest extends SingleShardOperationRequest<GetRequest> {
         } else if (realtime == 1) {
             this.realtime = true;
         }
+
+        this.versionType = VersionType.fromValue(in.readByte());
+        this.version = Versions.readVersionWithVLongForBW(in);
+
+        fetchSourceContext = FetchSourceContext.optionalReadFromStream(in);
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(type);
+        out.writeSharedString(type);
         out.writeString(id);
         out.writeOptionalString(routing);
         out.writeOptionalString(preference);
@@ -242,6 +296,11 @@ public class GetRequest extends SingleShardOperationRequest<GetRequest> {
         } else {
             out.writeByte((byte) 1);
         }
+
+        out.writeByte(versionType.getValue());
+        Versions.writeVersionWithVLongForBW(version, out);
+
+        FetchSourceContext.optionalWriteToStream(fetchSourceContext, out);
     }
 
     @Override

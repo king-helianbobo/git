@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action.delete.index;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.action.support.replication.TransportShardReplicationOperationAction;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
@@ -30,6 +30,7 @@ import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardIterator;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
@@ -92,8 +93,7 @@ public class TransportShardDeleteAction extends TransportShardReplicationOperati
     protected PrimaryResponse<ShardDeleteResponse, ShardDeleteRequest> shardOperationOnPrimary(ClusterState clusterState, PrimaryOperationRequest shardRequest) {
         ShardDeleteRequest request = shardRequest.request;
         IndexShard indexShard = indicesService.indexServiceSafe(shardRequest.request.index()).shardSafe(shardRequest.shardId);
-        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version())
-                .origin(Engine.Operation.Origin.PRIMARY);
+        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version(), VersionType.INTERNAL, Engine.Operation.Origin.PRIMARY);
         indexShard.delete(delete);
         // update the version to happen on the replicas
         request.version(delete.version());
@@ -107,16 +107,21 @@ public class TransportShardDeleteAction extends TransportShardReplicationOperati
         }
 
 
-        ShardDeleteResponse response = new ShardDeleteResponse(delete.version(), delete.notFound());
-        return new PrimaryResponse<ShardDeleteResponse, ShardDeleteRequest>(shardRequest.request, response, null);
+        ShardDeleteResponse response = new ShardDeleteResponse(delete.version(), delete.found());
+        return new PrimaryResponse<>(shardRequest.request, response, null);
     }
 
     @Override
     protected void shardOperationOnReplica(ReplicaOperationRequest shardRequest) {
         ShardDeleteRequest request = shardRequest.request;
         IndexShard indexShard = indicesService.indexServiceSafe(shardRequest.request.index()).shardSafe(shardRequest.shardId);
-        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version())
-                .origin(Engine.Operation.Origin.REPLICA);
+        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version(), VersionType.INTERNAL, Engine.Operation.Origin.REPLICA);
+
+        // IndexDeleteAction doesn't support version type at the moment. Hard coded for the INTERNAL version
+        delete = new Engine.Delete(delete, VersionType.INTERNAL.versionTypeForReplicationAndRecovery());
+
+        assert delete.versionType().validateVersionForWrites(delete.version());
+
         indexShard.delete(delete);
 
         if (request.refresh()) {
@@ -137,6 +142,6 @@ public class TransportShardDeleteAction extends TransportShardReplicationOperati
                 return shardIt;
             }
         }
-        throw new ElasticSearchIllegalStateException("No shards iterator found for shard [" + request.shardId() + "]");
+        throw new ElasticsearchIllegalStateException("No shards iterator found for shard [" + request.shardId() + "]");
     }
 }

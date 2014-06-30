@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -40,6 +40,12 @@ public class HighlightBuilder implements ToXContent {
 
     private String tagsSchema;
 
+    private Boolean highlightFilter;
+
+    private Integer fragmentSize;
+
+    private Integer numOfFragments;
+
     private String[] preTags;
 
     private String[] postTags;
@@ -50,6 +56,10 @@ public class HighlightBuilder implements ToXContent {
 
     private Boolean requireFieldMatch;
 
+    private Integer boundaryMaxScan;
+
+    private char[] boundaryChars;
+
     private String highlighterType;
 
     private String fragmenter;
@@ -58,7 +68,11 @@ public class HighlightBuilder implements ToXContent {
 
     private Integer noMatchSize;
 
+    private Integer phraseLimit;
+
     private Map<String, Object> options;
+
+    private Boolean forceSource;
 
     /**
      * Adds a field to be highlighted with default fragment size of 100 characters, and
@@ -145,6 +159,20 @@ public class HighlightBuilder implements ToXContent {
         return this;
     }
 
+    public HighlightBuilder highlightFilter(boolean highlightFilter) {
+        this.highlightFilter = highlightFilter;
+        return this;
+    }
+
+    public HighlightBuilder fragmentSize(Integer fragmentSize) {
+        this.fragmentSize = fragmentSize;
+        return this;
+    }
+
+    public HighlightBuilder numOfFragments(Integer numOfFragments) {
+        this.numOfFragments = numOfFragments;
+        return this;
+    }
 
     /**
      * Set encoder for the highlighting
@@ -188,6 +216,16 @@ public class HighlightBuilder implements ToXContent {
         return this;
     }
 
+    public HighlightBuilder boundaryMaxScan(Integer boundaryMaxScan) {
+        this.boundaryMaxScan = boundaryMaxScan;
+        return this;
+    }
+
+    public HighlightBuilder boundaryChars(char[] boundaryChars) {
+        this.boundaryChars = boundaryChars;
+        return this;
+    }
+
     /**
      * Set type of highlighter to use. Supported types
      * are <tt>highlighter</tt>, <tt>fast-vector-highlighter</tt> and <tt>postings-highlighter</tt>.
@@ -226,10 +264,28 @@ public class HighlightBuilder implements ToXContent {
     }
 
     /**
+     * Sets the maximum number of phrases the fvh will consider if the field doesn't also define phraseLimit.
+     * @param phraseLimit maximum number of phrases the fvh will consider
+     * @return this for chaining
+     */
+    public HighlightBuilder phraseLimit(Integer phraseLimit) {
+        this.phraseLimit = phraseLimit;
+        return this;
+    }
+
+    /**
      * Allows to set custom options for custom highlighters.
      */
     public HighlightBuilder options(Map<String, Object> options) {
         this.options = options;
+        return this;
+    }
+
+    /**
+     * Forces the highlighting to highlight fields based on the source even if fields are stored separately.
+     */
+    public HighlightBuilder forceSource(boolean forceSource) {
+        this.forceSource = forceSource;
         return this;
     }
 
@@ -248,11 +304,26 @@ public class HighlightBuilder implements ToXContent {
         if (order != null) {
             builder.field("order", order);
         }
+        if (highlightFilter != null) {
+            builder.field("highlight_filter", highlightFilter);
+        }
+        if (fragmentSize != null) {
+            builder.field("fragment_size", fragmentSize);
+        }
+        if (numOfFragments != null) {
+            builder.field("number_of_fragments", numOfFragments);
+        }
         if (encoder != null) {
             builder.field("encoder", encoder);
         }
         if (requireFieldMatch != null) {
             builder.field("require_field_match", requireFieldMatch);
+        }
+        if (boundaryMaxScan != null) {
+            builder.field("boundary_max_scan", boundaryMaxScan);
+        }
+        if (boundaryChars != null) {
+            builder.field("boundary_chars", boundaryChars);
         }
         if (highlighterType != null) {
             builder.field("type", highlighterType);
@@ -266,8 +337,14 @@ public class HighlightBuilder implements ToXContent {
         if (noMatchSize != null) {
             builder.field("no_match_size", noMatchSize);
         }
+        if (phraseLimit != null) {
+            builder.field("phrase_limit", phraseLimit);
+        }
         if (options != null && options.size() > 0) {
             builder.field("options", options);
+        }
+        if (forceSource != null) {
+            builder.field("force_source", forceSource);
         }
         if (fields != null) {
             builder.startObject("fields");
@@ -318,8 +395,14 @@ public class HighlightBuilder implements ToXContent {
                 if (field.matchedFields != null) {
                     builder.field("matched_fields", field.matchedFields);
                 }
+                if (field.phraseLimit != null) {
+                    builder.field("phrase_limit", field.phraseLimit);
+                }
                 if (field.options != null && field.options.size() > 0) {
                     builder.field("options", field.options);
+                }
+                if (field.forceSource != null) {
+                    builder.field("force_source", field.forceSource);
                 }
 
                 builder.endObject();
@@ -348,7 +431,9 @@ public class HighlightBuilder implements ToXContent {
         QueryBuilder highlightQuery;
         Integer noMatchSize;
         String[] matchedFields;
+        Integer phraseLimit;
         Map<String, Object> options;
+        Boolean forceSource;
 
         public Field(String name) {
             this.name = name;
@@ -479,5 +564,25 @@ public class HighlightBuilder implements ToXContent {
             this.matchedFields = matchedFields;
             return this;
         }
+
+        /**
+         * Sets the maximum number of phrases the fvh will consider.
+         * @param phraseLimit maximum number of phrases the fvh will consider
+         * @return this for chaining
+         */
+        public Field phraseLimit(Integer phraseLimit) {
+            this.phraseLimit = phraseLimit;
+            return this;
+        }
+
+
+        /**
+         * Forces the highlighting to highlight this field based on the source even if this field is stored separately.
+         */
+        public Field forceSource(boolean forceSource) {
+            this.forceSource = forceSource;
+            return this;
+        }
+
     }
 }

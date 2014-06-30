@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,8 +24,6 @@ import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.indices.analysis.PreBuiltTokenizers;
 
-import java.util.Locale;
-
 public class PreBuiltTokenizerFactoryFactory implements TokenizerFactoryFactory {
 
     private final TokenizerFactory tokenizerFactory;
@@ -38,8 +36,10 @@ public class PreBuiltTokenizerFactoryFactory implements TokenizerFactoryFactory 
     public TokenizerFactory create(String name, Settings settings) {
         Version indexVersion = settings.getAsVersion(IndexMetaData.SETTING_VERSION_CREATED, Version.CURRENT);
         if (!Version.CURRENT.equals(indexVersion)) {
-            TokenizerFactory versionedTokenizerFactory = PreBuiltTokenizers.valueOf(name.toUpperCase(Locale.ROOT)).getTokenizerFactory(indexVersion);
-            return versionedTokenizerFactory;
+            PreBuiltTokenizers preBuiltTokenizers = PreBuiltTokenizers.getOrDefault(name, null);
+            if (preBuiltTokenizers != null) {
+                return preBuiltTokenizers.getTokenizerFactory(indexVersion);
+            }
         }
 
         return tokenizerFactory;

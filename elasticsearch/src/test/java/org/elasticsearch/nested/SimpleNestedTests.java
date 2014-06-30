@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,10 +25,9 @@ import org.elasticsearch.action.admin.indices.status.IndicesStatusResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.common.Priority;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.FilterBuilders;
@@ -40,7 +39,6 @@ import org.elasticsearch.search.facet.termsstats.TermsStatsFacet;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
-import org.elasticsearch.test.hamcrest.ElasticsearchAssertions;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,8 +46,7 @@ import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilde
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertHitCount;
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertNoFailures;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
 import static org.hamcrest.Matchers.*;
 
 public class SimpleNestedTests extends ElasticsearchIntegrationTest {
@@ -70,7 +67,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 endObject().
                 endObject().
                 endObject();
-        ElasticsearchAssertions.assertAcked(prepareCreate("test").addMapping("type1", builder));
+        assertAcked(prepareCreate("test").addMapping("type1", builder));
         ensureGreen();
 
         // check on no data, see it works
@@ -93,6 +90,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endArray()
                 .endObject()).execute().actionGet();
 
+        waitForRelocation(ClusterHealthStatus.GREEN);
         // flush, so we fetch it from the index (as see that we filter nested docs)
         flush();
         GetResponse getResponse = client().prepareGet("test", "type1", "1").get();
@@ -140,7 +138,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endObject()
                 .endArray()
                 .endObject()).execute().actionGet();
-
+        waitForRelocation(ClusterHealthStatus.GREEN);
         // flush, so we fetch it from the index (as see that we filter nested docs)
         flush();
         statusResponse = client().admin().indices().prepareStatus().get();
@@ -165,7 +163,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
         // check delete, so all is gone...
         DeleteResponse deleteResponse = client().prepareDelete("test", "type1", "2").execute().actionGet();
-        assertThat(deleteResponse.isNotFound(), equalTo(false));
+        assertThat(deleteResponse.isFound(), equalTo(true));
 
         // flush, so we fetch it from the index (as see that we filter nested docs)
         flush();
@@ -194,14 +192,13 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
     private void simpleNestedDeleteByQuery(int total, int docToDelete) throws Exception {
 
-        client().admin().indices().prepareCreate("test")
-                .setSettings(settingsBuilder().put("index.number_of_shards", 1).put("index.referesh_interval", -1).build())
+        assertAcked(prepareCreate("test")
+                .setSettings(settingsBuilder().put(indexSettings()).put("index.referesh_interval", -1).build())
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested")
                         .endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
+                        .endObject().endObject().endObject()));
 
         ensureGreen();
 
@@ -254,16 +251,15 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
     private void noChildrenNestedDeleteByQuery(long total, int docToDelete) throws Exception {
 
-        client().admin().indices().prepareCreate("test")
-                .setSettings(settingsBuilder().put("index.number_of_shards", 1).put("index.referesh_interval", -1).build())
+        assertAcked(prepareCreate("test")
+                .setSettings(settingsBuilder().put(indexSettings()).put("index.referesh_interval", -1).build())
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested")
                         .endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
+                        .endObject().endObject().endObject()));
 
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
 
         for (int i = 0; i < total; i++) {
@@ -292,14 +288,13 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void multiNested() throws Exception {
-        client().admin().indices().prepareCreate("test")
+        assertAcked(prepareCreate("test")
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested").startObject("properties")
                         .startObject("nested2").field("type", "nested").endObject()
                         .endObject().endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
+                        .endObject().endObject().endObject()));
 
         ensureGreen();
         client().prepareIndex("test", "type1", "1").setSource(jsonBuilder()
@@ -369,22 +364,28 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testFacetsMultiShards() throws Exception {
-        testFacets(3);
+        testFacets(between(2, DEFAULT_MAX_NUM_SHARDS));
     }
 
     private void testFacets(int numberOfShards) throws Exception {
 
-        client().admin().indices().prepareCreate("test")
-                .setSettings(settingsBuilder().put("index.number_of_shards", numberOfShards))
+        assertAcked(prepareCreate("test")
+                .setSettings(settingsBuilder()
+                        .put(indexSettings())
+                        .put("index.number_of_shards", numberOfShards))
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested").startObject("properties")
-                        .startObject("nested2").field("type", "nested").endObject()
+                        .startObject("nested2").field("type", "nested")
+                        .startObject("properties")
+                        .startObject("field2_1").field("type", "string").endObject()
+                        .startObject("field2_2").field("type", "long").endObject()
+                        .endObject()
+                        .endObject()
                         .endObject().endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
+                        .endObject().endObject().endObject()));
 
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         client().prepareIndex("test", "type1", "1").setSource(jsonBuilder()
                 .startObject()
@@ -404,7 +405,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endArray()
                 .endObject()).execute().actionGet();
 
-        client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
 
         SearchResponse searchResponse = client().prepareSearch("test").setQuery(matchAllQuery())
                 .addFacet(FacetBuilders.termsStatsFacet("facet1").keyField("nested1.nested2.field2_1").valueField("nested1.nested2.field2_2").nested("nested1.nested2"))
@@ -496,19 +497,18 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
     // This IncludeNestedDocsQuery also needs to be aware of the filter from alias
     public void testDeleteNestedDocsWithAlias() throws Exception {
 
-        client().admin().indices().prepareCreate("test")
-                .setSettings(settingsBuilder().put("index.number_of_shards", 1).put("index.referesh_interval", -1).build())
+        assertAcked(prepareCreate("test")
+                .setSettings(settingsBuilder().put(indexSettings()).put("index.referesh_interval", -1).build())
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested")
                         .endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
+                        .endObject().endObject().endObject()));
 
         client().admin().indices().prepareAliases()
                 .addAlias("test", "alias1", FilterBuilders.termFilter("field1", "value1")).execute().actionGet();
 
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
 
         client().prepareIndex("test", "type1", "1").setSource(jsonBuilder().startObject()
@@ -559,15 +559,14 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
     @Test
     public void testExplain() throws Exception {
 
-        client().admin().indices().prepareCreate("test")
+        assertAcked(prepareCreate("test")
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested")
                         .endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
+                        .endObject().endObject().endObject()));
 
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         client().prepareIndex("test", "type1", "1").setSource(jsonBuilder().startObject()
                 .field("field1", "value1")
@@ -602,13 +601,10 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testSimpleNestedSorting() throws Exception {
-        client().admin().indices().prepareCreate("test")
+        assertAcked(prepareCreate("test")
                 .setSettings(settingsBuilder()
-                        .put("index.number_of_shards", 1)
-                        .put("index.number_of_replicas", 0)
-                        .put("index.refresh_interval", -1)
-                        .build()
-                )
+                        .put(indexSettings())
+                        .put("index.refresh_interval", -1))
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested")
@@ -619,9 +615,8 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                         .endObject()
                         .endObject()
                         .endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+                        .endObject().endObject().endObject()));
+        ensureGreen();
 
         client().prepareIndex("test", "type1", "1").setSource(jsonBuilder().startObject()
                 .field("field1", 1)
@@ -656,7 +651,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endObject()
                 .endArray()
                 .endObject()).execute().actionGet();
-        client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
 
         SearchResponse searchResponse = client().prepareSearch("test")
                 .setTypes("type1")
@@ -776,20 +771,24 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testSimpleNestedSorting_withNestedFilterMissing() throws Exception {
-        client().admin().indices().prepareCreate("test")
+        assertAcked(prepareCreate("test")
                 .setSettings(settingsBuilder()
-                        .put("index.number_of_shards", 1)
-                        .put("index.number_of_replicas", 0)
-                        .put("index.referesh_interval", -1)
-                        .build()
-                )
+                        .put(indexSettings())
+                        .put("index.referesh_interval", -1))
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1").startObject("properties")
                         .startObject("nested1")
                         .field("type", "nested")
+                            .startObject("properties")
+                                .startObject("field1")
+                                    .field("type", "long")
+                                .endObject()
+                                .startObject("field2")
+                                    .field("type", "boolean")
+                                .endObject()
+                            .endObject()
                         .endObject()
-                        .endObject().endObject().endObject())
-                .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+                        .endObject().endObject().endObject()));
+        ensureGreen();
 
         client().prepareIndex("test", "type1", "1").setSource(jsonBuilder().startObject()
                 .field("field1", 1)
@@ -818,7 +817,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endArray()
                 .endObject()).execute().actionGet();
         // Doc with missing nested docs if nested filter is used
-        client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
         client().prepareIndex("test", "type1", "3").setSource(jsonBuilder().startObject()
                 .field("field1", 3)
                 .startArray("nested1")
@@ -832,13 +831,17 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endObject()
                 .endArray()
                 .endObject()).execute().actionGet();
-        client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
 
-        SearchResponse searchResponse = client().prepareSearch("test")
-                .setTypes("type1")
+        SearchRequestBuilder searchRequestBuilder = client().prepareSearch("test").setTypes("type1")
                 .setQuery(QueryBuilders.matchAllQuery())
-                .addSort(SortBuilders.fieldSort("nested1.field1").setNestedFilter(termFilter("nested1.field2", true)).missing(10).order(SortOrder.ASC))
-                .execute().actionGet();
+                .addSort(SortBuilders.fieldSort("nested1.field1").setNestedFilter(termFilter("nested1.field2", true)).missing(10).order(SortOrder.ASC));
+
+        if (randomBoolean()) {
+            searchRequestBuilder.setScroll("10m");
+        }
+
+        SearchResponse searchResponse = searchRequestBuilder.get();
 
         assertHitCount(searchResponse, 3);
         assertThat(searchResponse.getHits().hits()[0].id(), equalTo("2"));
@@ -848,11 +851,14 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
         assertThat(searchResponse.getHits().hits()[2].id(), equalTo("3"));
         assertThat(searchResponse.getHits().hits()[2].sortValues()[0].toString(), equalTo("10"));
 
-        searchResponse = client().prepareSearch("test")
-                .setTypes("type1")
-                .setQuery(QueryBuilders.matchAllQuery())
-                .addSort(SortBuilders.fieldSort("nested1.field1").setNestedFilter(termFilter("nested1.field2", true)).missing(10).order(SortOrder.DESC))
-                .execute().actionGet();
+        searchRequestBuilder = client().prepareSearch("test").setTypes("type1").setQuery(QueryBuilders.matchAllQuery())
+                .addSort(SortBuilders.fieldSort("nested1.field1").setNestedFilter(termFilter("nested1.field2", true)).missing(10).order(SortOrder.DESC));
+
+        if (randomBoolean()) {
+            searchRequestBuilder.setScroll("10m");
+        }
+
+        searchResponse = searchRequestBuilder.get();
 
         assertHitCount(searchResponse, 3);
         assertThat(searchResponse.getHits().hits()[0].id(), equalTo("3"));
@@ -861,12 +867,12 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
         assertThat(searchResponse.getHits().hits()[1].sortValues()[0].toString(), equalTo("5"));
         assertThat(searchResponse.getHits().hits()[2].id(), equalTo("2"));
         assertThat(searchResponse.getHits().hits()[2].sortValues()[0].toString(), equalTo("2"));
+        client().prepareClearScroll().addScrollId("_all").get();
     }
 
     @Test
     public void testSortNestedWithNestedFilter() throws Exception {
-        client().admin().indices().prepareCreate("test")
-                .setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", 1).put("index.number_of_replicas", 0))
+        assertAcked(prepareCreate("test")
                 .addMapping("type1", XContentFactory.jsonBuilder().startObject()
                         .startObject("type1")
                         .startObject("properties")
@@ -883,9 +889,8 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                         .endObject()
                         .endObject()
                         .endObject()
-                        .endObject())
-                .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+                        .endObject()));
+        ensureGreen();
 
         // sum: 11
         client().prepareIndex("test", "type1", Integer.toString(1)).setSource(jsonBuilder().startObject()
@@ -982,7 +987,7 @@ public class SimpleNestedTests extends ElasticsearchIntegrationTest {
                 .endObject()
                 .endObject()
                 .endObject()).execute().actionGet();
-        client().admin().indices().prepareRefresh().execute().actionGet();
+        refresh();
 
         // Without nested filter
         SearchResponse searchResponse = client().prepareSearch()

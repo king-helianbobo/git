@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,12 +22,9 @@ package org.elasticsearch.gateway.local;
 import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 import com.carrotsearch.hppc.ObjectOpenHashSet;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.FailedNodeException;
-import org.elasticsearch.cluster.ClusterChangedEvent;
-import org.elasticsearch.cluster.ClusterService;
-import org.elasticsearch.cluster.ClusterState;
-import org.elasticsearch.cluster.ClusterStateListener;
+import org.elasticsearch.cluster.*;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
@@ -58,16 +55,18 @@ public class LocalGateway extends AbstractLifecycleComponent<Gateway> implements
     private final TransportNodesListGatewayMetaState listGatewayMetaState;
 
     private final String initialMeta;
+    private final ClusterName clusterName;
 
     @Inject
     public LocalGateway(Settings settings, ClusterService clusterService, NodeEnvironment nodeEnv,
                         LocalGatewayShardsState shardsState, LocalGatewayMetaState metaState,
-                        TransportNodesListGatewayMetaState listGatewayMetaState) {
+                        TransportNodesListGatewayMetaState listGatewayMetaState, ClusterName clusterName) {
         super(settings);
         this.clusterService = clusterService;
         this.nodeEnv = nodeEnv;
         this.metaState = metaState;
         this.listGatewayMetaState = listGatewayMetaState;
+        this.clusterName = clusterName;
 
         this.shardsState = shardsState;
 
@@ -83,15 +82,15 @@ public class LocalGateway extends AbstractLifecycleComponent<Gateway> implements
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
         clusterService.remove(this);
     }
 
@@ -133,7 +132,7 @@ public class LocalGateway extends AbstractLifecycleComponent<Gateway> implements
             }
         }
 
-        ObjectFloatOpenHashMap<String> indices = new ObjectFloatOpenHashMap<String>();
+        ObjectFloatOpenHashMap<String> indices = new ObjectFloatOpenHashMap<>();
         MetaData electedGlobalState = null;
         int found = 0;
         for (TransportNodesListGatewayMetaState.NodeLocalGatewayMetaState nodeState : nodesState) {
@@ -186,7 +185,7 @@ public class LocalGateway extends AbstractLifecycleComponent<Gateway> implements
                 }
             }
         }
-        ClusterState.Builder builder = ClusterState.builder();
+        ClusterState.Builder builder = ClusterState.builder(clusterName);
         builder.metaData(metaDataBuilder);
         listener.onSuccess(builder.build());
     }

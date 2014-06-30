@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -43,8 +43,8 @@ public class MappingMetaDataParserTests extends ElasticsearchTestCase {
         md.parse(XContentFactory.xContent(bytes).createParser(bytes), parseContext);
         assertThat(parseContext.id(), equalTo("id"));
         assertThat(parseContext.idResolved(), equalTo(true));
-        assertThat(parseContext.routing(), nullValue());
-        assertThat(parseContext.routingResolved(), equalTo(false));
+        assertThat(parseContext.routing(), equalTo("routing_value"));
+        assertThat(parseContext.routingResolved(), equalTo(true));
         assertThat(parseContext.timestamp(), nullValue());
         assertThat(parseContext.timestampResolved(), equalTo(false));
     }
@@ -60,7 +60,7 @@ public class MappingMetaDataParserTests extends ElasticsearchTestCase {
         MappingMetaData.ParseContext parseContext = md.createParseContext(null, "routing_value", "1");
         try {
             md.parse(XContentFactory.xContent(bytes).createParser(bytes), parseContext);
-        assert false;
+        fail();
         } catch (MapperParsingException ex) {
             // bogus its an array
         }
@@ -70,7 +70,7 @@ public class MappingMetaDataParserTests extends ElasticsearchTestCase {
         parseContext = md.createParseContext(null, "routing_value", "1");
         try {
             md.parse(XContentFactory.xContent(bytes).createParser(bytes), parseContext);
-        assert false;
+        fail();
         } catch (MapperParsingException ex) {
             // bogus its an object
         }
@@ -106,8 +106,8 @@ public class MappingMetaDataParserTests extends ElasticsearchTestCase {
         md.parse(XContentFactory.xContent(bytes).createParser(bytes), parseContext);
         assertThat(parseContext.id(), nullValue());
         assertThat(parseContext.idResolved(), equalTo(false));
-        assertThat(parseContext.routing(), nullValue());
-        assertThat(parseContext.routingResolved(), equalTo(false));
+        assertThat(parseContext.routing(), equalTo("routing_value"));
+        assertThat(parseContext.routingResolved(), equalTo(true));
         assertThat(parseContext.timestamp(), equalTo("1"));
         assertThat(parseContext.timestampResolved(), equalTo(true));
     }
@@ -160,8 +160,8 @@ public class MappingMetaDataParserTests extends ElasticsearchTestCase {
         md.parse(XContentFactory.xContent(bytes).createParser(bytes), parseContext);
         assertThat(parseContext.id(), equalTo("id"));
         assertThat(parseContext.idResolved(), equalTo(true));
-        assertThat(parseContext.routing(), nullValue());
-        assertThat(parseContext.routingResolved(), equalTo(false));
+        assertThat(parseContext.routing(), equalTo("routing_value"));
+        assertThat(parseContext.routingResolved(), equalTo(true));
         assertThat(parseContext.timestamp(), nullValue());
         assertThat(parseContext.timestampResolved(), equalTo(false));
     }
@@ -202,8 +202,8 @@ public class MappingMetaDataParserTests extends ElasticsearchTestCase {
         md.parse(XContentFactory.xContent(bytes).createParser(bytes), parseContext);
         assertThat(parseContext.id(), nullValue());
         assertThat(parseContext.idResolved(), equalTo(false));
-        assertThat(parseContext.routing(), nullValue());
-        assertThat(parseContext.routingResolved(), equalTo(false));
+        assertThat(parseContext.routing(), equalTo("routing_value"));
+        assertThat(parseContext.routingResolved(), equalTo(true));
         assertThat(parseContext.timestamp(), equalTo("1"));
         assertThat(parseContext.timestampResolved(), equalTo(true));
     }

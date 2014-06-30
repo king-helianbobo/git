@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,10 +24,19 @@ import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.elasticsearch.action.admin.cluster.node.restart.NodesRestartRequest;
 import org.elasticsearch.action.admin.cluster.node.shutdown.NodesShutdownRequest;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequest;
+import org.elasticsearch.action.admin.cluster.repositories.delete.DeleteRepositoryRequest;
+import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
+import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest;
 import org.elasticsearch.action.admin.cluster.reroute.ClusterRerouteRequest;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.cluster.shards.ClusterSearchShardsRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.status.SnapshotsStatusRequest;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
+import org.elasticsearch.action.admin.cluster.stats.ClusterStatsRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
 import org.elasticsearch.action.admin.indices.close.CloseIndexRequest;
@@ -35,14 +44,13 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
-import org.elasticsearch.action.admin.indices.gateway.snapshot.GatewaySnapshotRequest;
 import org.elasticsearch.action.admin.indices.mapping.delete.DeleteMappingRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.segments.IndicesSegmentsRequest;
-import org.elasticsearch.action.admin.indices.settings.UpdateSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.count.CountRequest;
@@ -177,12 +185,13 @@ public class Requests {
     }
 
     /**
-     * Creates an indices status request.
+     * Creates an indices status request. Use the Recovery API instead
      *
      * @param indices The indices to query status about. Use <tt>null</tt> or <tt>_all</tt> to execute against all indices
      * @return The indices status request
      * @see org.elasticsearch.client.IndicesAdminClient#status(org.elasticsearch.action.admin.indices.status.IndicesStatusRequest)
      */
+    @Deprecated
     public static IndicesStatusRequest indicesStatusRequest(String... indices) {
         return new IndicesStatusRequest(indices);
     }
@@ -311,17 +320,6 @@ public class Requests {
     }
 
     /**
-     * Creates a gateway snapshot indices request.
-     *
-     * @param indices The indices the gateway snapshot will be performed on. Use <tt>null</tt> or <tt>_all</tt> to execute against all indices
-     * @return The gateway snapshot request
-     * @see org.elasticsearch.client.IndicesAdminClient#gatewaySnapshot(org.elasticsearch.action.admin.indices.gateway.snapshot.GatewaySnapshotRequest)
-     */
-    public static GatewaySnapshotRequest gatewaySnapshotRequest(String... indices) {
-        return new GatewaySnapshotRequest(indices);
-    }
-
-    /**
      * Creates a clean indices cache request.
      *
      * @param indices The indices to clean their caches. Use <tt>null</tt> or <tt>_all</tt> to execute against all indices
@@ -417,6 +415,16 @@ public class Requests {
     }
 
     /**
+     * Creates a cluster stats request.
+     *
+     * @return The cluster stats request
+     * @see org.elasticsearch.client.ClusterAdminClient#clusterStats(org.elasticsearch.action.admin.cluster.stats.ClusterStatsRequest)
+     */
+    public static ClusterStatsRequest clusterStatsRequest() {
+        return new ClusterStatsRequest();
+    }
+
+    /**
      * Shuts down all nodes in the cluster.
      */
     public static NodesShutdownRequest nodesShutdownRequest() {
@@ -450,6 +458,90 @@ public class Requests {
      */
     public static NodesRestartRequest nodesRestartRequest(String... nodesIds) {
         return new NodesRestartRequest(nodesIds);
+    }
+
+    /**
+     * Registers snapshot repository
+     *
+     * @param name repository name
+     * @return repository registration request
+     */
+    public static PutRepositoryRequest putRepositoryRequest(String name) {
+        return new PutRepositoryRequest(name);
+    }
+
+    /**
+     * Gets snapshot repository
+     *
+     * @param repositories names of repositories
+     * @return get repository request
+     */
+    public static GetRepositoriesRequest getRepositoryRequest(String... repositories) {
+        return new GetRepositoriesRequest(repositories);
+    }
+
+    /**
+     * Deletes registration for snapshot repository
+     *
+     * @param name repository name
+     * @return delete repository request
+     */
+    public static DeleteRepositoryRequest deleteRepositoryRequest(String name) {
+        return new DeleteRepositoryRequest(name);
+    }
+
+
+    /**
+     * Creates new snapshot
+     *
+     * @param repository repository name
+     * @param snapshot   snapshot name
+     * @return create snapshot request
+     */
+    public static CreateSnapshotRequest createSnapshotRequest(String repository, String snapshot) {
+        return new CreateSnapshotRequest(repository, snapshot);
+    }
+
+    /**
+     * Gets snapshots from repository
+     *
+     * @param repository repository name
+     * @return get snapshot  request
+     */
+    public static GetSnapshotsRequest getSnapshotsRequest(String repository) {
+        return new GetSnapshotsRequest(repository);
+    }
+
+    /**
+     * Restores new snapshot
+     *
+     * @param repository repository name
+     * @param snapshot   snapshot name
+     * @return snapshot creation request
+     */
+    public static RestoreSnapshotRequest restoreSnapshotRequest(String repository, String snapshot) {
+        return new RestoreSnapshotRequest(repository, snapshot);
+    }
+
+    /**
+     * Deletes a snapshot
+     *
+     * @param snapshot   snapshot name
+     * @param repository repository name
+     * @return delete snapshot request
+     */
+    public static DeleteSnapshotRequest deleteSnapshotRequest(String repository, String snapshot) {
+        return new DeleteSnapshotRequest(repository, snapshot);
+    }
+
+    /**
+     *  Get status of snapshots
+     *
+     * @param repository repository name
+     * @return snapshot status request
+     */
+    public static SnapshotsStatusRequest snapshotsStatusRequest(String repository) {
+        return new SnapshotsStatusRequest(repository);
     }
 
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -30,7 +30,7 @@ import org.elasticsearch.cluster.routing.RoutingNodes;
 import org.elasticsearch.cluster.routing.RoutingTable;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.junit.Test;
 
 import java.util.List;
@@ -39,20 +39,20 @@ import java.util.Set;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Sets.newHashSet;
 import static org.elasticsearch.cluster.routing.ShardRoutingState.*;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
+import static org.elasticsearch.cluster.routing.allocation.RoutingNodesUtils.numberOfShardsOfType;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.*;
 
 /**
  *
  */
-public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
+public class SingleShardNoReplicasRoutingTests extends ElasticsearchAllocationTestCase {
 
     private final ESLogger logger = Loggers.getLogger(SingleShardNoReplicasRoutingTests.class);
 
     @Test
     public void testSingleIndexStartedShard() {
-        AllocationService strategy = new AllocationService(settingsBuilder().put("cluster.routing.allocation.concurrent_recoveries", 10).build());
+        AllocationService strategy = createAllocationService(settingsBuilder().put("cluster.routing.allocation.concurrent_recoveries", 10).build());
 
         logger.info("Building initial routing table");
 
@@ -64,7 +64,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         assertThat(routingTable.index("test").shards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).size(), equalTo(1));
@@ -154,7 +154,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
 
     @Test
     public void testSingleIndexShardFailed() {
-        AllocationService strategy = new AllocationService(settingsBuilder().put("cluster.routing.allocation.concurrent_recoveries", 10).build());
+        AllocationService strategy = createAllocationService(settingsBuilder().put("cluster.routing.allocation.concurrent_recoveries", 10).build());
 
         logger.info("Building initial routing table");
 
@@ -166,7 +166,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         assertThat(routingTable.index("test").shards().size(), equalTo(1));
         assertThat(routingTable.index("test").shard(0).size(), equalTo(1));
@@ -204,7 +204,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
 
     @Test
     public void testMultiIndexEvenDistribution() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.cluster_concurrent_rebalance", -1)
@@ -224,7 +224,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
             routingTableBuilder.addAsNew(metaData.index("test" + i));
         }
         RoutingTable routingTable = routingTableBuilder.build();
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         assertThat(routingTable.indicesRouting().size(), equalTo(numberOfIndices));
         for (int i = 0; i < numberOfIndices; i++) {
@@ -263,7 +263,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
         Set<String> encounteredIndices = newHashSet();
         for (RoutingNode routingNode : routingNodes) {
             assertThat(routingNode.numberOfShardsWithState(STARTED), equalTo(0));
-            assertThat(routingNode.shards().size(), equalTo(2));
+            assertThat(routingNode.size(), equalTo(2));
             // make sure we still have 2 shards initializing per node on the only 25 nodes
             int nodeIndex = Integer.parseInt(routingNode.nodeId().substring("node".length()));
             assertThat(nodeIndex, lessThan(25));
@@ -317,7 +317,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
 
     @Test
     public void testMultiIndexUnevenNodes() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.cluster_concurrent_rebalance", -1)
@@ -338,7 +338,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
         }
         RoutingTable routingTable = routingTableBuilder.build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         assertThat(routingTable.indicesRouting().size(), equalTo(numberOfIndices));
 
@@ -358,7 +358,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
             assertThat(routingTable.index("test" + i).shard(0).shards().get(0).state(), equalTo(INITIALIZING));
         }
         RoutingNodes routingNodes = clusterState.routingNodes();
-        assertThat(routingNodes.numberOfShardsOfType(INITIALIZING), equalTo(numberOfIndices));
+        assertThat(numberOfShardsOfType(routingNodes, INITIALIZING), equalTo(numberOfIndices));
         assertThat(routingNodes.node("node1").numberOfShardsWithState(INITIALIZING), anyOf(equalTo(3), equalTo(4)));
         assertThat(routingNodes.node("node2").numberOfShardsWithState(INITIALIZING), anyOf(equalTo(3), equalTo(4)));
         assertThat(routingNodes.node("node2").numberOfShardsWithState(INITIALIZING), anyOf(equalTo(3), equalTo(4)));
@@ -387,8 +387,8 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
             assertThat(routingTable.index("test" + i).shard(0).shards().get(0).state(), anyOf(equalTo(RELOCATING), equalTo(STARTED)));
         }
         routingNodes = clusterState.routingNodes();
-        assertThat("4 source shard routing are relocating", routingNodes.numberOfShardsOfType(RELOCATING), equalTo(4));
-        assertThat("4 target shard routing are initializing", routingNodes.numberOfShardsOfType(INITIALIZING), equalTo(4));
+        assertThat("4 source shard routing are relocating", numberOfShardsOfType(routingNodes, RELOCATING), equalTo(4));
+        assertThat("4 target shard routing are initializing", numberOfShardsOfType(routingNodes, INITIALIZING), equalTo(4));
 
         logger.info("Now, mark the relocated as started");
         prevRoutingTable = routingTable;
@@ -404,7 +404,7 @@ public class SingleShardNoReplicasRoutingTests extends ElasticsearchTestCase {
             assertThat(routingTable.index("test" + i).shard(0).shards().get(0).state(), anyOf(equalTo(RELOCATING), equalTo(STARTED)));
         }
         routingNodes = clusterState.routingNodes();
-        assertThat(routingNodes.numberOfShardsOfType(STARTED), equalTo(numberOfIndices));
+        assertThat(numberOfShardsOfType(routingNodes, STARTED), equalTo(numberOfIndices));
         for (RoutingNode routingNode : routingNodes) {
             assertThat(routingNode.numberOfShardsWithState(STARTED), equalTo(2));
         }

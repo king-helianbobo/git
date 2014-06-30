@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,10 +19,14 @@
 
 package org.elasticsearch.test;
 
-import com.carrotsearch.randomizedtesting.annotations.*;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.TimeUnits;
+import org.elasticsearch.Version;
 import org.elasticsearch.test.junit.listeners.ReproduceInfoPrinter;
 
 @Listeners({
@@ -38,4 +42,7 @@ import org.elasticsearch.test.junit.listeners.ReproduceInfoPrinter;
  */
 public abstract class ElasticsearchTokenStreamTestCase extends BaseTokenStreamTestCase {
 
+    public static Version randomVersion() {
+        return ElasticsearchTestCase.randomVersion(random());
+    }
 }

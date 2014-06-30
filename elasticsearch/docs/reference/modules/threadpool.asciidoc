@@ -7,13 +7,13 @@ pools, but the important ones include:
 
 [horizontal]
 `index`:: 
-    For index/delete operations, defaults to `fixed`,
-    size `# of available processors`.
+    For index/delete operations, defaults to `fixed`, 
+    size `# of available processors`. 
     queue_size `200`.
 
-`search`::
+`search`:: 
     For count/search operations, defaults to `fixed`,
-    size `3x # of available processors`.
+    size `3x # of available processors`. 
     queue_size `1000`.
 
 `suggest`::
@@ -21,7 +21,7 @@ pools, but the important ones include:
     size `# of available processors`.
     queue_size `1000`.
 
-`get`::
+`get`:: 
     For get operations, defaults to `fixed`
     size `# of available processors`.
     queue_size `1000`.
@@ -36,11 +36,21 @@ pools, but the important ones include:
     size `# of available processors`.
     queue_size `1000`.
 
+`snapshot`::
+    For snapshot/restore operations, defaults to `scaling`
+    keep-alive `5m`,
+    size `(# of available processors)/2`.
+
+`snapshot_data`::
+    For snapshot/restore operations on data files, defaults to `scaling`
+    with a `5m` keep-alive,
+    size `5`.
+
 `warmer`::
     For segment warm-up operations, defaults to `scaling`
-    with a `5m` keep-alive.
+    with a `5m` keep-alive. 
 
-`refresh`::
+`refresh`:: 
     For refresh operations, defaults to `scaling`
     with a `5m` keep-alive.
 

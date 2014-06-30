@@ -31,11 +31,11 @@ And here is a sample response:
             {
                 "_index" : "twitter",
                 "_type" : "tweet",
-                "_id" : "1", 
+                "_id" : "1",
                 "_source" : {
                     "user" : "kimchy",
                     "postDate" : "2009-11-15T14:12:12",
-                    "message" : "trying out Elastic Search"
+                    "message" : "trying out Elasticsearch"
                 }
             }
         ]
@@ -81,11 +81,15 @@ include::request/from-size.asciidoc[]
 
 include::request/sort.asciidoc[]
 
+include::request/source-filtering.asciidoc[]
+
 include::request/fields.asciidoc[]
 
 include::request/script-fields.asciidoc[]
 
-include::request/filter.asciidoc[]
+include::request/fielddata-fields.asciidoc[]
+
+include::request/post-filter.asciidoc[]
 
 include::request/highlighting.asciidoc[]
 
@@ -99,6 +103,8 @@ include::request/preference.asciidoc[]
 
 include::request/explain.asciidoc[]
 
+include::request/search-shards.asciidoc[]
+
 include::request/version.asciidoc[]
 
 include::request/index-boost.asciidoc[]
@@ -106,4 +112,3 @@ include::request/index-boost.asciidoc[]
 include::request/min-score.asciidoc[]
 
 include::request/named-queries-and-filters.asciidoc[]
-

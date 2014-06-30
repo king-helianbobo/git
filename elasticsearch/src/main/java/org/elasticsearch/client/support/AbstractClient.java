@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -48,15 +48,13 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.mlt.MoreLikeThisAction;
 import org.elasticsearch.action.mlt.MoreLikeThisRequest;
 import org.elasticsearch.action.mlt.MoreLikeThisRequestBuilder;
-import org.elasticsearch.action.percolate.PercolateAction;
-import org.elasticsearch.action.percolate.PercolateRequest;
-import org.elasticsearch.action.percolate.PercolateRequestBuilder;
-import org.elasticsearch.action.percolate.PercolateResponse;
+import org.elasticsearch.action.percolate.*;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.suggest.SuggestAction;
 import org.elasticsearch.action.suggest.SuggestRequest;
 import org.elasticsearch.action.suggest.SuggestRequestBuilder;
 import org.elasticsearch.action.suggest.SuggestResponse;
+import org.elasticsearch.action.termvector.*;
 import org.elasticsearch.action.update.UpdateAction;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
@@ -295,6 +293,36 @@ public abstract class AbstractClient implements InternalClient {
     }
 
     @Override
+    public ActionFuture<TermVectorResponse> termVector(final TermVectorRequest request) {
+        return execute(TermVectorAction.INSTANCE, request);
+    }
+
+    @Override
+    public void termVector(final TermVectorRequest request, final ActionListener<TermVectorResponse> listener) {
+        execute(TermVectorAction.INSTANCE, request, listener);
+    }
+
+    @Override
+    public TermVectorRequestBuilder prepareTermVector(String index, String type, String id) {
+        return new TermVectorRequestBuilder(this, index, type, id);
+    }
+
+    @Override
+    public ActionFuture<MultiTermVectorsResponse> multiTermVectors(final MultiTermVectorsRequest request) {
+        return execute(MultiTermVectorsAction.INSTANCE, request);
+    }
+
+    @Override
+    public void multiTermVectors(final MultiTermVectorsRequest request, final ActionListener<MultiTermVectorsResponse> listener) {
+        execute(MultiTermVectorsAction.INSTANCE, request, listener);
+    }
+
+    @Override
+    public MultiTermVectorsRequestBuilder prepareMultiTermVectors() {
+        return new MultiTermVectorsRequestBuilder(this);
+    }
+
+    @Override
     public ActionFuture<PercolateResponse> percolate(final PercolateRequest request) {
         return execute(PercolateAction.INSTANCE, request);
     }
@@ -305,8 +333,23 @@ public abstract class AbstractClient implements InternalClient {
     }
 
     @Override
-    public PercolateRequestBuilder preparePercolate(String index, String type) {
-        return new PercolateRequestBuilder(this, index, type);
+    public PercolateRequestBuilder preparePercolate() {
+        return new PercolateRequestBuilder(this);
+    }
+
+    @Override
+    public MultiPercolateRequestBuilder prepareMultiPercolate() {
+        return new MultiPercolateRequestBuilder(this);
+    }
+
+    @Override
+    public void multiPercolate(MultiPercolateRequest request, ActionListener<MultiPercolateResponse> listener) {
+        execute(MultiPercolateAction.INSTANCE, request, listener);
+    }
+
+    @Override
+    public ActionFuture<MultiPercolateResponse> multiPercolate(MultiPercolateRequest request) {
+        return execute(MultiPercolateAction.INSTANCE, request);
     }
 
     @Override

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,13 +23,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.elasticsearch.ElasticSearchGenerationException;
+import org.elasticsearch.ElasticsearchGenerationException;
 import org.elasticsearch.common.Booleans;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Preconditions;
@@ -132,7 +131,7 @@ public class DocumentMapper implements ToXContent {
 
     public static class Builder {
 
-        private Map<Class<? extends RootMapper>, RootMapper> rootMappers = new LinkedHashMap<Class<? extends RootMapper>, RootMapper>();
+        private Map<Class<? extends RootMapper>, RootMapper> rootMappers = new LinkedHashMap<>();
 
         private NamedAnalyzer indexAnalyzer;
 
@@ -179,6 +178,7 @@ public class DocumentMapper implements ToXContent {
             this.rootMappers.put(BoostFieldMapper.class, new BoostFieldMapper());
             this.rootMappers.put(TimestampFieldMapper.class, new TimestampFieldMapper());
             this.rootMappers.put(TTLFieldMapper.class, new TTLFieldMapper());
+            this.rootMappers.put(VersionFieldMapper.class, new VersionFieldMapper());
             this.rootMappers.put(ParentFieldMapper.class, new ParentFieldMapper());
         }
 
@@ -239,11 +239,13 @@ public class DocumentMapper implements ToXContent {
         }
     };
 
-    private final String index; //索引名称
+    public static final String ALLOW_TYPE_WRAPPER = "index.mapping.allow_type_wrapper";
 
-    private final Settings indexSettings; // 索引设置
+    private final String index;
 
-    private final String type; //索引type
+    private final Settings indexSettings;
+
+    private final String type;
     private final StringAndBytesText typeText;
 
     private final DocumentMapperParser docMapperParser;
@@ -267,9 +269,9 @@ public class DocumentMapper implements ToXContent {
 
     private volatile ImmutableMap<String, ObjectMapper> objectMappers = ImmutableMap.of();
 
-    private final List<FieldMapperListener> fieldMapperListeners = new CopyOnWriteArrayList<FieldMapperListener>();
+    private final List<FieldMapperListener> fieldMapperListeners = new CopyOnWriteArrayList<>();
 
-    private final List<ObjectMapperListener> objectMapperListeners = new CopyOnWriteArrayList<ObjectMapperListener>();
+    private final List<ObjectMapperListener> objectMapperListeners = new CopyOnWriteArrayList<>();
 
     private boolean hasNestedObjects = false;
 
@@ -473,7 +475,7 @@ public class DocumentMapper implements ToXContent {
             if (parser == null) {
                 parser = XContentHelper.createParser(source.source());
             }
-            context.reset(parser, new Document(), source, listener);
+            context.reset(parser, new ParseContext.Document(), source, listener);
             // on a newly created instance of document mapper, we always consider it as new mappers that have been added
             if (initMappersAdded) {
                 context.setMappingsModified();
@@ -494,18 +496,15 @@ public class DocumentMapper implements ToXContent {
             } else if (token != XContentParser.Token.FIELD_NAME) {
                 throw new MapperParsingException("Malformed content, after first object, either the type field or the actual properties should exist");
             }
-            if (type.equals(parser.currentName())) {
-                // first field is the same as the type, this might be because the type is provided, and the object exists within it
-                // or because there is a valid field that by chance is named as the type
-
-                // Note, in this case, we only handle plain value types, an object type will be analyzed as if it was the type itself
-                // and other same level fields will be ignored
-                token = parser.nextToken();
+            // first field is the same as the type, this might be because the
+            // type is provided, and the object exists within it or because
+            // there is a valid field that by chance is named as the type.
+            // Because of this, by default wrapping a document in a type is
+            // disabled, but can be enabled by setting
+            // index.mapping.allow_type_wrapper to true
+            if (type.equals(parser.currentName()) && indexSettings.getAsBoolean(ALLOW_TYPE_WRAPPER, false)) {
+                parser.nextToken();
                 countDownTokens++;
-                // commented out, allow for same type with START_OBJECT, we do our best to handle it except for the above corner case
-//                if (token != XContentParser.Token.START_OBJECT) {
-//                    throw new MapperException("Malformed content, a field with the same name as the type must be an object with the properties/fields within it");
-//                }
             }
 
             for (RootMapper rootMapper : rootMappersOrdered) {
@@ -522,10 +521,6 @@ public class DocumentMapper implements ToXContent {
 
             for (RootMapper rootMapper : rootMappersOrdered) {
                 rootMapper.postParse(context);
-            }
-
-            for (RootMapper rootMapper : rootMappersOrdered) {
-                rootMapper.validate(context);
             }
         } catch (Throwable e) {
             // if its already a mapper parsing exception, no need to wrap it...
@@ -552,7 +547,7 @@ public class DocumentMapper implements ToXContent {
         // apply doc boost
         if (context.docBoost() != 1.0f) {
             Set<String> encounteredFields = Sets.newHashSet();
-            for (Document doc : context.docs()) {
+            for (ParseContext.Document doc : context.docs()) {
                 encounteredFields.clear();
                 for (IndexableField field : doc) {
                     if (field.fieldType().indexed() && !field.fieldType().omitNorms()) {
@@ -565,20 +560,16 @@ public class DocumentMapper implements ToXContent {
             }
         }
 
-        ParsedDocument doc = new ParsedDocument(context.uid(), context.id(), context.type(), source.routing(), source.timestamp(), source.ttl(), context.docs(), context.analyzer(),
+        ParsedDocument doc = new ParsedDocument(context.uid(), context.version(), context.id(), context.type(), source.routing(), source.timestamp(), source.ttl(), context.docs(), context.analyzer(),
                 context.source(), context.mappingsModified()).parent(source.parent());
         // reset the context to free up memory
         context.reset(null, null, null, null);
         return doc;
     }
 
-    public void addFieldMappers(Collection<FieldMapper> fieldMappers) {
-        addFieldMappers(fieldMappers.toArray(new FieldMapper[fieldMappers.size()]));
-    }
-
-    public void addFieldMappers(FieldMapper... fieldMappers) {
+    public void addFieldMappers(Iterable<FieldMapper> fieldMappers) {
         synchronized (mappersMutex) {
-            this.fieldMappers.addNewMappers(Arrays.asList(fieldMappers));
+            this.fieldMappers.addNewMappers(fieldMappers);
         }
         for (FieldMapperListener listener : fieldMapperListeners) {
             listener.fieldMappers(fieldMappers);
@@ -657,7 +648,7 @@ public class DocumentMapper implements ToXContent {
         return new MergeResult(mergeContext.buildConflicts());
     }
 
-    public CompressedString refreshSource() throws ElasticSearchGenerationException {
+    public CompressedString refreshSource() throws ElasticsearchGenerationException {
         try {
             BytesStreamOutput bStream = new BytesStreamOutput();
             XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON, CompressorFactory.defaultCompressor().streamOutput(bStream));
@@ -667,7 +658,7 @@ public class DocumentMapper implements ToXContent {
             builder.close();
             return mappingSource = new CompressedString(bStream.bytes());
         } catch (Exception e) {
-            throw new ElasticSearchGenerationException("failed to serialize source for type [" + type + "]", e);
+            throw new ElasticsearchGenerationException("failed to serialize source for type [" + type + "]", e);
         }
     }
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,7 +24,8 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.Version;
 import org.elasticsearch.common.Booleans;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
@@ -282,21 +283,34 @@ public class DiscoveryNodes implements Iterable<DiscoveryNode> {
         return nodesIds == null || nodesIds.length == 0 || (nodesIds.length == 1 && nodesIds[0].equals("_all"));
     }
 
+
+    /**
+     * Returns the version of the node with the oldest version in the cluster
+     *
+     * @return the oldest version in the cluster
+     */
+    public Version smallestVersion() {
+        Version version = Version.CURRENT;
+        for (ObjectCursor<DiscoveryNode> cursor : nodes.values()) {
+            version = Version.smallest(version, cursor.value.version());
+        }
+        return version;
+    }
+
     /**
      * Resolve a node with a given id
      *
      * @param node id of the node to discover
      * @return discovered node matching the given id
-     * @throws ElasticSearchIllegalArgumentException
-     *          if more than one node matches the request or no nodes have been resolved
+     * @throws org.elasticsearch.ElasticsearchIllegalArgumentException if more than one node matches the request or no nodes have been resolved
      */
     public DiscoveryNode resolveNode(String node) {
         String[] resolvedNodeIds = resolveNodesIds(node);
         if (resolvedNodeIds.length > 1) {
-            throw new ElasticSearchIllegalArgumentException("resolved [" + node + "] into [" + resolvedNodeIds.length + "] nodes, where expected to be resolved to a single node");
+            throw new ElasticsearchIllegalArgumentException("resolved [" + node + "] into [" + resolvedNodeIds.length + "] nodes, where expected to be resolved to a single node");
         }
         if (resolvedNodeIds.length == 0) {
-            throw new ElasticSearchIllegalArgumentException("failed to resolve [" + node + " ], no matching nodes");
+            throw new ElasticsearchIllegalArgumentException("failed to resolve [" + node + " ], no matching nodes");
         }
         return nodes.get(resolvedNodeIds[0]);
     }
@@ -310,7 +324,7 @@ public class DiscoveryNodes implements Iterable<DiscoveryNode> {
             }
             return nodesIds;
         } else {
-            ObjectOpenHashSet<String> resolvedNodesIds = new ObjectOpenHashSet<String>(nodesIds.length);
+            ObjectOpenHashSet<String> resolvedNodesIds = new ObjectOpenHashSet<>(nodesIds.length);
             for (String nodeId : nodesIds) {
                 if (nodeId.equals("_local")) {
                     String localNodeId = localNodeId();
@@ -332,7 +346,9 @@ public class DiscoveryNodes implements Iterable<DiscoveryNode> {
                         }
                     }
                     for (DiscoveryNode node : this) {
-                        if (node.address().match(nodeId)) {
+                        if (Regex.simpleMatch(nodeId, node.getHostAddress())) {
+                            resolvedNodesIds.add(node.id());
+                        } else if (Regex.simpleMatch(nodeId, node.getHostName())) {
                             resolvedNodesIds.add(node.id());
                         }
                     }

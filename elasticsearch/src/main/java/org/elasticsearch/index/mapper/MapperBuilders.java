@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,7 +26,6 @@ import org.elasticsearch.index.mapper.geo.GeoPointFieldMapper;
 import org.elasticsearch.index.mapper.geo.GeoShapeFieldMapper;
 import org.elasticsearch.index.mapper.internal.*;
 import org.elasticsearch.index.mapper.ip.IpFieldMapper;
-import org.elasticsearch.index.mapper.multifield.MultiFieldMapper;
 import org.elasticsearch.index.mapper.object.ObjectMapper;
 import org.elasticsearch.index.mapper.object.RootObjectMapper;
 
@@ -67,6 +66,10 @@ public final class MapperBuilders {
         return new SizeFieldMapper.Builder();
     }
 
+    public static VersionFieldMapper.Builder version() {
+        return new VersionFieldMapper.Builder();
+    }
+
     public static TypeFieldMapper.Builder type() {
         return new TypeFieldMapper.Builder();
     }
@@ -97,10 +100,6 @@ public final class MapperBuilders {
 
     public static AnalyzerMapper.Builder analyzer() {
         return new AnalyzerMapper.Builder();
-    }
-
-    public static MultiFieldMapper.Builder multiField(String name) {
-        return new MultiFieldMapper.Builder(name);
     }
 
     public static RootObjectMapper.Builder rootObject(String name) {
@@ -149,6 +148,10 @@ public final class MapperBuilders {
 
     public static LongFieldMapper.Builder longField(String name) {
         return new LongFieldMapper.Builder(name);
+    }
+
+    public static Murmur3FieldMapper.Builder murmur3Field(String name) {
+        return new Murmur3FieldMapper.Builder(name);
     }
 
     public static FloatFieldMapper.Builder floatField(String name) {

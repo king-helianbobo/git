@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,13 +22,15 @@ package org.elasticsearch.rest.action.search;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.support.IgnoreIndices;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.*;
+import org.elasticsearch.rest.action.support.RestActions;
+import org.elasticsearch.rest.action.support.RestToXContentListener;
 
 import java.io.IOException;
 
@@ -36,7 +38,6 @@ import static org.elasticsearch.rest.RestRequest.Method.GET;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.BAD_REQUEST;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestXContentBuilder.restContentBuilder;
 
 /**
  */
@@ -59,51 +60,15 @@ public class RestMultiSearchAction extends BaseRestHandler {
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel) {
+    public void handleRequest(final RestRequest request, final RestChannel channel) throws Exception {
         MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
         multiSearchRequest.listenerThreaded(false);
 
         String[] indices = Strings.splitStringByCommaToArray(request.param("index"));
         String[] types = Strings.splitStringByCommaToArray(request.param("type"));
-        IgnoreIndices ignoreIndices = null;
-        if (request.hasParam("ignore_indices")) {
-            ignoreIndices = IgnoreIndices.fromString(request.param("ignore_indices"));
-        }
+        IndicesOptions indicesOptions = IndicesOptions.fromRequest(request, multiSearchRequest.indicesOptions());
+        multiSearchRequest.add(RestActions.getRestContent(request), request.contentUnsafe(), indices, types, request.param("search_type"), request.param("routing"), indicesOptions, allowExplicitIndex);
 
-        try {
-            multiSearchRequest.add(request.content(), request.contentUnsafe(), indices, types, request.param("search_type"), request.param("routing"), ignoreIndices, allowExplicitIndex);
-        } catch (Exception e) {
-            try {
-                XContentBuilder builder = restContentBuilder(request);
-                channel.sendResponse(new XContentRestResponse(request, BAD_REQUEST, builder.startObject().field("error", e.getMessage()).endObject()));
-            } catch (IOException e1) {
-                logger.error("Failed to send failure response", e1);
-            }
-            return;
-        }
-
-        client.multiSearch(multiSearchRequest, new ActionListener<MultiSearchResponse>() {
-            @Override
-            public void onResponse(MultiSearchResponse response) {
-                try {
-                    XContentBuilder builder = restContentBuilder(request);
-                    builder.startObject();
-                    response.toXContent(builder, request);
-                    builder.endObject();
-                    channel.sendResponse(new XContentRestResponse(request, OK, builder));
-                } catch (Throwable e) {
-                    onFailure(e);
-                }
-            }
-
-            @Override
-            public void onFailure(Throwable e) {
-                try {
-                    channel.sendResponse(new XContentThrowableRestResponse(request, e));
-                } catch (IOException e1) {
-                    logger.error("Failed to send failure response", e1);
-                }
-            }
-        });
+        client.multiSearch(multiSearchRequest, new RestToXContentListener<MultiSearchResponse>(channel));
     }
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action.bulk;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -33,6 +33,7 @@ import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 
+import java.io.Closeable;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -43,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p/>
  * In order to create a new bulk processor, use the {@link Builder}.
  */
-public class BulkProcessor {
+public class BulkProcessor implements Closeable {
 
     /**
      * A listener for the execution.
@@ -191,6 +192,7 @@ public class BulkProcessor {
         }
     }
 
+    @Override
     /**
      * Closes the processor. If flushing by time is enabled, then its shutdown. Any remaining bulk actions are flushed.
      */
@@ -235,7 +237,14 @@ public class BulkProcessor {
         return this;
     }
 
+    public void ensureOpen() {
+        if (closed) {
+            throw new ElasticsearchIllegalStateException("bulk process already closed");
+        }
+    }
+
     private synchronized void internalAdd(ActionRequest request, @Nullable Object payload) {
+        ensureOpen();
         bulkRequest.add(request, payload);
         executeIfNeeded();
     }
@@ -251,9 +260,7 @@ public class BulkProcessor {
     }
 
     private void executeIfNeeded() {
-        if (closed) {
-            throw new ElasticSearchIllegalStateException("bulk process already closed");
-        }
+        ensureOpen();
         if (!isOverTheLimit()) {
             return;
         }
@@ -313,13 +320,23 @@ public class BulkProcessor {
     }
 
     private boolean isOverTheLimit() {
-        if (bulkActions != -1 && bulkRequest.numberOfActions() > bulkActions) {
+        if (bulkActions != -1 && bulkRequest.numberOfActions() >= bulkActions) {
             return true;
         }
-        if (bulkSize != -1 && bulkRequest.estimatedSizeInBytes() > bulkSize) {
+        if (bulkSize != -1 && bulkRequest.estimatedSizeInBytes() >= bulkSize) {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Flush pending delete or index requests.
+     */
+    public synchronized void flush() {
+        ensureOpen();
+        if (bulkRequest.numberOfActions() > 0) {
+            execute();
+        }
     }
 
     class Flush implements Runnable {

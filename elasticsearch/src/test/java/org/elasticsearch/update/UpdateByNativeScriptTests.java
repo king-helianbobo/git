@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -27,18 +27,18 @@ import org.elasticsearch.script.ExecutableScript;
 import org.elasticsearch.script.NativeScriptFactory;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
-import org.elasticsearch.test.ElasticsearchIntegrationTest.Scope;
 import org.junit.Test;
 
 import java.util.Map;
 
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 
 /**
  *
  */
-@ClusterScope(scope=Scope.SUITE, numNodes=1)
+@ClusterScope(scope= Scope.SUITE, numDataNodes =1)
 public class UpdateByNativeScriptTests extends ElasticsearchIntegrationTest {
 
     @Override
@@ -51,8 +51,8 @@ public class UpdateByNativeScriptTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testThatUpdateUsingNativeScriptWorks() throws Exception {
-        prepareCreate("test").setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", 1).put("index.number_of_replicas", 0).build()).get();
-        ensureGreen();
+        createIndex("test");
+        ensureYellow();
 
         index("test", "type", "1", "text", "value");
 

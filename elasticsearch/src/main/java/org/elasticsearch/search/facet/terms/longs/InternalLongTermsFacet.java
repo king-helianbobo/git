@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.search.facet.terms.longs;
 
 import com.carrotsearch.hppc.LongIntOpenHashMap;
@@ -189,7 +188,7 @@ public class InternalLongTermsFacet extends InternalTermsFacet {
             }
         }
 
-        BoundedTreeSet<LongEntry> ordered = new BoundedTreeSet<LongEntry>(first.comparatorType.comparator(), first.requiredSize);
+        BoundedTreeSet<LongEntry> ordered = new BoundedTreeSet<>(first.comparatorType.comparator(), first.requiredSize);
         LongIntOpenHashMap entries = aggregated.v();
         final boolean[] states = aggregated.v().allocated;
         final long[] keys = aggregated.v().keys;
@@ -203,7 +202,7 @@ public class InternalLongTermsFacet extends InternalTermsFacet {
         first.missing = missing;
         first.total = total;
 
-        aggregated.release();
+        aggregated.close();
 
         return first;
     }
@@ -271,7 +270,7 @@ public class InternalLongTermsFacet extends InternalTermsFacet {
         total = in.readVLong();
 
         int size = in.readVInt();
-        entries = new ArrayList<LongEntry>(size);
+        entries = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             entries.add(new LongEntry(in.readLong(), in.readVInt()));
         }

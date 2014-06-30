@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -59,24 +59,30 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.apache.lucene.analysis.th.ThaiAnalyzer;
 import org.apache.lucene.analysis.tr.TurkishAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.elasticsearch.Version;
 import org.elasticsearch.common.regex.Regex;
 import org.elasticsearch.index.analysis.StandardHtmlStripAnalyzer;
 import org.elasticsearch.indices.analysis.PreBuiltCacheFactory.CachingStrategy;
+
+import java.util.Locale;
 
 /**
  *
  */
 public enum PreBuiltAnalyzers {
 
-    STANDARD() {
+    STANDARD(CachingStrategy.ELASTICSEARCH) { // we don't do stopwords anymore from 1.0Beta on
         @Override
         protected Analyzer create(Version version) {
+            if (version.onOrAfter(Version.V_1_0_0_Beta1)) {
+                return new StandardAnalyzer(version.luceneVersion, CharArraySet.EMPTY_SET);
+            }
             return new StandardAnalyzer(version.luceneVersion);
         }
     },
 
-    DEFAULT {
+    DEFAULT(CachingStrategy.ELASTICSEARCH){
         @Override
         protected Analyzer create(Version version) {
             // by calling get analyzer we are ensuring reuse of the same STANDARD analyzer for DEFAULT!
@@ -127,16 +133,22 @@ public enum PreBuiltAnalyzers {
         }
     },
 
-    PATTERN {
+    PATTERN(CachingStrategy.ELASTICSEARCH) {
         @Override
         protected Analyzer create(Version version) {
+            if (version.onOrAfter(Version.V_1_0_0_RC1)) {
+                return new PatternAnalyzer(version.luceneVersion, Regex.compile("\\W+" /*PatternAnalyzer.NON_WORD_PATTERN*/, null), true, CharArraySet.EMPTY_SET);
+            }
             return new PatternAnalyzer(version.luceneVersion, Regex.compile("\\W+" /*PatternAnalyzer.NON_WORD_PATTERN*/, null), true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
         }
     },
 
-    STANDARD_HTML_STRIP {
+    STANDARD_HTML_STRIP(CachingStrategy.ELASTICSEARCH) {
         @Override
         protected Analyzer create(Version version) {
+            if (version.onOrAfter(Version.V_1_0_0_RC1)) {
+                return new StandardHtmlStripAnalyzer(version.luceneVersion, CharArraySet.EMPTY_SET);
+            }
             return new StandardHtmlStripAnalyzer(version.luceneVersion);
         }
     },
@@ -389,6 +401,19 @@ public enum PreBuiltAnalyzers {
         }
 
         return analyzer;
+    }
+
+    /**
+     * Get a pre built Analyzer by its name or fallback to the default one
+     * @param name Analyzer name
+     * @param defaultAnalyzer default Analyzer if name not found
+     */
+    public static PreBuiltAnalyzers getOrDefault(String name, PreBuiltAnalyzers defaultAnalyzer) {
+        try {
+            return valueOf(name.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return defaultAnalyzer;
+        }
     }
 
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.core.UpperCaseFilter;
 import org.apache.lucene.analysis.cz.CzechStemFilter;
 import org.apache.lucene.analysis.de.GermanStemFilter;
 import org.apache.lucene.analysis.en.KStemFilter;
@@ -59,12 +60,21 @@ public enum PreBuiltTokenFilters {
     WORD_DELIMITER(CachingStrategy.ONE) {
         @Override
         public TokenStream create(TokenStream tokenStream, Version version) {
-            return new WordDelimiterFilter(tokenStream,
-                       WordDelimiterFilter.GENERATE_WORD_PARTS |
-                       WordDelimiterFilter.GENERATE_NUMBER_PARTS |
-                       WordDelimiterFilter.SPLIT_ON_CASE_CHANGE |
-                       WordDelimiterFilter.SPLIT_ON_NUMERICS |
-                       WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE, null);
+            if (version.luceneVersion.onOrAfter(org.apache.lucene.util.Version.LUCENE_48)) {
+                return new WordDelimiterFilter(version.luceneVersion, tokenStream,
+                           WordDelimiterFilter.GENERATE_WORD_PARTS |
+                           WordDelimiterFilter.GENERATE_NUMBER_PARTS |
+                           WordDelimiterFilter.SPLIT_ON_CASE_CHANGE |
+                           WordDelimiterFilter.SPLIT_ON_NUMERICS |
+                           WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE, null);
+            } else {
+                return new Lucene47WordDelimiterFilter(tokenStream,
+                           WordDelimiterFilter.GENERATE_WORD_PARTS |
+                           WordDelimiterFilter.GENERATE_NUMBER_PARTS |
+                           WordDelimiterFilter.SPLIT_ON_CASE_CHANGE |
+                           WordDelimiterFilter.SPLIT_ON_NUMERICS |
+                           WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE, null);
+            }
         }
     },
 
@@ -114,6 +124,13 @@ public enum PreBuiltTokenFilters {
         @Override
         public TokenStream create(TokenStream tokenStream, Version version) {
             return new LowerCaseFilter(version.luceneVersion, tokenStream);
+        }
+    },
+
+    UPPERCASE(CachingStrategy.LUCENE) {
+        @Override
+        public TokenStream create(TokenStream tokenStream, Version version) {
+            return new UpperCaseFilter(version.luceneVersion, tokenStream);
         }
     },
 
@@ -309,4 +326,16 @@ public enum PreBuiltTokenFilters {
         return factory;
     }
 
+    /**
+     * Get a pre built TokenFilter by its name or fallback to the default one
+     * @param name TokenFilter name
+     * @param defaultTokenFilter default TokenFilter if name not found
+     */
+    public static PreBuiltTokenFilters getOrDefault(String name, PreBuiltTokenFilters defaultTokenFilter) {
+        try {
+            return valueOf(name.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return defaultTokenFilter;
+        }
+    }
 }

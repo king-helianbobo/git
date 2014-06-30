@@ -1,6 +1,26 @@
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.elasticsearch.cluster.routing.allocation;
 
 import com.carrotsearch.hppc.cursors.ObjectCursor;
+import com.google.common.collect.Lists;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
@@ -13,33 +33,35 @@ import org.elasticsearch.cluster.routing.allocation.decider.ClusterRebalanceAllo
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import static org.elasticsearch.cluster.routing.ShardRoutingState.INITIALIZING;
 import static org.elasticsearch.cluster.routing.ShardRoutingState.STARTED;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 
-public class AddIncrementallyTests extends ElasticsearchTestCase {
+public class AddIncrementallyTests extends ElasticsearchAllocationTestCase {
     private final ESLogger logger = Loggers.getLogger(AddIncrementallyTests.class);
 
     @Test
     public void testAddNodesAndIndices() {
         ImmutableSettings.Builder settings = settingsBuilder();
         settings.put("cluster.routing.allocation.allow_rebalance", ClusterRebalanceAllocationDecider.ClusterRebalanceType.ALWAYS.toString());
-        AllocationService service = new AllocationService(settings.build());
+        AllocationService service = createAllocationService(settings.build());
 
         ClusterState clusterState = initCluster(service, 1, 3, 3, 1);
         assertThat(clusterState.routingNodes().node("node0").shardsWithState(STARTED).size(), Matchers.equalTo(9));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(9));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(9));
         int nodeOffset = 1;
         clusterState = addNodes(clusterState, service, 1, nodeOffset++);
         assertThat(clusterState.routingNodes().node("node0").shardsWithState(STARTED).size(), Matchers.equalTo(9));
         assertThat(clusterState.routingNodes().node("node1").shardsWithState(STARTED).size(), Matchers.equalTo(9));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(0));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(0));
         assertNumIndexShardsPerNode(clusterState, Matchers.equalTo(3));
         clusterState = addNodes(clusterState, service, 1, nodeOffset++);
         assertNumIndexShardsPerNode(clusterState, Matchers.equalTo(2));
@@ -50,23 +72,23 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         assertNumIndexShardsPerNode(clusterState, Matchers.equalTo(2));
 
         clusterState = addIndex(clusterState, service, 3, 2, 3);
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(2));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(2));
         assertNumIndexShardsPerNode(clusterState, "test3", Matchers.equalTo(2));
         assertNumIndexShardsPerNode(clusterState, Matchers.lessThanOrEqualTo(2));
 
         clusterState = addIndex(clusterState, service, 4, 2, 3);
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(4));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(4));
         assertNumIndexShardsPerNode(clusterState, "test4", Matchers.equalTo(2));
         assertNumIndexShardsPerNode(clusterState, Matchers.lessThanOrEqualTo(2));
         clusterState = addNodes(clusterState, service, 1, nodeOffset++);
         assertNumIndexShardsPerNode(clusterState, Matchers.lessThanOrEqualTo(2));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(0));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(0));
         clusterState = removeNodes(clusterState, service, 1);
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(4));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(4));
         assertNumIndexShardsPerNode(clusterState, Matchers.lessThanOrEqualTo(2));
         clusterState = addNodes(clusterState, service, 1, nodeOffset++);
         assertNumIndexShardsPerNode(clusterState, Matchers.lessThanOrEqualTo(2));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(0));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(0));
         logger.debug("ClusterState: {}", clusterState.getRoutingNodes().prettyPrint());
     }
 
@@ -75,16 +97,16 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         ImmutableSettings.Builder settings = settingsBuilder();
         settings.put("cluster.routing.allocation.allow_rebalance", ClusterRebalanceAllocationDecider.ClusterRebalanceType.ALWAYS.toString())
                 .put("cluster.routing.allocation.node_concurrent_recoveries", 2);
-        AllocationService service = new AllocationService(settings.build());
+        AllocationService service = createAllocationService(settings.build());
 
         ClusterState clusterState = initCluster(service, 1, 3, 3, 1);
         assertThat(clusterState.routingNodes().node("node0").shardsWithState(STARTED).size(), Matchers.equalTo(9));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(9));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(9));
         int nodeOffset = 1;
         clusterState = addNodes(clusterState, service, 1, nodeOffset++);
         assertThat(clusterState.routingNodes().node("node0").shardsWithState(STARTED).size(), Matchers.equalTo(9));
         assertThat(clusterState.routingNodes().node("node1").shardsWithState(STARTED).size(), Matchers.equalTo(9));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(0));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(0));
         assertNumIndexShardsPerNode(clusterState, Matchers.equalTo(3));
 
         logger.info("now, start one more node, check that rebalancing will happen because we set it to always");
@@ -146,16 +168,16 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         settings.put("cluster.routing.allocation.allow_rebalance", ClusterRebalanceAllocationDecider.ClusterRebalanceType.ALWAYS.toString())
                 .put("cluster.routing.allocation.node_concurrent_recoveries", 100)
                 .put("cluster.routing.allocation.node_initial_primaries_recoveries", 100);
-        AllocationService service = new AllocationService(settings.build());
+        AllocationService service = createAllocationService(settings.build());
 
         ClusterState clusterState = initCluster(service, 1, 3, 3, 1);
         assertThat(clusterState.routingNodes().node("node0").shardsWithState(STARTED).size(), Matchers.equalTo(9));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(9));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(9));
         int nodeOffset = 1;
         clusterState = addNodes(clusterState, service, 1, nodeOffset++);
         assertThat(clusterState.routingNodes().node("node0").shardsWithState(STARTED).size(), Matchers.equalTo(9));
         assertThat(clusterState.routingNodes().node("node1").shardsWithState(STARTED).size(), Matchers.equalTo(9));
-        assertThat(clusterState.routingNodes().getUnassigned().size(), Matchers.equalTo(0));
+        assertThat(clusterState.routingNodes().unassigned().size(), Matchers.equalTo(0));
         assertNumIndexShardsPerNode(clusterState, Matchers.equalTo(3));
 
         logger.info("now, start one more node, check that rebalancing will happen because we set it to always");
@@ -288,7 +310,7 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         for (int i = 0; i < numberOfNodes; i++) {
             nodes.put(newNode("node" + i));
         }
-        ClusterState clusterState = ClusterState.builder().nodes(nodes).metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).nodes(nodes).metaData(metaData).routingTable(routingTable).build();
         routingTable = service.reroute(clusterState).routingTable();
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
         RoutingNodes routingNodes = clusterState.routingNodes();
@@ -308,6 +330,7 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         logger.info("complete rebalancing");
         RoutingTable prev = routingTable;
         while (true) {
+            logger.debug("ClusterState: {}", clusterState.getRoutingNodes().prettyPrint());
             routingTable = service.applyStartedShards(clusterState, routingNodes.shardsWithState(INITIALIZING)).routingTable();
             clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
             routingNodes = clusterState.routingNodes();
@@ -352,6 +375,7 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         logger.info("complete rebalancing");
         RoutingTable prev = routingTable;
         while (true) {
+            logger.debug("ClusterState: {}", clusterState.getRoutingNodes().prettyPrint());
             routingTable = service.applyStartedShards(clusterState, routingNodes.shardsWithState(INITIALIZING)).routingTable();
             clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
             routingNodes = clusterState.routingNodes();
@@ -366,8 +390,9 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
     private ClusterState removeNodes(ClusterState clusterState, AllocationService service, int numNodes) {
         logger.info("Removing [{}] nodes", numNodes);
         DiscoveryNodes.Builder nodes = DiscoveryNodes.builder(clusterState.nodes());
-
-        for (DiscoveryNode node : clusterState.nodes()) {
+        ArrayList<DiscoveryNode> discoveryNodes = Lists.newArrayList(clusterState.nodes());
+        Collections.shuffle(discoveryNodes, getRandom());
+        for (DiscoveryNode node : discoveryNodes) {
             nodes.remove(node.id());
             numNodes--;
             if (numNodes <= 0) {
@@ -396,6 +421,7 @@ public class AddIncrementallyTests extends ElasticsearchTestCase {
         logger.info("complete rebalancing");
         RoutingTable prev = routingTable;
         while (true) {
+            logger.debug("ClusterState: {}", clusterState.getRoutingNodes().prettyPrint());
             routingTable = service.applyStartedShards(clusterState, routingNodes.shardsWithState(INITIALIZING)).routingTable();
             clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
             routingNodes = clusterState.routingNodes();

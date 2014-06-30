@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -91,7 +91,7 @@ public class LatLonMappingGeoPointTests extends ElasticsearchTestCase {
                     .startObject("point").field("lat", -91).field("lon", 1.3).endObject()
                     .endObject()
                     .bytes());
-            assert false;
+            fail();
         } catch (MapperParsingException e) {
 
         }
@@ -102,7 +102,7 @@ public class LatLonMappingGeoPointTests extends ElasticsearchTestCase {
                     .startObject("point").field("lat", 91).field("lon", 1.3).endObject()
                     .endObject()
                     .bytes());
-            assert false;
+            fail();
         } catch (MapperParsingException e) {
 
         }
@@ -113,7 +113,7 @@ public class LatLonMappingGeoPointTests extends ElasticsearchTestCase {
                     .startObject("point").field("lat", 1.2).field("lon", -181).endObject()
                     .endObject()
                     .bytes());
-            assert false;
+            fail();
         } catch (MapperParsingException e) {
 
         }
@@ -124,7 +124,7 @@ public class LatLonMappingGeoPointTests extends ElasticsearchTestCase {
                     .startObject("point").field("lat", 1.2).field("lon", 181).endObject()
                     .endObject()
                     .bytes());
-            assert false;
+            fail();
         } catch (MapperParsingException e) {
 
         }
@@ -343,9 +343,7 @@ public class LatLonMappingGeoPointTests extends ElasticsearchTestCase {
                 .bytes());
 
         assertThat(doc.rootDoc().getField("point.lat"), notNullValue());
-        assertThat(doc.rootDoc().getField("point.lat").binaryValue(), nullValue());
         assertThat(doc.rootDoc().getField("point.lon"), notNullValue());
-        assertThat(doc.rootDoc().getField("point.lon").binaryValue(), nullValue());
         assertThat(doc.rootDoc().get("point"), equalTo("1.2,1.3"));
     }
 

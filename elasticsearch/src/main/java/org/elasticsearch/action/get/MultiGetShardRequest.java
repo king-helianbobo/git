@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,10 +20,14 @@
 package org.elasticsearch.action.get;
 
 import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.LongArrayList;
 import org.elasticsearch.action.support.single.shard.SingleShardOperationRequest;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.lucene.uid.Versions;
+import org.elasticsearch.index.VersionType;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +44,9 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     List<String> types;
     List<String> ids;
     List<String[]> fields;
+    LongArrayList versions;
+    List<VersionType> versionTypes;
+    List<FetchSourceContext> fetchSourceContexts;
 
     MultiGetShardRequest() {
 
@@ -49,9 +56,12 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
         super(index);
         this.shardId = shardId;
         locations = new IntArrayList();
-        types = new ArrayList<String>();
-        ids = new ArrayList<String>();
-        fields = new ArrayList<String[]>();
+        types = new ArrayList<>();
+        ids = new ArrayList<>();
+        fields = new ArrayList<>();
+        versions = new LongArrayList();
+        versionTypes = new ArrayList<>();
+        fetchSourceContexts = new ArrayList<>();
     }
 
     public int shardId() {
@@ -90,11 +100,14 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
         return this;
     }
 
-    public void add(int location, @Nullable String type, String id, String[] fields) {
+    public void add(int location, @Nullable String type, String id, String[] fields, long version, VersionType versionType, FetchSourceContext fetchSourceContext) {
         this.locations.add(location);
         this.types.add(type);
         this.ids.add(id);
         this.fields.add(fields);
+        this.versions.add(version);
+        this.versionTypes.add(versionType);
+        this.fetchSourceContexts.add(fetchSourceContext);
     }
 
     @Override
@@ -102,13 +115,16 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
         super.readFrom(in);
         int size = in.readVInt();
         locations = new IntArrayList(size);
-        types = new ArrayList<String>(size);
-        ids = new ArrayList<String>(size);
-        fields = new ArrayList<String[]>(size);
+        types = new ArrayList<>(size);
+        ids = new ArrayList<>(size);
+        fields = new ArrayList<>(size);
+        versions = new LongArrayList(size);
+        versionTypes = new ArrayList<>(size);
+        fetchSourceContexts = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             locations.add(in.readVInt());
             if (in.readBoolean()) {
-                types.add(in.readString());
+                types.add(in.readSharedString());
             } else {
                 types.add(null);
             }
@@ -123,6 +139,10 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
             } else {
                 fields.add(null);
             }
+            versions.add(Versions.readVersionWithVLongForBW(in));
+            versionTypes.add(VersionType.fromValue(in.readByte()));
+
+            fetchSourceContexts.add(FetchSourceContext.optionalReadFromStream(in));
         }
 
         preference = in.readOptionalString();
@@ -145,7 +165,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
                 out.writeBoolean(false);
             } else {
                 out.writeBoolean(true);
-                out.writeString(types.get(i));
+                out.writeSharedString(types.get(i));
             }
             out.writeString(ids.get(i));
             if (fields.get(i) == null) {
@@ -156,6 +176,10 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
                     out.writeString(field);
                 }
             }
+            Versions.writeVersionWithVLongForBW(versions.get(i), out);
+            out.writeByte(versionTypes.get(i).getValue());
+            FetchSourceContext fetchSourceContext = fetchSourceContexts.get(i);
+            FetchSourceContext.optionalWriteToStream(fetchSourceContext, out);
         }
 
         out.writeOptionalString(preference);
@@ -167,5 +191,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
         } else {
             out.writeByte((byte) 1);
         }
+
+
     }
 }

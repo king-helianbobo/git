@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.indices.leaks;
 
 import org.apache.lucene.util.LuceneTestCase.BadApple;
@@ -29,24 +28,24 @@ import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
-import org.elasticsearch.test.ElasticsearchIntegrationTest.Scope;
 import org.junit.Test;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
 import static org.hamcrest.Matchers.nullValue;
 
 /**
  */
-@ClusterScope(scope=Scope.TEST, numNodes=1)
+@ClusterScope(scope= Scope.TEST, numDataNodes =1)
 public class IndicesLeaksTests extends ElasticsearchIntegrationTest {
 
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Test
-    @BadApple
+    @BadApple(bugUrl = "https://github.com/elasticsearch/elasticsearch/issues/3232")
     public void testIndexShardLifecycleLeak() throws Exception {
 
         client().admin().indices().prepareCreate("test")
@@ -63,8 +62,8 @@ public class IndicesLeaksTests extends ElasticsearchIntegrationTest {
 
         performCommonOperations();
 
-        List<WeakReference> indexReferences = new ArrayList<WeakReference>();
-        List<WeakReference> shardReferences = new ArrayList<WeakReference>();
+        List<WeakReference> indexReferences = new ArrayList<>();
+        List<WeakReference> shardReferences = new ArrayList<>();
 
         // TODO if we could iterate over the already created classes on the injector, we can just add them here to the list
         // for now, we simple add some classes that make sense
@@ -91,6 +90,7 @@ public class IndicesLeaksTests extends ElasticsearchIntegrationTest {
         shard = null;
         shardInjector = null;
 
+        client().admin().indices().prepareDelete().execute().actionGet();
 
         for (int i = 0; i < 100; i++) {
             System.gc();

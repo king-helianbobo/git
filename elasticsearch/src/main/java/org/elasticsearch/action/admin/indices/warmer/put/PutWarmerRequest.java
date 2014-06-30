@@ -1,11 +1,11 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,6 @@
 
 package org.elasticsearch.action.admin.indices.warmer.put;
 
-import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -106,7 +105,7 @@ public class PutWarmerRequest extends AcknowledgedRequest<PutWarmerRequest> {
             searchRequest = new SearchRequest();
             searchRequest.readFrom(in);
         }
-        readTimeout(in, Version.V_0_90_6);
+        readTimeout(in);
     }
 
     @Override
@@ -119,6 +118,6 @@ public class PutWarmerRequest extends AcknowledgedRequest<PutWarmerRequest> {
             out.writeBoolean(true);
             searchRequest.writeTo(out);
         }
-        writeTimeout(out, Version.V_0_90_6);
+        writeTimeout(out);
     }
 }

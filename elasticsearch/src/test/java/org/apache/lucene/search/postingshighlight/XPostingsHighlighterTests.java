@@ -1,8 +1,8 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
+ * Licensed to Elasticsearch under one
  * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
+ * regarding copyright ownership. Elasticsearch licenses this
  * file to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
@@ -1238,8 +1238,8 @@ public class XPostingsHighlighterTests extends ElasticsearchLuceneTestCase {
         XPostingsHighlighter highlighter = new XPostingsHighlighter(10000) {
             @Override
             protected String[][] loadFieldValues(IndexSearcher searcher, String[] fields, int[] docids, int maxLength) throws IOException {
-                assert fields.length == 1;
-                assert docids.length == 1;
+                assertThat(fields.length, equalTo(1));
+                assertThat(docids.length, equalTo(1));
                 String[][] contents = new String[1][1];
                 contents[0][0] = text;
                 return contents;
@@ -1484,7 +1484,7 @@ public class XPostingsHighlighterTests extends ElasticsearchLuceneTestCase {
         FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
         offsetsType.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
 
-        int numDocs = atLeast(100);
+        int numDocs = scaledRandomIntBetween(100, 1000);
         for(int i=0;i<numDocs;i++) {
             Document doc = new Document();
             String content = "the answer is " + i;

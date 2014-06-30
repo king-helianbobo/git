@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action.admin.indices.status;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
@@ -37,7 +37,7 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.gateway.IndexShardGatewayService;
-import org.elasticsearch.index.gateway.SnapshotStatus;
+import org.elasticsearch.indices.recovery.RecoveryState;
 import org.elasticsearch.index.service.InternalIndexService;
 import org.elasticsearch.index.shard.IndexShardState;
 import org.elasticsearch.index.shard.service.InternalIndexShard;
@@ -54,8 +54,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import static com.google.common.collect.Lists.newArrayList;
 
 /**
- *
+ * This class will be removed in future versions
+ * Use the recovery API instead
  */
+@Deprecated
 public class TransportIndicesStatusAction extends TransportBroadcastOperationAction<IndicesStatusRequest, IndicesStatusResponse, TransportIndicesStatusAction.IndexShardStatusRequest, ShardStatus> {
 
     private final IndicesService indicesService;
@@ -143,7 +145,7 @@ public class TransportIndicesStatusAction extends TransportBroadcastOperationAct
     }
 
     @Override
-    protected ShardStatus shardOperation(IndexShardStatusRequest request) throws ElasticSearchException {
+    protected ShardStatus shardOperation(IndexShardStatusRequest request) throws ElasticsearchException {
         InternalIndexService indexService = (InternalIndexService) indicesService.indexServiceSafe(request.index());
         InternalIndexShard indexShard = (InternalIndexShard) indexService.shardSafe(request.shardId());
         ShardStatus shardStatus = new ShardStatus(indexShard.routingEntry());
@@ -164,7 +166,7 @@ public class TransportIndicesStatusAction extends TransportBroadcastOperationAct
                 shardStatus.docs.maxDoc = searcher.reader().maxDoc();
                 shardStatus.docs.deletedDocs = searcher.reader().numDeletedDocs();
             } finally {
-                searcher.release();
+                searcher.close();
             }
 
             shardStatus.mergeStats = indexShard.mergeScheduler().stats();
@@ -174,9 +176,9 @@ public class TransportIndicesStatusAction extends TransportBroadcastOperationAct
 
         if (request.recovery) {
             // check on going recovery (from peer or gateway)
-            RecoveryStatus peerRecoveryStatus = indexShard.peerRecoveryStatus();
+            RecoveryStatus peerRecoveryStatus = indexShard.recoveryStatus();
             if (peerRecoveryStatus == null) {
-                peerRecoveryStatus = peerRecoveryTarget.peerRecoveryStatus(indexShard.shardId());
+                peerRecoveryStatus = peerRecoveryTarget.recoveryStatus(indexShard.shardId());
             }
             if (peerRecoveryStatus != null) {
                 PeerRecoveryStatus.Stage stage;
@@ -199,16 +201,18 @@ public class TransportIndicesStatusAction extends TransportBroadcastOperationAct
                     default:
                         stage = PeerRecoveryStatus.Stage.INIT;
                 }
-                shardStatus.peerRecoveryStatus = new PeerRecoveryStatus(stage, peerRecoveryStatus.startTime(), peerRecoveryStatus.time(),
-                        peerRecoveryStatus.phase1TotalSize(), peerRecoveryStatus.phase1ExistingTotalSize(),
-                        peerRecoveryStatus.currentFilesSize(), peerRecoveryStatus.currentTranslogOperations());
+                shardStatus.peerRecoveryStatus = new PeerRecoveryStatus(stage, peerRecoveryStatus.recoveryState().getTimer().startTime(),
+                        peerRecoveryStatus.recoveryState().getTimer().time(),
+                        peerRecoveryStatus.recoveryState().getIndex().totalByteCount(),
+                        peerRecoveryStatus.recoveryState().getIndex().reusedByteCount(),
+                        peerRecoveryStatus.recoveryState().getIndex().recoveredByteCount(), peerRecoveryStatus.recoveryState().getTranslog().currentTranslogOperations());
             }
 
             IndexShardGatewayService gatewayService = indexService.shardInjector(request.shardId()).getInstance(IndexShardGatewayService.class);
-            org.elasticsearch.index.gateway.RecoveryStatus gatewayRecoveryStatus = gatewayService.recoveryStatus();
-            if (gatewayRecoveryStatus != null) {
+            RecoveryState gatewayRecoveryState = gatewayService.recoveryState();
+            if (gatewayRecoveryState != null) {
                 GatewayRecoveryStatus.Stage stage;
-                switch (gatewayRecoveryStatus.stage()) {
+                switch (gatewayRecoveryState.getStage()) {
                     case INIT:
                         stage = GatewayRecoveryStatus.Stage.INIT;
                         break;
@@ -224,41 +228,10 @@ public class TransportIndicesStatusAction extends TransportBroadcastOperationAct
                     default:
                         stage = GatewayRecoveryStatus.Stage.INIT;
                 }
-                shardStatus.gatewayRecoveryStatus = new GatewayRecoveryStatus(stage, gatewayRecoveryStatus.startTime(), gatewayRecoveryStatus.time(),
-                        gatewayRecoveryStatus.index().totalSize(), gatewayRecoveryStatus.index().reusedTotalSize(), gatewayRecoveryStatus.index().currentFilesSize(), gatewayRecoveryStatus.translog().currentTranslogOperations());
+                shardStatus.gatewayRecoveryStatus = new GatewayRecoveryStatus(stage, gatewayRecoveryState.getTimer().startTime(), gatewayRecoveryState.getTimer().time(),
+                        gatewayRecoveryState.getIndex().totalByteCount(), gatewayRecoveryState.getIndex().reusedByteCount(), gatewayRecoveryState.getIndex().recoveredByteCount(), gatewayRecoveryState.getTranslog().currentTranslogOperations());
             }
         }
-
-        if (request.snapshot) {
-            IndexShardGatewayService gatewayService = indexService.shardInjector(request.shardId()).getInstance(IndexShardGatewayService.class);
-            SnapshotStatus snapshotStatus = gatewayService.snapshotStatus();
-            if (snapshotStatus != null) {
-                GatewaySnapshotStatus.Stage stage;
-                switch (snapshotStatus.stage()) {
-                    case DONE:
-                        stage = GatewaySnapshotStatus.Stage.DONE;
-                        break;
-                    case FAILURE:
-                        stage = GatewaySnapshotStatus.Stage.FAILURE;
-                        break;
-                    case TRANSLOG:
-                        stage = GatewaySnapshotStatus.Stage.TRANSLOG;
-                        break;
-                    case FINALIZE:
-                        stage = GatewaySnapshotStatus.Stage.FINALIZE;
-                        break;
-                    case INDEX:
-                        stage = GatewaySnapshotStatus.Stage.INDEX;
-                        break;
-                    default:
-                        stage = GatewaySnapshotStatus.Stage.NONE;
-                        break;
-                }
-                shardStatus.gatewaySnapshotStatus = new GatewaySnapshotStatus(stage, snapshotStatus.startTime(), snapshotStatus.time(),
-                        snapshotStatus.index().totalSize(), snapshotStatus.translog().expectedNumberOfOperations());
-            }
-        }
-
         return shardStatus;
     }
 

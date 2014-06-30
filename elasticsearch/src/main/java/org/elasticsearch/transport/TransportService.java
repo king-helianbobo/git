@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,8 +20,8 @@
 package org.elasticsearch.transport;
 
 import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.collect.MapBuilder;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
@@ -49,9 +49,8 @@ import static org.elasticsearch.common.settings.ImmutableSettings.Builder.EMPTY_
  */
 public class TransportService extends AbstractLifecycleComponent<TransportService> {
 
-    private final Transport transport;
-
-    private final ThreadPool threadPool;
+    protected final Transport transport;
+    protected final ThreadPool threadPool;
 
     volatile ImmutableMap<String, TransportRequestHandler> serverHandlers = ImmutableMap.of();
     final Object serverHandlersMutex = new Object();
@@ -60,7 +59,7 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
 
     final AtomicLong requestIds = new AtomicLong();
 
-    final CopyOnWriteArrayList<TransportConnectionListener> connectionListeners = new CopyOnWriteArrayList<TransportConnectionListener>();
+    final CopyOnWriteArrayList<TransportConnectionListener> connectionListeners = new CopyOnWriteArrayList<>();
 
     // An LRU (don't really care about concurrency here) that holds the latest timed out requests so if they
     // do show up, we can print more descriptive information about them
@@ -85,7 +84,7 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
         adapter.rxMetric.clear();
         adapter.txMetric.clear();
         transport.transportServiceAdapter(adapter);
@@ -96,12 +95,30 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
-        transport.stop();
+    protected void doStop() throws ElasticsearchException {
+        try {
+            transport.stop();
+        } finally {
+            // in case the transport is not connected to our local node (thus cleaned on node disconnect)
+            // make sure to clean any leftover on going handles
+            for (Map.Entry<Long, RequestHolder> entry : clientHandlers.entrySet()) {
+                final RequestHolder holderToNotify = clientHandlers.remove(entry.getKey());
+                if (holderToNotify != null) {
+                    // callback that an exception happened, but on a different thread since we don't
+                    // want handlers to worry about stack overflows
+                    threadPool.generic().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            holderToNotify.handler().handleException(new TransportException("transport stopped, action: " + holderToNotify.action()));
+                        }
+                    });
+                }
+            }
+        }
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
         transport.close();
     }
 
@@ -163,7 +180,7 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
 
     public <T extends TransportResponse> TransportFuture<T> submitRequest(DiscoveryNode node, String action, TransportRequest request,
                                                                           TransportRequestOptions options, TransportResponseHandler<T> handler) throws TransportException {
-        PlainTransportFuture<T> futureHandler = new PlainTransportFuture<T>(handler);
+        PlainTransportFuture<T> futureHandler = new PlainTransportFuture<>(handler);
         sendRequest(node, action, request, options, futureHandler);
         return futureHandler;
     }
@@ -176,7 +193,7 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
     public <T extends TransportResponse> void sendRequest(final DiscoveryNode node, final String action, final TransportRequest request,
                                                           final TransportRequestOptions options, TransportResponseHandler<T> handler) throws TransportException {
         if (node == null) {
-            throw new ElasticSearchIllegalStateException("can't send request to a null node");
+            throw new ElasticsearchIllegalStateException("can't send request to a null node");
         }
         final long requestId = newRequestId();
         TimeoutHandler timeoutHandler = null;
@@ -185,9 +202,8 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
                 timeoutHandler = new TimeoutHandler(requestId);
                 timeoutHandler.future = threadPool.schedule(options.timeout(), ThreadPool.Names.GENERIC, timeoutHandler);
             }
-            clientHandlers.put(requestId, new RequestHolder<T>(handler, node, action, timeoutHandler));
+            clientHandlers.put(requestId, new RequestHolder<>(handler, node, action, timeoutHandler));
             transport.sendRequest(node, requestId, action, request, options);
-            //继承了NettyTransport
         } catch (final Throwable e) {
             // usually happen either because we failed to connect to the node
             // or because we failed serializing the message
@@ -293,38 +309,34 @@ public class TransportService extends AbstractLifecycleComponent<TransportServic
 
         @Override
         public void raiseNodeDisconnected(final DiscoveryNode node) {
-            if (lifecycle.stoppedOrClosed()) {
-                return;
-            }
-            threadPool.generic().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        for (TransportConnectionListener connectionListener : connectionListeners) {
+            try {
+                for (final TransportConnectionListener connectionListener : connectionListeners) {
+                    threadPool.generic().execute(new Runnable() {
+                        @Override
+                        public void run() {
                             connectionListener.onNodeDisconnected(node);
                         }
-                        // node got disconnected, raise disconnection on possible ongoing handlers
-                        for (Map.Entry<Long, RequestHolder> entry : clientHandlers.entrySet()) {
-                            RequestHolder holder = entry.getValue();
-                            if (holder.node().equals(node)) {
-                                final RequestHolder holderToNotify = clientHandlers.remove(entry.getKey());
-                                if (holderToNotify != null) {
-                                    // callback that an exception happened, but on a different thread since we don't
-                                    // want handlers to worry about stack overflows
-                                    threadPool.generic().execute(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            holderToNotify.handler().handleException(new NodeDisconnectedException(node, holderToNotify.action()));
-                                        }
-                                    });
+                    });
+                }
+                for (Map.Entry<Long, RequestHolder> entry : clientHandlers.entrySet()) {
+                    RequestHolder holder = entry.getValue();
+                    if (holder.node().equals(node)) {
+                        final RequestHolder holderToNotify = clientHandlers.remove(entry.getKey());
+                        if (holderToNotify != null) {
+                            // callback that an exception happened, but on a different thread since we don't
+                            // want handlers to worry about stack overflows
+                            threadPool.generic().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    holderToNotify.handler().handleException(new NodeDisconnectedException(node, holderToNotify.action()));
                                 }
-                            }
+                            });
                         }
-                    } catch (EsRejectedExecutionException ex) {
-                        logger.debug("Rejected execution on NodeDisconnected", ex);
                     }
                 }
-            });
+            } catch (EsRejectedExecutionException ex) {
+                logger.debug("Rejected execution on NodeDisconnected", ex);
+            }
         }
     }
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.delete;
 
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -38,7 +39,9 @@ import org.elasticsearch.cluster.block.ClusterBlockLevel;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.cluster.routing.ShardIterator;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.lucene.uid.Versions;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
@@ -100,26 +103,31 @@ public class TransportDeleteAction extends TransportShardReplicationOperationAct
     @Override
     protected boolean resolveRequest(final ClusterState state, final DeleteRequest request, final ActionListener<DeleteResponse> listener) {
         request.routing(state.metaData().resolveIndexRouting(request.routing(), request.index()));
-        request.index(state.metaData().concreteIndex(request.index()));
+        request.index(state.metaData().concreteSingleIndex(request.index()));
         if (state.metaData().hasIndex(request.index())) {
             // check if routing is required, if so, do a broadcast delete
             MappingMetaData mappingMd = state.metaData().index(request.index()).mappingOrDefault(request.type());
             if (mappingMd != null && mappingMd.routing().required()) {
                 if (request.routing() == null) {
+                    if (request.versionType() != VersionType.INTERNAL) {
+                        // TODO: implement this feature
+                        throw new ElasticsearchIllegalArgumentException("routing value is required for deleting documents of type [" + request.type()
+                                + "] while using version_type [" + request.versionType() + "]");
+                    }
                     indexDeleteAction.execute(new IndexDeleteRequest(request), new ActionListener<IndexDeleteResponse>() {
                         @Override
                         public void onResponse(IndexDeleteResponse indexDeleteResponse) {
                             // go over the response, see if we have found one, and the version if found
-                            long version = 0;
+                            long version = Versions.MATCH_ANY;
                             boolean found = false;
                             for (ShardDeleteResponse deleteResponse : indexDeleteResponse.getResponses()) {
-                                if (!deleteResponse.isNotFound()) {
-                                    found = true;
+                                if (deleteResponse.isFound()) {
                                     version = deleteResponse.getVersion();
+                                    found = true;
                                     break;
                                 }
                             }
-                            listener.onResponse(new DeleteResponse(request.index(), request.type(), request.id(), version, !found));
+                            listener.onResponse(new DeleteResponse(request.index(), request.type(), request.id(), version, found));
                         }
 
                         @Override
@@ -177,12 +185,13 @@ public class TransportDeleteAction extends TransportShardReplicationOperationAct
     protected PrimaryResponse<DeleteResponse, DeleteRequest> shardOperationOnPrimary(ClusterState clusterState, PrimaryOperationRequest shardRequest) {
         DeleteRequest request = shardRequest.request;
         IndexShard indexShard = indicesService.indexServiceSafe(shardRequest.request.index()).shardSafe(shardRequest.shardId);
-        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version())
-                .versionType(request.versionType())
-                .origin(Engine.Operation.Origin.PRIMARY);
+        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version(), request.versionType(), Engine.Operation.Origin.PRIMARY);
         indexShard.delete(delete);
         // update the request with teh version so it will go to the replicas
+        request.versionType(delete.versionType().versionTypeForReplicationAndRecovery());
         request.version(delete.version());
+
+        assert request.versionType().validateVersionForWrites(request.version());
 
         if (request.refresh()) {
             try {
@@ -192,16 +201,15 @@ public class TransportDeleteAction extends TransportShardReplicationOperationAct
             }
         }
 
-        DeleteResponse response = new DeleteResponse(request.index(), request.type(), request.id(), delete.version(), delete.notFound());
-        return new PrimaryResponse<DeleteResponse, DeleteRequest>(shardRequest.request, response, null);
+        DeleteResponse response = new DeleteResponse(request.index(), request.type(), request.id(), delete.version(), delete.found());
+        return new PrimaryResponse<>(shardRequest.request, response, null);
     }
 
     @Override
     protected void shardOperationOnReplica(ReplicaOperationRequest shardRequest) {
         DeleteRequest request = shardRequest.request;
         IndexShard indexShard = indicesService.indexServiceSafe(shardRequest.request.index()).shardSafe(shardRequest.shardId);
-        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version())
-                .origin(Engine.Operation.Origin.REPLICA);
+        Engine.Delete delete = indexShard.prepareDelete(request.type(), request.id(), request.version(), request.versionType(), Engine.Operation.Origin.REPLICA);
 
         indexShard.delete(delete);
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -28,12 +28,14 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.mapper.*;
 import org.elasticsearch.index.mapper.core.StringFieldMapper.ValueAndBoost;
 import org.elasticsearch.index.similarity.SimilarityProvider;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.support.XContentMapValues.nodeIntegerValue;
@@ -55,7 +57,7 @@ public class TokenCountFieldMapper extends IntegerFieldMapper {
         private NamedAnalyzer analyzer;
 
         public Builder(String name) {
-            super(name, new FieldType(Defaults.FIELD_TYPE));
+            super(name, new FieldType(Defaults.FIELD_TYPE), Defaults.PRECISION_STEP_32_BIT);
             builder = this;
         }
 
@@ -76,8 +78,9 @@ public class TokenCountFieldMapper extends IntegerFieldMapper {
         @Override
         public TokenCountFieldMapper build(BuilderContext context) {
             fieldType.setOmitNorms(fieldType.omitNorms() && boost == 1.0f);
-            TokenCountFieldMapper fieldMapper = new TokenCountFieldMapper(buildNames(context), precisionStep, boost, fieldType, nullValue,
-                    ignoreMalformed(context), provider, similarity, fieldDataSettings, analyzer);
+            TokenCountFieldMapper fieldMapper = new TokenCountFieldMapper(buildNames(context), fieldType.numericPrecisionStep(), boost, fieldType, docValues, nullValue,
+                    ignoreMalformed(context), coerce(context), postingsProvider, docValuesProvider, similarity, normsLoading, fieldDataSettings, context.indexSettings(),
+                    analyzer, multiFieldsBuilder.build(this, context), copyTo);
             fieldMapper.includeInAll(includeInAll);
             return fieldMapper;
         }
@@ -111,32 +114,35 @@ public class TokenCountFieldMapper extends IntegerFieldMapper {
 
     private NamedAnalyzer analyzer;
 
-    protected TokenCountFieldMapper(Names names, int precisionStep, float boost, FieldType fieldType, Integer nullValue,
-            Explicit<Boolean> ignoreMalformed, PostingsFormatProvider postingsProvider,
-            SimilarityProvider similarity, Settings fieldDataSettings, NamedAnalyzer analyzer) {
-        super(names, precisionStep, boost, fieldType, nullValue, ignoreMalformed, postingsProvider, similarity,
-                fieldDataSettings);
+    protected TokenCountFieldMapper(Names names, int precisionStep, float boost, FieldType fieldType, Boolean docValues, Integer nullValue,
+            Explicit<Boolean> ignoreMalformed, Explicit<Boolean> coerce, PostingsFormatProvider postingsProvider, DocValuesFormatProvider docValuesProvider,
+            SimilarityProvider similarity, Loading normsLoading, Settings fieldDataSettings, Settings indexSettings, NamedAnalyzer analyzer,
+            MultiFields multiFields, CopyTo copyTo) {
+        super(names, precisionStep, boost, fieldType, docValues, nullValue, ignoreMalformed, coerce, postingsProvider, docValuesProvider, 
+                similarity, normsLoading, fieldDataSettings, indexSettings, multiFields, copyTo);
+
         this.analyzer = analyzer;
     }
 
     @Override
-    protected Field parseCreateField(ParseContext context) throws IOException {
+    protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
         ValueAndBoost valueAndBoost = StringFieldMapper.parseCreateFieldForString(context, null /* Out null value is an int so we convert*/, boost);
         if (valueAndBoost.value() == null && nullValue() == null) {
-            return null;
+            return;
         }
 
-        if (fieldType.indexed() || fieldType.stored()) {
+        if (fieldType.indexed() || fieldType.stored() || hasDocValues()) {
             int count;
             if (valueAndBoost.value() == null) {
                 count = nullValue();
             } else {
                 count = countPositions(analyzer.analyzer().tokenStream(name(), valueAndBoost.value()));
             }
-            return intField(count, valueAndBoost.boost());
+            addIntegerFields(context, fields, count, valueAndBoost.boost());
         }
-        context.ignoredValue(names.indexName(), valueAndBoost.value());
-        return null;
+        if (fields.isEmpty()) {
+            context.ignoredValue(names.indexName(), valueAndBoost.value());
+        }
     }
 
     /**

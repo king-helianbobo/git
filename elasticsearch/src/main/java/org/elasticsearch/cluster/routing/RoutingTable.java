@@ -1,11 +1,11 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this 
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -153,7 +153,7 @@ public class RoutingTable implements Iterable<IndexRoutingTable> {
      */
     public GroupShardsIterator allShardsGrouped(String... indices) throws IndexMissingException {
         // use list here since we need to maintain identity across shards
-        ArrayList<ShardIterator> set = new ArrayList<ShardIterator>();
+        ArrayList<ShardIterator> set = new ArrayList<>();
         if (indices == null || indices.length == 0) {
             indices = indicesRouting.keySet().toArray(new String[indicesRouting.keySet().size()]);
         }
@@ -175,7 +175,7 @@ public class RoutingTable implements Iterable<IndexRoutingTable> {
 
     public GroupShardsIterator allActiveShardsGrouped(String[] indices, boolean includeEmpty) throws IndexMissingException {
         // use list here since we need to maintain identity across shards
-        ArrayList<ShardIterator> set = new ArrayList<ShardIterator>();
+        ArrayList<ShardIterator> set = new ArrayList<>();
         if (indices == null || indices.length == 0) {
             indices = indicesRouting.keySet().toArray(new String[indicesRouting.keySet().size()]);
         }
@@ -201,7 +201,7 @@ public class RoutingTable implements Iterable<IndexRoutingTable> {
 
     public GroupShardsIterator allAssignedShardsGrouped(String[] indices, boolean includeEmpty) throws IndexMissingException {
         // use list here since we need to maintain identity across shards
-        ArrayList<ShardIterator> set = new ArrayList<ShardIterator>();
+        ArrayList<ShardIterator> set = new ArrayList<>();
         if (indices == null || indices.length == 0) {
             indices = indicesRouting.keySet().toArray(new String[indicesRouting.keySet().size()]);
         }
@@ -237,7 +237,7 @@ public class RoutingTable implements Iterable<IndexRoutingTable> {
      */
     public GroupShardsIterator activePrimaryShardsGrouped(String[] indices, boolean includeEmpty) throws IndexMissingException {
         // use list here since we need to maintain identity across shards
-        ArrayList<ShardIterator> set = new ArrayList<ShardIterator>();
+        ArrayList<ShardIterator> set = new ArrayList<>();
         if (indices == null || indices.length == 0) {
             indices = indicesRouting.keySet().toArray(new String[indicesRouting.keySet().size()]);
         }
@@ -382,6 +382,20 @@ public class RoutingTable implements Iterable<IndexRoutingTable> {
             return this;
         }
 
+        public Builder addAsRestore(IndexMetaData indexMetaData, RestoreSource restoreSource) {
+            IndexRoutingTable.Builder indexRoutingBuilder = new IndexRoutingTable.Builder(indexMetaData.index())
+                    .initializeAsRestore(indexMetaData, restoreSource);
+            add(indexRoutingBuilder);
+            return this;
+        }
+
+        public Builder addAsNewRestore(IndexMetaData indexMetaData, RestoreSource restoreSource) {
+            IndexRoutingTable.Builder indexRoutingBuilder = new IndexRoutingTable.Builder(indexMetaData.index())
+                    .initializeAsNewRestore(indexMetaData, restoreSource);
+            add(indexRoutingBuilder);
+            return this;
+        }
+
         public Builder add(IndexRoutingTable indexRoutingTable) {
             indexRoutingTable.validate();
             indicesRouting.put(indexRoutingTable.index(), indexRoutingTable);
@@ -433,7 +447,7 @@ public class RoutingTable implements Iterable<IndexRoutingTable> {
     }
 
     public String prettyPrint() {
-        StringBuilder sb = new StringBuilder("routing_table:\n");
+        StringBuilder sb = new StringBuilder("routing_table (version ").append(version).append("):\n");
         for (Map.Entry<String, IndexRoutingTable> entry : indicesRouting.entrySet()) {
             sb.append(entry.getValue().prettyPrint()).append('\n');
         }

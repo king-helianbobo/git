@@ -1,40 +1,60 @@
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.elasticsearch.document;
 
-import org.elasticsearch.action.bulk.BulkItemResponse;
+import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
+import org.elasticsearch.action.bulk.BulkProcessor;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.count.CountResponse;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.junit.Test;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
 import static org.hamcrest.Matchers.*;
 
-/**
- */
 public class BulkTests extends ElasticsearchIntegrationTest {
-
 
     @Test
     public void testBulkUpdate_simple() throws Exception {
-        client().admin().indices().prepareCreate("test")
-                .setSettings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("index.number_of_shards", 2)
-                                .put("index.number_of_replicas", 0)
-                ).execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        createIndex("test");
+        ensureGreen();
 
         BulkResponse bulkResponse = client().prepareBulk()
                 .add(client().prepareIndex().setIndex("test").setType("type1").setId("1").setSource("field", 1))
@@ -109,15 +129,57 @@ public class BulkTests extends ElasticsearchIntegrationTest {
     }
 
     @Test
+    public void testBulkVersioning() throws Exception {
+        createIndex("test");
+        ensureGreen();
+        BulkResponse bulkResponse = client().prepareBulk()
+                .add(client().prepareIndex("test", "type", "1").setCreate(true).setSource("field", "1"))
+                .add(client().prepareIndex("test", "type", "2").setCreate(true).setSource("field", "1"))
+                .add(client().prepareIndex("test", "type", "1").setSource("field", "2")).get();
+
+        assertTrue(((IndexResponse) bulkResponse.getItems()[0].getResponse()).isCreated());
+        assertThat(((IndexResponse) bulkResponse.getItems()[0].getResponse()).getVersion(), equalTo(1l));
+        assertTrue(((IndexResponse) bulkResponse.getItems()[1].getResponse()).isCreated());
+        assertThat(((IndexResponse) bulkResponse.getItems()[1].getResponse()).getVersion(), equalTo(1l));
+        assertFalse(((IndexResponse) bulkResponse.getItems()[2].getResponse()).isCreated());
+        assertThat(((IndexResponse) bulkResponse.getItems()[2].getResponse()).getVersion(), equalTo(2l));
+
+        bulkResponse = client().prepareBulk()
+                .add(client().prepareUpdate("test", "type", "1").setVersion(4l).setDoc("field", "2"))
+                .add(client().prepareUpdate("test", "type", "2").setDoc("field", "2"))
+                .add(client().prepareUpdate("test", "type", "1").setVersion(2l).setDoc("field", "3")).get();
+
+        assertThat(bulkResponse.getItems()[0].getFailureMessage(), containsString("Version"));
+        assertThat(((UpdateResponse) bulkResponse.getItems()[1].getResponse()).getVersion(), equalTo(2l));
+        assertThat(((UpdateResponse) bulkResponse.getItems()[2].getResponse()).getVersion(), equalTo(3l));
+
+        bulkResponse = client().prepareBulk()
+                .add(client().prepareIndex("test", "type", "e1").setCreate(true).setSource("field", "1").setVersion(10).setVersionType(VersionType.EXTERNAL))
+                .add(client().prepareIndex("test", "type", "e2").setCreate(true).setSource("field", "1").setVersion(10).setVersionType(VersionType.EXTERNAL))
+                .add(client().prepareIndex("test", "type", "e1").setSource("field", "2").setVersion(12).setVersionType(VersionType.EXTERNAL)).get();
+
+        assertTrue(((IndexResponse) bulkResponse.getItems()[0].getResponse()).isCreated());
+        assertThat(((IndexResponse) bulkResponse.getItems()[0].getResponse()).getVersion(), equalTo(10l));
+        assertTrue(((IndexResponse) bulkResponse.getItems()[1].getResponse()).isCreated());
+        assertThat(((IndexResponse) bulkResponse.getItems()[1].getResponse()).getVersion(), equalTo(10l));
+        assertFalse(((IndexResponse) bulkResponse.getItems()[2].getResponse()).isCreated());
+        assertThat(((IndexResponse) bulkResponse.getItems()[2].getResponse()).getVersion(), equalTo(12l));
+
+        bulkResponse = client().prepareBulk()
+                .add(client().prepareUpdate("test", "type", "e1").setDoc("field", "2").setVersion(10)) // INTERNAL
+                .add(client().prepareUpdate("test", "type", "e1").setDoc("field", "3").setVersion(20).setVersionType(VersionType.FORCE))
+                .add(client().prepareUpdate("test", "type", "e1").setDoc("field", "3").setVersion(20).setVersionType(VersionType.INTERNAL)).get();
+
+        assertThat(bulkResponse.getItems()[0].getFailureMessage(), containsString("Version"));
+        assertThat(((UpdateResponse) bulkResponse.getItems()[1].getResponse()).getVersion(), equalTo(20l));
+        assertThat(((UpdateResponse) bulkResponse.getItems()[2].getResponse()).getVersion(), equalTo(21l));
+    }
+
+    @Test
     public void testBulkUpdate_malformedScripts() throws Exception {
 
-        client().admin().indices().prepareCreate("test")
-                .setSettings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("index.number_of_shards", 2)
-                                .put("index.number_of_replicas", 0)
-                ).execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        createIndex("test");
+        ensureGreen();
 
         BulkResponse bulkResponse = client().prepareBulk()
                 .add(client().prepareIndex().setIndex("test").setType("type1").setId("1").setSource("field", 1))
@@ -152,15 +214,14 @@ public class BulkTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testBulkUpdate_largerVolume() throws Exception {
-        client().admin().indices().prepareCreate("test")
-                .setSettings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("index.number_of_shards", 2)
-                                .put("index.number_of_replicas", 1)
-                ).execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        createIndex("test");
+        ensureGreen();
 
-        int numDocs = 2000;
+        int numDocs = scaledRandomIntBetween(100, 2000);
+        if (numDocs % 2 == 1) {
+            numDocs++; // this test needs an even num of docs
+        }
+        logger.info("Bulk-Indexing {} docs", numDocs);
         BulkRequestBuilder builder = client().prepareBulk();
         for (int i = 0; i < numDocs; i++) {
             builder.add(
@@ -291,24 +352,21 @@ public class BulkTests extends ElasticsearchIntegrationTest {
     @Test
     public void testBulkIndexingWhileInitializing() throws Exception {
 
-        int shards = 1 + randomInt(10);
         int replica = randomInt(2);
 
-        cluster().ensureAtLeastNumNodes(1 + replica);
+        cluster().ensureAtLeastNumDataNodes(1 + replica);
 
+        assertAcked(prepareCreate("test").setSettings(
+                ImmutableSettings.builder()
+                        .put(indexSettings())
+                        .put("index.number_of_replicas", replica)
+        ));
 
-        client().admin().indices().prepareCreate("test")
-                .setSettings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("index.number_of_shards", shards)
-                                .put("index.number_of_replicas", replica)
-                ).execute().actionGet();
-
-        int numDocs = 5000;
-        int bulk = 50;
+        int numDocs = scaledRandomIntBetween(100, 5000);
+        int bulk = scaledRandomIntBetween(1, 99);
         for (int i = 0; i < numDocs; ) {
-            BulkRequestBuilder builder = client().prepareBulk();
-            for (int j = 0; j < bulk; j++, i++) {
+            final BulkRequestBuilder builder = client().prepareBulk();
+            for (int j = 0; j < bulk && i < numDocs; j++, i++) {
                 builder.add(client().prepareIndex("test", "type1", Integer.toString(i)).setSource("val", i));
             }
             logger.info("bulk indexing {}-{}", i - bulk, i - 1);
@@ -333,7 +391,7 @@ public class BulkTests extends ElasticsearchIntegrationTest {
                 .addMapping("parent", "{\"parent\":{}}")
                 .addMapping("child", "{\"child\": {\"_parent\": {\"type\": \"parent\"}}}")
                 .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         BulkRequestBuilder builder = client().prepareBulk();
 
@@ -367,11 +425,10 @@ public class BulkTests extends ElasticsearchIntegrationTest {
      */
     @Test
     public void testBulkUpdateUpsertWithParent() throws Exception {
-        client().admin().indices().prepareCreate("test")
+        assertAcked(prepareCreate("test")
                 .addMapping("parent", "{\"parent\":{}}")
-                .addMapping("child", "{\"child\": {\"_parent\": {\"type\": \"parent\"}}}")
-                .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+                .addMapping("child", "{\"child\": {\"_parent\": {\"type\": \"parent\"}}}"));
+        ensureGreen();
 
         BulkRequestBuilder builder = client().prepareBulk();
 
@@ -395,61 +452,233 @@ public class BulkTests extends ElasticsearchIntegrationTest {
                 .setQuery(QueryBuilders.hasParentQuery("parent", QueryBuilders.matchAllQuery()))
                 .get();
 
-        assertNoFailures(searchResponse);
         assertSearchHits(searchResponse, "child1");
     }
 
     @Test
     public void testFailingVersionedUpdatedOnBulk() throws Exception {
-        // This test tries to induce a version conflict during a bulk update.
-        // from version 1.0.0 on, ES supports settings a version on those update which makes it easy
-        // to create. Here we do a best effort by running 30 concurrent updates, 1000 iterations.
         createIndex("test");
-        client().prepareIndex("test", "type", "1").setSource("field", "1").get();
+        index("test", "type", "1", "field", "1");
         final BulkResponse[] responses = new BulkResponse[30];
+        final CyclicBarrier cyclicBarrier = new CyclicBarrier(responses.length);
         Thread[] threads = new Thread[responses.length];
 
-        for (int j = 0; j < 1000; j++) {
-            final CyclicBarrier cyclicBarrier = new CyclicBarrier(responses.length);
 
-            for (int i = 0; i < responses.length; i++) {
-                final int threadID = i;
-                threads[threadID] = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            cyclicBarrier.await();
-                        } catch (Exception e) {
-                            return;
-                        }
-                        BulkRequestBuilder requestBuilder = client().prepareBulk();
-                        requestBuilder.add(client().prepareUpdate("test", "type", "1").setDoc("field", threadID));
-                        responses[threadID] = requestBuilder.get();
-
+        for (int i = 0; i < responses.length; i++) {
+            final int threadID = i;
+            threads[threadID] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        cyclicBarrier.await();
+                    } catch (Exception e) {
+                        return;
                     }
-                });
-                threads[threadID].start();
-
-            }
-
-            for (int i = 0; i < threads.length; i++) {
-                threads[i].join();
-            }
-
-            for (BulkResponse response : responses) {
-                for (BulkItemResponse itemResponse : response) {
-                    if (itemResponse.isFailed()) {
-                        assertThat("\"" + itemResponse.getFailureMessage() + "\" is not a version issue",
-                                itemResponse.getFailureMessage().contains("version conflict"), equalTo(true));
-
-                        return; // found what we wanted see Cases #3448
-                    }
+                    BulkRequestBuilder requestBuilder = client().prepareBulk();
+                    requestBuilder.add(client().prepareUpdate("test", "type", "1").setVersion(1).setDoc("field", threadID));
+                    responses[threadID] = requestBuilder.get();
 
                 }
+            });
+            threads[threadID].start();
+
+        }
+
+        for (int i = 0; i < threads.length; i++) {
+            threads[i].join();
+        }
+
+        int successes = 0;
+        for (BulkResponse response : responses) {
+            if (!response.hasFailures()) {
+                successes++;
             }
         }
 
-        logger.info("failed to induce a version conflict.");
+        assertThat(successes, equalTo(1));
     }
 
+    @Test // issue 4745
+    public void preParsingSourceDueToMappingShouldNotBreakCompleteBulkRequest() throws Exception {
+        XContentBuilder builder = jsonBuilder().startObject()
+                    .startObject("type")
+                        .startObject("_timestamp")
+                            .field("enabled", true)
+                            .field("path", "last_modified")
+                        .endObject()
+                    .endObject()
+                .endObject();
+        assertAcked(prepareCreate("test").addMapping("type", builder));
+
+        String brokenBuildRequestData = "{\"index\": {\"_id\": \"1\"}}\n" +
+                "{\"name\": \"Malformed}\n" +
+                "{\"index\": {\"_id\": \"2\"}}\n" +
+                "{\"name\": \"Good\", \"last_modified\" : \"2013-04-05\"}\n";
+
+        BulkResponse bulkResponse = client().prepareBulk().add(brokenBuildRequestData.getBytes(Charsets.UTF_8), 0, brokenBuildRequestData.length(), false, "test", "type").setRefresh(true).get();
+        assertThat(bulkResponse.getItems().length, is(2));
+        assertThat(bulkResponse.getItems()[0].isFailed(), is(true));
+        assertThat(bulkResponse.getItems()[1].isFailed(), is(false));
+
+        assertExists(get("test", "type", "2"));
+    }
+
+    @Test // issue 4745
+    public void preParsingSourceDueToRoutingShouldNotBreakCompleteBulkRequest() throws Exception {
+        XContentBuilder builder = jsonBuilder().startObject()
+                    .startObject("type")
+                        .startObject("_routing")
+                            .field("required", true)
+                            .field("path", "my_routing")
+                        .endObject()
+                    .endObject()
+                .endObject();
+        assertAcked(prepareCreate("test").addMapping("type", builder));
+        ensureYellow("test");
+
+        String brokenBuildRequestData = "{\"index\": {} }\n" +
+                "{\"name\": \"Malformed}\n" +
+                "{\"index\": { \"_id\" : \"24000\" } }\n" +
+                "{\"name\": \"Good\", \"my_routing\" : \"48000\"}\n";
+
+        BulkResponse bulkResponse = client().prepareBulk().add(brokenBuildRequestData.getBytes(Charsets.UTF_8), 0, brokenBuildRequestData.length(), false, "test", "type").setRefresh(true).get();
+        assertThat(bulkResponse.getItems().length, is(2));
+        assertThat(bulkResponse.getItems()[0].isFailed(), is(true));
+        assertThat(bulkResponse.getItems()[1].isFailed(), is(false));
+
+        assertExists(client().prepareGet("test", "type", "24000").setRouting("48000").get());
+    }
+
+
+    @Test // issue 4745
+    public void preParsingSourceDueToIdShouldNotBreakCompleteBulkRequest() throws Exception {
+        XContentBuilder builder = jsonBuilder().startObject()
+                    .startObject("type")
+                        .startObject("_id")
+                            .field("path", "my_id")
+                        .endObject()
+                    .endObject()
+                .endObject();
+        assertAcked(prepareCreate("test").addMapping("type", builder));
+        ensureYellow("test");
+
+        String brokenBuildRequestData = "{\"index\": {} }\n" +
+                "{\"name\": \"Malformed}\n" +
+                "{\"index\": {} }\n" +
+                "{\"name\": \"Good\", \"my_id\" : \"48\"}\n";
+
+        BulkResponse bulkResponse = client().prepareBulk().add(brokenBuildRequestData.getBytes(Charsets.UTF_8), 0, brokenBuildRequestData.length(), false, "test", "type").setRefresh(true).get();
+        assertThat(bulkResponse.getItems().length, is(2));
+        assertThat(bulkResponse.getItems()[0].isFailed(), is(true));
+        assertThat(bulkResponse.getItems()[1].isFailed(), is(false));
+
+        assertExists(get("test", "type", "48"));
+    }
+
+    @Test
+    public void testThatBulkProcessorCountIsCorrect() throws InterruptedException {
+        final AtomicReference<BulkResponse> responseRef = new AtomicReference<>();
+        final AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
+            @Override
+            public void beforeBulk(long executionId, BulkRequest request) {
+            }
+
+            @Override
+            public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+                responseRef.set(response);
+                latch.countDown();
+            }
+
+            @Override
+            public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+                failureRef.set(failure);
+                latch.countDown();
+            }
+        };
+
+
+        try (BulkProcessor processor = BulkProcessor.builder(client(), listener).setBulkActions(5)
+                .setConcurrentRequests(1).setName("foo").build()) {
+            Map<String, Object> data = Maps.newHashMap();
+            data.put("foo", "bar");
+
+            processor.add(new IndexRequest("test", "test", "1").source(data));
+            processor.add(new IndexRequest("test", "test", "2").source(data));
+            processor.add(new IndexRequest("test", "test", "3").source(data));
+            processor.add(new IndexRequest("test", "test", "4").source(data));
+            processor.add(new IndexRequest("test", "test", "5").source(data));
+
+            latch.await();
+            BulkResponse response = responseRef.get();
+            Throwable error = failureRef.get();
+            assertThat(error, nullValue());
+            assertThat("Could not get a bulk response even after an explicit flush.", response, notNullValue());
+            assertThat(response.getItems().length, is(5));
+        }
+    }
+
+    @Test // issue 4987
+    public void testThatInvalidIndexNamesShouldNotBreakCompleteBulkRequest() {
+        int bulkEntryCount = randomIntBetween(10, 50);
+        BulkRequestBuilder builder = client().prepareBulk();
+        boolean[] expectedFailures = new boolean[bulkEntryCount];
+        boolean expectFailure = false;
+        for (int i = 0; i < bulkEntryCount; i++) {
+            expectFailure |= expectedFailures[i] = randomBoolean();
+            builder.add(client().prepareIndex().setIndex(expectedFailures[i] ? "INVALID.NAME" : "test").setType("type1").setId("1").setSource("field", 1));
+        }
+        BulkResponse bulkResponse = builder.get();
+        assertThat(bulkResponse.hasFailures(), is(expectFailure));
+        assertThat(bulkResponse.getItems().length, is(bulkEntryCount));
+        for (int i = 0; i < bulkEntryCount; i++) {
+            assertThat(bulkResponse.getItems()[i].isFailed(), is(expectedFailures[i]));
+        }
+    }
+
+    @Test
+    public void testBulkProcessorFlush() throws InterruptedException {
+        final AtomicReference<BulkResponse> responseRef = new AtomicReference<>();
+        final AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
+            @Override
+            public void beforeBulk(long executionId, BulkRequest request) {
+            }
+
+            @Override
+            public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+                responseRef.set(response);
+                latch.countDown();
+            }
+
+            @Override
+            public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+                failureRef.set(failure);
+                latch.countDown();
+            }
+        };
+
+        try (BulkProcessor processor = BulkProcessor.builder(client(), listener).setBulkActions(6)
+                .setConcurrentRequests(1).setName("foo").build()) {
+            Map<String, Object> data = Maps.newHashMap();
+            data.put("foo", "bar");
+
+            processor.add(new IndexRequest("test", "test", "1").source(data));
+            processor.add(new IndexRequest("test", "test", "2").source(data));
+            processor.add(new IndexRequest("test", "test", "3").source(data));
+            processor.add(new IndexRequest("test", "test", "4").source(data));
+            processor.add(new IndexRequest("test", "test", "5").source(data));
+
+            processor.flush();
+            latch.await();
+            BulkResponse response = responseRef.get();
+            Throwable error = failureRef.get();
+            assertThat(error, nullValue());
+            assertThat("Could not get a bulk response even after an explicit flush.", response, notNullValue());
+            assertThat(response.getItems().length, is(5));
+        }
+    }
 }
+

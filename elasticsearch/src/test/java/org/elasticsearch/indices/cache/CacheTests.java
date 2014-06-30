@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.*;
 
 /**
  */
-@ClusterScope(scope=Scope.SUITE, numNodes=1)
+@ClusterScope(scope= Scope.SUITE, numDataNodes =1, numClientNodes = 0, randomDynamicTemplates = false)
 public class CacheTests extends ElasticsearchIntegrationTest {
 
     @Override
@@ -49,7 +49,7 @@ public class CacheTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testClearCacheFilterKeys() {
-        client().admin().indices().prepareCreate("test").setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", 1)).execute().actionGet();
+                client().admin().indices().prepareCreate("test").setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", 1)).execute().actionGet();
         client().prepareIndex("test", "type", "1").setSource("field", "value").execute().actionGet();
         client().admin().indices().prepareRefresh().execute().actionGet();
 
@@ -74,7 +74,7 @@ public class CacheTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testFieldDataStats() {
-        client().admin().indices().prepareCreate("test").setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", 1)).execute().actionGet();
+                client().admin().indices().prepareCreate("test").setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", 1)).execute().actionGet();
         client().prepareIndex("test", "type", "1").setSource("field", "value1", "field2", "value1").execute().actionGet();
         client().prepareIndex("test", "type", "2").setSource("field", "value2", "field2", "value2").execute().actionGet();
         client().admin().indices().prepareRefresh().execute().actionGet();
@@ -118,7 +118,7 @@ public class CacheTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testClearAllCaches() throws Exception {
-        client().admin().indices().prepareCreate("test")
+                client().admin().indices().prepareCreate("test")
                 .setSettings(ImmutableSettings.settingsBuilder()
                         .put("index.number_of_replicas", 0)
                         .put("index.number_of_shards", 1))
@@ -141,11 +141,11 @@ public class CacheTests extends ElasticsearchIntegrationTest {
 
         // sort to load it to field data and filter to load filter cache
         client().prepareSearch()
-                .setFilter(FilterBuilders.termFilter("field", "value1"))
+                .setPostFilter(FilterBuilders.termFilter("field", "value1"))
                 .addSort("field", SortOrder.ASC)
                 .execute().actionGet();
         client().prepareSearch()
-                .setFilter(FilterBuilders.termFilter("field", "value2"))
+                .setPostFilter(FilterBuilders.termFilter("field", "value2"))
                 .addSort("field", SortOrder.ASC)
                 .execute().actionGet();
 

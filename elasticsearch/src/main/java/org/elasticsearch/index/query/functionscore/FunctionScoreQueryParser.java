@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.lucene.search.Queries;
@@ -35,9 +36,11 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.query.QueryParseContext;
 import org.elasticsearch.index.query.QueryParser;
 import org.elasticsearch.index.query.QueryParsingException;
+import org.elasticsearch.index.query.functionscore.factor.FactorParser;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  *
@@ -46,6 +49,9 @@ public class FunctionScoreQueryParser implements QueryParser {
 
     public static final String NAME = "function_score";
     ScoreFunctionParserMapper funtionParserMapper;
+    // For better readability of error message
+    static final String MISPLACED_FUNCTION_MESSAGE_PREFIX = "You can either define \"functions\":[...] or a single function, not both. ";
+    static final String MISPLACED_BOOST_FUNCTION_MESSAGE_SUFFIX = " Did you mean \"boost\" instead?";
 
     @Inject
     public FunctionScoreQueryParser(ScoreFunctionParserMapper funtionParserMapper) {
@@ -65,7 +71,6 @@ public class FunctionScoreQueryParser implements QueryParser {
         for (CombineFunction combineFunction : values) {
             combineFunctionMapBuilder.put(combineFunction.getName(), combineFunction);
         }
-        combineFunctionMapBuilder.put("mult", CombineFunction.MULT); // for bw compat
         combineFunctionsMap = combineFunctionMapBuilder.build();
     }
 
@@ -77,12 +82,17 @@ public class FunctionScoreQueryParser implements QueryParser {
         float boost = 1.0f;
 
         FiltersFunctionScoreQuery.ScoreMode scoreMode = FiltersFunctionScoreQuery.ScoreMode.Multiply;
-        ArrayList<FiltersFunctionScoreQuery.FilterFunction> filterFunctions = new ArrayList<FiltersFunctionScoreQuery.FilterFunction>();
+        ArrayList<FiltersFunctionScoreQuery.FilterFunction> filterFunctions = new ArrayList<>();
         float maxBoost = Float.MAX_VALUE;
 
         String currentFieldName = null;
         XContentParser.Token token;
         CombineFunction combineFunction = CombineFunction.MULT;
+        // Either define array of functions and filters or only one function
+        boolean functionArrayFound = false;
+        boolean singleFunctionFound = false;
+        String singleFunctionName = null;
+
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
@@ -99,13 +109,24 @@ public class FunctionScoreQueryParser implements QueryParser {
             } else if ("boost".equals(currentFieldName)) {
                 boost = parser.floatValue();
             } else if ("functions".equals(currentFieldName)) {
+                if (singleFunctionFound) {
+                    String errorString = "Found \"" + singleFunctionName + "\" already, now encountering \"functions\": [...].";
+                    handleMisplacedFunctionsDeclaration(errorString, singleFunctionName);
+                }
                 currentFieldName = parseFiltersAndFunctions(parseContext, parser, filterFunctions, currentFieldName);
+                functionArrayFound = true;
             } else {
-                // we tru to parse a score function. If there is no score
+                // we try to parse a score function. If there is no score
                 // function for the current field name,
-                // funtionParserMapper.get() will throw an Exception.
-                filterFunctions.add(new FiltersFunctionScoreQuery.FilterFunction(null, funtionParserMapper.get(parseContext.index(),
-                        currentFieldName).parse(parseContext, parser)));
+                // functionParserMapper.get() will throw an Exception.
+                ScoreFunctionParser currentFunctionParser = funtionParserMapper.get(parseContext.index(), currentFieldName);
+                singleFunctionName = currentFieldName;
+                if (functionArrayFound) {
+                    String errorString = "Found \"functions\": [...] already, now encountering \"" + currentFieldName + "\".";
+                    handleMisplacedFunctionsDeclaration(errorString, currentFieldName);
+                }
+                filterFunctions.add(new FiltersFunctionScoreQuery.FilterFunction(null, currentFunctionParser.parse(parseContext, parser)));
+                singleFunctionFound = true;
             }
         }
         if (query == null) {
@@ -135,6 +156,14 @@ public class FunctionScoreQueryParser implements QueryParser {
             functionScoreQuery.setBoost(boost);
             return functionScoreQuery;
         }
+    }
+
+    private void handleMisplacedFunctionsDeclaration(String errorString, String functionName) {
+        errorString = MISPLACED_FUNCTION_MESSAGE_PREFIX + errorString;
+        if (Arrays.asList(FactorParser.NAMES).contains(functionName)) {
+            errorString = errorString + MISPLACED_BOOST_FUNCTION_MESSAGE_SUFFIX;
+        }
+        throw new ElasticsearchParseException(errorString);
     }
 
     private String parseFiltersAndFunctions(QueryParseContext parseContext, XContentParser parser,

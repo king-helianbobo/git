@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ngram.*;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.scaledRandomIntBetween;
 import static org.hamcrest.Matchers.instanceOf;
 
 public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase {
@@ -57,7 +58,7 @@ public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase
             try {
                 new NGramTokenizerFactory(index, indexSettings, name, settings).create(new StringReader(""));
                 fail();
-            } catch (ElasticSearchIllegalArgumentException expected) {
+            } catch (ElasticsearchIllegalArgumentException expected) {
                 // OK
             }
         }
@@ -66,6 +67,16 @@ public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase
             new NGramTokenizerFactory(index, indexSettings, name, settings).create(new StringReader(""));
             // no exception
         }
+    }
+
+    @Test
+    public void testNoTokenChars() throws IOException {
+        final Index index = new Index("test");
+        final String name = "ngr";
+        final Settings indexSettings = ImmutableSettings.EMPTY;
+        final Settings settings = ImmutableSettings.builder().put("min_gram", 2).put("max_gram", 4).putArray("token_chars", new String[0]).build();
+        Tokenizer tokenizer = new NGramTokenizerFactory(index, indexSettings, name, settings).create(new StringReader("1.34"));
+        assertTokenStreamContents(tokenizer, new String[] {"1.", "1.3", "1.34", ".3", ".34", "34"});
     }
 
     @Test
@@ -98,7 +109,7 @@ public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase
     
     @Test
     public void testBackwardsCompatibilityEdgeNgramTokenizer() throws IllegalArgumentException, IllegalAccessException {
-        int iters = atLeast(20);
+        int iters = scaledRandomIntBetween(20, 100);
         final Index index = new Index("test");
         final String name = "ngr";
         for (int i = 0; i < iters; i++) {
@@ -133,14 +144,14 @@ public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase
         try {
             new EdgeNGramTokenizerFactory(index, indexSettings, name, settings).create(new StringReader("foo bar"));
             fail("should fail side:back is not supported anymore");
-        } catch (ElasticSearchIllegalArgumentException ex) {
+        } catch (ElasticsearchIllegalArgumentException ex) {
         }
         
     }
     
     @Test
     public void testBackwardsCompatibilityNgramTokenizer() throws IllegalArgumentException, IllegalAccessException {
-        int iters = atLeast(20);
+        int iters = scaledRandomIntBetween(20, 100);
         for (int i = 0; i < iters; i++) {
             final Index index = new Index("test");
             final String name = "ngr";
@@ -173,7 +184,7 @@ public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase
     
     @Test
     public void testBackwardsCompatibilityEdgeNgramTokenFilter() throws IllegalArgumentException, IllegalAccessException {
-        int iters = atLeast(20);
+        int iters = scaledRandomIntBetween(20, 100);
         for (int i = 0; i < iters; i++) {
             final Index index = new Index("test");
             final String name = "ngr";
@@ -218,7 +229,7 @@ public class NGramTokenizerFactoryTests extends ElasticsearchTokenStreamTestCase
     
     private Version randomVersion(Random random) throws IllegalArgumentException, IllegalAccessException {
         Field[] declaredFields = Version.class.getDeclaredFields();
-        List<Field> versionFields = new ArrayList<Field>();
+        List<Field> versionFields = new ArrayList<>();
         for (Field field : declaredFields) {
             if ((field.getModifiers() & Modifier.STATIC) != 0 && field.getName().startsWith("V_") && field.getType() == Version.class) {
                 versionFields.add(field);

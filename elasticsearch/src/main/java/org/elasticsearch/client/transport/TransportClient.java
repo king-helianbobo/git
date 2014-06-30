@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.client.transport;
 
 import com.google.common.collect.ImmutableList;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.*;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -45,10 +45,15 @@ import org.elasticsearch.action.percolate.PercolateResponse;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.suggest.SuggestRequest;
 import org.elasticsearch.action.suggest.SuggestResponse;
+import org.elasticsearch.action.termvector.MultiTermVectorsRequest;
+import org.elasticsearch.action.termvector.MultiTermVectorsResponse;
+import org.elasticsearch.action.termvector.TermVectorRequest;
+import org.elasticsearch.action.termvector.TermVectorResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.cache.recycler.CacheRecyclerModule;
+import org.elasticsearch.cache.recycler.PageCacheRecycler;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.client.transport.support.InternalTransportClient;
@@ -108,7 +113,7 @@ public class TransportClient extends AbstractClient {
      * Constructs a new transport client with settings loaded either from the classpath or the file system (the
      * <tt>elasticsearch.(yml|json)</tt> files optionally prefixed with <tt>config/</tt>).
      */
-    public TransportClient() throws ElasticSearchException {
+    public TransportClient() throws ElasticsearchException {
         this(ImmutableSettings.Builder.EMPTY_SETTINGS, true);
     }
 
@@ -135,9 +140,9 @@ public class TransportClient extends AbstractClient {
      *
      * @param settings           The explicit settings.
      * @param loadConfigSettings <tt>true</tt> if settings should be loaded from the classpath/file system.
-     * @throws ElasticSearchException
+     * @throws org.elasticsearch.ElasticsearchException
      */
-    public TransportClient(Settings.Builder settings, boolean loadConfigSettings) throws ElasticSearchException {
+    public TransportClient(Settings.Builder settings, boolean loadConfigSettings) throws ElasticsearchException {
         this(settings.build(), loadConfigSettings);
     }
 
@@ -148,9 +153,9 @@ public class TransportClient extends AbstractClient {
      *
      * @param pSettings          The explicit settings.
      * @param loadConfigSettings <tt>true</tt> if settings should be loaded from the classpath/file system.
-     * @throws ElasticSearchException
+     * @throws org.elasticsearch.ElasticsearchException
      */
-    public TransportClient(Settings pSettings, boolean loadConfigSettings) throws ElasticSearchException {
+    public TransportClient(Settings pSettings, boolean loadConfigSettings) throws ElasticsearchException {
         Tuple<Settings, Environment> tuple = InternalSettingsPreparer.prepareSettings(pSettings, loadConfigSettings);
         Settings settings = settingsBuilder().put(tuple.v1())
                 .put("network.server", false)
@@ -203,6 +208,14 @@ public class TransportClient extends AbstractClient {
      */
     public ImmutableList<DiscoveryNode> connectedNodes() {
         return nodesService.connectedNodes();
+    }
+
+    /**
+     * The list of filtered nodes that were not connected to, for example, due to
+     * mismatch in cluster name.
+     */
+    public ImmutableList<DiscoveryNode> filteredNodes() {
+        return nodesService.filteredNodes();
     }
 
     /**
@@ -277,6 +290,7 @@ public class TransportClient extends AbstractClient {
         }
 
         injector.getInstance(CacheRecycler.class).close();
+        injector.getInstance(PageCacheRecycler.class).close();
 
         CachedStreams.clear();
     }
@@ -434,6 +448,26 @@ public class TransportClient extends AbstractClient {
     @Override
     public void moreLikeThis(MoreLikeThisRequest request, ActionListener<SearchResponse> listener) {
         internalClient.moreLikeThis(request, listener);
+    }
+
+    @Override
+    public ActionFuture<TermVectorResponse> termVector(TermVectorRequest request) {
+        return internalClient.termVector(request);
+    }
+
+    @Override
+    public void termVector(TermVectorRequest request, ActionListener<TermVectorResponse> listener) {
+        internalClient.termVector(request, listener);
+    }
+
+    @Override
+    public ActionFuture<MultiTermVectorsResponse> multiTermVectors(final MultiTermVectorsRequest request) {
+        return internalClient.multiTermVectors(request);
+    }
+
+    @Override
+    public void multiTermVectors(final MultiTermVectorsRequest request, final ActionListener<MultiTermVectorsResponse> listener) {
+        internalClient.multiTermVectors(request, listener);
     }
 
     @Override

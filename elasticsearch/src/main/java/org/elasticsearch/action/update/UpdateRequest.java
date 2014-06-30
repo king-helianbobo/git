@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,6 @@
 package org.elasticsearch.action.update;
 
 import com.google.common.collect.Maps;
-import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.WriteConsistencyLevel;
 import org.elasticsearch.action.index.IndexRequest;
@@ -31,10 +30,12 @@ import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.lucene.uid.Versions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.VersionType;
 
 import java.io.IOException;
 import java.util.Map;
@@ -59,9 +60,9 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
 
     private String[] fields;
 
-    int retryOnConflict = 0;
-
-    private String percolate;
+    private long version = Versions.MATCH_ANY;
+    private VersionType versionType = VersionType.INTERNAL;
+    private int retryOnConflict = 0;
 
     private boolean refresh = false;
 
@@ -94,6 +95,20 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
         if (id == null) {
             validationException = addValidationError("id is missing", validationException);
         }
+
+        if (!(versionType == VersionType.INTERNAL || versionType == VersionType.FORCE)) {
+            validationException = addValidationError("version type [" + versionType + "] is not supported by the update API", validationException);
+        } else {
+
+            if (version != Versions.MATCH_ANY && retryOnConflict > 0) {
+                validationException = addValidationError("can't provide both retry_on_conflict and a specific version", validationException);
+            }
+
+            if (!versionType.validateVersionForWrites(version)) {
+                validationException = addValidationError("illegal version value [" + version + "] for version type [" + versionType.name() + "]", validationException);
+            }
+        }
+
         if (script == null && doc == null) {
             validationException = addValidationError("script or doc is missing", validationException);
         }
@@ -286,17 +301,28 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
     }
 
     /**
-     * Causes the update request document to be percolated. The parameter is the percolate query
-     * to use to reduce the percolated queries that are going to run against this doc. Can be
-     * set to <tt>*</tt> to indicate that all percolate queries should be run.
+     * Sets the version, which will cause the index operation to only be performed if a matching
+     * version exists and no changes happened on the doc since then.
      */
-    public UpdateRequest percolate(String percolate) {
-        this.percolate = percolate;
+    public UpdateRequest version(long version) {
+        this.version = version;
         return this;
     }
 
-    public String percolate() {
-        return this.percolate;
+    public long version() {
+        return this.version;
+    }
+
+    /**
+     * Sets the versioning type. Defaults to {@link VersionType#INTERNAL}.
+     */
+    public UpdateRequest versionType(VersionType versionType) {
+        this.versionType = versionType;
+        return this;
+    }
+
+    public VersionType versionType() {
+        return this.versionType;
     }
 
     /**
@@ -515,15 +541,14 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
 
     public UpdateRequest source(BytesReference source) throws Exception {
         XContentType xContentType = XContentFactory.xContentType(source);
-        XContentParser parser = XContentFactory.xContent(xContentType).createParser(source);
-        try {
-            XContentParser.Token t = parser.nextToken();
-            if (t == null) {
+        try (XContentParser parser = XContentFactory.xContent(xContentType).createParser(source)) {
+            XContentParser.Token token = parser.nextToken();
+            if (token == null) {
                 return this;
             }
             String currentFieldName = null;
-            while ((t = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
-                if (t == XContentParser.Token.FIELD_NAME) {
+            while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
+                if (token == XContentParser.Token.FIELD_NAME) {
                     currentFieldName = parser.currentName();
                 } else if ("script".equals(currentFieldName)) {
                     script = parser.textOrNull();
@@ -543,8 +568,6 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
                     docAsUpsert(parser.booleanValue());
                 }
             }
-        } finally {
-            parser.close();
         }
         return this;
     }
@@ -562,14 +585,13 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
         super.readFrom(in);
         replicationType = ReplicationType.fromId(in.readByte());
         consistencyLevel = WriteConsistencyLevel.fromId(in.readByte());
-        type = in.readString();
+        type = in.readSharedString();
         id = in.readString();
         routing = in.readOptionalString();
         script = in.readOptionalString();
         scriptLang = in.readOptionalString();
         scriptParams = in.readMap();
         retryOnConflict = in.readVInt();
-        percolate = in.readOptionalString();
         refresh = in.readBoolean();
         if (in.readBoolean()) {
             doc = new IndexRequest();
@@ -586,9 +608,9 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
             upsertRequest = new IndexRequest();
             upsertRequest.readFrom(in);
         }
-        if (in.getVersion().onOrAfter(Version.V_0_90_2)) {
-            docAsUpsert = in.readBoolean();
-        }
+        docAsUpsert = in.readBoolean();
+        version = Versions.readVersion(in);
+        versionType = VersionType.fromValue(in.readByte());
     }
 
     @Override
@@ -596,14 +618,13 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
         super.writeTo(out);
         out.writeByte(replicationType.id());
         out.writeByte(consistencyLevel.id());
-        out.writeString(type);
+        out.writeSharedString(type);
         out.writeString(id);
         out.writeOptionalString(routing);
         out.writeOptionalString(script);
         out.writeOptionalString(scriptLang);
         out.writeMap(scriptParams);
         out.writeVInt(retryOnConflict);
-        out.writeOptionalString(percolate);
         out.writeBoolean(refresh);
         if (doc == null) {
             out.writeBoolean(false);
@@ -633,9 +654,9 @@ public class UpdateRequest extends InstanceShardOperationRequest<UpdateRequest> 
             upsertRequest.id(id);
             upsertRequest.writeTo(out);
         }
-        if (out.getVersion().onOrAfter(Version.V_0_90_2)) {
-            out.writeBoolean(docAsUpsert);
-        }
+        out.writeBoolean(docAsUpsert);
+        Versions.writeVersion(version, out);
+        out.writeByte(versionType.getValue());
     }
 
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -33,7 +33,7 @@ import org.elasticsearch.cluster.routing.allocation.AllocationService;
 import org.elasticsearch.cluster.routing.allocation.allocator.ShardsAllocators;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -42,11 +42,10 @@ import java.util.HashSet;
 import java.util.Map;
 
 import static org.elasticsearch.cluster.routing.ShardRoutingState.*;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.equalTo;
 
-public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
+public class DiskThresholdDeciderTests extends ElasticsearchAllocationTestCase {
 
     @Test
     public void diskThresholdTest() {
@@ -55,19 +54,19 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, 0.7)
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, 0.8).build();
 
-        Map<String, DiskUsage> usages = new HashMap<String, DiskUsage>();
+        Map<String, DiskUsage> usages = new HashMap<>();
         usages.put("node1", new DiskUsage("node1", 100, 10)); // 90% used
         usages.put("node2", new DiskUsage("node2", 100, 35)); // 65% used
         usages.put("node3", new DiskUsage("node3", 100, 60)); // 40% used
         usages.put("node4", new DiskUsage("node4", 100, 80)); // 20% used
 
-        Map<String, Long> shardSizes = new HashMap<String, Long>();
+        Map<String, Long> shardSizes = new HashMap<>();
         shardSizes.put("[test][0][p]", 10L); // 10 bytes
         shardSizes.put("[test][0][r]", 10L);
         final ClusterInfo clusterInfo = new ClusterInfo(ImmutableMap.copyOf(usages), ImmutableMap.copyOf(shardSizes));
 
         AllocationDeciders deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -93,7 +92,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -115,7 +114,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         // Assert that we're able to start the primary
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(1));
         // Assert that node1 didn't get any shards because its disk usage is too high
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
 
         logger.info("--> start the shards (replicas)");
         routingTable = strategy.applyStartedShards(clusterState, clusterState.routingNodes().shardsWithState(INITIALIZING)).routingTable();
@@ -145,9 +144,9 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         logShardStates(clusterState);
         // Assert that the replica couldn't be started since node1 doesn't have enough space
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
 
         logger.info("--> changing decider settings");
 
@@ -156,11 +155,11 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         // node2 now should not have new shards allocated to it, but shards can remain
         diskSettings = settingsBuilder()
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_DISK_THRESHOLD_ENABLED, true)
-                .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, 0.6)
+                .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, "60%")
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, 0.7).build();
 
         deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -176,9 +175,9 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
 
         // Shards remain started
         assertThat(clusterState.routingNodes().shardsWithState(STARTED).size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
 
         logger.info("--> changing settings again");
 
@@ -191,7 +190,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, 0.6).build();
 
         deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -207,10 +206,10 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         logShardStates(clusterState);
         // Shards remain started
         assertThat(clusterState.routingNodes().shardsWithState(STARTED).size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
         // Shard hasn't been moved off of node2 yet because there's nowhere for it to go
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
 
         logger.info("--> adding node4");
 
@@ -230,11 +229,11 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
 
         logShardStates(clusterState);
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
         // Node4 is available now, so the shard is moved off of node2
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(0));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node4").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node4").size(), equalTo(1));
     }
 
     @Test
@@ -244,19 +243,19 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, "30b")
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, "20b").build();
 
-        Map<String, DiskUsage> usages = new HashMap<String, DiskUsage>();
+        Map<String, DiskUsage> usages = new HashMap<>();
         usages.put("node1", new DiskUsage("node1", 100, 10)); // 90% used
         usages.put("node2", new DiskUsage("node2", 100, 35)); // 65% used
         usages.put("node3", new DiskUsage("node3", 100, 60)); // 40% used
         usages.put("node4", new DiskUsage("node4", 100, 80)); // 20% used
 
-        Map<String, Long> shardSizes = new HashMap<String, Long>();
+        Map<String, Long> shardSizes = new HashMap<>();
         shardSizes.put("[test][0][p]", 10L); // 10 bytes
         shardSizes.put("[test][0][r]", 10L);
         final ClusterInfo clusterInfo = new ClusterInfo(ImmutableMap.copyOf(usages), ImmutableMap.copyOf(shardSizes));
 
         AllocationDeciders deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -282,7 +281,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -304,7 +303,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         // Assert that we're able to start the primary
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(1));
         // Assert that node1 didn't get any shards because its disk usage is too high
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
 
         logger.info("--> start the shards (replicas)");
         routingTable = strategy.applyStartedShards(clusterState, clusterState.routingNodes().shardsWithState(INITIALIZING)).routingTable();
@@ -334,9 +333,9 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         logShardStates(clusterState);
         // Assert that the replica couldn't be started since node1 doesn't have enough space
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
 
         logger.info("--> changing decider settings");
 
@@ -349,7 +348,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, "30b").build();
 
         deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -365,9 +364,9 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
 
         // Shards remain started
         assertThat(clusterState.routingNodes().shardsWithState(STARTED).size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
 
         logger.info("--> changing settings again");
 
@@ -380,7 +379,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, "40b").build();
 
         deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -396,10 +395,10 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         logShardStates(clusterState);
         // Shards remain started
         assertThat(clusterState.routingNodes().shardsWithState(STARTED).size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
         // Shard hasn't been moved off of node2 yet because there's nowhere for it to go
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
 
         logger.info("--> adding node4");
 
@@ -419,11 +418,11 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
 
         logShardStates(clusterState);
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(0));
         // Node4 is available now, so the shard is moved off of node2
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(0));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(1));
-        assertThat(clusterState.getRoutingNodes().node("node4").shards().size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(0));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(1));
+        assertThat(clusterState.getRoutingNodes().node("node4").size(), equalTo(1));
     }
 
     @Test
@@ -431,18 +430,18 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         Settings diskSettings = settingsBuilder()
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_DISK_THRESHOLD_ENABLED, true)
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, 0.7)
-                .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, 0.71).build();
+                .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, "71%").build();
 
-        Map<String, DiskUsage> usages = new HashMap<String, DiskUsage>();
+        Map<String, DiskUsage> usages = new HashMap<>();
         usages.put("node1", new DiskUsage("node1", 100, 31)); // 69% used
         usages.put("node2", new DiskUsage("node2", 100, 1));  // 99% used
 
-        Map<String, Long> shardSizes = new HashMap<String, Long>();
+        Map<String, Long> shardSizes = new HashMap<>();
         shardSizes.put("[test][0][p]", 10L); // 10 bytes
         final ClusterInfo clusterInfo = new ClusterInfo(ImmutableMap.copyOf(usages), ImmutableMap.copyOf(shardSizes));
 
         AllocationDeciders deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -468,7 +467,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
         logger.info("--> adding node1");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
                 .put(newNode("node1"))
@@ -494,17 +493,17 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, 0.7)
                 .put(DiskThresholdDecider.CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, 0.85).build();
 
-        Map<String, DiskUsage> usages = new HashMap<String, DiskUsage>();
+        Map<String, DiskUsage> usages = new HashMap<>();
         usages.put("node2", new DiskUsage("node2", 100, 50)); // 50% used
         usages.put("node3", new DiskUsage("node3", 100, 0));  // 100% used
 
-        Map<String, Long> shardSizes = new HashMap<String, Long>();
+        Map<String, Long> shardSizes = new HashMap<>();
         shardSizes.put("[test][0][p]", 10L); // 10 bytes
         shardSizes.put("[test][0][r]", 10L); // 10 bytes
         final ClusterInfo clusterInfo = new ClusterInfo(ImmutableMap.copyOf(usages), ImmutableMap.copyOf(shardSizes));
 
         AllocationDeciders deciders = new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(
+                new HashSet<>(Arrays.asList(
                         new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         new DiskThresholdDecider(diskSettings))));
 
@@ -530,7 +529,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
         logger.info("--> adding node1");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
                 .put(newNode("node1"))
@@ -554,7 +553,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         RoutingNode rn = new RoutingNode("node1", newNode("node1"));
         DiskThresholdDecider decider = new DiskThresholdDecider(ImmutableSettings.EMPTY);
 
-        Map<String, DiskUsage> usages = new HashMap<String, DiskUsage>();
+        Map<String, DiskUsage> usages = new HashMap<>();
         usages.put("node2", new DiskUsage("node2", 100, 50)); // 50% used
         usages.put("node3", new DiskUsage("node3", 100, 0));  // 100% used
 
@@ -568,7 +567,7 @@ public class DiskThresholdDeciderTests extends ElasticsearchTestCase {
         RoutingNode rn = new RoutingNode("node1", newNode("node1"));
         DiskThresholdDecider decider = new DiskThresholdDecider(ImmutableSettings.EMPTY);
 
-        Map<String, DiskUsage> usages = new HashMap<String, DiskUsage>();
+        Map<String, DiskUsage> usages = new HashMap<>();
         usages.put("node2", new DiskUsage("node2", 100, 50)); // 50% used
         usages.put("node3", new DiskUsage("node3", 100, 0));  // 100% used
 

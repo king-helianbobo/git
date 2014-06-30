@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,12 +23,10 @@ import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentBuilderString;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.facet.Facets;
 import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.elasticsearch.search.suggest.Suggest;
@@ -41,7 +39,7 @@ import static org.elasticsearch.search.internal.InternalSearchResponse.readInter
 /**
  * A response of a search request.
  */
-public class SearchResponse extends ActionResponse implements ToXContent {
+public class SearchResponse extends ActionResponse implements StatusToXContent {
 
     private InternalSearchResponse internalResponse;
 
@@ -101,6 +99,11 @@ public class SearchResponse extends ActionResponse implements ToXContent {
     public Facets getFacets() {
         return internalResponse.facets();
     }
+
+    public Aggregations getAggregations() {
+        return internalResponse.aggregations();
+    }
+
 
     public Suggest getSuggest() {
         return internalResponse.suggest();

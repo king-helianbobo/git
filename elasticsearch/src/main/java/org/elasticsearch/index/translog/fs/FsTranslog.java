@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,13 +19,15 @@
 
 package org.elasticsearch.index.translog.fs;
 
-import jsr166y.ThreadLocalRandom;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.common.bytes.ReleasableBytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.io.FileSystemUtils;
-import org.elasticsearch.common.io.stream.BytesStreamOutput;
+import org.elasticsearch.common.io.stream.ReleasableBytesStreamOutput;
+import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.util.BigArrays;
 import org.elasticsearch.env.NodeEnvironment;
 import org.elasticsearch.index.settings.IndexSettings;
 import org.elasticsearch.index.settings.IndexSettingsService;
@@ -33,11 +35,13 @@ import org.elasticsearch.index.shard.AbstractIndexShardComponent;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.translog.Translog;
 import org.elasticsearch.index.translog.TranslogException;
+import org.elasticsearch.index.translog.TranslogStats;
 import org.elasticsearch.index.translog.TranslogStreams;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -60,6 +64,7 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
     }
 
     private final IndexSettingsService indexSettingsService;
+    private final BigArrays bigArrays;
 
     private final ReadWriteLock rwl = new ReentrantReadWriteLock();
     private final File[] locations;
@@ -77,9 +82,10 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
     private final ApplySettings applySettings = new ApplySettings();
 
     @Inject
-    public FsTranslog(ShardId shardId, @IndexSettings Settings indexSettings, IndexSettingsService indexSettingsService, NodeEnvironment nodeEnv) {
+    public FsTranslog(ShardId shardId, @IndexSettings Settings indexSettings, IndexSettingsService indexSettingsService, NodeEnvironment nodeEnv, BigArrays bigArrays) {
         super(shardId, indexSettings);
         this.indexSettingsService = indexSettingsService;
+        this.bigArrays = bigArrays;
         File[] shardLocations = nodeEnv.shardLocations(shardId);
         this.locations = new File[shardLocations.length];
         for (int i = 0; i < shardLocations.length; i++) {
@@ -99,6 +105,7 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
         this.indexSettingsService = null;
         this.locations = new File[]{location};
         FileSystemUtils.mkdirs(location);
+        this.bigArrays = BigArrays.NON_RECYCLING_INSTANCE;
 
         this.type = FsTranslogFile.Type.fromString(componentSettings.get("type", FsTranslogFile.Type.BUFFERED.name()));
     }
@@ -109,7 +116,7 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
     }
 
     @Override
-    public void close() throws ElasticSearchException {
+    public void close() throws ElasticsearchException {
         close(false);
     }
 
@@ -333,33 +340,44 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
     @Override
     public Location add(Operation operation) throws TranslogException {
         rwl.readLock().lock();
+        ReleasableBytesStreamOutput out = new ReleasableBytesStreamOutput(bigArrays);
+        boolean released = false;
         try {
-            BytesStreamOutput out = new BytesStreamOutput();
             out.writeInt(0); // marker for the size...
             TranslogStreams.writeTranslogOperation(out, operation);
             out.flush();
 
+            // write size to beginning of stream
             int size = out.size();
             out.seek(0);
             out.writeInt(size - 4);
 
-            Location location = current.add(out.bytes().array(), out.bytes().arrayOffset(), size);
+            // seek back to end
+            out.seek(size);
+
+            ReleasableBytesReference bytes = out.bytes();
+            Location location = current.add(bytes);
             if (syncOnEachOperation) {
                 current.sync();
             }
             FsTranslogFile trans = this.trans;
             if (trans != null) {
                 try {
-                    location = trans.add(out.bytes().array(), out.bytes().arrayOffset(), size);
+                    location = trans.add(bytes);
                 } catch (ClosedChannelException e) {
                     // ignore
                 }
             }
+            Releasables.close(bytes);
+            released = true;
             return location;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new TranslogException(shardId, "Failed to write operation [" + operation + "]", e);
         } finally {
             rwl.readLock().unlock();
+            if (!released) {
+                Releasables.close(out.bytes());
+            }
         }
     }
 
@@ -384,12 +402,20 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
     }
 
     @Override
-    public void sync() {
+    public void sync() throws IOException {
         FsTranslogFile current1 = this.current;
         if (current1 == null) {
             return;
         }
-        current1.sync();
+        try {
+            current1.sync();
+        } catch (IOException e) {
+            // if we switches translots (!=), then this failure is not relevant
+            // we are working on a new translog
+            if (this.current == current1) {
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -406,5 +432,10 @@ public class FsTranslog extends AbstractIndexShardComponent implements Translog 
         } else {
             type = FsTranslogFile.Type.BUFFERED;
         }
+    }
+
+    @Override
+    public TranslogStats stats() {
+        return new TranslogStats(estimatedNumberOfOperations(), translogSizeInBytes());
     }
 }

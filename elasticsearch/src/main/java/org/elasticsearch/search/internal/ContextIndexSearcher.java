@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,6 +21,8 @@ package org.elasticsearch.search.internal;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.*;
+import org.elasticsearch.common.lease.Releasable;
+import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.lucene.MinimumScoreCollector;
 import org.elasticsearch.common.lucene.MultiCollector;
 import org.elasticsearch.common.lucene.search.FilteredCollector;
@@ -28,20 +30,26 @@ import org.elasticsearch.common.lucene.search.XCollector;
 import org.elasticsearch.common.lucene.search.XFilteredQuery;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.search.dfs.CachedDfSource;
+import org.elasticsearch.search.internal.SearchContext.Lifetime;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * Context-aware extension of {@link IndexSearcher}.
  */
-public class ContextIndexSearcher extends IndexSearcher {
+public class ContextIndexSearcher extends IndexSearcher implements Releasable {
 
     public static enum Stage {
         NA,
         MAIN_QUERY
     }
+
+    /** The wrapped {@link IndexSearcher}. The reason why we sometimes prefer delegating to this searcher instead of <tt>super</tt> is that
+     *  this instance may have more assertions, for example if it comes from MockInternalEngine which wraps the IndexSearcher into an
+     *  AssertingIndexSearcher. */
+    private final IndexSearcher in;
 
     private final SearchContext searchContext;
 
@@ -56,14 +64,14 @@ public class ContextIndexSearcher extends IndexSearcher {
 
     public ContextIndexSearcher(SearchContext searchContext, Engine.Searcher searcher) {
         super(searcher.reader());
+        in = searcher.searcher();
         this.searchContext = searchContext;
         setSimilarity(searcher.searcher().getSimilarity());
     }
 
-    public void release() {
-        if (mainDocIdSetCollector != null) {
-            mainDocIdSetCollector.release();
-        }
+    @Override
+    public void close() {
+        Releasables.close(mainDocIdSetCollector);
     }
 
     public void dfSource(CachedDfSource dfSource) {
@@ -77,7 +85,7 @@ public class ContextIndexSearcher extends IndexSearcher {
      */
     public void addMainQueryCollector(Collector collector) {
         if (queryCollectors == null) {
-            queryCollectors = new ArrayList<Collector>();
+            queryCollectors = new ArrayList<>();
         }
         queryCollectors.add(collector);
     }
@@ -106,11 +114,11 @@ public class ContextIndexSearcher extends IndexSearcher {
             if (searchContext.queryRewritten()) {
                 return searchContext.query();
             }
-            Query rewriteQuery = super.rewrite(original);
+            Query rewriteQuery = in.rewrite(original);
             searchContext.updateRewriteQuery(rewriteQuery);
             return rewriteQuery;
         } else {
-            return super.rewrite(original);
+            return in.rewrite(original);
         }
     }
 
@@ -121,9 +129,9 @@ public class ContextIndexSearcher extends IndexSearcher {
             if (dfSource != null && (query == searchContext.query() || query == searchContext.parsedQuery().query())) {
                 return dfSource.createNormalizedWeight(query);
             }
-            return super.createNormalizedWeight(query);
+            return in.createNormalizedWeight(query);
         } catch (Throwable t) {
-            searchContext.clearReleasables();
+            searchContext.clearReleasables(Lifetime.COLLECTION);
             throw new RuntimeException(t);
         }
     }
@@ -139,11 +147,11 @@ public class ContextIndexSearcher extends IndexSearcher {
                 // TODO should we create a cache of segment->docIdSets so we won't create one each time?
                 collector = this.mainDocIdSetCollector = new DocIdSetCollector(searchContext.docSetCache(), collector);
             }
-            if (searchContext.parsedFilter() != null) {
+            if (searchContext.parsedPostFilter() != null) {
                 // this will only get applied to the actual search collector and not
                 // to any scoped collectors, also, it will only be applied to the main collector
                 // since that is where the filter should only work
-                collector = new FilteredCollector(collector, searchContext.parsedFilter().filter());
+                collector = new FilteredCollector(collector, searchContext.parsedPostFilter().filter());
             }
             if (queryCollectors != null && !queryCollectors.isEmpty()) {
                 collector = new MultiCollector(collector, queryCollectors.toArray(new Collector[queryCollectors.size()]));
@@ -181,7 +189,7 @@ public class ContextIndexSearcher extends IndexSearcher {
                 }
             }
         } finally {
-            searchContext.clearReleasables();
+            searchContext.clearReleasables(Lifetime.COLLECTION);
         }
     }
 
@@ -194,7 +202,7 @@ public class ContextIndexSearcher extends IndexSearcher {
             XFilteredQuery filteredQuery = new XFilteredQuery(query, searchContext.aliasFilter());
             return super.explain(filteredQuery, doc);
         } finally {
-            searchContext.clearReleasables();
+            searchContext.clearReleasables(Lifetime.COLLECTION);
         }
     }
 }

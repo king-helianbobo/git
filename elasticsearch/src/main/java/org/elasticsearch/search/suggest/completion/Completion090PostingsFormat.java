@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,14 +25,16 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.FilterAtomicReader.FilterTerms;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.IOContext.Context;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.index.mapper.FieldMapper;
+import org.elasticsearch.index.mapper.core.CompletionFieldMapper;
 import org.elasticsearch.search.suggest.completion.CompletionTokenStream.ToFiniteStrings;
 
 import java.io.ByteArrayInputStream;
@@ -55,6 +57,7 @@ public class Completion090PostingsFormat extends PostingsFormat {
 
     public static final String CODEC_NAME = "completion090";
     public static final int SUGGEST_CODEC_VERSION = 1;
+    public static final int SUGGEST_VERSION_CURRENT = SUGGEST_CODEC_VERSION;
     public static final String EXTENSION = "cmp";
 
     private final static ESLogger logger = Loggers.getLogger(Completion090PostingsFormat.class);
@@ -111,7 +114,7 @@ public class Completion090PostingsFormat extends PostingsFormat {
             boolean success = false;
             try {
                 output = state.directory.createOutput(suggestFSTFile, state.context);
-                CodecUtil.writeHeader(output, CODEC_NAME, SUGGEST_CODEC_VERSION);
+                CodecUtil.writeHeader(output, CODEC_NAME, SUGGEST_VERSION_CURRENT);
                 /*
                  * we write the delegate postings format name so we can load it
                  * without getting an instance in the ctor
@@ -205,23 +208,25 @@ public class Completion090PostingsFormat extends PostingsFormat {
 
     private static class CompletionFieldsProducer extends FieldsProducer {
 
-        private FieldsProducer delegateProducer;
-        private LookupFactory lookupFactory;
+        private final FieldsProducer delegateProducer;
+        private final LookupFactory lookupFactory;
+        private final int version;
 
         public CompletionFieldsProducer(SegmentReadState state) throws IOException {
             String suggestFSTFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
             IndexInput input = state.directory.openInput(suggestFSTFile, state.context);
-            CodecUtil.checkHeader(input, CODEC_NAME, SUGGEST_CODEC_VERSION, SUGGEST_CODEC_VERSION);
+            version = CodecUtil.checkHeader(input, CODEC_NAME, SUGGEST_CODEC_VERSION, SUGGEST_VERSION_CURRENT);
+            FieldsProducer delegateProducer = null;
             boolean success = false;
             try {
                 PostingsFormat delegatePostingsFormat = PostingsFormat.forName(input.readString());
                 String providerName = input.readString();
                 CompletionLookupProvider completionLookupProvider = providers.get(providerName);
                 if (completionLookupProvider == null) {
-                    throw new ElasticSearchIllegalStateException("no provider with name [" + providerName + "] registered");
+                    throw new ElasticsearchIllegalStateException("no provider with name [" + providerName + "] registered");
                 }
                 // TODO: we could clone the ReadState and make it always forward IOContext.MERGE to prevent unecessary heap usage? 
-                this.delegateProducer = delegatePostingsFormat.fieldsProducer(state);
+                delegateProducer = delegatePostingsFormat.fieldsProducer(state);
                 /*
                  * If we are merging we don't load the FSTs at all such that we
                  * don't consume so much memory during merge
@@ -231,7 +236,10 @@ public class Completion090PostingsFormat extends PostingsFormat {
                     // eventually we should have some kind of curciut breaker that prevents us from going OOM here
                     // with some configuration
                     this.lookupFactory = completionLookupProvider.load(input);
+                } else {
+                    this.lookupFactory = null;
                 }
+                this.delegateProducer = delegateProducer;
                 success = true;
             } finally {
                 if (!success) {
@@ -254,11 +262,11 @@ public class Completion090PostingsFormat extends PostingsFormat {
 
         @Override
         public Terms terms(String field) throws IOException {
-            Terms terms = delegateProducer.terms(field);
-            if (terms == null) {
+            final Terms terms = delegateProducer.terms(field);
+            if (terms == null || lookupFactory == null) {
                 return terms;
             }
-            return new CompletionTerms(terms, this.lookupFactory);
+            return new CompletionTerms(terms, lookupFactory);
         }
 
         @Override
@@ -268,7 +276,12 @@ public class Completion090PostingsFormat extends PostingsFormat {
 
         @Override
         public long ramBytesUsed() {
-            return RamUsageEstimator.sizeOf(lookupFactory) + delegateProducer.ramBytesUsed();
+            return (lookupFactory == null ? 0 : lookupFactory.ramBytesUsed()) + delegateProducer.ramBytesUsed();
+        }
+
+        @Override
+        public void checkIntegrity() throws IOException {
+            delegateProducer.checkIntegrity();
         }
     }
 
@@ -280,7 +293,7 @@ public class Completion090PostingsFormat extends PostingsFormat {
             this.lookup = lookup;
         }
 
-        public Lookup getLookup(FieldMapper<?> mapper, CompletionSuggestionContext suggestionContext) {
+        public Lookup getLookup(CompletionFieldMapper mapper, CompletionSuggestionContext suggestionContext) {
             return lookup.getLookup(mapper, suggestionContext);
         }
 
@@ -360,8 +373,9 @@ public class Completion090PostingsFormat extends PostingsFormat {
     }
 
     public static abstract class LookupFactory {
-        public abstract Lookup getLookup(FieldMapper<?> mapper, CompletionSuggestionContext suggestionContext);
+        public abstract Lookup getLookup(CompletionFieldMapper mapper, CompletionSuggestionContext suggestionContext);
         public abstract CompletionStats stats(String ... fields);
-        abstract AnalyzingCompletionLookupProvider.AnalyzingSuggestHolder getAnalyzingSuggestHolder(FieldMapper<?> mapper);
+        abstract AnalyzingCompletionLookupProvider.AnalyzingSuggestHolder getAnalyzingSuggestHolder(CompletionFieldMapper mapper);
+        public abstract long ramBytesUsed();
     }
 }

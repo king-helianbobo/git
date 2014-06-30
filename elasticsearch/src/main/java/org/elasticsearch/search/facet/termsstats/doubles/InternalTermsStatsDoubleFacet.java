@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -152,7 +152,7 @@ public class InternalTermsStatsDoubleFacet extends InternalTermsStatsFacet {
 
     List<DoubleEntry> mutableList() {
         if (!(entries instanceof List)) {
-            entries = new ArrayList<DoubleEntry>(entries);
+            entries = new ArrayList<>(entries);
         }
         return (List<DoubleEntry>) entries;
     }
@@ -211,12 +211,12 @@ public class InternalTermsStatsDoubleFacet extends InternalTermsStatsFacet {
         if (requiredSize == 0) { // all terms
             DoubleEntry[] entries1 = map.v().values().toArray(DoubleEntry.class);
             Arrays.sort(entries1, comparatorType.comparator());
-            map.release();
+            map.close();
             return new InternalTermsStatsDoubleFacet(getName(), comparatorType, requiredSize, Arrays.asList(entries1), missing);
         } else {
             Object[] values = map.v().values;
             Arrays.sort(values, (Comparator) comparatorType.comparator());
-            List<DoubleEntry> ordered = new ArrayList<DoubleEntry>(map.v().size());
+            List<DoubleEntry> ordered = new ArrayList<>(map.v().size());
             for (int i = 0; i < requiredSize; i++) {
                 DoubleEntry value = (DoubleEntry) values[i];
                 if (value == null) {
@@ -224,7 +224,7 @@ public class InternalTermsStatsDoubleFacet extends InternalTermsStatsFacet {
                 }
                 ordered.add(value);
             }
-            map.release();
+            map.close();
             return new InternalTermsStatsDoubleFacet(getName(), comparatorType, requiredSize, ordered, missing);
         }
     }
@@ -297,7 +297,7 @@ public class InternalTermsStatsDoubleFacet extends InternalTermsStatsFacet {
         missing = in.readVLong();
 
         int size = in.readVInt();
-        entries = new ArrayList<DoubleEntry>(size);
+        entries = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             entries.add(new DoubleEntry(in.readDouble(), in.readVLong(), in.readVLong(), in.readDouble(), in.readDouble(), in.readDouble()));
         }

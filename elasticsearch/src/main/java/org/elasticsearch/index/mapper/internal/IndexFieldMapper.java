@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,18 +22,22 @@ package org.elasticsearch.index.mapper.internal;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.XStringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.lucene.Lucene;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.mapper.*;
 import org.elasticsearch.index.mapper.core.AbstractFieldMapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.support.XContentMapValues.nodeBooleanValue;
@@ -63,7 +67,7 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
             FIELD_TYPE.freeze();
         }
 
-        public static final EnabledAttributeMapper ENABLED_STATE = EnabledAttributeMapper.DISABLED;
+        public static final EnabledAttributeMapper ENABLED_STATE = EnabledAttributeMapper.UNSET_DISABLED;
     }
 
     public static class Builder extends AbstractFieldMapper.Builder<Builder, IndexFieldMapper> {
@@ -82,7 +86,7 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
 
         @Override
         public IndexFieldMapper build(BuilderContext context) {
-            return new IndexFieldMapper(name, indexName, boost, fieldType, enabledState, provider, fieldDataSettings);
+            return new IndexFieldMapper(name, indexName, boost, fieldType, docValues, enabledState, postingsProvider, docValuesProvider, fieldDataSettings, context.indexSettings());
         }
     }
 
@@ -111,13 +115,13 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
     }
 
     protected IndexFieldMapper(String name, String indexName) {
-        this(name, indexName, Defaults.BOOST, new FieldType(Defaults.FIELD_TYPE), Defaults.ENABLED_STATE, null, null);
+        this(name, indexName, Defaults.BOOST, new FieldType(Defaults.FIELD_TYPE), null, Defaults.ENABLED_STATE, null, null, null, ImmutableSettings.EMPTY);
     }
 
-    public IndexFieldMapper(String name, String indexName, float boost, FieldType fieldType, EnabledAttributeMapper enabledState,
-                            PostingsFormatProvider provider, @Nullable Settings fieldDataSettings) {
-        super(new Names(name, indexName, indexName, name), boost, fieldType, Lucene.KEYWORD_ANALYZER,
-                Lucene.KEYWORD_ANALYZER, provider, null, fieldDataSettings);
+    public IndexFieldMapper(String name, String indexName, float boost, FieldType fieldType, Boolean docValues, EnabledAttributeMapper enabledState,
+                            PostingsFormatProvider postingsProvider, DocValuesFormatProvider docValuesProvider, @Nullable Settings fieldDataSettings, Settings indexSettings) {
+        super(new Names(name, indexName, indexName, name), boost, fieldType, docValues, Lucene.KEYWORD_ANALYZER,
+                Lucene.KEYWORD_ANALYZER, postingsProvider, docValuesProvider, null, null, fieldDataSettings, indexSettings);
         this.enabledState = enabledState;
     }
 
@@ -132,7 +136,12 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
 
     @Override
     public FieldDataType defaultFieldDataType() {
-        return new FieldDataType("string");
+        return new FieldDataType(IndexFieldMapper.NAME);
+    }
+
+    @Override
+    public boolean hasDocValues() {
+        return false;
     }
 
     public String value(Document document) {
@@ -164,20 +173,16 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
     }
 
     @Override
-    public void validate(ParseContext context) throws MapperParsingException {
-    }
-
-    @Override
     public boolean includeInObject() {
         return false;
     }
 
     @Override
-    protected Field parseCreateField(ParseContext context) throws IOException {
+    protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
         if (!enabledState.enabled) {
-            return null;
+            return;
         }
-        return new Field(names.indexName(), context.index(), fieldType);
+        fields.add(new XStringField(names.indexName(), context.index(), fieldType));
     }
 
     @Override
@@ -197,7 +202,7 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
         if (includeDefaults || fieldType().stored() != Defaults.FIELD_TYPE.stored() && enabledState.enabled) {
             builder.field("store", fieldType().stored());
         }
-        if (includeDefaults || enabledState != Defaults.ENABLED_STATE) {
+        if (includeDefaults || enabledState.enabled != Defaults.ENABLED_STATE.enabled) {
             builder.field("enabled", enabledState.enabled);
         }
 
@@ -220,4 +225,5 @@ public class IndexFieldMapper extends AbstractFieldMapper<String> implements Int
             }
         }
     }
+
 }

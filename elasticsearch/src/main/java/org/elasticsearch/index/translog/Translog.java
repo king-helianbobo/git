@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.index.translog;
 
 import org.apache.lucene.index.Term;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesArray;
@@ -29,8 +29,10 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
 import org.elasticsearch.common.lease.Releasable;
+import org.elasticsearch.common.lucene.uid.Versions;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.index.CloseableIndexComponent;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.index.shard.IndexShardComponent;
 
@@ -124,11 +126,16 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
     /**
      * Sync's the translog.
      */
-    void sync();
+    void sync() throws IOException;
 
     boolean syncNeeded();
 
     void syncOnEachOperation(boolean syncOnEachOperation);
+
+    /**
+     * return stats
+     */
+    TranslogStats stats();
 
     static class Location {
         public final long translogId;
@@ -242,6 +249,8 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
     }
 
     static class Create implements Operation {
+        public static final int SERIALIZATION_FORMAT = 6;
+
         private String id;
         private String type;
         private BytesReference source;
@@ -249,7 +258,8 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
         private String parent;
         private long timestamp;
         private long ttl;
-        private long version;
+        private long version = Versions.MATCH_ANY;
+        private VersionType versionType = VersionType.INTERNAL;
 
         public Create() {
         }
@@ -263,6 +273,7 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             this.timestamp = create.timestamp();
             this.ttl = create.ttl();
             this.version = create.version();
+            this.versionType = create.versionType();
         }
 
         public Create(String type, String id, byte[] source) {
@@ -313,6 +324,10 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             return this.version;
         }
 
+        public VersionType versionType() {
+            return versionType;
+        }
+
         @Override
         public Source readSource(StreamInput in) throws IOException {
             readFrom(in);
@@ -344,11 +359,16 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             if (version >= 5) {
                 this.ttl = in.readLong();
             }
+            if (version >= 6) {
+                this.versionType = VersionType.fromValue(in.readByte());
+            }
+
+            assert versionType.validateVersionForWrites(version);
         }
 
         @Override
         public void writeTo(StreamOutput out) throws IOException {
-            out.writeVInt(5); // version
+            out.writeVInt(SERIALIZATION_FORMAT);
             out.writeString(id);
             out.writeString(type);
             out.writeBytesReference(source);
@@ -367,13 +387,17 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             out.writeLong(version);
             out.writeLong(timestamp);
             out.writeLong(ttl);
+            out.writeByte(versionType.getValue());
         }
     }
 
     static class Index implements Operation {
+        public static final int SERIALIZATION_FORMAT = 6;
+
         private String id;
         private String type;
-        private long version;
+        private long version = Versions.MATCH_ANY;
+        private VersionType versionType = VersionType.INTERNAL;
         private BytesReference source;
         private String routing;
         private String parent;
@@ -392,6 +416,7 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             this.version = index.version();
             this.timestamp = index.timestamp();
             this.ttl = index.ttl();
+            this.versionType = index.versionType();
         }
 
         public Index(String type, String id, byte[] source) {
@@ -442,6 +467,10 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             return this.version;
         }
 
+        public VersionType versionType() {
+            return versionType;
+        }
+
         @Override
         public Source readSource(StreamInput in) throws IOException {
             readFrom(in);
@@ -473,11 +502,16 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             if (version >= 5) {
                 this.ttl = in.readLong();
             }
+            if (version >= 6) {
+                this.versionType = VersionType.fromValue(in.readByte());
+            }
+
+            assert versionType.validateVersionForWrites(version);
         }
 
         @Override
         public void writeTo(StreamOutput out) throws IOException {
-            out.writeVInt(5); // version
+            out.writeVInt(SERIALIZATION_FORMAT);
             out.writeString(id);
             out.writeString(type);
             out.writeBytesReference(source);
@@ -496,12 +530,16 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             out.writeLong(version);
             out.writeLong(timestamp);
             out.writeLong(ttl);
+            out.writeByte(versionType.getValue());
         }
     }
 
     static class Delete implements Operation {
+        public static final int SERIALIZATION_FORMAT = 2;
+
         private Term uid;
-        private long version;
+        private long version = Versions.MATCH_ANY;
+        private VersionType versionType = VersionType.INTERNAL;
 
         public Delete() {
         }
@@ -509,6 +547,7 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
         public Delete(Engine.Delete delete) {
             this(delete.uid());
             this.version = delete.version();
+            this.versionType = delete.versionType();
         }
 
         public Delete(Term uid) {
@@ -533,9 +572,13 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             return this.version;
         }
 
+        public VersionType versionType() {
+            return this.versionType;
+        }
+
         @Override
         public Source readSource(StreamInput in) throws IOException {
-            throw new ElasticSearchIllegalStateException("trying to read doc source from delete operation");
+            throw new ElasticsearchIllegalStateException("trying to read doc source from delete operation");
         }
 
         @Override
@@ -545,18 +588,26 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
             if (version >= 1) {
                 this.version = in.readLong();
             }
+            if (version >= 2) {
+                this.versionType = VersionType.fromValue(in.readByte());
+            }
+            assert versionType.validateVersionForWrites(version);
+
         }
 
         @Override
         public void writeTo(StreamOutput out) throws IOException {
-            out.writeVInt(1); // version
+            out.writeVInt(SERIALIZATION_FORMAT);
             out.writeString(uid.field());
             out.writeString(uid.text());
             out.writeLong(version);
+            out.writeByte(versionType.getValue());
         }
     }
 
     static class DeleteByQuery implements Operation {
+
+        public static final int SERIALIZATION_FORMAT = 2;
         private BytesReference source;
         @Nullable
         private String[] filteringAliases;
@@ -599,7 +650,7 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
 
         @Override
         public Source readSource(StreamInput in) throws IOException {
-            throw new ElasticSearchIllegalStateException("trying to read doc source from delete_by_query operation");
+            throw new ElasticsearchIllegalStateException("trying to read doc source from delete_by_query operation");
         }
 
         @Override
@@ -632,7 +683,7 @@ public interface Translog extends IndexShardComponent, CloseableIndexComponent {
 
         @Override
         public void writeTo(StreamOutput out) throws IOException {
-            out.writeVInt(2); // version
+            out.writeVInt(SERIALIZATION_FORMAT);
             out.writeBytesReference(source);
             out.writeVInt(types.length);
             for (String type : types) {

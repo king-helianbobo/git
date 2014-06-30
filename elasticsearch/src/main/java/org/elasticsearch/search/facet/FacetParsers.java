@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.search.facet;
 
 import com.google.common.collect.ImmutableMap;
@@ -30,20 +29,20 @@ import java.util.Set;
  */
 public class FacetParsers {
 
-    private final ImmutableMap<String, FacetParser> processors;
+    private final ImmutableMap<String, FacetParser> parsers;
 
     @Inject
-    public FacetParsers(Set<FacetParser> processors) {
+    public FacetParsers(Set<FacetParser> parsers) {
         MapBuilder<String, FacetParser> builder = MapBuilder.newMapBuilder();
-        for (FacetParser processor : processors) {
-            for (String type : processor.types()) {
-                builder.put(type, processor);
+        for (FacetParser parser : parsers) {
+            for (String type : parser.types()) {
+                builder.put(type, parser);
             }
         }
-        this.processors = builder.immutableMap();
+        this.parsers = builder.immutableMap();
     }
 
-    public FacetParser processor(String type) {
-        return processors.get(type);
+    public FacetParser parser(String type) {
+        return parsers.get(type);
     }
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.http;
 
 import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.io.Streams;
@@ -46,7 +46,7 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
 
     private final HttpServerTransport transport;
 
-    private final RestController restController; //响应Rest请求的东东
+    private final RestController restController;
 
     private final NodeService nodeService;
 
@@ -85,7 +85,7 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
         transport.start();
         if (logger.isInfoEnabled()) {
             logger.info("{}", transport.boundAddress());
@@ -94,13 +94,13 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
         nodeService.removeAttribute("http_address");
         transport.stop();
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
         transport.close();
     }
 
@@ -132,17 +132,16 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
 
     void handlePluginSite(HttpRequest request, HttpChannel channel) {
         if (disableSites) {
-            channel.sendResponse(new StringRestResponse(FORBIDDEN));
+            channel.sendResponse(new BytesRestResponse(FORBIDDEN));
             return;
         }
         if (request.method() == RestRequest.Method.OPTIONS) {
             // when we have OPTIONS request, simply send OK by default (with the Access Control Origin header which gets automatically added)
-            StringRestResponse response = new StringRestResponse(OK);
-            channel.sendResponse(response);
+            channel.sendResponse(new BytesRestResponse(OK));
             return;
         }
         if (request.method() != RestRequest.Method.GET) {
-            channel.sendResponse(new StringRestResponse(FORBIDDEN));
+            channel.sendResponse(new BytesRestResponse(FORBIDDEN));
             return;
         }
         // TODO for a "/_plugin" endpoint, we should have a page that lists all the plugins?
@@ -155,7 +154,7 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
             pluginName = path;
             sitePath = null;
             // If a trailing / is missing, we redirect to the right page #2654
-            channel.sendResponse(new HttpRedirectRestResponse(request.rawPath() + "/"));
+            channel.sendResponse(new BytesRestResponse(RestStatus.MOVED_PERMANENTLY, "text/html", "<head><meta http-equiv=\"refresh\" content=\"0; URL=" + request.rawPath() + "/\"></head>"));
             return;
         } else {
             pluginName = path.substring(0, i1);
@@ -173,22 +172,31 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
         File siteFile = new File(new File(environment.pluginsFile(), pluginName), "_site");
         File file = new File(siteFile, sitePath);
         if (!file.exists() || file.isHidden()) {
-            channel.sendResponse(new StringRestResponse(NOT_FOUND));
+            channel.sendResponse(new BytesRestResponse(NOT_FOUND));
             return;
         }
         if (!file.isFile()) {
-            channel.sendResponse(new StringRestResponse(FORBIDDEN));
-            return;
+            // If it's not a dir, we send a 403
+            if (!file.isDirectory()) {
+                channel.sendResponse(new BytesRestResponse(FORBIDDEN));
+                return;
+            }
+            // We don't serve dir but if index.html exists in dir we should serve it
+            file = new File(file, "index.html");
+            if (!file.exists() || file.isHidden() || !file.isFile()) {
+                channel.sendResponse(new BytesRestResponse(FORBIDDEN));
+                return;
+            }
         }
         if (!file.getAbsolutePath().startsWith(siteFile.getAbsolutePath())) {
-            channel.sendResponse(new StringRestResponse(FORBIDDEN));
+            channel.sendResponse(new BytesRestResponse(FORBIDDEN));
             return;
         }
         try {
             byte[] data = Streams.copyToByteArray(file);
-            channel.sendResponse(new BytesRestResponse(data, guessMimeType(sitePath)));
+            channel.sendResponse(new BytesRestResponse(OK, guessMimeType(sitePath), data));
         } catch (IOException e) {
-            channel.sendResponse(new StringRestResponse(INTERNAL_SERVER_ERROR));
+            channel.sendResponse(new BytesRestResponse(INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -209,7 +217,7 @@ public class HttpServer extends AbstractLifecycleComponent<HttpServer> {
 
     static {
         // This is not an exhaustive list, just the most common types. Call registerMimeType() to add more.
-        Map<String, String> mimeTypes = new HashMap<String, String>();
+        Map<String, String> mimeTypes = new HashMap<>();
         mimeTypes.put("txt", "text/plain");
         mimeTypes.put("css", "text/css");
         mimeTypes.put("csv", "text/csv");

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -30,10 +30,13 @@ import org.apache.lucene.util.NumericUtils;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Numbers;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.analysis.NumericFloatAnalyzer;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.fielddata.IndexFieldDataService;
@@ -45,6 +48,7 @@ import org.elasticsearch.index.query.QueryParseContext;
 import org.elasticsearch.index.search.NumericRangeFieldDataFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.support.XContentMapValues.nodeFloatValue;
@@ -75,7 +79,7 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
         protected Float nullValue = Defaults.NULL_VALUE;
 
         public Builder(String name) {
-            super(name, new FieldType(Defaults.FIELD_TYPE));
+            super(name, new FieldType(Defaults.FIELD_TYPE), Defaults.PRECISION_STEP_32_BIT);
             builder = this;
         }
 
@@ -87,7 +91,7 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
         @Override
         public BoostFieldMapper build(BuilderContext context) {
             return new BoostFieldMapper(name, buildIndexName(context),
-                    precisionStep, boost, fieldType, nullValue, provider, fieldDataSettings);
+                    fieldType.numericPrecisionStep(), boost, fieldType, docValues, nullValue, postingsProvider, docValuesProvider, fieldDataSettings, context.indexSettings());
         }
     }
 
@@ -115,15 +119,15 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
     }
 
     protected BoostFieldMapper(String name, String indexName) {
-        this(name, indexName, Defaults.PRECISION_STEP, Defaults.BOOST, new FieldType(Defaults.FIELD_TYPE),
-                Defaults.NULL_VALUE, null, null);
+        this(name, indexName, Defaults.PRECISION_STEP_32_BIT, Defaults.BOOST, new FieldType(Defaults.FIELD_TYPE), null,
+                Defaults.NULL_VALUE, null, null, null, ImmutableSettings.EMPTY);
     }
 
-    protected BoostFieldMapper(String name, String indexName, int precisionStep, float boost, FieldType fieldType,
-                               Float nullValue, PostingsFormatProvider provider, @Nullable Settings fieldDataSettings) {
-        super(new Names(name, indexName, indexName, name), precisionStep, boost, fieldType, Defaults.IGNORE_MALFORMED,
+    protected BoostFieldMapper(String name, String indexName, int precisionStep, float boost, FieldType fieldType, Boolean docValues, Float nullValue,
+                               PostingsFormatProvider postingsProvider, DocValuesFormatProvider docValuesProvider, @Nullable Settings fieldDataSettings, Settings indexSettings) {
+        super(new Names(name, indexName, indexName, name), precisionStep, boost, fieldType, docValues, Defaults.IGNORE_MALFORMED, Defaults.COERCE,
                 NumericFloatAnalyzer.buildNamedAnalyzer(precisionStep), NumericFloatAnalyzer.buildNamedAnalyzer(Integer.MAX_VALUE),
-                provider, null, fieldDataSettings);
+                postingsProvider, docValuesProvider, null, null, fieldDataSettings, indexSettings, MultiFields.empty(), null);
         this.nullValue = nullValue;
     }
 
@@ -135,6 +139,11 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
     @Override
     public FieldDataType defaultFieldDataType() {
         return new FieldDataType("float");
+    }
+
+    @Override
+    public boolean hasDocValues() {
+        return false;
     }
 
     @Override
@@ -175,9 +184,9 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
     }
 
     @Override
-    public Query fuzzyQuery(String value, String minSim, int prefixLength, int maxExpansions, boolean transpositions) {
+    public Query fuzzyQuery(String value, Fuzziness fuzziness, int prefixLength, int maxExpansions, boolean transpositions) {
         float iValue = Float.parseFloat(value);
-        float iSim = Float.parseFloat(minSim);
+        float iSim = fuzziness.asFloat();
         return NumericRangeQuery.newFloatRange(names.indexName(), precisionStep,
                 iValue - iSim,
                 iValue + iSim,
@@ -228,10 +237,6 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
     }
 
     @Override
-    public void validate(ParseContext context) throws MapperParsingException {
-    }
-
-    @Override
     public boolean includeInObject() {
         return true;
     }
@@ -247,13 +252,13 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
     }
 
     @Override
-    protected Field innerParseCreateField(ParseContext context) throws IOException {
+    protected void innerParseCreateField(ParseContext context, List<Field> fields) throws IOException {
         final float value = parseFloatValue(context);
         if (Float.isNaN(value)) {
-            return null;
+            return;
         }
         context.docBoost(value);
-        return new FloatFieldMapper.CustomFloatNumericField(this, value, fieldType);
+        fields.add(new FloatFieldMapper.CustomFloatNumericField(this, value, fieldType));
     }
 
     private float parseFloatValue(ParseContext context) throws IOException {
@@ -264,7 +269,7 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
             }
             value = nullValue;
         } else {
-            value = context.parser().floatValue();
+            value = context.parser().floatValue(coerce.value());
         }
         return value;
     }
@@ -298,7 +303,6 @@ public class BoostFieldMapper extends NumberFieldMapper<Float> implements Intern
         if (includeDefaults || fieldType.stored() != Defaults.FIELD_TYPE.stored()) {
             builder.field("store", fieldType.stored());
         }
-
         if (customFieldDataSettings != null) {
             builder.field("fielddata", (Map) customFieldDataSettings.getAsMap());
         } else if (includeDefaults) {

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -112,8 +112,11 @@ public class FunctionScoreQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Bits acceptDocs) throws IOException {
-            Scorer subQueryScorer = subQueryWeight.scorer(context, scoreDocsInOrder, false, acceptDocs);
+        public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+            // we ignore scoreDocsInOrder parameter, because we need to score in
+            // order if documents are scored with a script. The
+            // ShardLookup depends on in order scoring.
+            Scorer subQueryScorer = subQueryWeight.scorer(context, acceptDocs);
             if (subQueryScorer == null) {
                 return null;
             }
@@ -168,8 +171,9 @@ public class FunctionScoreQuery extends Query {
 
         @Override
         public float score() throws IOException {
-            return scoreCombiner.combine(subQueryBoost, scorer.score(),
-                    function.score(scorer.docID(), scorer.score()), maxBoost);
+            float score = scorer.score();
+            return scoreCombiner.combine(subQueryBoost, score,
+                    function.score(scorer.docID(), score), maxBoost);
         }
 
         @Override
@@ -191,7 +195,7 @@ public class FunctionScoreQuery extends Query {
     }
 
     public boolean equals(Object o) {
-        if (getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
         FunctionScoreQuery other = (FunctionScoreQuery) o;
         return this.getBoost() == other.getBoost() && this.subQuery.equals(other.subQuery) && this.function.equals(other.function)

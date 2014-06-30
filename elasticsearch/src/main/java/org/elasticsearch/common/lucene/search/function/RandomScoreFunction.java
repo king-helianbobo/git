@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,19 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.common.lucene.search.function;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Explanation;
 
 /**
- *
+ * Pseudo randomly generate a score for each {@link #score}.
  */
 public class RandomScoreFunction extends ScoreFunction {
 
     private final PRNG prng;
-    private int docBase;
 
     public RandomScoreFunction(long seed) {
         super(CombineFunction.MULT);
@@ -37,12 +35,12 @@ public class RandomScoreFunction extends ScoreFunction {
 
     @Override
     public void setNextReader(AtomicReaderContext context) {
-        this.docBase = context.docBase;
+        // intentionally does nothing
     }
 
     @Override
     public double score(int docId, float subQueryScore) {
-        return prng.random(docBase + docId);
+        return prng.nextFloat();
     }
 
     @Override
@@ -54,8 +52,7 @@ public class RandomScoreFunction extends ScoreFunction {
     }
 
     /**
-     * Algorithm largely based on {@link java.util.Random} except this one is not
-     * thread safe and it incorporates the doc id on next();
+     * A non thread-safe PRNG
      */
     static class PRNG {
 
@@ -71,22 +68,9 @@ public class RandomScoreFunction extends ScoreFunction {
             this.seed = (seed ^ multiplier) & mask;
         }
 
-        public float random(int doc) {
-            if (doc == 0) {
-                doc = 0xCAFEBAB;
-            }
-
-            long rand = doc;
-            rand |= rand << 32;
-            rand ^= rand;
-            return nextFloat(rand);
-        }
-
-        public float nextFloat(long rand) {
+        public float nextFloat() {
             seed = (seed * multiplier + addend) & mask;
-            rand ^= seed;
-            double result = rand / (double)(1L << 54);
-            return (float) result;
+            return seed / (float)(1 << 24);
         }
 
     }

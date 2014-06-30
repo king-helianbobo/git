@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -36,6 +36,7 @@ import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.elasticsearch.common.unit.TimeValue.timeValueMillis;
 
@@ -44,25 +45,29 @@ import static org.elasticsearch.common.unit.TimeValue.timeValueMillis;
  */
 public class TranslogService extends AbstractIndexShardComponent {
 
+    private static final String FLUSH_THRESHOLD_OPS_KEY = "flush_threshold_ops";
+    private static final String FLUSH_THRESHOLD_SIZE_KEY = "flush_threshold_size";
+    private static final String FLUSH_THRESHOLD_PERIOD_KEY = "flush_threshold_period";
+    private static final String FLUSH_THRESHOLD_DISABLE_FLUSH_KEY = "disable_flush";
+    private static final String FLUSH_THRESHOLD_INTERVAL_KEY = "interval";
+
+    public static final String INDEX_TRANSLOG_FLUSH_INTERVAL = "index.translog." + FLUSH_THRESHOLD_INTERVAL_KEY;
+    public static final String INDEX_TRANSLOG_FLUSH_THRESHOLD_OPS = "index.translog." + FLUSH_THRESHOLD_OPS_KEY;
+    public static final String INDEX_TRANSLOG_FLUSH_THRESHOLD_SIZE = "index.translog." + FLUSH_THRESHOLD_SIZE_KEY;
+    public static final String INDEX_TRANSLOG_FLUSH_THRESHOLD_PERIOD =  "index.translog." + FLUSH_THRESHOLD_PERIOD_KEY;
+    public static final String INDEX_TRANSLOG_DISABLE_FLUSH = "index.translog." + FLUSH_THRESHOLD_DISABLE_FLUSH_KEY;
+
     private final ThreadPool threadPool;
-
     private final IndexSettingsService indexSettingsService;
-
     private final IndexShard indexShard;
-
     private final Translog translog;
 
-    private int flushThresholdOperations;
-
-    private ByteSizeValue flushThresholdSize;
-
-    private TimeValue flushThresholdPeriod;
-
-    private boolean disableFlush;
-
-    private final TimeValue interval;
-
-    private ScheduledFuture future;
+    private volatile TimeValue interval;
+    private volatile int flushThresholdOperations;
+    private volatile ByteSizeValue flushThresholdSize;
+    private volatile TimeValue flushThresholdPeriod;
+    private volatile boolean disableFlush;
+    private volatile ScheduledFuture future;
 
     private final ApplySettings applySettings = new ApplySettings();
 
@@ -74,11 +79,11 @@ public class TranslogService extends AbstractIndexShardComponent {
         this.indexShard = indexShard;
         this.translog = translog;
 
-        this.flushThresholdOperations = componentSettings.getAsInt("flush_threshold_ops", componentSettings.getAsInt("flush_threshold", 5000));
-        this.flushThresholdSize = componentSettings.getAsBytesSize("flush_threshold_size", new ByteSizeValue(200, ByteSizeUnit.MB));
-        this.flushThresholdPeriod = componentSettings.getAsTime("flush_threshold_period", TimeValue.timeValueMinutes(30));
-        this.interval = componentSettings.getAsTime("interval", timeValueMillis(5000));
-        this.disableFlush = componentSettings.getAsBoolean("disable_flush", false);
+        this.flushThresholdOperations = componentSettings.getAsInt(FLUSH_THRESHOLD_OPS_KEY, componentSettings.getAsInt("flush_threshold", 5000));
+        this.flushThresholdSize = componentSettings.getAsBytesSize(FLUSH_THRESHOLD_SIZE_KEY, new ByteSizeValue(200, ByteSizeUnit.MB));
+        this.flushThresholdPeriod = componentSettings.getAsTime(FLUSH_THRESHOLD_PERIOD_KEY, TimeValue.timeValueMinutes(30));
+        this.interval = componentSettings.getAsTime(FLUSH_THRESHOLD_INTERVAL_KEY, timeValueMillis(5000));
+        this.disableFlush = componentSettings.getAsBoolean(FLUSH_THRESHOLD_DISABLE_FLUSH_KEY, false);
 
         logger.debug("interval [{}], flush_threshold_ops [{}], flush_threshold_size [{}], flush_threshold_period [{}]", interval, flushThresholdOperations, flushThresholdSize, flushThresholdPeriod);
 
@@ -93,10 +98,7 @@ public class TranslogService extends AbstractIndexShardComponent {
         this.future.cancel(true);
     }
 
-    public static final String INDEX_TRANSLOG_FLUSH_THRESHOLD_OPS = "index.translog.flush_threshold_ops";
-    public static final String INDEX_TRANSLOG_FLUSH_THRESHOLD_SIZE = "index.translog.flush_threshold_size";
-    public static final String INDEX_TRANSLOG_FLUSH_THRESHOLD_PERIOD = "index.translog.flush_threshold_period";
-    public static final String INDEX_TRANSLOG_DISABLE_FLUSH = "index.translog.disable_flush";
+
 
     class ApplySettings implements IndexSettingsService.Listener {
         @Override
@@ -116,12 +118,21 @@ public class TranslogService extends AbstractIndexShardComponent {
                 logger.info("updating flush_threshold_period from [{}] to [{}]", TranslogService.this.flushThresholdPeriod, flushThresholdPeriod);
                 TranslogService.this.flushThresholdPeriod = flushThresholdPeriod;
             }
+            TimeValue interval = settings.getAsTime(INDEX_TRANSLOG_FLUSH_INTERVAL, TranslogService.this.interval);
+            if (!interval.equals(TranslogService.this.interval)) {
+                logger.info("updating interval from [{}] to [{}]", TranslogService.this.interval, interval);
+                TranslogService.this.interval = interval;
+            }
             boolean disableFlush = settings.getAsBoolean(INDEX_TRANSLOG_DISABLE_FLUSH, TranslogService.this.disableFlush);
             if (disableFlush != TranslogService.this.disableFlush) {
                 logger.info("updating disable_flush from [{}] to [{}]", TranslogService.this.disableFlush, disableFlush);
                 TranslogService.this.disableFlush = disableFlush;
             }
         }
+    }
+
+    private TimeValue computeNextInterval() {
+        return new TimeValue(interval.millis() + (ThreadLocalRandom.current().nextLong(interval.millis())));
     }
 
     private class TranslogBasedFlush implements Runnable {
@@ -145,8 +156,13 @@ public class TranslogService extends AbstractIndexShardComponent {
                 return;
             }
 
+            int currentNumberOfOperations = translog.estimatedNumberOfOperations();
+            if (currentNumberOfOperations == 0) {
+                reschedule();
+                return;
+            }
+
             if (flushThresholdOperations > 0) {
-                int currentNumberOfOperations = translog.estimatedNumberOfOperations();
                 if (currentNumberOfOperations > flushThresholdOperations) {
                     logger.trace("flushing translog, operations [{}], breached [{}]", currentNumberOfOperations, flushThresholdOperations);
                     asyncFlushAndReschedule();
@@ -175,7 +191,7 @@ public class TranslogService extends AbstractIndexShardComponent {
         }
 
         private void reschedule() {
-            future = threadPool.schedule(interval, ThreadPool.Names.SAME, this);
+            future = threadPool.schedule(computeNextInterval(), ThreadPool.Names.SAME, this);
         }
 
         private void asyncFlushAndReschedule() {
@@ -188,13 +204,13 @@ public class TranslogService extends AbstractIndexShardComponent {
                         // we are being closed, or in created state, ignore
                     } catch (FlushNotAllowedEngineException e) {
                         // ignore this exception, we are not allowed to perform flush
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         logger.warn("failed to flush shard on translog threshold", e);
                     }
                     lastFlushTime = threadPool.estimatedTimeInMillis();
 
                     if (indexShard.state() != IndexShardState.CLOSED) {
-                        future = threadPool.schedule(interval, ThreadPool.Names.SAME, TranslogBasedFlush.this);
+                        future = threadPool.schedule(computeNextInterval(), ThreadPool.Names.SAME, TranslogBasedFlush.this);
                     }
                 }
             });

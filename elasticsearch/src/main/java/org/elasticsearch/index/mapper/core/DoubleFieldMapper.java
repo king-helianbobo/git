@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,24 +19,30 @@
 
 package org.elasticsearch.index.mapper.core;
 
+import com.carrotsearch.hppc.DoubleArrayList;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.Explicit;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Numbers;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.Fuzziness;
+import org.elasticsearch.common.util.ByteUtils;
+import org.elasticsearch.common.util.CollectionUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.analysis.NumericDoubleAnalyzer;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.fielddata.IndexFieldDataService;
@@ -47,6 +53,7 @@ import org.elasticsearch.index.search.NumericRangeFieldDataFilter;
 import org.elasticsearch.index.similarity.SimilarityProvider;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.support.XContentMapValues.nodeDoubleValue;
@@ -75,7 +82,7 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
         protected Double nullValue = Defaults.NULL_VALUE;
 
         public Builder(String name) {
-            super(name, new FieldType(Defaults.FIELD_TYPE));
+            super(name, new FieldType(Defaults.FIELD_TYPE), Defaults.PRECISION_STEP_64_BIT);
             builder = this;
         }
 
@@ -88,8 +95,8 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
         public DoubleFieldMapper build(BuilderContext context) {
             fieldType.setOmitNorms(fieldType.omitNorms() && boost == 1.0f);
             DoubleFieldMapper fieldMapper = new DoubleFieldMapper(buildNames(context),
-                    precisionStep, boost, fieldType, nullValue,
-                    ignoreMalformed(context), provider, similarity, fieldDataSettings);
+                    fieldType.numericPrecisionStep(), boost, fieldType, docValues, nullValue, ignoreMalformed(context), coerce(context), postingsProvider, 
+                    docValuesProvider, similarity, normsLoading, fieldDataSettings, context.indexSettings(), multiFieldsBuilder.build(this, context), copyTo);
             fieldMapper.includeInAll(includeInAll);
             return fieldMapper;
         }
@@ -116,12 +123,15 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
 
     private String nullValueAsString;
 
-    protected DoubleFieldMapper(Names names, int precisionStep, float boost, FieldType fieldType,
-                                Double nullValue, Explicit<Boolean> ignoreMalformed,
-                                PostingsFormatProvider provider, SimilarityProvider similarity, @Nullable Settings fieldDataSettings) {
-        super(names, precisionStep, boost, fieldType, ignoreMalformed,
+    protected DoubleFieldMapper(Names names, int precisionStep, float boost, FieldType fieldType, Boolean docValues,
+                                Double nullValue, Explicit<Boolean> ignoreMalformed,  Explicit<Boolean> coerce,
+                                PostingsFormatProvider postingsProvider, DocValuesFormatProvider docValuesProvider,
+
+                                SimilarityProvider similarity, Loading normsLoading, @Nullable Settings fieldDataSettings, 
+                                Settings indexSettings, MultiFields multiFields, CopyTo copyTo) {
+        super(names, precisionStep, boost, fieldType, docValues, ignoreMalformed, coerce,
                 NumericDoubleAnalyzer.buildNamedAnalyzer(precisionStep), NumericDoubleAnalyzer.buildNamedAnalyzer(Integer.MAX_VALUE),
-                provider, similarity, fieldDataSettings);
+                postingsProvider, docValuesProvider, similarity, normsLoading, fieldDataSettings, indexSettings, multiFields, copyTo);
         this.nullValue = nullValue;
         this.nullValueAsString = nullValue == null ? null : nullValue.toString();
     }
@@ -164,9 +174,9 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
     }
 
     @Override
-    public Query fuzzyQuery(String value, String minSim, int prefixLength, int maxExpansions, boolean transpositions) {
+    public Query fuzzyQuery(String value, Fuzziness fuzziness, int prefixLength, int maxExpansions, boolean transpositions) {
         double iValue = Double.parseDouble(value);
-        double iSim = Double.parseDouble(minSim);
+        double iSim = fuzziness.asDouble();
         return NumericRangeQuery.newDoubleRange(names.indexName(), precisionStep,
                 iValue - iSim,
                 iValue + iSim,
@@ -232,21 +242,21 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
     }
 
     @Override
-    protected Field innerParseCreateField(ParseContext context) throws IOException {
+    protected void innerParseCreateField(ParseContext context, List<Field> fields) throws IOException {
         double value;
         float boost = this.boost;
         if (context.externalValueSet()) {
             Object externalValue = context.externalValue();
             if (externalValue == null) {
                 if (nullValue == null) {
-                    return null;
+                    return;
                 }
                 value = nullValue;
             } else if (externalValue instanceof String) {
                 String sExternalValue = (String) externalValue;
                 if (sExternalValue.length() == 0) {
                     if (nullValue == null) {
-                        return null;
+                        return;
                     }
                     value = nullValue;
                 } else {
@@ -263,7 +273,7 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
             if (parser.currentToken() == XContentParser.Token.VALUE_NULL ||
                     (parser.currentToken() == XContentParser.Token.VALUE_STRING && parser.textLength() == 0)) {
                 if (nullValue == null) {
-                    return null;
+                    return;
                 }
                 value = nullValue;
                 if (nullValueAsString != null && (context.includeInAll(includeInAll, this))) {
@@ -279,31 +289,42 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
                     } else {
                         if ("value".equals(currentFieldName) || "_value".equals(currentFieldName)) {
                             if (parser.currentToken() != XContentParser.Token.VALUE_NULL) {
-                                objValue = parser.doubleValue();
+                                objValue = parser.doubleValue(coerce.value());
                             }
                         } else if ("boost".equals(currentFieldName) || "_boost".equals(currentFieldName)) {
                             boost = parser.floatValue();
                         } else {
-                            throw new ElasticSearchIllegalArgumentException("unknown property [" + currentFieldName + "]");
+                            throw new ElasticsearchIllegalArgumentException("unknown property [" + currentFieldName + "]");
                         }
                     }
                 }
                 if (objValue == null) {
                     // no value
-                    return null;
+                    return;
                 }
                 value = objValue;
             } else {
-                value = parser.doubleValue();
+                value = parser.doubleValue(coerce.value());
                 if (context.includeInAll(includeInAll, this)) {
                     context.allEntries().addText(names.fullName(), parser.text(), boost);
                 }
             }
         }
 
-        CustomDoubleNumericField field = new CustomDoubleNumericField(this, value, fieldType);
-        field.setBoost(boost);
-        return field;
+        if (fieldType.indexed() || fieldType.stored()) {
+            CustomDoubleNumericField field = new CustomDoubleNumericField(this, value, fieldType);
+            field.setBoost(boost);
+            fields.add(field);
+        }
+        if (hasDocValues()) {
+            CustomDoubleNumericDocValuesField field = (CustomDoubleNumericDocValuesField) context.doc().getByKey(names().indexName());
+            if (field != null) {
+                field.add(value);
+            } else {
+                field = new CustomDoubleNumericDocValuesField(names().indexName(), value);
+                context.doc().addWithKey(names().indexName(), field);
+            }
+        }
     }
 
     @Override
@@ -327,7 +348,7 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
     protected void doXContentBody(XContentBuilder builder, boolean includeDefaults, Params params) throws IOException {
         super.doXContentBody(builder, includeDefaults, params);
 
-        if (includeDefaults || precisionStep != Defaults.PRECISION_STEP) {
+        if (includeDefaults || precisionStep != Defaults.PRECISION_STEP_64_BIT) {
             builder.field("precision_step", precisionStep);
         }
         if (includeDefaults || nullValue != null) {
@@ -365,5 +386,38 @@ public class DoubleFieldMapper extends NumberFieldMapper<Double> {
         public String numericAsString() {
             return Double.toString(number);
         }
+    }
+
+    public static class CustomDoubleNumericDocValuesField extends CustomNumericDocValuesField {
+
+        public static final FieldType TYPE = new FieldType();
+        static {
+          TYPE.setDocValueType(FieldInfo.DocValuesType.BINARY);
+          TYPE.freeze();
+        }
+
+        private final DoubleArrayList values;
+
+        public CustomDoubleNumericDocValuesField(String  name, double value) {
+            super(name);
+            values = new DoubleArrayList();
+            add(value);
+        }
+
+        public void add(double value) {
+            values.add(value);
+        }
+
+        @Override
+        public BytesRef binaryValue() {
+            CollectionUtils.sortAndDedup(values);
+
+            final byte[] bytes = new byte[values.size() * 8];
+            for (int i = 0; i < values.size(); ++i) {
+                ByteUtils.writeDoubleLE(values.get(i), bytes, i * 8);
+            }
+            return new BytesRef(bytes);
+        }
+
     }
 }

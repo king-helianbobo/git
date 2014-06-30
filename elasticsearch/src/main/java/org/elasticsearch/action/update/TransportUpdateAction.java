@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,10 +20,11 @@
 package org.elasticsearch.action.update;
 
 import com.google.common.collect.ImmutableList;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.RoutingMissingException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.create.TransportCreateIndexAction;
@@ -120,7 +121,12 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
         MetaData metaData = clusterService.state().metaData();
         String aliasOrIndex = request.index();
         request.routing((metaData.resolveIndexRouting(request.routing(), aliasOrIndex)));
-        request.index(metaData.concreteIndex(request.index()));
+        request.index(metaData.concreteSingleIndex(request.index()));
+
+        // Fail fast on the node that received the request, rather than failing when translating on the index or delete request.
+        if (request.routing() == null && state.getMetaData().routingRequired(request.index(), request.type())) {
+            throw new RoutingMissingException(request.index(), request.type(), request.id());
+        }
         return true;
     }
 
@@ -159,7 +165,7 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
     }
 
     @Override
-    protected ShardIterator shards(ClusterState clusterState, UpdateRequest request) throws ElasticSearchException {
+    protected ShardIterator shards(ClusterState clusterState, UpdateRequest request) throws ElasticsearchException {
         if (request.shardId() != -1) {
             return clusterState.routingTable().index(request.index()).shard(request.shardId()).primaryShardIt();
         }
@@ -175,11 +181,11 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
     }
 
     @Override
-    protected void shardOperation(final UpdateRequest request, final ActionListener<UpdateResponse> listener) throws ElasticSearchException {
+    protected void shardOperation(final UpdateRequest request, final ActionListener<UpdateResponse> listener) throws ElasticsearchException {
         shardOperation(request, listener, 0);
     }
 
-    protected void shardOperation(final UpdateRequest request, final ActionListener<UpdateResponse> listener, final int retryCount) throws ElasticSearchException {
+    protected void shardOperation(final UpdateRequest request, final ActionListener<UpdateResponse> listener, final int retryCount) throws ElasticsearchException {
         final UpdateHelper.Result result = updateHelper.prepare(request);
         switch (result.operation()) {
             case UPSERT:
@@ -189,8 +195,7 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
                 indexAction.execute(upsertRequest, new ActionListener<IndexResponse>() {
                     @Override
                     public void onResponse(IndexResponse response) {
-                        UpdateResponse update = new UpdateResponse(response.getIndex(), response.getType(), response.getId(), response.getVersion());
-                        update.setMatches(response.getMatches());
+                        UpdateResponse update = new UpdateResponse(response.getIndex(), response.getType(), response.getId(), response.getVersion(), response.isCreated());
                         if (request.fields() != null && request.fields().length > 0) {
                             Tuple<XContentType, Map<String, Object>> sourceAndContent = XContentHelper.convertToMap(upsertSourceBytes, true);
                             update.setGetResult(updateHelper.extractGetResult(request, response.getVersion(), sourceAndContent.v2(), sourceAndContent.v1(), upsertSourceBytes));
@@ -225,8 +230,7 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
                 indexAction.execute(indexRequest, new ActionListener<IndexResponse>() {
                     @Override
                     public void onResponse(IndexResponse response) {
-                        UpdateResponse update = new UpdateResponse(response.getIndex(), response.getType(), response.getId(), response.getVersion());
-                        update.setMatches(response.getMatches());
+                        UpdateResponse update = new UpdateResponse(response.getIndex(), response.getType(), response.getId(), response.getVersion(), response.isCreated());
                         update.setGetResult(updateHelper.extractGetResult(request, response.getVersion(), result.updatedSourceAsMap(), result.updateSourceContentType(), indexSourceBytes));
                         listener.onResponse(update);
                     }
@@ -254,7 +258,7 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
                 deleteAction.execute(deleteRequest, new ActionListener<DeleteResponse>() {
                     @Override
                     public void onResponse(DeleteResponse response) {
-                        UpdateResponse update = new UpdateResponse(response.getIndex(), response.getType(), response.getId(), response.getVersion());
+                        UpdateResponse update = new UpdateResponse(response.getIndex(), response.getType(), response.getId(), response.getVersion(), false);
                         update.setGetResult(updateHelper.extractGetResult(request, response.getVersion(), result.updatedSourceAsMap(), result.updateSourceContentType(), null));
                         listener.onResponse(update);
                     }
@@ -282,7 +286,7 @@ public class TransportUpdateAction extends TransportInstanceSingleOperationActio
                 listener.onResponse(update);
                 break;
             default:
-                throw new ElasticSearchIllegalStateException("Illegal operation " + result.operation());
+                throw new ElasticsearchIllegalStateException("Illegal operation " + result.operation());
         }
     }
 }

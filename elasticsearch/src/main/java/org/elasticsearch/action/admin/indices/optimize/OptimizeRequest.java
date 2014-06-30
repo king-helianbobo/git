@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -47,12 +47,14 @@ public class OptimizeRequest extends BroadcastOperationRequest<OptimizeRequest> 
         public static final int MAX_NUM_SEGMENTS = -1;
         public static final boolean ONLY_EXPUNGE_DELETES = false;
         public static final boolean FLUSH = true;
+        public static final boolean FORCE = false;
     }
 
     private boolean waitForMerge = Defaults.WAIT_FOR_MERGE;
     private int maxNumSegments = Defaults.MAX_NUM_SEGMENTS;
     private boolean onlyExpungeDeletes = Defaults.ONLY_EXPUNGE_DELETES;
     private boolean flush = Defaults.FLUSH;
+    private boolean force = Defaults.FORCE;
 
     /**
      * Constructs an optimization request over one or more indices.
@@ -131,14 +133,30 @@ public class OptimizeRequest extends BroadcastOperationRequest<OptimizeRequest> 
         return this;
     }
 
+    /**
+     * Should the merge be forced even if there is a single segment with no deletions in the shard.
+     * Defaults to <tt>false</tt>.
+     */
+    public boolean force() {
+        return force;
+    }
+
+    /**
+     * See #force().
+     */
+    public OptimizeRequest force(boolean force) {
+        this.force = force;
+        return this;
+    }
+
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         waitForMerge = in.readBoolean();
         maxNumSegments = in.readInt();
         onlyExpungeDeletes = in.readBoolean();
         flush = in.readBoolean();
-        if (in.getVersion().onOrBefore(Version.V_0_90_3)) {
-            in.readBoolean(); // old refresh flag
+        if (in.getVersion().onOrAfter(Version.V_1_1_0)) {
+            force = in.readBoolean();
         }
     }
 
@@ -148,8 +166,8 @@ public class OptimizeRequest extends BroadcastOperationRequest<OptimizeRequest> 
         out.writeInt(maxNumSegments);
         out.writeBoolean(onlyExpungeDeletes);
         out.writeBoolean(flush);
-        if (out.getVersion().onOrBefore(Version.V_0_90_3)) {
-            out.writeBoolean(false); // old refresh flag
+        if (out.getVersion().onOrAfter(Version.V_1_1_0)) {
+            out.writeBoolean(force);
         }
     }
 }

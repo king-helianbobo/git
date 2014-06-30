@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,14 +22,18 @@ package org.elasticsearch.common.settings;
 import org.elasticsearch.common.settings.bar.BarTestClass;
 import org.elasticsearch.common.settings.foo.FooTestClass;
 import org.elasticsearch.test.ElasticsearchTestCase;
+import org.hamcrest.Matchers;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.*;
 
 /**
  */
-public class ImmutableSettingsTests extends ElasticsearchTestCase{
+public class ImmutableSettingsTests extends ElasticsearchTestCase {
 
     @Test
     public void testGetAsClass() {
@@ -48,14 +52,14 @@ public class ImmutableSettingsTests extends ElasticsearchTestCase{
 
         // Assert that class cannot be loaded if wrong packagePrefix is specified
         try {
-            settings.getAsClass("test.class", FooTestClass.class, "com.example.elasticsearch..common.settings.", "TestClass");
+            settings.getAsClass("test.class", FooTestClass.class, "com.example.elasticsearch.test.unit..common.settings.", "TestClass");
             fail("Class with wrong package name shouldn't be loaded");
         } catch (NoClassSettingsException ex) {
             // Ignore
         }
 
         // Assert that package name in settings is getting correctly applied
-        assertThat(settings.getAsClass("test.class.package", FooTestClass.class, "com.example.elasticsearch.common.settings.", "TestClass").getName(),
+        assertThat(settings.getAsClass("test.class.package", FooTestClass.class, "com.example.elasticsearch.test.unit.common.settings.", "TestClass").getName(),
                 equalTo(BarTestClass.class.getName()));
 
     }
@@ -119,5 +123,56 @@ public class ImmutableSettingsTests extends ElasticsearchTestCase{
                 .replacePropertyPlaceholders()
                 .build();
         assertThat(settings.get("setting1"), is(nullValue()));
+    }
+
+    @Test
+    public void testUnFlattenedSettings() {
+        Settings settings = settingsBuilder()
+                .put("foo", "abc")
+                .put("bar", "def")
+                .put("baz.foo", "ghi")
+                .put("baz.bar", "jkl")
+                .putArray("baz.arr", "a", "b", "c")
+                .build();
+        Map<String, Object> map = settings.getAsStructuredMap();
+        assertThat(map.keySet(), Matchers.<String>hasSize(3));
+        assertThat(map, allOf(
+                Matchers.<String, Object>hasEntry("foo", "abc"),
+                Matchers.<String, Object>hasEntry("bar", "def")));
+
+        @SuppressWarnings("unchecked") Map<String, Object> bazMap = (Map<String, Object>) map.get("baz");
+        assertThat(bazMap.keySet(), Matchers.<String>hasSize(3));
+        assertThat(bazMap, allOf(
+                Matchers.<String, Object>hasEntry("foo", "ghi"),
+                Matchers.<String, Object>hasEntry("bar", "jkl")));
+        @SuppressWarnings("unchecked") List<String> bazArr = (List<String>) bazMap.get("arr");
+        assertThat(bazArr, contains("a", "b", "c"));
+
+    }
+
+    @Test
+    public void testFallbackToFlattenedSettings() {
+        Settings settings = settingsBuilder()
+                .put("foo", "abc")
+                .put("foo.bar", "def")
+                .put("foo.baz", "ghi").build();
+        Map<String, Object> map = settings.getAsStructuredMap();
+        assertThat(map.keySet(), Matchers.<String>hasSize(3));
+        assertThat(map, allOf(
+                Matchers.<String, Object>hasEntry("foo", "abc"),
+                Matchers.<String, Object>hasEntry("foo.bar", "def"),
+                Matchers.<String, Object>hasEntry("foo.baz", "ghi")));
+
+        settings = settingsBuilder()
+                .put("foo.bar", "def")
+                .put("foo", "abc")
+                .put("foo.baz", "ghi")
+                .build();
+        map = settings.getAsStructuredMap();
+        assertThat(map.keySet(), Matchers.<String>hasSize(3));
+        assertThat(map, allOf(
+                Matchers.<String, Object>hasEntry("foo", "abc"),
+                Matchers.<String, Object>hasEntry("foo.bar", "def"),
+                Matchers.<String, Object>hasEntry("foo.baz", "ghi")));
     }
 }

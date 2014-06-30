@@ -37,7 +37,7 @@ dates regarding to the
 String json = "{" +
         "\"user\":\"kimchy\"," +
         "\"postDate\":\"2013-01-30\"," +
-        "\"message\":\"trying out Elastic Search\"," +
+        "\"message\":\"trying out Elasticsearch\"" +
     "}";
 --------------------------------------------------
 
@@ -53,7 +53,7 @@ structure:
 Map<String, Object> json = new HashMap<String, Object>();
 json.put("user","kimchy");
 json.put("postDate",new Date());
-json.put("message","trying out Elastic Search");
+json.put("message","trying out Elasticsearch");
 --------------------------------------------------
 
 
@@ -104,7 +104,7 @@ XContentBuilder builder = jsonBuilder()
     .startObject()
         .field("user", "kimchy")
         .field("postDate", new Date())
-        .field("message", "trying out Elastic Search")
+        .field("message", "trying out Elasticsearch")
     .endObject()
 --------------------------------------------------
 
@@ -114,7 +114,7 @@ Note that you can also add arrays with `startArray(String)` and
 other XContentBuilder objects.
 
 If you need to see the generated JSON content, you can use the
-@string()@method.
+`string()` method.
 
 [source,java]
 --------------------------------------------------
@@ -137,7 +137,7 @@ IndexResponse response = client.prepareIndex("twitter", "tweet", "1")
                     .startObject()
                         .field("user", "kimchy")
                         .field("postDate", new Date())
-                        .field("message", "trying out Elastic Search")
+                        .field("message", "trying out Elasticsearch")
                     .endObject()
                   )
         .execute()
@@ -152,7 +152,7 @@ don't have to give an ID:
 String json = "{" +
         "\"user\":\"kimchy\"," +
         "\"postDate\":\"2013-01-30\"," +
-        "\"message\":\"trying out Elastic Search\"," +
+        "\"message\":\"trying out Elasticsearch\"" +
     "}";
 
 IndexResponse response = client.prepareIndex("twitter", "tweet")
@@ -182,7 +182,6 @@ you percolator that have matched:
 --------------------------------------------------
 IndexResponse response = client.prepareIndex("twitter", "tweet", "1")
         .setSource(json)
-        .setPercolate("*")
         .execute()
         .actionGet();
 

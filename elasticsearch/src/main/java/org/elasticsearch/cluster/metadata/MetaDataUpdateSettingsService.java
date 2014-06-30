@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,8 +20,9 @@
 package org.elasticsearch.cluster.metadata;
 
 import com.google.common.collect.Sets;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
-import org.elasticsearch.action.admin.indices.settings.UpdateSettingsClusterStateUpdateRequest;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsClusterStateUpdateRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.cluster.*;
 import org.elasticsearch.cluster.ack.ClusterStateUpdateListener;
 import org.elasticsearch.cluster.ack.ClusterStateUpdateResponse;
@@ -70,7 +71,7 @@ public class MetaDataUpdateSettingsService extends AbstractComponent implements 
             return;
         }
 
-        Map<Integer, List<String>> nrReplicasChanged = new HashMap<Integer, List<String>>();
+        Map<Integer, List<String>> nrReplicasChanged = new HashMap<>();
 
         // we need to do this each time in case it was changed by update settings
         for (final IndexMetaData indexMetaData : event.state().metaData()) {
@@ -162,7 +163,7 @@ public class MetaDataUpdateSettingsService extends AbstractComponent implements 
         // never allow to change the number of shards
         for (String key : updatedSettingsBuilder.internalMap().keySet()) {
             if (key.equals(IndexMetaData.SETTING_NUMBER_OF_SHARDS)) {
-                listener.onFailure(new ElasticSearchIllegalArgumentException("can't change the number of shards for an index"));
+                listener.onFailure(new ElasticsearchIllegalArgumentException("can't change the number of shards for an index"));
                 return;
             }
         }
@@ -183,7 +184,7 @@ public class MetaDataUpdateSettingsService extends AbstractComponent implements 
         }
 
         if (!errors.isEmpty()) {
-            listener.onFailure(new ElasticSearchIllegalArgumentException("can't process the settings: " + errors.toString()));
+            listener.onFailure(new ElasticsearchIllegalArgumentException("can't process the settings: " + errors.toString()));
             return;
         }
 
@@ -228,7 +229,7 @@ public class MetaDataUpdateSettingsService extends AbstractComponent implements 
 
             @Override
             public ClusterState execute(ClusterState currentState) {
-                String[] actualIndices = currentState.metaData().concreteIndices(request.indices());
+                String[] actualIndices = currentState.metaData().concreteIndices(IndicesOptions.strictExpand(), request.indices());
                 RoutingTable.Builder routingTableBuilder = RoutingTable.builder(currentState.routingTable());
                 MetaData.Builder metaDataBuilder = MetaData.builder(currentState.metaData());
 
@@ -245,7 +246,7 @@ public class MetaDataUpdateSettingsService extends AbstractComponent implements 
                 }
 
                 if (!removedSettings.isEmpty() && !openIndices.isEmpty()) {
-                    throw new ElasticSearchIllegalArgumentException(String.format(Locale.ROOT,
+                    throw new ElasticsearchIllegalArgumentException(String.format(Locale.ROOT,
                             "Can't update non dynamic settings[%s] for open indices[%s]",
                             removedSettings,
                             openIndices

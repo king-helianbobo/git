@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,13 +29,15 @@ import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
-import org.elasticsearch.test.ElasticsearchIntegrationTest.Scope;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
 import static org.hamcrest.Matchers.equalTo;
 
-@ClusterScope(scope=Scope.TEST, numNodes=0)
+@ClusterScope(scope= Scope.TEST, numDataNodes =0)
 public class FilteringAllocationTests extends ElasticsearchIntegrationTest {
 
     private final ESLogger logger = Loggers.getLogger(FilteringAllocationTests.class);
@@ -43,9 +45,10 @@ public class FilteringAllocationTests extends ElasticsearchIntegrationTest {
     @Test
     public void testDecommissionNodeNoReplicas() throws Exception {
         logger.info("--> starting 2 nodes");
-        final String node_0 = cluster().startNode();
-        final String node_1 = cluster().startNode();
-        assertThat(cluster().size(), equalTo(2));
+        List<String> nodesIds = cluster().startNodesAsync(2).get();
+        final String node_0 = nodesIds.get(0);
+        final String node_1 = nodesIds.get(1);
+        assertThat(immutableCluster().size(), equalTo(2));
         
         logger.info("--> creating an index with no replicas");
         client().admin().indices().prepareCreate("test")
@@ -82,9 +85,10 @@ public class FilteringAllocationTests extends ElasticsearchIntegrationTest {
     @Test
     public void testDisablingAllocationFiltering() throws Exception {
         logger.info("--> starting 2 nodes");
-        final String node_0 = cluster().startNode();
-        final String node_1 = cluster().startNode();
-        assertThat(cluster().size(), equalTo(2));
+        List<String> nodesIds = cluster().startNodesAsync(2).get();
+        final String node_0 = nodesIds.get(0);
+        final String node_1 = nodesIds.get(1);
+        assertThat(immutableCluster().size(), equalTo(2));
 
         logger.info("--> creating an index with no replicas");
         client().admin().indices().prepareCreate("test")

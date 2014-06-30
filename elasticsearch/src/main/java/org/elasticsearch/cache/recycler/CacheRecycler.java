@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,14 +20,18 @@
 package org.elasticsearch.cache.recycler;
 
 import com.carrotsearch.hppc.*;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import com.google.common.base.Strings;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.recycler.QueueRecycler;
+import org.elasticsearch.common.recycler.AbstractRecyclerC;
 import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.common.recycler.SoftThreadLocalRecycler;
-import org.elasticsearch.common.recycler.ThreadLocalRecycler;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.util.concurrent.EsExecutors;
+
+import java.util.Locale;
+
+import static org.elasticsearch.common.recycler.Recyclers.*;
 
 @SuppressWarnings("unchecked")
 public class CacheRecycler extends AbstractComponent {
@@ -63,139 +67,145 @@ public class CacheRecycler extends AbstractComponent {
     @Inject
     public CacheRecycler(Settings settings) {
         super(settings);
-        String type = settings.get("type", "soft_thread_local");
+        final Type type = Type.parse(settings.get("type"));
         int limit = settings.getAsInt("limit", 10);
         int smartSize = settings.getAsInt("smart_size", 1024);
+        final int availableProcessors = EsExecutors.boundedNumberOfProcessors(settings);
 
-        hashMap = build(type, limit, smartSize, new Recycler.C<ObjectObjectOpenHashMap>() {
+        hashMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<ObjectObjectOpenHashMap>() {
             @Override
             public ObjectObjectOpenHashMap newInstance(int sizing) {
                 return new ObjectObjectOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(ObjectObjectOpenHashMap value) {
+            public void recycle(ObjectObjectOpenHashMap value) {
                 value.clear();
             }
         });
-        hashSet = build(type, limit, smartSize, new Recycler.C<ObjectOpenHashSet>() {
+        hashSet = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<ObjectOpenHashSet>() {
             @Override
             public ObjectOpenHashSet newInstance(int sizing) {
                 return new ObjectOpenHashSet(size(sizing), 0.5f);
             }
 
             @Override
-            public void clear(ObjectOpenHashSet value) {
+            public void recycle(ObjectOpenHashSet value) {
                 value.clear();
             }
         });
-        doubleObjectMap = build(type, limit, smartSize, new Recycler.C<DoubleObjectOpenHashMap>() {
+        doubleObjectMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<DoubleObjectOpenHashMap>() {
             @Override
             public DoubleObjectOpenHashMap newInstance(int sizing) {
                 return new DoubleObjectOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(DoubleObjectOpenHashMap value) {
+            public void recycle(DoubleObjectOpenHashMap value) {
                 value.clear();
             }
         });
-        longObjectMap = build(type, limit, smartSize, new Recycler.C<LongObjectOpenHashMap>() {
+        longObjectMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<LongObjectOpenHashMap>() {
             @Override
             public LongObjectOpenHashMap newInstance(int sizing) {
                 return new LongObjectOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(LongObjectOpenHashMap value) {
+            public void recycle(LongObjectOpenHashMap value) {
                 value.clear();
             }
         });
-        longLongMap = build(type, limit, smartSize, new Recycler.C<LongLongOpenHashMap>() {
+        longLongMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<LongLongOpenHashMap>() {
             @Override
             public LongLongOpenHashMap newInstance(int sizing) {
                 return new LongLongOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(LongLongOpenHashMap value) {
+            public void recycle(LongLongOpenHashMap value) {
                 value.clear();
             }
         });
-        intIntMap = build(type, limit, smartSize, new Recycler.C<IntIntOpenHashMap>() {
+        intIntMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<IntIntOpenHashMap>() {
             @Override
             public IntIntOpenHashMap newInstance(int sizing) {
                 return new IntIntOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(IntIntOpenHashMap value) {
+            public void recycle(IntIntOpenHashMap value) {
                 value.clear();
             }
         });
-        floatIntMap = build(type, limit, smartSize, new Recycler.C<FloatIntOpenHashMap>() {
+        floatIntMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<FloatIntOpenHashMap>() {
             @Override
             public FloatIntOpenHashMap newInstance(int sizing) {
                 return new FloatIntOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(FloatIntOpenHashMap value) {
+            public void recycle(FloatIntOpenHashMap value) {
                 value.clear();
             }
         });
-        doubleIntMap = build(type, limit, smartSize, new Recycler.C<DoubleIntOpenHashMap>() {
+        doubleIntMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<DoubleIntOpenHashMap>() {
             @Override
             public DoubleIntOpenHashMap newInstance(int sizing) {
                 return new DoubleIntOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(DoubleIntOpenHashMap value) {
+            public void recycle(DoubleIntOpenHashMap value) {
                 value.clear();
             }
         });
-        longIntMap = build(type, limit, smartSize, new Recycler.C<LongIntOpenHashMap>() {
+        longIntMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<LongIntOpenHashMap>() {
             @Override
             public LongIntOpenHashMap newInstance(int sizing) {
                 return new LongIntOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(LongIntOpenHashMap value) {
+            public void recycle(LongIntOpenHashMap value) {
                 value.clear();
             }
+
+            @Override
+            public void destroy(LongIntOpenHashMap value) {
+                // drop instance for GC
+            }
         });
-        objectIntMap = build(type, limit, smartSize, new Recycler.C<ObjectIntOpenHashMap>() {
+        objectIntMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<ObjectIntOpenHashMap>() {
             @Override
             public ObjectIntOpenHashMap newInstance(int sizing) {
                 return new ObjectIntOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(ObjectIntOpenHashMap value) {
+            public void recycle(ObjectIntOpenHashMap value) {
                 value.clear();
             }
         });
-        intObjectMap = build(type, limit, smartSize, new Recycler.C<IntObjectOpenHashMap>() {
+        intObjectMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<IntObjectOpenHashMap>() {
             @Override
             public IntObjectOpenHashMap newInstance(int sizing) {
                 return new IntObjectOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(IntObjectOpenHashMap value) {
+            public void recycle(IntObjectOpenHashMap value) {
                 value.clear();
             }
         });
-        objectFloatMap = build(type, limit, smartSize, new Recycler.C<ObjectFloatOpenHashMap>() {
+        objectFloatMap = build(type, limit, smartSize, availableProcessors, new AbstractRecyclerC<ObjectFloatOpenHashMap>() {
             @Override
             public ObjectFloatOpenHashMap newInstance(int sizing) {
                 return new ObjectFloatOpenHashMap(size(sizing));
             }
 
             @Override
-            public void clear(ObjectFloatOpenHashMap value) {
+            public void recycle(ObjectFloatOpenHashMap value) {
                 value.clear();
             }
         });
@@ -253,21 +263,57 @@ public class CacheRecycler extends AbstractComponent {
         return sizing > 0 ? sizing : 256;
     }
 
-    private <T> Recycler<T> build(String type, int limit, int smartSize, Recycler.C<T> c) {
+    private <T> Recycler<T> build(Type type, int limit, int smartSize, int availableProcessors, Recycler.C<T> c) {
         Recycler<T> recycler;
-        // default to soft_thread_local
-        if (type == null || "soft_thread_local".equals(type)) {
-            recycler = new SoftThreadLocalRecycler<T>(c, limit);
-        } else if ("thread_local".equals(type)) {
-            recycler = new ThreadLocalRecycler<T>(c, limit);
-        } else if ("queue".equals(type)) {
-            recycler = new QueueRecycler<T>(c);
-        } else {
-            throw new ElasticSearchIllegalArgumentException("no type support [" + type + "] for recycler");
+        try {
+            recycler = type.build(c, limit, availableProcessors);
+            if (smartSize > 0) {
+                recycler = sizing(recycler, none(c), smartSize);
+            }
+        } catch (IllegalArgumentException ex) {
+            throw new ElasticsearchIllegalArgumentException("no type support [" + type + "] for recycler");
         }
-        if (smartSize > 0) {
-            recycler = new Recycler.Sizing<T>(recycler, smartSize);
-        }
+
         return recycler;
+    }
+
+    public static enum Type {
+        QUEUE {
+            @Override
+            <T> Recycler<T> build(Recycler.C<T> c, int limit, int availableProcessors) {
+                return concurrentDeque(c, limit);
+            }
+        },
+        SOFT_CONCURRENT {
+            @Override
+            <T> Recycler<T> build(Recycler.C<T> c, int limit, int availableProcessors) {
+                return concurrent(softFactory(dequeFactory(c, limit)), availableProcessors);
+            }
+        },
+        CONCURRENT {
+            @Override
+            <T> Recycler<T> build(Recycler.C<T> c, int limit, int availableProcessors) {
+                return concurrent(dequeFactory(c, limit), availableProcessors);
+            }
+        },
+        NONE {
+            @Override
+            <T> Recycler<T> build(Recycler.C<T> c, int limit, int availableProcessors) {
+                return none(c);
+            }
+        };
+
+        public static Type parse(String type) {
+            if (Strings.isNullOrEmpty(type)) {
+                return SOFT_CONCURRENT;
+            }
+            try {
+                return Type.valueOf(type.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new ElasticsearchIllegalArgumentException("no type support [" + type + "]");
+            }
+        }
+
+        abstract <T> Recycler<T> build(Recycler.C<T> c, int limit, int availableProcessors);
     }
 }

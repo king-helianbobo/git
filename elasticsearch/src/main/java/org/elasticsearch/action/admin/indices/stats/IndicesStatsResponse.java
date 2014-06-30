@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,12 +19,14 @@
 
 package org.elasticsearch.action.admin.indices.stats;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastOperationResponse;
 import org.elasticsearch.cluster.ClusterState;
+import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -43,6 +45,8 @@ public class IndicesStatsResponse extends BroadcastOperationResponse implements 
 
     private ShardStats[] shards;
 
+    private ImmutableMap<ShardRouting, CommonStats> shardStatsMap;
+
     IndicesStatsResponse() {
 
     }
@@ -50,6 +54,18 @@ public class IndicesStatsResponse extends BroadcastOperationResponse implements 
     IndicesStatsResponse(ShardStats[] shards, ClusterState clusterState, int totalShards, int successfulShards, int failedShards, List<ShardOperationFailedException> shardFailures) {
         super(totalShards, successfulShards, failedShards, shardFailures);
         this.shards = shards;
+    }
+
+    public ImmutableMap<ShardRouting, CommonStats> asMap() {
+        if (shardStatsMap == null) {
+            ImmutableMap.Builder<ShardRouting, CommonStats> mb = ImmutableMap.builder();
+            for (ShardStats ss : shards) {
+                mb.put(ss.getShardRouting(), ss.getStats());
+            }
+
+            shardStatsMap = mb.build();
+        }
+        return shardStatsMap;
     }
 
     public ShardStats[] getShards() {
@@ -140,6 +156,12 @@ public class IndicesStatsResponse extends BroadcastOperationResponse implements 
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        String level = params.param("level", "indices");
+        boolean isLevelValid = "indices".equalsIgnoreCase(level) || "shards".equalsIgnoreCase(level) || "cluster".equalsIgnoreCase(level);
+        if (!isLevelValid) {
+            return builder;
+        }
+
         builder.startObject("_all");
 
         builder.startObject("primaries");
@@ -152,35 +174,36 @@ public class IndicesStatsResponse extends BroadcastOperationResponse implements 
 
         builder.endObject();
 
-        builder.startObject(Fields.INDICES);
-        for (IndexStats indexStats : getIndices().values()) {
-            builder.startObject(indexStats.getIndex(), XContentBuilder.FieldCaseConversion.NONE);
+        if ("indices".equalsIgnoreCase(level) || "shards".equalsIgnoreCase(level)) {
+            builder.startObject(Fields.INDICES);
+            for (IndexStats indexStats : getIndices().values()) {
+                builder.startObject(indexStats.getIndex(), XContentBuilder.FieldCaseConversion.NONE);
 
-            builder.startObject("primaries");
-            indexStats.getPrimaries().toXContent(builder, params);
-            builder.endObject();
+                builder.startObject("primaries");
+                indexStats.getPrimaries().toXContent(builder, params);
+                builder.endObject();
 
-            builder.startObject("total");
-            indexStats.getTotal().toXContent(builder, params);
-            builder.endObject();
+                builder.startObject("total");
+                indexStats.getTotal().toXContent(builder, params);
+                builder.endObject();
 
-            if ("shards".equalsIgnoreCase(params.param("level", null))) {
-                builder.startObject(Fields.SHARDS);
-                for (IndexShardStats indexShardStats : indexStats) {
-                    builder.startArray(Integer.toString(indexShardStats.getShardId().id()));
-                    for (ShardStats shardStats : indexShardStats) {
-                        builder.startObject();
-                        shardStats.toXContent(builder, params);
-                        builder.endObject();
+                if ("shards".equalsIgnoreCase(level)) {
+                    builder.startObject(Fields.SHARDS);
+                    for (IndexShardStats indexShardStats : indexStats) {
+                        builder.startArray(Integer.toString(indexShardStats.getShardId().id()));
+                        for (ShardStats shardStats : indexShardStats) {
+                            builder.startObject();
+                            shardStats.toXContent(builder, params);
+                            builder.endObject();
+                        }
+                        builder.endArray();
                     }
-                    builder.endArray();
+                    builder.endObject();
                 }
                 builder.endObject();
             }
-
             builder.endObject();
         }
-        builder.endObject();
 
         return builder;
     }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,9 +20,9 @@
 package org.elasticsearch.discovery.zen.ping.unicast;
 
 import com.google.common.collect.Lists;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -78,7 +78,7 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
     // a list of temporal responses a node will return for a request (holds requests from other nodes)
     private final Queue<PingResponse> temporalResponses = ConcurrentCollections.newQueue();
 
-    private final CopyOnWriteArrayList<UnicastHostsProvider> hostsProviders = new CopyOnWriteArrayList<UnicastHostsProvider>();
+    private final CopyOnWriteArrayList<UnicastHostsProvider> hostsProviders = new CopyOnWriteArrayList<>();
 
     public UnicastZenPing(Settings settings, ThreadPool threadPool, TransportService transportService, ClusterName clusterName, Version version, @Nullable Set<UnicastHostsProvider> unicastHostsProviders) {
         super(settings);
@@ -112,7 +112,7 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
                     nodes.add(new DiscoveryNode("#zen_unicast_" + (++idCounter) + "#", addresses[i], version));
                 }
             } catch (Exception e) {
-                throw new ElasticSearchIllegalArgumentException("Failed to resolve address for [" + host + "]", e);
+                throw new ElasticsearchIllegalArgumentException("Failed to resolve address for [" + host + "]", e);
             }
         }
         this.nodes = nodes.toArray(new DiscoveryNode[nodes.size()]);
@@ -121,15 +121,15 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
         transportService.removeHandler(UnicastPingRequestHandler.ACTION);
     }
 
@@ -147,7 +147,7 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
     }
 
     public PingResponse[] pingAndWait(TimeValue timeout) {
-        final AtomicReference<PingResponse[]> response = new AtomicReference<PingResponse[]>();
+        final AtomicReference<PingResponse[]> response = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         ping(new PingListener() {
             @Override
@@ -165,7 +165,7 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
     }
 
     @Override
-    public void ping(final PingListener listener, final TimeValue timeout) throws ElasticSearchException {
+    public void ping(final PingListener listener, final TimeValue timeout) throws ElasticsearchException {
         final SendPingsHandler sendPingsHandler = new SendPingsHandler(pingIdGenerator.incrementAndGet());
         receivedResponses.put(sendPingsHandler.id(), ConcurrentCollections.<DiscoveryNode, PingResponse>newConcurrentMap());
         sendPings(timeout, null, sendPingsHandler);
@@ -240,7 +240,14 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
         DiscoveryNodes discoNodes = nodesProvider.nodes();
         pingRequest.pingResponse = new PingResponse(discoNodes.localNode(), discoNodes.masterNode(), clusterName);
 
-        List<DiscoveryNode> nodesToPing = newArrayList(nodes);
+        HashSet<DiscoveryNode> nodesToPing = new HashSet<>(Arrays.asList(nodes));
+        for (PingResponse temporalResponse : temporalResponses) {
+            // Only send pings to nodes that have the same cluster name.
+            if (clusterName.equals(temporalResponse.clusterName())) {
+                nodesToPing.add(temporalResponse.target());
+            }
+        }
+
         for (UnicastHostsProvider provider : hostsProviders) {
             nodesToPing.addAll(provider.buildDynamicNodes());
         }
@@ -268,10 +275,11 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
                 sendPingsHandler.executor().execute(new Runnable() {
                     @Override
                     public void run() {
+                        if (sendPingsHandler.isClosed()) {
+                            return;
+                        }
+                        boolean success = false;
                         try {
-                            if (sendPingsHandler.isClosed()) {
-                                return;
-                            }
                             // connect to the node, see if we manage to do it, if not, bail
                             if (!nodeFoundByAddress) {
                                 logger.trace("[{}] connecting (light) to {}", sendPingsHandler.id(), nodeToSend);
@@ -289,10 +297,16 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
                                 latch.countDown();
                                 logger.trace("[{}] connect to {} was too long outside of ping window, bailing", sendPingsHandler.id(), node);
                             }
+                            success = true;
                         } catch (ConnectTransportException e) {
-                            // can't connect to the node
+                            // can't connect to the node - this is a more common path!
                             logger.trace("[{}] failed to connect to {}", e, sendPingsHandler.id(), nodeToSend);
-                            latch.countDown();
+                        } catch (Throwable e) {
+                            logger.warn("[{}] failed send ping to {}", e, sendPingsHandler.id(), nodeToSend);
+                        } finally {
+                            if (!success) {
+                                latch.countDown();
+                            }
                         }
                     }
                 });
@@ -342,7 +356,17 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
                         if (responses == null) {
                             logger.warn("received ping response {} with no matching id [{}]", pingResponse, response.id);
                         } else {
-                            responses.put(pingResponse.target(), pingResponse);
+                            PingResponse existingResponse = responses.get(pingResponse.target());
+                            if (existingResponse == null) {
+                                responses.put(pingResponse.target(), pingResponse);
+                            } else {
+                                // try and merge the best ping response for it, i.e. if the new one
+                                // doesn't have the master node set, and the existing one does, then
+                                // the existing one is better, so we keep it
+                                if (pingResponse.master() != null) {
+                                    responses.put(pingResponse.target(), pingResponse);
+                                }
+                            }
                         }
                     }
                 } finally {
@@ -365,7 +389,7 @@ public class UnicastZenPing extends AbstractLifecycleComponent<ZenPing> implemen
 
     private UnicastPingResponse handlePingRequest(final UnicastPingRequest request) {
         if (lifecycle.stoppedOrClosed()) {
-            throw new ElasticSearchIllegalStateException("received ping request while stopped/closed");
+            throw new ElasticsearchIllegalStateException("received ping request while stopped/closed");
         }
         temporalResponses.add(request.pingResponse);
         threadPool.schedule(TimeValue.timeValueMillis(request.timeout.millis() * 2), ThreadPool.Names.SAME, new Runnable() {

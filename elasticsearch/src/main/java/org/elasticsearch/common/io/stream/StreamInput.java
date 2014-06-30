@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,39 +19,26 @@
 
 package org.elasticsearch.common.io.stream;
 
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.CharsRef;
 import org.elasticsearch.Version;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.text.StringAndBytesText;
+import org.elasticsearch.common.text.StringText;
 import org.elasticsearch.common.text.Text;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.SoftReference;
 import java.util.*;
 
 /**
  *
  */
 public abstract class StreamInput extends InputStream {
-
-    private static final ThreadLocal<SoftReference<char[]>> charCache = new ThreadLocal<SoftReference<char[]>>();
-
-    private static char[] charCache(int size) {
-        SoftReference<char[]> ref = charCache.get();
-        char[] arr = (ref == null) ? null : ref.get();
-        if (arr == null || arr.length < size) {
-            arr = new char[ArrayUtil.oversize(size, RamUsageEstimator.NUM_BYTES_CHAR)];
-            charCache.set(new SoftReference<char[]>(arr));
-        }
-        return arr;
-    }
 
     private Version version = Version.CURRENT;
 
@@ -132,22 +119,31 @@ public abstract class StreamInput extends InputStream {
 
     /**
      * Reads an int stored in variable-length format.  Reads between one and
-     * five bytes.  Smaller values take fewer bytes.  Negative numbers are not
-     * supported.
+     * five bytes.  Smaller values take fewer bytes.  Negative numbers
+     * will always use all 5 bytes and are therefore better serialized
+     * using {@link #readInt}
      */
     public int readVInt() throws IOException {
         byte b = readByte();
         int i = b & 0x7F;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7F) << 7;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7F) << 14;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7F) << 21;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         assert (b & 0x80) == 0;
         return i | ((b & 0x7F) << 28);
@@ -168,28 +164,44 @@ public abstract class StreamInput extends InputStream {
     public long readVLong() throws IOException {
         byte b = readByte();
         long i = b & 0x7FL;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 7;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 14;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 21;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 28;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 35;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 42;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         i |= (b & 0x7FL) << 49;
-        if ((b & 0x80) == 0) return i;
+        if ((b & 0x80) == 0) {
+            return i;
+        }
         b = readByte();
         assert (b & 0x80) == 0;
         return i | ((b & 0x7FL) << 56);
@@ -210,6 +222,18 @@ public abstract class StreamInput extends InputStream {
         return new StringAndBytesText(readBytesReference(length));
     }
 
+    public Text[] readTextArray() throws IOException {
+        int size = readVInt();
+        if (size == 0) {
+            return StringText.EMPTY_ARRAY;
+        }
+        Text[] ret = new Text[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = readText();
+        }
+        return ret;
+    }
+
     public Text readSharedText() throws IOException {
         return readText();
     }
@@ -222,11 +246,23 @@ public abstract class StreamInput extends InputStream {
         return null;
     }
 
+    @Nullable
+    public String readOptionalSharedString() throws IOException {
+        if (readBoolean()) {
+            return readSharedString();
+        }
+        return null;
+    }
+
+    private final CharsRef spare = new CharsRef();
+
     public String readString() throws IOException {
-        int charCount = readVInt();
-        char[] chars = charCache(charCount);
-        int c, charIndex = 0;
-        while (charIndex < charCount) {
+        final int charCount = readVInt();
+        spare.offset = 0;
+        spare.length = 0;
+        spare.grow(charCount);
+        int c = 0;
+        while (spare.length < charCount) {
             c = readByte() & 0xff;
             switch (c >> 4) {
                 case 0:
@@ -237,18 +273,22 @@ public abstract class StreamInput extends InputStream {
                 case 5:
                 case 6:
                 case 7:
-                    chars[charIndex++] = (char) c;
+                    spare.chars[spare.length++] = (char) c;
                     break;
                 case 12:
                 case 13:
-                    chars[charIndex++] = (char) ((c & 0x1F) << 6 | readByte() & 0x3F);
+                    spare.chars[spare.length++] = (char) ((c & 0x1F) << 6 | readByte() & 0x3F);
                     break;
                 case 14:
-                    chars[charIndex++] = (char) ((c & 0x0F) << 12 | (readByte() & 0x3F) << 6 | (readByte() & 0x3F) << 0);
+                    spare.chars[spare.length++] = (char) ((c & 0x0F) << 12 | (readByte() & 0x3F) << 6 | (readByte() & 0x3F) << 0);
                     break;
             }
         }
-        return new String(chars, 0, charCount);
+        return spare.toString();
+    }
+
+    public String readSharedString() throws IOException {
+        return readString();
     }
 
 
@@ -361,14 +401,14 @@ public abstract class StreamInput extends InputStream {
                 int size9 = readVInt();
                 Map map9 = new LinkedHashMap(size9);
                 for (int i = 0; i < size9; i++) {
-                    map9.put(readString(), readGenericValue());
+                    map9.put(readSharedString(), readGenericValue());
                 }
                 return map9;
             case 10:
                 int size10 = readVInt();
                 Map map10 = new HashMap(size10);
                 for (int i = 0; i < size10; i++) {
-                    map10.put(readString(), readGenericValue());
+                    map10.put(readSharedString(), readGenericValue());
                 }
                 return map10;
             case 11:
@@ -384,19 +424,19 @@ public abstract class StreamInput extends InputStream {
             case 16:
                 return readShort();
             case 17:
-                return readPrimitiveIntArray();
+                return readIntArray();
             case 18:
-                return readPrimitiveLongArray();
+                return readLongArray();
             case 19:
-                return readPrimitiveFloatArray();
+                return readFloatArray();
             case 20:
-                return readPrimitiveDoubleArray();
+                return readDoubleArray();
             default:
                 throw new IOException("Can't read unknown type [" + type + "]");
         }
     }
 
-    private Object readPrimitiveIntArray() throws IOException {
+    public int[] readIntArray() throws IOException {
         int length = readVInt();
         int[] values = new int[length];
         for(int i=0; i<length; i++) {
@@ -405,7 +445,7 @@ public abstract class StreamInput extends InputStream {
         return values;
     }
     
-    private Object readPrimitiveLongArray() throws IOException {
+    public long[] readLongArray() throws IOException {
         int length = readVInt();
         long[] values = new long[length];
         for(int i=0; i<length; i++) {
@@ -414,7 +454,7 @@ public abstract class StreamInput extends InputStream {
         return values;
     }
     
-    private Object readPrimitiveFloatArray() throws IOException {
+    public float[] readFloatArray() throws IOException {
         int length = readVInt();
         float[] values = new float[length];
         for(int i=0; i<length; i++) {
@@ -423,12 +463,24 @@ public abstract class StreamInput extends InputStream {
         return values;
     }
     
-    private Object readPrimitiveDoubleArray() throws IOException {
+    public double[] readDoubleArray() throws IOException {
         int length = readVInt();
         double[] values = new double[length];
         for(int i=0; i<length; i++) {
             values[i] = readDouble();
         }
         return values;
+    }
+
+    /**
+     * Serializes a potential null value.
+     */
+    public <T extends Streamable> T readOptionalStreamable(T streamable) throws IOException {
+        if (readBoolean()) {
+            streamable.readFrom(this);
+            return streamable;
+        } else {
+            return null;
+        }
     }
 }

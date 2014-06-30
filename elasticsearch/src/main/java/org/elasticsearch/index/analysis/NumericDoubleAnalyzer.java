@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,6 @@
 package org.elasticsearch.index.analysis;
 
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -33,7 +32,7 @@ public class NumericDoubleAnalyzer extends NumericAnalyzer<NumericDoubleTokenize
     private final static IntObjectOpenHashMap<NamedAnalyzer> builtIn;
 
     static {
-        builtIn = new IntObjectOpenHashMap<NamedAnalyzer>();
+        builtIn = new IntObjectOpenHashMap<>();
         builtIn.put(Integer.MAX_VALUE, new NamedAnalyzer("_double/max", AnalyzerScope.GLOBAL, new NumericDoubleAnalyzer(Integer.MAX_VALUE)));
         for (int i = 0; i <= 64; i += 4) {
             builtIn.put(i, new NamedAnalyzer("_double/" + i, AnalyzerScope.GLOBAL, new NumericDoubleAnalyzer(i)));
@@ -49,10 +48,6 @@ public class NumericDoubleAnalyzer extends NumericAnalyzer<NumericDoubleTokenize
     }
 
     private final int precisionStep;
-
-    public NumericDoubleAnalyzer() {
-        this(NumericUtils.PRECISION_STEP_DEFAULT);
-    }
 
     public NumericDoubleAnalyzer(int precisionStep) {
         this.precisionStep = precisionStep;

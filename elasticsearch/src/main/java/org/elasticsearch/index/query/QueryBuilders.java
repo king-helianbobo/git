@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,9 +19,8 @@
 
 package org.elasticsearch.index.query;
 
-
-import com.spatial4j.core.shape.Shape;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder;
 
@@ -37,28 +36,6 @@ public abstract class QueryBuilders {
      */
     public static MatchAllQueryBuilder matchAllQuery() {
         return new MatchAllQueryBuilder();
-    }
-
-    /**
-     * Creates a text query with type "BOOLEAN" for the provided field name and text.
-     *
-     * @param name The field name.
-     * @param text The query text (to be analyzed).
-     * @deprecated use {@link #textQuery(String, Object)} instead
-     */
-    public static MatchQueryBuilder text(String name, Object text) {
-        return textQuery(name, text);
-    }
-
-    /**
-     * Creates a text query with type "BOOLEAN" for the provided field name and text.
-     *
-     * @param name The field name.
-     * @param text The query text (to be analyzed).
-     * @deprecated Use {@link #matchQuery(String, Object)}
-     */
-    public static MatchQueryBuilder textQuery(String name, Object text) {
-        return new MatchQueryBuilder(name, text).type(MatchQueryBuilder.Type.BOOLEAN);
     }
 
     /**
@@ -264,89 +241,6 @@ public abstract class QueryBuilders {
     }
 
     /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name The name of the field
-     */
-    public static FieldQueryBuilder fieldQuery(String name, String query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name  The name of the field
-     * @param query The query string
-     */
-    public static FieldQueryBuilder fieldQuery(String name, int query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name  The name of the field
-     * @param query The query string
-     */
-    public static FieldQueryBuilder fieldQuery(String name, long query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name  The name of the field
-     * @param query The query string
-     */
-    public static FieldQueryBuilder fieldQuery(String name, float query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name  The name of the field
-     * @param query The query string
-     */
-    public static FieldQueryBuilder fieldQuery(String name, double query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name  The name of the field
-     * @param query The query string
-     */
-    public static FieldQueryBuilder fieldQuery(String name, boolean query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
-     * A query that executes the query string against a field. It is a simplified
-     * version of {@link QueryStringQueryBuilder} that simply runs against
-     * a single field.
-     *
-     * @param name  The name of the field
-     * @param query The query string
-     */
-    public static FieldQueryBuilder fieldQuery(String name, Object query) {
-        return new FieldQueryBuilder(name, query);
-    }
-
-    /**
      * A Query that matches documents containing terms with a specified prefix.
      *
      * @param name   The name of the field
@@ -523,44 +417,6 @@ public abstract class QueryBuilders {
      */
     public static ConstantScoreQueryBuilder constantScoreQuery(QueryBuilder queryBuilder) {
         return new ConstantScoreQueryBuilder(queryBuilder);
-    }
-
-    /**
-     * A query that simply applies the boost fact to the wrapped query (multiplies it).
-     *
-     * @param queryBuilder The query to apply the boost factor to.
-     * @deprecated use {@link #functionScoreQuery(QueryBuilder)} instead
-     */
-    public static CustomBoostFactorQueryBuilder customBoostFactorQuery(QueryBuilder queryBuilder) {
-        return new CustomBoostFactorQueryBuilder(queryBuilder);
-    }
-
-    /**
-     * A query that allows to define a custom scoring script.
-     *
-     * @param queryBuilder The query to custom score
-     * @deprecated use {@link #functionScoreQuery(QueryBuilder)} instead
-     */
-    public static CustomScoreQueryBuilder customScoreQuery(QueryBuilder queryBuilder) {
-        return new CustomScoreQueryBuilder(queryBuilder);
-    }
-
-    /**
-     * A query that allows to define a custom scoring script, that defines the score for each document that match
-     * with the specified filter.
-     *
-     * @param filterBuilder The filter that defines which documents are scored by a script.
-     * @deprecated use {@link #functionScoreQuery(QueryBuilder)} instead
-     */
-    public static CustomScoreQueryBuilder customScoreQuery(FilterBuilder filterBuilder) {
-        return new CustomScoreQueryBuilder(filterBuilder);
-    }
-    
-    /** 
-     * @deprecated use {@link #functionScoreQuery(QueryBuilder)} instead
-     */
-    public static CustomFiltersScoreQueryBuilder customFiltersScoreQuery(QueryBuilder queryBuilder) {
-        return new CustomFiltersScoreQueryBuilder(queryBuilder);
     }
 
     /**
@@ -776,7 +632,7 @@ public abstract class QueryBuilders {
      * @param name   The field name
      * @param values The terms
      */
-    public static TermsQueryBuilder termsQuery(String name, Collection values) {
+    public static TermsQueryBuilder termsQuery(String name, Collection<?> values) {
         return new TermsQueryBuilder(name, values);
     }
 
@@ -846,7 +702,7 @@ public abstract class QueryBuilders {
      * @param name   The field name
      * @param values The terms
      */
-    public static TermsQueryBuilder inQuery(String name, Collection values) {
+    public static TermsQueryBuilder inQuery(String name, Collection<?> values) {
         return new TermsQueryBuilder(name, values);
     }
 
@@ -879,7 +735,7 @@ public abstract class QueryBuilders {
      * @param name The shape field name
      * @param shape Shape to use in the Query
      */
-    public static GeoShapeQueryBuilder geoShapeQuery(String name, Shape shape) {
+    public static GeoShapeQueryBuilder geoShapeQuery(String name, ShapeBuilder shape) {
         return new GeoShapeQueryBuilder(name, shape);
     }
 

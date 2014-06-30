@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,6 +26,7 @@ import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.fielddata.GeoPointValues;
 import org.elasticsearch.index.fielddata.IndexGeoPointFieldData;
+import org.elasticsearch.search.MultiValueMode;
 
 import java.io.IOException;
 
@@ -40,7 +41,7 @@ public class GeoDistanceComparator extends NumberComparatorBase<Double> {
     protected final DistanceUnit unit;
     protected final GeoDistance geoDistance;
     protected final GeoDistance.FixedSourceDistance fixedSourceDistance;
-    protected final SortMode sortMode;
+    protected final MultiValueMode sortMode;
     private static final Double MISSING_VALUE = Double.MAX_VALUE;
 
     private final double[] values;
@@ -48,7 +49,7 @@ public class GeoDistanceComparator extends NumberComparatorBase<Double> {
 
     private GeoDistanceValues geoDistanceValues;
 
-    public GeoDistanceComparator(int numHits, IndexGeoPointFieldData<?> indexFieldData, double lat, double lon, DistanceUnit unit, GeoDistance geoDistance, SortMode sortMode) {
+    public GeoDistanceComparator(int numHits, IndexGeoPointFieldData<?> indexFieldData, double lat, double lon, DistanceUnit unit, GeoDistance geoDistance, MultiValueMode sortMode) {
         this.values = new double[numHits];
         this.indexFieldData = indexFieldData;
         this.lat = lat;
@@ -82,9 +83,9 @@ public class GeoDistanceComparator extends NumberComparatorBase<Double> {
     }
 
     @Override
-    public int compareDocToValue(int doc, Double distance2) throws IOException {
-        double distance1 = geoDistanceValues.computeDistance(doc);
-        return Double.compare(distance1, distance2);
+    public int compareTop(int doc) throws IOException {
+        double docValue = geoDistanceValues.computeDistance(doc);
+        return Double.compare(top, docValue);
     }
 
     @Override
@@ -120,6 +121,11 @@ public class GeoDistanceComparator extends NumberComparatorBase<Double> {
     @Override
     public int compareBottomMissing() {
         return Double.compare(bottom, MISSING_VALUE);
+    }
+
+    @Override
+    public int compareTopMissing() {
+        return Double.compare(top, MISSING_VALUE);
     }
 
     // Computes the distance based on geo points.
@@ -161,9 +167,9 @@ public class GeoDistanceComparator extends NumberComparatorBase<Double> {
     // Deals with more than one geo point per document
     private static final class MV extends GeoDistanceValues {
 
-        private final SortMode sortMode;
+        private final MultiValueMode sortMode;
 
-        MV(GeoPointValues readerValues, GeoDistance.FixedSourceDistance fixedSourceDistance, SortMode sortMode) {
+        MV(GeoPointValues readerValues, GeoDistance.FixedSourceDistance fixedSourceDistance, MultiValueMode sortMode) {
             super(readerValues, fixedSourceDistance);
             this.sortMode = sortMode;
         }

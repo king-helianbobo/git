@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -28,11 +28,10 @@ import org.elasticsearch.cluster.routing.RoutingNodes;
 import org.elasticsearch.cluster.routing.RoutingTable;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.junit.Test;
 
 import static org.elasticsearch.cluster.routing.ShardRoutingState.*;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -40,13 +39,13 @@ import static org.hamcrest.Matchers.nullValue;
 /**
  *
  */
-public class RebalanceAfterActiveTests extends ElasticsearchTestCase {
+public class RebalanceAfterActiveTests extends ElasticsearchAllocationTestCase {
 
     private final ESLogger logger = Loggers.getLogger(RebalanceAfterActiveTests.class);
 
     @Test
     public void testRebalanceOnlyAfterAllShardsAreActive() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.cluster_concurrent_rebalance", -1)
@@ -62,7 +61,7 @@ public class RebalanceAfterActiveTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         assertThat(routingTable.index("test").shards().size(), equalTo(5));
         for (int i = 0; i < routingTable.index("test").shards().size(); i++) {
@@ -145,7 +144,7 @@ public class RebalanceAfterActiveTests extends ElasticsearchTestCase {
         assertThat(routingTable.shardsWithState(STARTED).size(), equalTo(10));
         // make sure we have an even relocation
         for (RoutingNode routingNode : routingNodes) {
-            assertThat(routingNode.shards().size(), equalTo(1));
+            assertThat(routingNode.size(), equalTo(1));
         }
     }
 }

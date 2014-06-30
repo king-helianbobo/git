@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -289,7 +289,7 @@ public class LocalGatewayShardsState extends AbstractComponent implements Cluste
             try {
                 fos = new FileOutputStream(stateFile);
                 BytesReference bytes = builder.bytes();
-                fos.write(bytes.array(), bytes.arrayOffset(), bytes.length());
+                bytes.writeTo(fos);
                 fos.getChannel().force(true);
                 fos.close();
                 wroteAtLeastOnce = true;
@@ -301,7 +301,7 @@ public class LocalGatewayShardsState extends AbstractComponent implements Cluste
         }
 
         if (!wroteAtLeastOnce) {
-            logger.warn("[{}][{}]: failed to write shard state", shardId.index().name(), shardId.id(), lastFailure);
+            logger.warn("[{}][{}]: failed to write shard state", lastFailure, shardId.index().name(), shardId.id());
             throw new IOException("failed to write shard state for " + shardId, lastFailure);
         }
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,8 +22,9 @@ package org.elasticsearch.env;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.NativeFSLockFactory;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.apache.lucene.store.XNativeFSLockFactory;
+import org.apache.lucene.util.IOUtils;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
@@ -37,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -49,6 +51,7 @@ public class NodeEnvironment extends AbstractComponent {
     private final Lock[] locks;
 
     private final int localNodeId;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     @Inject
     public NodeEnvironment(Settings settings, Environment environment) {
@@ -75,7 +78,7 @@ public class NodeEnvironment extends AbstractComponent {
                 }
                 logger.trace("obtaining node lock on {} ...", dir.getAbsolutePath());
                 try {
-                    NativeFSLockFactory lockFactory = new NativeFSLockFactory(dir);
+                    XNativeFSLockFactory lockFactory = new XNativeFSLockFactory(dir);
                     Lock tmpLock = lockFactory.makeLock("node.lock");
                     boolean obtained = tmpLock.obtain();
                     if (obtained) {
@@ -87,11 +90,7 @@ public class NodeEnvironment extends AbstractComponent {
                         // release all the ones that were obtained up until now
                         for (int i = 0; i < locks.length; i++) {
                             if (locks[i] != null) {
-                                try {
-                                    locks[i].release();
-                                } catch (Exception e1) {
-                                    // ignore
-                                }
+                                IOUtils.closeWhileHandlingException(locks[i]);
                             }
                             locks[i] = null;
                         }
@@ -102,13 +101,7 @@ public class NodeEnvironment extends AbstractComponent {
                     lastException = new IOException("failed to obtain lock on " + dir.getAbsolutePath(), e);
                     // release all the ones that were obtained up until now
                     for (int i = 0; i < locks.length; i++) {
-                        if (locks[i] != null) {
-                            try {
-                                locks[i].release();
-                            } catch (Exception e1) {
-                                // ignore
-                            }
-                        }
+                        IOUtils.closeWhileHandlingException(locks[i]);
                         locks[i] = null;
                     }
                     break;
@@ -120,7 +113,7 @@ public class NodeEnvironment extends AbstractComponent {
             }
         }
         if (locks[0] == null) {
-            throw new ElasticSearchIllegalStateException("Failed to obtain node lock, is the following location writable?: " + Arrays.toString(environment.dataWithClusterFiles()), lastException);
+            throw new ElasticsearchIllegalStateException("Failed to obtain node lock, is the following location writable?: " + Arrays.toString(environment.dataWithClusterFiles()), lastException);
         }
 
         this.localNodeId = localNodeId;
@@ -152,17 +145,20 @@ public class NodeEnvironment extends AbstractComponent {
     }
 
     public File[] nodeDataLocations() {
+        assert assertEnvIsLocked();
         if (nodeFiles == null || locks == null) {
-            throw new ElasticSearchIllegalStateException("node is not configured to store local location");
+            throw new ElasticsearchIllegalStateException("node is not configured to store local location");
         }
         return nodeFiles;
     }
 
     public File[] indicesLocations() {
+        assert assertEnvIsLocked();
         return nodeIndicesLocations;
     }
 
     public File[] indexLocations(Index index) {
+        assert assertEnvIsLocked();
         File[] indexLocations = new File[nodeFiles.length];
         for (int i = 0; i < nodeFiles.length; i++) {
             indexLocations[i] = new File(new File(nodeFiles[i], "indices"), index.name());
@@ -171,6 +167,7 @@ public class NodeEnvironment extends AbstractComponent {
     }
 
     public File[] shardLocations(ShardId shardId) {
+        assert assertEnvIsLocked();
         File[] shardLocations = new File[nodeFiles.length];
         for (int i = 0; i < nodeFiles.length; i++) {
             shardLocations[i] = new File(new File(new File(nodeFiles[i], "indices"), shardId.index().name()), Integer.toString(shardId.id()));
@@ -180,8 +177,9 @@ public class NodeEnvironment extends AbstractComponent {
 
     public Set<String> findAllIndices() throws Exception {
         if (nodeFiles == null || locks == null) {
-            throw new ElasticSearchIllegalStateException("node is not configured to store local location");
+            throw new ElasticsearchIllegalStateException("node is not configured to store local location");
         }
+        assert assertEnvIsLocked();
         Set<String> indices = Sets.newHashSet();
         for (File indicesLocation : nodeIndicesLocations) {
             File[] indicesList = indicesLocation.listFiles();
@@ -199,8 +197,9 @@ public class NodeEnvironment extends AbstractComponent {
 
     public Set<ShardId> findAllShardIds() throws Exception {
         if (nodeFiles == null || locks == null) {
-            throw new ElasticSearchIllegalStateException("node is not configured to store local location");
+            throw new ElasticsearchIllegalStateException("node is not configured to store local location");
         }
+        assert assertEnvIsLocked();
         Set<ShardId> shardIds = Sets.newHashSet();
         for (File indicesLocation : nodeIndicesLocations) {
             File[] indicesList = indicesLocation.listFiles();
@@ -231,15 +230,30 @@ public class NodeEnvironment extends AbstractComponent {
     }
 
     public void close() {
-        if (locks != null) {
+        if (closed.compareAndSet(false, true) && locks != null) {
             for (Lock lock : locks) {
                 try {
                     logger.trace("releasing lock [{}]", lock);
-                    lock.release();
+                    lock.close();
                 } catch (IOException e) {
                     logger.trace("failed to release lock [{}]", e, lock);
                 }
             }
         }
+    }
+
+
+    private boolean assertEnvIsLocked() {
+        if (!closed.get() && locks != null) {
+            for (Lock lock : locks) {
+                try {
+                    assert lock.isLocked() : "Lock: " + lock + "is not locked";
+                } catch (IOException e) {
+                    logger.warn("lock assertion failed", e);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

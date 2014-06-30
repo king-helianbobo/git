@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,6 @@
 
 package org.elasticsearch.rest.action.get;
 
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
@@ -27,14 +26,15 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.rest.*;
-
-import java.io.IOException;
+import org.elasticsearch.rest.action.support.RestActions;
+import org.elasticsearch.rest.action.support.RestBuilderListener;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 
 import static org.elasticsearch.rest.RestRequest.Method.GET;
 import static org.elasticsearch.rest.RestStatus.NOT_FOUND;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestXContentBuilder.restContentBuilder;
 
 /**
  *
@@ -56,7 +56,7 @@ public class RestGetAction extends BaseRestHandler {
         getRequest.routing(request.param("routing"));  // order is important, set it after routing, so it will set the routing
         getRequest.parent(request.param("parent"));
         getRequest.preference(request.param("preference"));
-        getRequest.realtime(request.paramAsBooleanOptional("realtime", null));
+        getRequest.realtime(request.paramAsBoolean("realtime", null));
 
         String sField = request.param("fields");
         if (sField != null) {
@@ -66,30 +66,21 @@ public class RestGetAction extends BaseRestHandler {
             }
         }
 
+        getRequest.version(RestActions.parseVersion(request));
+        getRequest.versionType(VersionType.fromString(request.param("version_type"), getRequest.versionType()));
 
-        client.get(getRequest, new ActionListener<GetResponse>() {
+        getRequest.fetchSourceContext(FetchSourceContext.parseFromRestRequest(request));
+
+        client.get(getRequest, new RestBuilderListener<GetResponse>(channel) {
             @Override
-            public void onResponse(GetResponse response) {
-
-                try {
-                    XContentBuilder builder = restContentBuilder(request);
-                    response.toXContent(builder, request);
-                    if (!response.isExists()) {
-                        channel.sendResponse(new XContentRestResponse(request, NOT_FOUND, builder));
-                    } else {
-                        channel.sendResponse(new XContentRestResponse(request, OK, builder));
-                    }
-                } catch (Throwable e) {
-                    onFailure(e);
-                }
-            }
-
-            @Override
-            public void onFailure(Throwable e) {
-                try {
-                    channel.sendResponse(new XContentThrowableRestResponse(request, e));
-                } catch (IOException e1) {
-                    logger.error("Failed to send failure response", e1);
+            public RestResponse buildResponse(GetResponse response, XContentBuilder builder) throws Exception {
+                builder.startObject();
+                response.toXContent(builder, request);
+                builder.endObject();
+                if (!response.isExists()) {
+                    return new BytesRestResponse(NOT_FOUND, builder);
+                } else {
+                    return new BytesRestResponse(OK, builder);
                 }
             }
         });

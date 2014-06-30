@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,10 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.action.support.single.custom;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.NoShardAvailableActionException;
@@ -40,11 +39,9 @@ import org.elasticsearch.transport.*;
 import java.io.IOException;
 
 /**
- * 这个类的作用是什么呢？
+ *
  */
-public abstract class TransportSingleCustomOperationAction<Request extends SingleCustomOperationRequest, Response extends ActionResponse>
-        extends
-            TransportAction<Request, Response> {
+public abstract class TransportSingleCustomOperationAction<Request extends SingleCustomOperationRequest, Response extends ActionResponse> extends TransportAction<Request, Response> {
 
     protected final ClusterService clusterService;
 
@@ -54,8 +51,7 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
     final String transportShardAction;
     final String executor;
 
-    protected TransportSingleCustomOperationAction(Settings settings, ThreadPool threadPool, ClusterService clusterService,
-            TransportService transportService) {
+    protected TransportSingleCustomOperationAction(Settings settings, ThreadPool threadPool, ClusterService clusterService, TransportService transportService) {
         super(settings, threadPool);
         this.clusterService = clusterService;
         this.transportService = transportService;
@@ -70,10 +66,10 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
 
     @Override
     protected void doExecute(Request request, ActionListener<Response> listener) {
-        new AsyncSingleAction(request, listener).start(); // 内部类
+        new AsyncSingleAction(request, listener).start();
     }
 
-    protected abstract String transportAction(); // 返回action的名字
+    protected abstract String transportAction();
 
     protected abstract String executor();
 
@@ -82,7 +78,7 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
      */
     protected abstract ShardsIterator shards(ClusterState state, Request request);
 
-    protected abstract Response shardOperation(Request request, int shardId) throws ElasticSearchException;
+    protected abstract Response shardOperation(Request request, int shardId) throws ElasticsearchException;
 
     protected abstract Request newRequest();
 
@@ -116,7 +112,7 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
             if (blockException != null) {
                 throw blockException;
             }
-            this.shardsIt = shards(clusterState, request); // 获得分片的迭代器
+            this.shardsIt = shards(clusterState, request);
         }
 
         public void start() {
@@ -131,8 +127,7 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
         }
 
         /**
-         * First get should try and use a shard that exists on a local node for
-         * better performance
+         * First get should try and use a shard that exists on a local node for better performance
          */
         private void performFirst() {
             if (shardsIt == null) {
@@ -163,13 +158,13 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
                 return;
             }
 
-            if (request.preferLocalShard()) { // 如果愿意在本地分片上执行
+            if (request.preferLocalShard()) {
                 boolean foundLocal = false;
                 ShardRouting shardX;
                 while ((shardX = shardsIt.nextOrNull()) != null) {
                     final ShardRouting shard = shardX;
                     if (shard.currentNodeId().equals(nodes.localNodeId())) {
-                        foundLocal = true; // 发现了本地节点
+                        foundLocal = true;
                         if (request.operationThreaded()) {
                             request.beforeLocalFork();
                             threadPool.executor(executor()).execute(new Runnable() {
@@ -187,7 +182,7 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
                             return;
                         } else {
                             try {
-                                final Response response = shardOperation(request, shard.id()); // 执行这个操作
+                                final Response response = shardOperation(request, shard.id());
                                 listener.onResponse(response);
                                 return;
                             } catch (Throwable e) {
@@ -249,29 +244,27 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
                     }
                 } else {
                     DiscoveryNode node = nodes.get(shard.currentNodeId());
-                    // transportService负责转发请求
-                    transportService.sendRequest(node, transportShardAction, new ShardSingleOperationRequest(request, shard.id()),
-                            new BaseTransportResponseHandler<Response>() {
-                                @Override
-                                public Response newInstance() {
-                                    return newResponse();
-                                }
+                    transportService.sendRequest(node, transportShardAction, new ShardSingleOperationRequest(request, shard.id()), new BaseTransportResponseHandler<Response>() {
+                        @Override
+                        public Response newInstance() {
+                            return newResponse();
+                        }
 
-                                @Override
-                                public String executor() {
-                                    return ThreadPool.Names.SAME;
-                                }
+                        @Override
+                        public String executor() {
+                            return ThreadPool.Names.SAME;
+                        }
 
-                                @Override
-                                public void handleResponse(final Response response) {
-                                    listener.onResponse(response);
-                                }
+                        @Override
+                        public void handleResponse(final Response response) {
+                            listener.onResponse(response);
+                        }
 
-                                @Override
-                                public void handleException(TransportException exp) {
-                                    onFailure(shard, exp);
-                                }
-                            });
+                        @Override
+                        public void handleException(TransportException exp) {
+                            onFailure(shard, exp);
+                        }
+                    });
                 }
             }
         }
@@ -286,11 +279,9 @@ public abstract class TransportSingleCustomOperationAction<Request extends Singl
 
         @Override
         public void messageReceived(Request request, final TransportChannel channel) throws Exception {
-            // no need to have a threaded listener since we just send back a
-            // response
+            // no need to have a threaded listener since we just send back a response
             request.listenerThreaded(false);
-            // if we have a local operation, execute it on a thread since we
-            // don't spawn
+            // if we have a local operation, execute it on a thread since we don't spawn
             request.operationThreaded(true);
             execute(request, new ActionListener<Response>() {
                 @Override

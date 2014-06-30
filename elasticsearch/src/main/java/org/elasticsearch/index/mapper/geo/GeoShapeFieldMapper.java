@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -28,14 +28,14 @@ import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.geo.GeoJSONShapeParser;
-import org.elasticsearch.common.geo.GeoShapeConstants;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.geo.SpatialStrategy;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.mapper.FieldMapper;
@@ -45,6 +45,7 @@ import org.elasticsearch.index.mapper.ParseContext;
 import org.elasticsearch.index.mapper.core.AbstractFieldMapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.index.mapper.MapperBuilders.geoShapeField;
@@ -145,14 +146,15 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
 
             final FieldMapper.Names names = buildNames(context);
             if (Names.TREE_GEOHASH.equals(tree)) {
-                prefixTree = new GeohashPrefixTree(GeoShapeConstants.SPATIAL_CONTEXT, getLevels(treeLevels, precisionInMeters, Defaults.GEOHASH_LEVELS, true));
+                prefixTree = new GeohashPrefixTree(ShapeBuilder.SPATIAL_CONTEXT, getLevels(treeLevels, precisionInMeters, Defaults.GEOHASH_LEVELS, true));
             } else if (Names.TREE_QUADTREE.equals(tree)) {
-                prefixTree = new QuadPrefixTree(GeoShapeConstants.SPATIAL_CONTEXT, getLevels(treeLevels, precisionInMeters, Defaults.QUADTREE_LEVELS, false));
+                prefixTree = new QuadPrefixTree(ShapeBuilder.SPATIAL_CONTEXT, getLevels(treeLevels, precisionInMeters, Defaults.QUADTREE_LEVELS, false));
             } else {
-                throw new ElasticSearchIllegalArgumentException("Unknown prefix tree type [" + tree + "]");
+                throw new ElasticsearchIllegalArgumentException("Unknown prefix tree type [" + tree + "]");
             }
 
-            return new GeoShapeFieldMapper(names, prefixTree, strategyName, distanceErrorPct, fieldType, provider);
+            return new GeoShapeFieldMapper(names, prefixTree, strategyName, distanceErrorPct, fieldType, postingsProvider,
+                    docValuesProvider, multiFieldsBuilder.build(this, context), copyTo);
         }
     }
 
@@ -179,7 +181,7 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
                 } else if (Names.TREE_LEVELS.equals(fieldName)) {
                     builder.treeLevels(Integer.parseInt(fieldNode.toString()));
                 } else if (Names.TREE_PRESISION.equals(fieldName)) {
-                    builder.treeLevelsByDistance(DistanceUnit.parse(fieldNode.toString(), DistanceUnit.METERS, DistanceUnit.METERS));
+                    builder.treeLevelsByDistance(DistanceUnit.parse(fieldNode.toString(), DistanceUnit.DEFAULT, DistanceUnit.DEFAULT));
                 } else if (Names.DISTANCE_ERROR_PCT.equals(fieldName)) {
                     builder.distanceErrorPct(Double.parseDouble(fieldNode.toString()));
                 } else if (Names.STRATEGY.equals(fieldName)) {
@@ -195,8 +197,9 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
     private final TermQueryPrefixTreeStrategy termStrategy;
 
     public GeoShapeFieldMapper(FieldMapper.Names names, SpatialPrefixTree tree, String defaultStrategyName, double distanceErrorPct,
-                               FieldType fieldType, PostingsFormatProvider provider) {
-        super(names, 1, fieldType, null, null, provider, null, null);
+                               FieldType fieldType, PostingsFormatProvider postingsProvider, DocValuesFormatProvider docValuesProvider,
+                               MultiFields multiFields, CopyTo copyTo) {
+        super(names, 1, fieldType, null, null, null, postingsProvider, docValuesProvider, null, null, null, null, multiFields, copyTo);
         this.recursiveStrategy = new RecursivePrefixTreeStrategy(tree, names.indexName());
         this.recursiveStrategy.setDistErrPct(distanceErrorPct);
         this.termStrategy = new TermQueryPrefixTreeStrategy(tree, names.indexName());
@@ -215,9 +218,21 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
     }
 
     @Override
+    public boolean hasDocValues() {
+        return false;
+    }
+
+    @Override
     public void parse(ParseContext context) throws IOException {
         try {
-            Shape shape = GeoJSONShapeParser.parse(context.parser());
+            Shape shape = context.parseExternalValue(Shape.class);
+            if (shape == null) {
+                ShapeBuilder shapeBuilder = ShapeBuilder.parse(context.parser());
+                if (shapeBuilder == null) {
+                    return;
+                }
+                shape = shapeBuilder.build();
+            }
             Field[] fields = defaultStrategy.createIndexableFields(shape);
             if (fields == null || fields.length == 0) {
                 return;
@@ -236,8 +251,7 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
     }
 
     @Override
-    protected Field parseCreateField(ParseContext context) throws IOException {
-        return null;
+    protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
     }
 
     @Override
@@ -292,7 +306,7 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
         if (SpatialStrategy.TERM.getStrategyName().equals(strategyName)) {
             return termStrategy;
         }
-        throw new ElasticSearchIllegalArgumentException("Unknown prefix tree strategy [" + strategyName + "]");
+        throw new ElasticsearchIllegalArgumentException("Unknown prefix tree strategy [" + strategyName + "]");
     }
 
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,14 +19,15 @@
 
 package org.elasticsearch.count.query;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.count.CountResponse;
-import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.query.CommonTermsQueryBuilder.Operator;
 import org.elasticsearch.index.query.MatchQueryBuilder.Type;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -35,42 +36,44 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_REPLICAS;
 import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_SHARDS;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertAcked;
 import static org.hamcrest.Matchers.*;
 
 public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void passQueryAsStringTest() throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         client().prepareIndex("test", "type1", "1").setSource("field1", "value1_1", "field2", "value2_1").setRefresh(true).get();
 
-        CountResponse countResponse = client().prepareCount().setQuery(new BytesArray("{ \"term\" : { \"field1\" : \"value1_1\" }}").array()).get();
+        CountResponse countResponse = client().prepareCount().setSource(new BytesArray("{ \"query\" : { \"term\" : { \"field1\" : \"value1_1\" }}}").array()).get();
         assertHitCount(countResponse, 1l);
     }
 
     @Test
     public void testIndexOptions() throws Exception {
         assertAcked(prepareCreate("test")
-                .addMapping("type1", "field1", "type=string,index_options=docs")
-                .setSettings("index.number_of_shards", 1));
+                .addMapping("type1", "field1", "type=string,index_options=docs"));
 
         client().prepareIndex("test", "type1", "1").setSource("field1", "quick brown fox", "field2", "quick brown fox").get();
-        client().prepareIndex("test", "type1", "2").setSource("field1", "quick lazy huge brown fox", "field2", "quick lazy huge brown fox").setRefresh(true).get();
+        client().prepareIndex("test", "type1", "2").setSource("field1", "quick lazy huge brown fox", "field2", "quick lazy huge brown fox").get();
+        refresh();
 
         CountResponse countResponse = client().prepareCount().setQuery(QueryBuilders.matchQuery("field2", "quick brown").type(Type.PHRASE).slop(0)).get();
         assertHitCount(countResponse, 1l);
-        try {
-            client().prepareCount().setQuery(QueryBuilders.matchQuery("field1", "quick brown").type(Type.PHRASE).slop(0)).get();
-        } catch (SearchPhaseExecutionException e) {
-            assertTrue("wrong exception message " + e.getMessage(), e.getMessage().endsWith("IllegalStateException[field \"field1\" was indexed without position data; cannot run PhraseQuery (term=quick)]; }"));
+
+        countResponse = client().prepareCount().setQuery(QueryBuilders.matchQuery("field1", "quick brown").type(Type.PHRASE).slop(0)).get();
+        assertHitCount(countResponse, 0l);
+        assertThat(countResponse.getFailedShards(), anyOf(equalTo(1), equalTo(2)));
+        assertThat(countResponse.getFailedShards(), equalTo(countResponse.getShardFailures().length));
+        for (ShardOperationFailedException shardFailure : countResponse.getShardFailures()) {
+            assertThat(shardFailure.status(), equalTo(RestStatus.INTERNAL_SERVER_ERROR));
+            assertThat(shardFailure.reason(), containsString("[field \"field1\" was indexed without position data; cannot run PhraseQuery (term=quick)]"));
         }
     }
 
@@ -104,7 +107,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
         countResponse = client().prepareCount().setQuery(QueryBuilders.commonTerms("field1", "the lazy fox brown").cutoffFrequency(1).highFreqMinimumShouldMatch("4")).get();
         assertHitCount(countResponse, 1l);
 
-        countResponse = client().prepareCount().setQuery(new BytesArray("{ \"common\" : { \"field1\" : { \"query\" : \"the lazy fox brown\", \"cutoff_frequency\" : 1, \"minimum_should_match\" : { \"high_freq\" : 4 } } } }").array()).get();
+        countResponse = client().prepareCount().setSource(new BytesArray("{ \"query\" : { \"common\" : { \"field1\" : { \"query\" : \"the lazy fox brown\", \"cutoff_frequency\" : 1, \"minimum_should_match\" : { \"high_freq\" : 4 } } } } }").array()).get();
         assertHitCount(countResponse, 1l);
 
         // Default
@@ -122,7 +125,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
         countResponse = client().prepareCount().setQuery(QueryBuilders.matchQuery("field1", "the quick brown").cutoffFrequency(3).operator(MatchQueryBuilder.Operator.OR)).get();
         assertHitCount(countResponse, 3l);
 
-        countResponse = client().prepareCount().setQuery(QueryBuilders.matchQuery("field1", "the quick brown").cutoffFrequency(3).operator(MatchQueryBuilder.Operator.AND).analyzer("standard")).get();
+        countResponse = client().prepareCount().setQuery(QueryBuilders.matchQuery("field1", "the quick brown").cutoffFrequency(3).operator(MatchQueryBuilder.Operator.AND).analyzer("stop")).get();
         assertHitCount(countResponse, 3l);
         // standard drops "the" since its a stopword
 
@@ -132,27 +135,8 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
     }
 
     @Test
-    public void testOmitTermFreqsAndPositions() throws Exception {
-        // backwards compat test!
-        assertAcked(prepareCreate("test")
-                .addMapping("type1", "field1", "type=string,omit_term_freq_and_positions=true")
-                .setSettings(SETTING_NUMBER_OF_SHARDS, 1));
-
-        indexRandom(true, client().prepareIndex("test", "type1", "1").setSource("field1", "quick brown fox", "field2", "quick brown fox"),
-                client().prepareIndex("test", "type1", "2").setSource("field1", "quick lazy huge brown fox", "field2", "quick lazy huge brown fox"));
-
-        CountResponse countResponse = client().prepareCount().setQuery(QueryBuilders.matchQuery("field2", "quick brown").type(Type.PHRASE).slop(0)).get();
-        assertHitCount(countResponse, 1l);
-        try {
-            client().prepareCount().setQuery(QueryBuilders.matchQuery("field1", "quick brown").type(Type.PHRASE).slop(0)).get();
-        } catch (SearchPhaseExecutionException e) {
-            assertTrue(e.getMessage().endsWith("IllegalStateException[field \"field1\" was indexed without position data; cannot run PhraseQuery (term=quick)]; }"));
-        }
-    }
-
-    @Test
     public void queryStringAnalyzedWildcard() throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         client().prepareIndex("test", "type1", "1").setSource("field1", "value_1", "field2", "value_2").get();
         refresh();
@@ -175,7 +159,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testLowercaseExpandedTerms() {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         client().prepareIndex("test", "type1", "1").setSource("field1", "value_1", "field2", "value_2").get();
         refresh();
@@ -194,9 +178,16 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
         assertHitCount(countResponse, 0l);
     }
 
-    @Test
+    @Test //https://github.com/elasticsearch/elasticsearch/issues/3540
     public void testDateRangeInQueryString() {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        //the mapping needs to be provided upfront otherwise we are not sure how many failures we get back
+        //as with dynamic mappings some shards might be lacking behind and parse a different query
+        assertAcked(prepareCreate("test").addMapping(
+                "type", "past", "type=date", "future", "type=date"
+        ));
+        ensureGreen();
+
+        NumShards test = getNumShards("test");
 
         String aMonthAgo = ISODateTimeFormat.yearMonthDay().print(new DateTime(DateTimeZone.UTC).minusMonths(1));
         String aMonthFromNow = ISODateTimeFormat.yearMonthDay().print(new DateTime(DateTimeZone.UTC).plusMonths(1));
@@ -210,12 +201,15 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
         countResponse = client().prepareCount().setQuery(queryString("future:[now/d TO now+2M/d]").lowercaseExpandedTerms(false)).get();
         assertHitCount(countResponse, 1l);
 
-        countResponse = client().prepareCount().setQuery(queryString("future:[now/D TO now+2M/d]").lowercaseExpandedTerms(false)).get();
+        countResponse = client().prepareCount("test").setQuery(queryString("future:[now/D TO now+2M/d]").lowercaseExpandedTerms(false)).get();
         //D is an unsupported unit in date math
         assertThat(countResponse.getSuccessfulShards(), equalTo(0));
-        assertThat(countResponse.getFailedShards(), equalTo(1));
-        assertThat(countResponse.getShardFailures().length, equalTo(1));
-        assertThat(countResponse.getShardFailures()[0].reason(), allOf(containsString("Failed to parse"), containsString("unit [D] not supported for date math")));
+        assertThat(countResponse.getFailedShards(), equalTo(test.numPrimaries));
+        assertThat(countResponse.getShardFailures().length, equalTo(test.numPrimaries));
+        for (ShardOperationFailedException shardFailure : countResponse.getShardFailures()) {
+            assertThat(shardFailure.status(), equalTo(RestStatus.BAD_REQUEST));
+            assertThat(shardFailure.reason(), allOf(containsString("Failed to parse"), containsString("unit [D] not supported for date math")));
+        }
     }
 
     @Test
@@ -229,7 +223,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
     }
 
     private void typeFilterTests(String index) throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1)
+        assertAcked(prepareCreate("test")
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1")
                         .startObject("_type").field("index", index).endObject()
                         .endObject().endObject())
@@ -262,7 +256,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
     }
 
     private void idsFilterTests(String index) throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1)
+        assertAcked(prepareCreate("test")
                 .addMapping("type1", jsonBuilder().startObject().startObject("type1")
                         .startObject("_id").field("index", index).endObject()
                         .endObject().endObject()));
@@ -308,7 +302,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void filterExistsMissingTests() throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         indexRandom(true,
                 client().prepareIndex("test", "type1", "1").setSource(jsonBuilder().startObject().startObject("obj1").field("obj1_val", "1").endObject().field("x1", "x_1").field("field1", "value1_1").field("field2", "value2_1").endObject()),
@@ -362,7 +356,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void passQueryAsJSONStringTest() throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         client().prepareIndex("test", "type1", "1").setSource("field1", "value1_1", "field2", "value2_1").setRefresh(true).get();
 
@@ -395,7 +389,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testMatchQueryNumeric() throws Exception {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         client().prepareIndex("test", "type1", "1").setSource("long", 1l, "double", 1.0d).get();
         client().prepareIndex("test", "type1", "2").setSource("long", 2l, "double", 2.0d).get();
@@ -410,8 +404,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testMultiMatchQuery() throws Exception {
-
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
 
         client().prepareIndex("test", "type1", "1").setSource("field1", "value1", "field2", "value4", "field3", "value3").get();
         client().prepareIndex("test", "type1", "2").setSource("field1", "value2", "field2", "value5", "field3", "value2").get();
@@ -452,7 +445,8 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testMatchQueryZeroTermsQuery() {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        assertAcked(prepareCreate("test")
+            .addMapping("type1", "field1", "type=string,analyzer=classic", "field2", "type=string,analyzer=classic"));
         client().prepareIndex("test", "type1", "1").setSource("field1", "value1").get();
         client().prepareIndex("test", "type1", "2").setSource("field1", "value2").get();
         refresh();
@@ -476,7 +470,8 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testMultiMatchQueryZeroTermsQuery() {
-        assertAcked(client().admin().indices().prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        assertAcked(prepareCreate("test")
+                .addMapping("type1", "field1", "type=string,analyzer=classic", "field2", "type=string,analyzer=classic"));
         client().prepareIndex("test", "type1", "1").setSource("field1", "value1", "field2", "value2").get();
         client().prepareIndex("test", "type1", "2").setSource("field1", "value3", "field2", "value4").get();
         refresh();
@@ -500,7 +495,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testMultiMatchQueryMinShouldMatch() {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
         client().prepareIndex("test", "type1", "1").setSource("field1", new String[]{"value1", "value2", "value3"}).get();
         client().prepareIndex("test", "type1", "2").setSource("field2", "value1").get();
         refresh();
@@ -537,7 +532,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testFuzzyQueryString() {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
         client().prepareIndex("test", "type1", "1").setSource("str", "kimchy", "date", "2012-02-01", "num", 12).get();
         client().prepareIndex("test", "type1", "2").setSource("str", "shay", "date", "2012-02-05", "num", 20).get();
         refresh();
@@ -554,7 +549,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testSpecialRangeSyntaxInQueryString() {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1));
+        createIndex("test");
         client().prepareIndex("test", "type1", "1").setSource("str", "kimchy", "date", "2012-02-01", "num", 12).get();
         client().prepareIndex("test", "type1", "2").setSource("str", "shay", "date", "2012-02-05", "num", 20).get();
         refresh();
@@ -741,8 +736,7 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
 
     @Test
     public void testNumericTermsAndRanges() throws Exception {
-        assertAcked(client().admin().indices().prepareCreate("test")
-                .setSettings(SETTING_NUMBER_OF_SHARDS, 1)
+        assertAcked(prepareCreate("test")
                 .addMapping("type1",
                         "num_byte", "type=byte", "num_short", "type=short",
                         "num_integer", "type=integer", "num_long", "type=long",
@@ -818,8 +812,8 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
     }
 
     @Test // see #2994
-    public void testSimpleSpan() throws ElasticSearchException, IOException {
-        assertAcked(prepareCreate("test").setSettings(SETTING_NUMBER_OF_SHARDS, 1, SETTING_NUMBER_OF_REPLICAS, 0));
+    public void testSimpleSpan() throws ElasticsearchException, IOException {
+        createIndex("test");
         ensureGreen();
 
         client().prepareIndex("test", "test", "1").setSource("description", "foo other anything bar").get();

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -41,14 +41,14 @@ public class CustomSuggester extends Suggester<CustomSuggester.CustomSuggestions
         String text = suggestion.getText().utf8ToString();
 
         // create two suggestions with 12 and 123 appended
-        Suggest.Suggestion<Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option>> response = new Suggest.Suggestion<Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option>>(name, suggestion.getSize());
+        Suggest.Suggestion<Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option>> response = new Suggest.Suggestion<>(name, suggestion.getSize());
 
         String firstSuggestion = String.format(Locale.ROOT, "%s-%s-%s-%s", text, suggestion.getField(), suggestion.options.get("suffix"), "12");
-        Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option> resultEntry12 = new Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option>(new StringText(firstSuggestion), 0, text.length() + 2);
+        Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option> resultEntry12 = new Suggest.Suggestion.Entry<>(new StringText(firstSuggestion), 0, text.length() + 2);
         response.addTerm(resultEntry12);
 
         String secondSuggestion = String.format(Locale.ROOT, "%s-%s-%s-%s", text, suggestion.getField(), suggestion.options.get("suffix"), "123");
-        Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option> resultEntry123 = new Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option>(new StringText(secondSuggestion), 0, text.length() + 3);
+        Suggest.Suggestion.Entry<Suggest.Suggestion.Entry.Option> resultEntry123 = new Suggest.Suggestion.Entry<>(new StringText(secondSuggestion), 0, text.length() + 3);
         response.addTerm(resultEntry123);
 
         return response;

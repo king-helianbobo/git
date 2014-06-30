@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,15 +18,23 @@
  */
 package org.elasticsearch.mget;
 
+import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetRequestBuilder;
 import org.elasticsearch.action.get.MultiGetResponse;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.hamcrest.Matchers.is;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertAcked;
+import static org.hamcrest.Matchers.*;
 
 public class SimpleMgetTests extends ElasticsearchIntegrationTest {
 
@@ -71,9 +79,9 @@ public class SimpleMgetTests extends ElasticsearchIntegrationTest {
                 .startObject("_parent")
                 .field("type", "foo")
                 .endObject()
-                .endObject().
-                        endObject()
-        ).execute().actionGet();
+                .endObject()
+                .endObject()
+        ).get();
 
         client().prepareIndex("test", "test", "1").setParent("4").setRefresh(true)
                 .setSource(jsonBuilder().startObject().field("foo", "bar").endObject())
@@ -88,21 +96,66 @@ public class SimpleMgetTests extends ElasticsearchIntegrationTest {
         assertThat(mgetResponse.getResponses()[0].isFailed(), is(false));
         assertThat(mgetResponse.getResponses()[0].getResponse().isExists(), is(true));
 
-        assertThat(mgetResponse.getResponses()[1].isFailed(), is(false));
-        assertThat(mgetResponse.getResponses()[1].getResponse().isExists(), is(false));
+        assertThat(mgetResponse.getResponses()[1].isFailed(), is(true));
+        assertThat(mgetResponse.getResponses()[1].getResponse(), nullValue());
+        assertThat(mgetResponse.getResponses()[1].getFailure().getMessage(), equalTo("routing is required, but hasn't been specified"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testThatSourceFilteringIsSupported() throws Exception {
+        createIndex("test");
+        ensureYellow();
+        BytesReference sourceBytesRef = jsonBuilder().startObject()
+                .field("field", "1", "2")
+                .startObject("included").field("field", "should be seen").field("hidden_field", "should not be seen").endObject()
+                .field("excluded", "should not be seen")
+                .endObject().bytes();
+        for (int i = 0; i < 100; i++) {
+            client().prepareIndex("test", "type", Integer.toString(i)).setSource(sourceBytesRef).get();
+        }
+
+        MultiGetRequestBuilder request = client().prepareMultiGet();
+        for (int i = 0; i < 100; i++) {
+            if (i % 2 == 0) {
+                request.add(new MultiGetRequest.Item("test", "type", Integer.toString(i)).fetchSourceContext(new FetchSourceContext("included", "*.hidden_field")));
+            } else {
+                request.add(new MultiGetRequest.Item("test", "type", Integer.toString(i)).fetchSourceContext(new FetchSourceContext(false)));
+            }
+        }
+
+        MultiGetResponse response = request.get();
+
+        assertThat(response.getResponses().length, equalTo(100));
+        for (int i = 0; i < 100; i++) {
+            MultiGetItemResponse responseItem = response.getResponses()[i];
+            if (i % 2 == 0) {
+                Map<String, Object> source = responseItem.getResponse().getSourceAsMap();
+                assertThat(source.size(), equalTo(1));
+                assertThat(source, hasKey("included"));
+                assertThat(((Map<String, Object>) source.get("included")).size(), equalTo(1));
+                assertThat(((Map<String, Object>) source.get("included")), hasKey("field"));
+            } else {
+                assertThat(responseItem.getResponse().getSourceAsBytes(), nullValue());
+            }
+        }
+
+
     }
 
     @Test
     public void testThatRoutingPerDocumentIsSupported() throws Exception {
-        createIndex("test");
+        assertAcked(prepareCreate("test").setSettings(ImmutableSettings.builder()
+                .put(indexSettings())
+                .put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, between(2, DEFAULT_MAX_NUM_SHARDS))));
         ensureYellow();
 
-        client().prepareIndex("test", "test", "1").setRefresh(true).setRouting("bar")
+        client().prepareIndex("test", "test", "1").setRefresh(true).setRouting("2")
                 .setSource(jsonBuilder().startObject().field("foo", "bar").endObject())
                 .execute().actionGet();
 
         MultiGetResponse mgetResponse = client().prepareMultiGet()
-                .add(new MultiGetRequest.Item("test", "test", "1").routing("bar"))
+                .add(new MultiGetRequest.Item("test", "test", "1").routing("2"))
                 .add(new MultiGetRequest.Item("test", "test", "1"))
                 .execute().actionGet();
 

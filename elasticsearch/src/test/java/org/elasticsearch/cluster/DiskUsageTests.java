@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -38,7 +38,7 @@ public class DiskUsageTests extends ElasticsearchTestCase {
 
     @Test
     public void randomDiskUsageTest() {
-        int iters = atLeast(1000);
+        int iters = scaledRandomIntBetween(1000, 10000);
         for (int i = 1; i < iters; i++) {
             long total = between(Integer.MIN_VALUE, Integer.MAX_VALUE);
             long free = between(Integer.MIN_VALUE, Integer.MAX_VALUE);
@@ -47,7 +47,6 @@ public class DiskUsageTests extends ElasticsearchTestCase {
                     new DiskUsage("random", total, free);
                     fail("should never reach this");
                 } catch (IllegalStateException e) {
-                    assert true;
                 }
             } else {
                 DiskUsage du = new DiskUsage("random", total, free);

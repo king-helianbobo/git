@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,15 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.index.fielddata.plain;
 
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.*;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
-import org.elasticsearch.common.util.BigIntArray;
+import org.elasticsearch.common.util.BigArrays;
+import org.elasticsearch.common.util.IntArray;
 import org.elasticsearch.index.fielddata.AtomicFieldData;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.index.fielddata.ordinals.EmptyOrdinals;
@@ -37,14 +38,14 @@ import java.io.IOException;
  */
 public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<ScriptDocValues.Strings> {
 
-    public static FSTBytesAtomicFieldData empty(int numDocs) {
-        return new Empty(numDocs);
+    public static FSTBytesAtomicFieldData empty() {
+        return new Empty();
     }
 
     // 0 ordinal in values means no value (its null)
     protected final Ordinals ordinals;
 
-    private volatile BigIntArray hashes;
+    private volatile IntArray hashes;
     private long size = -1;
 
     private final FST<Long> fst;
@@ -64,18 +65,8 @@ public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<Scr
     }
 
     @Override
-    public int getNumDocs() {
-        return ordinals.getNumDocs();
-    }
-
-    @Override
     public long getNumberUniqueValues() {
-        return ordinals.getNumOrds();
-    }
-
-    @Override
-    public boolean isValuesOrdered() {
-        return true;
+        return ordinals.getMaxOrd() - Ordinals.MIN_ORDINAL;
     }
 
     @Override
@@ -94,21 +85,15 @@ public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<Scr
         assert fst != null;
         if (needsHashes) {
             if (hashes == null) {
-                BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
-                BigIntArray hashes = new BigIntArray(ordinals.getMaxOrd());
-                // we don't store an ord 0 in the FST since we could have an empty string in there and FST don't support
-                // empty strings twice. ie. them merge fails for long output.
-                hashes.set(0, new BytesRef().hashCode());
+                BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
+                IntArray hashes = BigArrays.NON_RECYCLING_INSTANCE.newIntArray(ordinals.getMaxOrd());
                 try {
-                    for (long i = 1, maxOrd = ordinals.getMaxOrd(); i < maxOrd; ++i) {
+                    for (long i = 0, maxOrd = ordinals.getMaxOrd(); i < maxOrd; ++i) {
                         hashes.set(i, fstEnum.next().input.hashCode());
                     }
                     assert fstEnum.next() == null;
                 } catch (IOException e) {
-                    // Don't use new "AssertionError("Cannot happen", e)" directly as this is a Java 1.7-only API
-                    final AssertionError error = new AssertionError("Cannot happen");
-                    error.initCause(e);
-                    throw error;
+                    throw new AssertionError("Cannot happen", e);
                 }
                 this.hashes = hashes;
             }
@@ -125,7 +110,10 @@ public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<Scr
         return new ScriptDocValues.Strings(getBytesValues(false));
     }
 
-
+    @Override
+    public TermsEnum getTermsEnum() {
+        return new AtomicFieldDataWithOrdinalsTermsEnum(this);
+    }
 
     static class BytesValues extends org.elasticsearch.index.fielddata.BytesValues.WithOrdinals {
 
@@ -134,8 +122,8 @@ public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<Scr
 
         // per-thread resources
         protected final BytesReader in;
-        protected final Arc<Long> firstArc = new Arc<Long>();
-        protected final Arc<Long> scratchArc = new Arc<Long>();
+        protected final Arc<Long> firstArc = new Arc<>();
+        protected final Arc<Long> scratchArc = new Arc<>();
         protected final IntsRef scratchInts = new IntsRef();
 
         BytesValues(FST<Long> fst, Ordinals.Docs ordinals) {
@@ -164,9 +152,9 @@ public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<Scr
     }
     
     static final class HashedBytesValues extends BytesValues {
-        private final BigIntArray hashes;
+        private final IntArray hashes;
 
-        HashedBytesValues(FST<Long> fst, Docs ordinals, BigIntArray hashes) {
+        HashedBytesValues(FST<Long> fst, Docs ordinals, IntArray hashes) {
             super(fst, ordinals);
             this.hashes = hashes;
         }
@@ -181,23 +169,13 @@ public class FSTBytesAtomicFieldData implements AtomicFieldData.WithOrdinals<Scr
 
     final static class Empty extends FSTBytesAtomicFieldData {
 
-        Empty(int numDocs) {
-            super(null, new EmptyOrdinals(numDocs));
+        Empty() {
+            super(null, EmptyOrdinals.INSTANCE);
         }
 
         @Override
         public boolean isMultiValued() {
             return false;
-        }
-
-        @Override
-        public int getNumDocs() {
-            return ordinals.getNumDocs();
-        }
-
-        @Override
-        public boolean isValuesOrdered() {
-            return true;
         }
 
         @Override

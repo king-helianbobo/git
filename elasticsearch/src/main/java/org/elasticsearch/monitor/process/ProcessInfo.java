@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,6 @@
 
 package org.elasticsearch.monitor.process;
 
-import org.elasticsearch.Version;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
@@ -95,6 +94,7 @@ public class ProcessInfo implements Streamable, Serializable, ToXContent {
     static final class Fields {
         static final XContentBuilderString PROCESS = new XContentBuilderString("process");
         static final XContentBuilderString REFRESH_INTERVAL = new XContentBuilderString("refresh_interval");
+        static final XContentBuilderString REFRESH_INTERVAL_IN_MILLIS = new XContentBuilderString("refresh_interval_in_millis");
         static final XContentBuilderString ID = new XContentBuilderString("id");
         static final XContentBuilderString MAX_FILE_DESCRIPTORS = new XContentBuilderString("max_file_descriptors");
         static final XContentBuilderString MLOCKALL = new XContentBuilderString("mlockall");
@@ -103,7 +103,7 @@ public class ProcessInfo implements Streamable, Serializable, ToXContent {
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(Fields.PROCESS);
-        builder.field(Fields.REFRESH_INTERVAL, refreshInterval);
+        builder.timeValueField(Fields.REFRESH_INTERVAL_IN_MILLIS, Fields.REFRESH_INTERVAL, refreshInterval);
         builder.field(Fields.ID, id);
         builder.field(Fields.MAX_FILE_DESCRIPTORS, maxFileDescriptors);
         builder.field(Fields.MLOCKALL, mlockall);
@@ -122,9 +122,7 @@ public class ProcessInfo implements Streamable, Serializable, ToXContent {
         refreshInterval = in.readLong();
         id = in.readLong();
         maxFileDescriptors = in.readLong();
-        if (in.getVersion().after(Version.V_0_90_7)) {
-            mlockall = in.readBoolean();
-        }
+        mlockall = in.readBoolean();
     }
 
     @Override
@@ -132,8 +130,6 @@ public class ProcessInfo implements Streamable, Serializable, ToXContent {
         out.writeLong(refreshInterval);
         out.writeLong(id);
         out.writeLong(maxFileDescriptors);
-        if (out.getVersion().after(Version.V_0_90_7)) {
-            out.writeBoolean(mlockall);
-        }
+        out.writeBoolean(mlockall);
     }
 }

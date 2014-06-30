@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@ package org.elasticsearch.action.admin.indices.template.get;
 
 import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequestValidationException;
-import org.elasticsearch.action.support.master.MasterNodeOperationRequest;
+import org.elasticsearch.action.support.master.MasterNodeReadOperationRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -30,19 +30,13 @@ import java.io.IOException;
 import static org.elasticsearch.action.ValidateActions.addValidationError;
 
 /**
- *
+ * Request that allows to retrieve index templates
  */
-public class GetIndexTemplatesRequest extends MasterNodeOperationRequest<GetIndexTemplatesRequest> {
+public class GetIndexTemplatesRequest extends MasterNodeReadOperationRequest<GetIndexTemplatesRequest> {
 
     private String[] names;
 
     public GetIndexTemplatesRequest() {
-    }
-
-    @Deprecated
-    public GetIndexTemplatesRequest(String name) {
-        this.names = new String[1];
-        this.names[0] = name;
     }
 
     public GetIndexTemplatesRequest(String... names) {
@@ -65,27 +59,6 @@ public class GetIndexTemplatesRequest extends MasterNodeOperationRequest<GetInde
     }
 
     /**
-     * Sets the name of the index template.
-     */
-    @Deprecated
-    public GetIndexTemplatesRequest name(String name) {
-        this.names = new String[1];
-        this.names[0] = name;
-        return this;
-    }
-
-    /**
-     * The name of the index template.
-     */
-    @Deprecated
-    public String name() {
-        if (this.names != null && this.names.length > 0) {
-            return this.names[0];
-        }
-        return null;
-    }
-
-    /**
      * Sets the names of the index templates.
      */
     public GetIndexTemplatesRequest names(String... names) {
@@ -103,21 +76,14 @@ public class GetIndexTemplatesRequest extends MasterNodeOperationRequest<GetInde
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        if (in.getVersion().onOrAfter(Version.V_0_90_4)) {
-            names = in.readStringArray();
-        } else {
-            names = new String[1];
-            names[0] = in.readString();
-        }
+        names = in.readStringArray();
+        readLocal(in, Version.V_1_0_0_RC2);
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        if (out.getVersion().onOrAfter(Version.V_0_90_4)) {
-            out.writeStringArray(names);
-        } else {
-            out.writeString(names.length == 0 ? "*" : names[0]);
-        }
+        out.writeStringArray(names);
+        writeLocal(out, Version.V_1_0_0_RC2);
     }
 }

@@ -1,12 +1,11 @@
-package org.elasticsearch.client.transport;
 /*
- * Licensed to ElasticSearch under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,6 +17,7 @@ package org.elasticsearch.client.transport;
  * under the License.
  */
 
+package org.elasticsearch.client.transport;
 
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
@@ -25,7 +25,9 @@ import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-@ClusterScope(scope = ElasticsearchIntegrationTest.Scope.TEST, numNodes = 0, transportClientRatio = 1.0)
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
+
+@ClusterScope(scope = Scope.TEST, numDataNodes = 0, transportClientRatio = 1.0)
 public class TransportClientTests extends ElasticsearchIntegrationTest {
 
     @Test

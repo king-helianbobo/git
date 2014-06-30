@@ -17,6 +17,8 @@ include::tokenfilters/length-tokenfilter.asciidoc[]
 
 include::tokenfilters/lowercase-tokenfilter.asciidoc[]
 
+include::tokenfilters/uppercase-tokenfilter.asciidoc[]
+
 include::tokenfilters/ngram-tokenfilter.asciidoc[]
 
 include::tokenfilters/edgengram-tokenfilter.asciidoc[]
@@ -68,5 +70,7 @@ include::tokenfilters/hunspell-tokenfilter.asciidoc[]
 include::tokenfilters/common-grams-tokenfilter.asciidoc[]
 
 include::tokenfilters/normalization-tokenfilter.asciidoc[]
+
+include::tokenfilters/delimited-payload-tokenfilter.asciidoc[]
 
 include::tokenfilters/keep-words-tokenfilter.asciidoc[]

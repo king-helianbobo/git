@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,15 +21,15 @@ package org.elasticsearch.index.codec.postingsformat;
 
 import org.apache.lucene.codecs.*;
 import org.apache.lucene.index.*;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.elasticsearch.common.util.BloomFilter;
+import org.elasticsearch.index.store.DirectoryUtils;
+import org.elasticsearch.index.store.Store;
 
 import java.io.IOException;
 import java.util.*;
@@ -51,6 +51,8 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
 
     public static final String BLOOM_CODEC_NAME = "XBloomFilter"; // the Lucene one is named BloomFilter
     public static final int BLOOM_CODEC_VERSION = 1;
+    public static final int BLOOM_CODEC_VERSION_CHECKSUM = 2;
+    public static final int BLOOM_CODEC_VERSION_CURRENT = BLOOM_CODEC_VERSION_CHECKSUM;
 
     /**
      * Extension of Bloom Filters file
@@ -104,7 +106,7 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
 
     public final class BloomFilteredFieldsProducer extends FieldsProducer {
         private FieldsProducer delegateFieldsProducer;
-        HashMap<String, BloomFilter> bloomsByFieldName = new HashMap<String, BloomFilter>();
+        HashMap<String, BloomFilter> bloomsByFieldName = new HashMap<>();
 
         // for internal use only
         FieldsProducer getDelegate() {
@@ -116,12 +118,12 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
 
             String bloomFileName = IndexFileNames.segmentFileName(
                     state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
-            IndexInput bloomIn = null;
+            ChecksumIndexInput bloomIn = null;
             boolean success = false;
             try {
-                bloomIn = state.directory.openInput(bloomFileName, state.context);
-                CodecUtil.checkHeader(bloomIn, BLOOM_CODEC_NAME, BLOOM_CODEC_VERSION,
-                        BLOOM_CODEC_VERSION);
+                bloomIn = state.directory.openChecksumInput(bloomFileName, state.context);
+                int version = CodecUtil.checkHeader(bloomIn, BLOOM_CODEC_NAME, BLOOM_CODEC_VERSION,
+                        BLOOM_CODEC_VERSION_CURRENT);
                 // // Load the hash function used in the BloomFilter
                 // hashFunction = HashFunction.forName(bloomIn.readString());
                 // Load the delegate postings format
@@ -131,13 +133,25 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
                 this.delegateFieldsProducer = delegatePostingsFormat
                         .fieldsProducer(state);
                 int numBlooms = bloomIn.readInt();
-                if (state.context.context != IOContext.Context.MERGE) {
+
+                boolean load = true;
+                Store.StoreDirectory storeDir = DirectoryUtils.getStoreDirectory(state.directory);
+                if (storeDir != null && storeDir.codecService() != null) {
+                    load = storeDir.codecService().isLoadBloomFilter();
+                }
+
+                if (load && state.context.context != IOContext.Context.MERGE) {
                     // if we merge we don't need to load the bloom filters
                     for (int i = 0; i < numBlooms; i++) {
                         int fieldNum = bloomIn.readInt();
                         BloomFilter bloom = BloomFilter.deserialize(bloomIn);
                         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldNum);
                         bloomsByFieldName.put(fieldInfo.name, bloom);
+                    }
+                    if (version >= BLOOM_CODEC_VERSION_CHECKSUM) {
+                        CodecUtil.checkFooter(bloomIn);
+                    } else {
+                        CodecUtil.checkEOF(bloomIn);
                     }
                 }
                 IOUtils.close(bloomIn);
@@ -184,12 +198,19 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
 
         @Override
         public long ramBytesUsed() {
-            return RamUsageEstimator.sizeOf(this);
+            long size = delegateFieldsProducer.ramBytesUsed();
+            for (BloomFilter bloomFilter : bloomsByFieldName.values()) {
+                size += bloomFilter.getSizeInBytes();
+            }
+            return size;
         }
 
-
+        @Override
+        public void checkIntegrity() throws IOException {
+            delegateFieldsProducer.checkIntegrity();
+        }
     }
-    
+
     public static final class BloomFilteredTerms extends FilterAtomicReader.FilterTerms {
         private BloomFilter filter;
 
@@ -326,7 +347,7 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
 
     final class BloomFilteredFieldsConsumer extends FieldsConsumer {
         private FieldsConsumer delegateFieldsConsumer;
-        private Map<FieldInfo, BloomFilter> bloomFilters = new HashMap<FieldInfo, BloomFilter>();
+        private Map<FieldInfo, BloomFilter> bloomFilters = new HashMap<>();
         private SegmentWriteState state;
 
         // private PostingsFormat delegatePostingsFormat;
@@ -361,7 +382,7 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
         public void close() throws IOException {
             delegateFieldsConsumer.close();
             // Now we are done accumulating values for these fields
-            List<Entry<FieldInfo, BloomFilter>> nonSaturatedBlooms = new ArrayList<Map.Entry<FieldInfo, BloomFilter>>();
+            List<Entry<FieldInfo, BloomFilter>> nonSaturatedBlooms = new ArrayList<>();
 
             for (Entry<FieldInfo, BloomFilter> entry : bloomFilters.entrySet()) {
                 nonSaturatedBlooms.add(entry);
@@ -373,7 +394,7 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
                 bloomOutput = state.directory
                         .createOutput(bloomFileName, state.context);
                 CodecUtil.writeHeader(bloomOutput, BLOOM_CODEC_NAME,
-                        BLOOM_CODEC_VERSION);
+                        BLOOM_CODEC_VERSION_CURRENT);
                 // remember the name of the postings format we will delegate to
                 bloomOutput.writeString(delegatePostingsFormat.getName());
 
@@ -385,6 +406,7 @@ public final class BloomFilterPostingsFormat extends PostingsFormat {
                     bloomOutput.writeInt(fieldInfo.number);
                     saveAppropriatelySizedBloomFilter(bloomOutput, bloomFilter, fieldInfo);
                 }
+                CodecUtil.writeFooter(bloomOutput);
             } finally {
                 IOUtils.close(bloomOutput);
             }

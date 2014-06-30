@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,6 +25,7 @@ import org.elasticsearch.common.geo.GeoDistance;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.fielddata.IndexFieldData;
 import org.elasticsearch.index.fielddata.IndexGeoPointFieldData;
+import org.elasticsearch.search.MultiValueMode;
 
 import java.io.IOException;
 
@@ -37,9 +38,9 @@ public class GeoDistanceComparatorSource extends IndexFieldData.XFieldComparator
     private final double lon;
     private final DistanceUnit unit;
     private final GeoDistance geoDistance;
-    private final SortMode sortMode;
+    private final MultiValueMode sortMode;
 
-    public GeoDistanceComparatorSource(IndexGeoPointFieldData<?> indexFieldData, double lat, double lon, DistanceUnit unit, GeoDistance geoDistance, SortMode sortMode) {
+    public GeoDistanceComparatorSource(IndexGeoPointFieldData<?> indexFieldData, double lat, double lon, DistanceUnit unit, GeoDistance geoDistance, MultiValueMode sortMode) {
         this.indexFieldData = indexFieldData;
         this.lat = lat;
         this.lon = lon;

@@ -1,6 +1,25 @@
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.elasticsearch.action.update;
 
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Requests;
@@ -14,13 +33,13 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.engine.DocumentSourceMissingException;
 import org.elasticsearch.index.get.GetField;
 import org.elasticsearch.index.get.GetResult;
 import org.elasticsearch.index.mapper.internal.ParentFieldMapper;
 import org.elasticsearch.index.mapper.internal.RoutingFieldMapper;
-import org.elasticsearch.index.mapper.internal.SourceFieldMapper;
 import org.elasticsearch.index.mapper.internal.TTLFieldMapper;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.index.shard.ShardId;
@@ -28,6 +47,7 @@ import org.elasticsearch.index.shard.service.IndexShard;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.script.ExecutableScript;
 import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 import org.elasticsearch.search.lookup.SourceLookup;
 
 import java.util.ArrayList;
@@ -63,7 +83,8 @@ public class UpdateHelper extends AbstractComponent {
     public Result prepare(UpdateRequest request, IndexShard indexShard) {
         long getDate = System.currentTimeMillis();
         final GetResult getResult = indexShard.getService().get(request.type(), request.id(),
-                new String[]{SourceFieldMapper.NAME, RoutingFieldMapper.NAME, ParentFieldMapper.NAME, TTLFieldMapper.NAME}, true);
+                new String[]{RoutingFieldMapper.NAME, ParentFieldMapper.NAME, TTLFieldMapper.NAME},
+                true, request.version(), request.versionType(), FetchSourceContext.FETCH_SOURCE);
 
         if (!getResult.isExists()) {
             if (request.upsertRequest() == null && !request.docAsUpsert()) {
@@ -74,11 +95,21 @@ public class UpdateHelper extends AbstractComponent {
                     // it has to be a "create!"
                     .create(true)
                     .routing(request.routing())
-                    .percolate(request.percolate())
                     .refresh(request.refresh())
                     .replicationType(request.replicationType()).consistencyLevel(request.consistencyLevel());
             indexRequest.operationThreaded(false);
+            if (request.versionType() != VersionType.INTERNAL) {
+                // in all but the internal versioning mode, we want to create the new document using the given version.
+                indexRequest.version(request.version()).versionType(request.versionType());
+            }
             return new Result(indexRequest, Operation.UPSERT, null, null);
+        }
+
+        long updateVersion = getResult.getVersion();
+
+        if (request.versionType() != VersionType.INTERNAL) {
+            assert request.versionType() == VersionType.FORCE;
+            updateVersion = request.version(); // remember, match_any is excluded by the conflict test
         }
 
         if (getResult.internalSourceRef() == null) {
@@ -111,7 +142,7 @@ public class UpdateHelper extends AbstractComponent {
             }
             XContentHelper.update(updatedSourceAsMap, indexRequest.sourceAsMap());
         } else {
-            Map<String, Object> ctx = new HashMap<String, Object>(2);
+            Map<String, Object> ctx = new HashMap<>(2);
             ctx.put("_source", sourceAndContent.v2());
 
             try {
@@ -121,7 +152,7 @@ public class UpdateHelper extends AbstractComponent {
                 // we need to unwrap the ctx...
                 ctx = (Map<String, Object>) script.unwrap(ctx);
             } catch (Exception e) {
-                throw new ElasticSearchIllegalArgumentException("failed to execute script", e);
+                throw new ElasticsearchIllegalArgumentException("failed to execute script", e);
             }
 
             operation = (String) ctx.get("op");
@@ -148,28 +179,28 @@ public class UpdateHelper extends AbstractComponent {
             }
         }
 
-        // TODO: external version type, does it make sense here? does not seem like it...
         if (operation == null || "index".equals(operation)) {
             final IndexRequest indexRequest = Requests.indexRequest(request.index()).type(request.type()).id(request.id()).routing(routing).parent(parent)
                     .source(updatedSourceAsMap, updateSourceContentType)
-                    .version(getResult.getVersion()).replicationType(request.replicationType()).consistencyLevel(request.consistencyLevel())
+                    .version(updateVersion).versionType(request.versionType())
+                    .replicationType(request.replicationType()).consistencyLevel(request.consistencyLevel())
                     .timestamp(timestamp).ttl(ttl)
-                    .percolate(request.percolate())
                     .refresh(request.refresh());
             indexRequest.operationThreaded(false);
             return new Result(indexRequest, Operation.INDEX, updatedSourceAsMap, updateSourceContentType);
         } else if ("delete".equals(operation)) {
             DeleteRequest deleteRequest = Requests.deleteRequest(request.index()).type(request.type()).id(request.id()).routing(routing).parent(parent)
-                    .version(getResult.getVersion()).replicationType(request.replicationType()).consistencyLevel(request.consistencyLevel());
+                    .version(updateVersion).versionType(request.versionType())
+                    .replicationType(request.replicationType()).consistencyLevel(request.consistencyLevel());
             deleteRequest.operationThreaded(false);
             return new Result(deleteRequest, Operation.DELETE, updatedSourceAsMap, updateSourceContentType);
         } else if ("none".equals(operation)) {
-            UpdateResponse update = new UpdateResponse(getResult.getIndex(), getResult.getType(), getResult.getId(), getResult.getVersion());
+            UpdateResponse update = new UpdateResponse(getResult.getIndex(), getResult.getType(), getResult.getId(), getResult.getVersion(), false);
             update.setGetResult(extractGetResult(request, getResult.getVersion(), updatedSourceAsMap, updateSourceContentType, null));
             return new Result(update, Operation.NONE, updatedSourceAsMap, updateSourceContentType);
         } else {
             logger.warn("Used update operation [{}] for script [{}], doing nothing...", operation, request.script);
-            UpdateResponse update = new UpdateResponse(getResult.getIndex(), getResult.getType(), getResult.getId(), getResult.getVersion());
+            UpdateResponse update = new UpdateResponse(getResult.getIndex(), getResult.getType(), getResult.getId(), getResult.getVersion(), false);
             return new Result(update, Operation.NONE, updatedSourceAsMap, updateSourceContentType);
         }
     }
@@ -198,7 +229,7 @@ public class UpdateHelper extends AbstractComponent {
                     }
                     GetField getField = fields.get(field);
                     if (getField == null) {
-                        getField = new GetField(field, new ArrayList<Object>(2));
+                        getField = new GetField(field, new ArrayList<>(2));
                         fields.put(field, getField);
                     }
                     getField.getValues().add(value);

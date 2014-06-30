@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,6 +29,7 @@ import org.elasticsearch.client.internal.InternalClient;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.VersionType;
 
 import java.util.Map;
 
@@ -77,6 +78,12 @@ public class UpdateRequestBuilder extends InstanceShardOperationRequestBuilder<U
     /**
      * The script to execute. Note, make sure not to send different script each times and instead
      * use script params if possible with the same (automatically compiled) script.
+     * <p>
+     * The script works with the variable <code>ctx</code>, which is bound to the entry, 
+     * e.g. <code>ctx._source.mycounter += 1</code>.
+     * 
+     * @see #setScriptLang(String)
+     * @see #setScriptParams(Map)
      */
     public UpdateRequestBuilder setScript(String script) {
         request.script(script);
@@ -85,6 +92,10 @@ public class UpdateRequestBuilder extends InstanceShardOperationRequestBuilder<U
 
     /**
      * The language of the script to execute.
+     * Valid options are: mvel, js, groovy, python, and native (Java)<br>
+     * Default: mvel
+     * <p>
+     * Ref: http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html
      */
     public UpdateRequestBuilder setScriptLang(String scriptLang) {
         request.scriptLang(scriptLang);
@@ -125,6 +136,24 @@ public class UpdateRequestBuilder extends InstanceShardOperationRequestBuilder<U
     }
 
     /**
+     * Sets the version, which will cause the index operation to only be performed if a matching
+     * version exists and no changes happened on the doc since then.
+     */
+    public UpdateRequestBuilder setVersion(long version) {
+        request.version(version);
+        return this;
+    }
+
+    /**
+     * Sets the versioning type. Defaults to {@link org.elasticsearch.index.VersionType#INTERNAL}.
+     */
+    public UpdateRequestBuilder setVersionType(VersionType versionType) {
+        request.versionType(versionType);
+        return this;
+    }
+
+
+    /**
      * Should a refresh be executed post this update operation causing the operation to
      * be searchable. Note, heavy indexing should not set this to <tt>true</tt>. Defaults
      * to <tt>false</tt>.
@@ -147,16 +176,6 @@ public class UpdateRequestBuilder extends InstanceShardOperationRequestBuilder<U
      */
     public UpdateRequestBuilder setConsistencyLevel(WriteConsistencyLevel consistencyLevel) {
         request.consistencyLevel(consistencyLevel);
-        return this;
-    }
-
-    /**
-     * Causes the updated document to be percolated. The parameter is the percolate query
-     * to use to reduce the percolated queries that are going to run against this doc. Can be
-     * set to <tt>*</tt> to indicate that all percolate queries should be run.
-     */
-    public UpdateRequestBuilder setPercolate(String percolate) {
-        request.percolate(percolate);
         return this;
     }
 
@@ -331,5 +350,4 @@ public class UpdateRequestBuilder extends InstanceShardOperationRequestBuilder<U
     protected void doExecute(ActionListener<UpdateResponse> listener) {
         ((Client) client).update(request, listener);
     }
-
 }

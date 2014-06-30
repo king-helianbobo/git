@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,10 +25,12 @@ import org.apache.lucene.queryparser.classic.MapperQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParserSettings;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.similarities.Similarity;
 import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.ParseField;
+import org.elasticsearch.common.lucene.search.NoCacheFilter;
+import org.elasticsearch.common.lucene.search.Queries;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AnalysisService;
@@ -45,17 +47,14 @@ import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.lookup.SearchLookup;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
  */
 public class QueryParseContext {
 
-    private static ThreadLocal<String[]> typesContext = new ThreadLocal<String[]>();
+    private static ThreadLocal<String[]> typesContext = new ThreadLocal<>();
 
     public static void setTypes(String[] types) {
         typesContext.set(types);
@@ -77,6 +76,8 @@ public class QueryParseContext {
 
     private final Index index;
 
+    private boolean propagateNoCache = false;
+
     IndexQueryParserService indexQueryParser;
 
     private final Map<String, Filter> namedFilters = Maps.newHashMap();
@@ -85,12 +86,24 @@ public class QueryParseContext {
 
     private XContentParser parser;
 
+    private EnumSet<ParseField.Flag> parseFlags = ParseField.EMPTY_FLAGS;
+
+
     public QueryParseContext(Index index, IndexQueryParserService indexQueryParser) {
         this.index = index;
         this.indexQueryParser = indexQueryParser;
     }
 
+    public  void parseFlags(EnumSet<ParseField.Flag> parseFlags) {
+        this.parseFlags = parseFlags == null ? ParseField.EMPTY_FLAGS : parseFlags;
+    }
+
+    public EnumSet<ParseField.Flag> parseFlags() {
+        return parseFlags;
+    }
+
     public void reset(XContentParser jp) {
+        this.parseFlags = ParseField.EMPTY_FLAGS;
         this.lookup = null;
         this.parser = jp;
         this.namedFilters.clear();
@@ -98,6 +111,10 @@ public class QueryParseContext {
 
     public Index index() {
         return this.index;
+    }
+
+    public void parser(XContentParser parser) {
+        this.parser = parser;
     }
 
     public XContentParser parser() {
@@ -158,6 +175,9 @@ public class QueryParseContext {
         if (filter == null) {
             return null;
         }
+        if (this.propagateNoCache || filter instanceof NoCacheFilter) {
+            return filter;
+        }
         if (cacheKey != null) {
             filter = new CacheKeyFilter.Wrapper(filter, cacheKey);
         }
@@ -169,7 +189,7 @@ public class QueryParseContext {
     }
 
     public void addNamedQuery(String name, Query query) {
-        namedFilters.put(name, new QueryWrapperFilter(query));
+        namedFilters.put(name, Queries.wrap(query));
     }
 
     public ImmutableMap<String, Filter> copyNamedFilters() {
@@ -241,7 +261,7 @@ public class QueryParseContext {
         if (filterParser == null) {
             throw new QueryParsingException(index, "No filter registered for [" + filterName + "]");
         }
-        Filter result = filterParser.parse(this);
+        Filter result = executeFilterParser(filterParser);
         if (parser.currentToken() == XContentParser.Token.END_OBJECT || parser.currentToken() == XContentParser.Token.END_ARRAY) {
             // if we are at END_OBJECT, move to the next one...
             parser.nextToken();
@@ -254,12 +274,17 @@ public class QueryParseContext {
         if (filterParser == null) {
             throw new QueryParsingException(index, "No filter registered for [" + filterName + "]");
         }
+        return executeFilterParser(filterParser);
+    }
+
+    private Filter executeFilterParser(FilterParser filterParser) throws IOException {
+        final boolean propagateNoCache = this.propagateNoCache; // first safe the state that we need to restore
+        this.propagateNoCache = false; // parse the subfilter with caching, that's fine
         Filter result = filterParser.parse(this);
-        // don't move to the nextToken in this case...
-//        if (parser.currentToken() == XContentParser.Token.END_OBJECT || parser.currentToken() == XContentParser.Token.END_ARRAY) {
-//            // if we are at END_OBJECT, move to the next one...
-//            parser.nextToken();
-//        }
+        // now make sure we set propagateNoCache to true if it is true already or if the result is
+        // an instance of NoCacheFilter or if we used to be true! all filters above will
+        // be not cached ie. wrappers of this filter!
+        this.propagateNoCache |= (result instanceof NoCacheFilter) || propagateNoCache;
         return result;
     }
 

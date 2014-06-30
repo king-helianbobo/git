@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,8 +24,6 @@ import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.indices.analysis.PreBuiltCharFilters;
 
-import java.util.Locale;
-
 public class PreBuiltCharFilterFactoryFactory implements CharFilterFactoryFactory {
 
     private final CharFilterFactory charFilterFactory;
@@ -38,7 +36,10 @@ public class PreBuiltCharFilterFactoryFactory implements CharFilterFactoryFactor
     public CharFilterFactory create(String name, Settings settings) {
         Version indexVersion = settings.getAsVersion(IndexMetaData.SETTING_VERSION_CREATED, Version.CURRENT);
         if (!Version.CURRENT.equals(indexVersion)) {
-            return PreBuiltCharFilters.valueOf(name.toUpperCase(Locale.ROOT)).getCharFilterFactory(indexVersion);
+            PreBuiltCharFilters preBuiltCharFilters = PreBuiltCharFilters.getOrDefault(name, null);
+            if (preBuiltCharFilters != null) {
+                return preBuiltCharFilters.getCharFilterFactory(indexVersion);
+            }
         }
 
         return charFilterFactory;

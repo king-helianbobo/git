@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,16 +19,16 @@
 
 package org.elasticsearch.action.explain;
 
-import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.ValidateActions;
+import org.elasticsearch.action.support.QuerySourceBuilder;
 import org.elasticsearch.action.support.single.shard.SingleShardOperationRequest;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 
 import java.io.IOException;
 
@@ -37,15 +37,14 @@ import java.io.IOException;
  */
 public class ExplainRequest extends SingleShardOperationRequest<ExplainRequest> {
 
-    private static final XContentType contentType = Requests.CONTENT_TYPE;
-
     private String type = "_all";
     private String id;
     private String routing;
     private String preference;
     private BytesReference source;
-    private String[] fields;
     private boolean sourceUnsafe;
+    private String[] fields;
+    private FetchSourceContext fetchSourceContext;
 
     private String[] filteringAlias = Strings.EMPTY_ARRAY;
 
@@ -112,8 +111,8 @@ public class ExplainRequest extends SingleShardOperationRequest<ExplainRequest> 
         return sourceUnsafe;
     }
 
-    public ExplainRequest source(ExplainSourceBuilder sourceBuilder) {
-        this.source = sourceBuilder.buildAsBytes(contentType);
+    public ExplainRequest source(QuerySourceBuilder sourceBuilder) {
+        this.source = sourceBuilder.buildAsBytes(Requests.CONTENT_TYPE);
         this.sourceUnsafe = false;
         return this;
     }
@@ -123,6 +122,19 @@ public class ExplainRequest extends SingleShardOperationRequest<ExplainRequest> 
         this.sourceUnsafe = unsafe;
         return this;
     }
+
+    /**
+     * Allows setting the {@link FetchSourceContext} for this request, controlling if and how _source should be returned.
+     */
+    public ExplainRequest fetchSourceContext(FetchSourceContext context) {
+        this.fetchSourceContext = context;
+        return this;
+    }
+
+    public FetchSourceContext fetchSourceContext() {
+        return fetchSourceContext;
+    }
+
 
     public String[] fields() {
         return fields;
@@ -181,11 +193,9 @@ public class ExplainRequest extends SingleShardOperationRequest<ExplainRequest> 
         if (in.readBoolean()) {
             fields = in.readStringArray();
         }
-        if (in.getVersion().onOrAfter(Version.V_0_90_6)) {
-            nowInMillis = in.readVLong();
-        } else {
-            nowInMillis = System.currentTimeMillis();
-        }
+
+        fetchSourceContext = FetchSourceContext.optionalReadFromStream(in);
+        nowInMillis = in.readVLong();
     }
 
     @Override
@@ -203,8 +213,8 @@ public class ExplainRequest extends SingleShardOperationRequest<ExplainRequest> 
         } else {
             out.writeBoolean(false);
         }
-        if (out.getVersion().onOrAfter(Version.V_0_90_6)) {
-            out.writeVLong(nowInMillis);
-        }
+
+        FetchSourceContext.optionalWriteToStream(fetchSourceContext, out);
+        out.writeVLong(nowInMillis);
     }
 }

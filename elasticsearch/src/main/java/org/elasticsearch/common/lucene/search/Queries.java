@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,11 +19,9 @@
 
 package org.elasticsearch.common.lucene.search;
 
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.index.search.child.CustomQueryWrappingFilter;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -32,10 +30,6 @@ import java.util.regex.Pattern;
  *
  */
 public class Queries {
-
-    /* In general we should never us a static query instance and share it.
-     * In this case the instance is immutable so that's ok.*/
-    public final static Query NO_MATCH_QUERY = MatchNoDocsQuery.INSTANCE;
 
     /**
      * A match all docs filter. Note, requires no caching!.
@@ -48,6 +42,11 @@ public class Queries {
         // NEVER cache this XConstantScore Query it's not immutable and based on #3521
         // some code might set a boost on this query.
         return new XConstantScoreQuery(MATCH_ALL_FILTER);
+    }
+
+    /** Return a query that matches no document. */
+    public static Query newMatchNoDocsQuery() {
+        return new MatchNoDocsQuery();
     }
 
     /**
@@ -164,5 +163,24 @@ public class Queries {
         return (optionalClauseCount < result ?
                 optionalClauseCount : (result < 0 ? 0 : result));
 
+    }
+
+    public static Filter wrap(Query query) {
+        return FACTORY.wrap(query);
+    }
+
+    private static final QueryWrapperFilterFactory FACTORY = new QueryWrapperFilterFactory();
+    // NOTE: This is a separate class since we added QueryWrapperFilter as a forbidden API
+    // that way we can exclude only the inner class without excluding the entire Queries class
+    // and potentially miss a forbidden API usage!
+    private static final class QueryWrapperFilterFactory {
+
+        public Filter wrap(Query query) {
+            if (CustomQueryWrappingFilter.shouldUseCustomQueryWrappingFilter(query)) {
+                return new CustomQueryWrappingFilter(query);
+            } else {
+                return new QueryWrapperFilter(query);
+            }
+        }
     }
 }

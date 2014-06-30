@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,8 @@
 
 package org.elasticsearch.index.query;
 
-import org.elasticsearch.common.geo.ShapeBuilder;
+import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.junit.Test;
@@ -28,8 +29,8 @@ public class GeoShapeQueryBuilderTests extends ElasticsearchTestCase {
 
     @Test // see #3878
     public void testThatXContentSerializationInsideOfArrayWorks() throws Exception {
-        ShapeBuilder.RectangleBuilder rectangleBuilder = ShapeBuilder.newRectangle().topLeft(10, 10).bottomRight(0, 0);
-        GeoShapeQueryBuilder geoQuery = QueryBuilders.geoShapeQuery("searchGeometry", rectangleBuilder.build());
+        EnvelopeBuilder envelopeBuilder = ShapeBuilder.newEnvelope().topLeft(0, 0).bottomRight(10, 10);
+        GeoShapeQueryBuilder geoQuery = QueryBuilders.geoShapeQuery("searchGeometry", envelopeBuilder);
         JsonXContent.contentBuilder().startArray().value(geoQuery).endArray();
     }
 }

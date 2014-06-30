@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,8 +23,8 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.index.fielddata.IndexFieldData;
+import org.elasticsearch.search.MultiValueMode;
 
 import java.io.IOException;
 
@@ -42,10 +42,10 @@ public class BytesRefFieldComparatorSource extends IndexFieldData.XFieldComparat
     }
 
     private final IndexFieldData<?> indexFieldData;
-    private final SortMode sortMode;
+    private final MultiValueMode sortMode;
     private final Object missingValue;
 
-    public BytesRefFieldComparatorSource(IndexFieldData<?> indexFieldData, Object missingValue, SortMode sortMode) {
+    public BytesRefFieldComparatorSource(IndexFieldData<?> indexFieldData, Object missingValue, MultiValueMode sortMode) {
         this.indexFieldData = indexFieldData;
         this.sortMode = sortMode;
         this.missingValue = missingValue;
@@ -59,20 +59,7 @@ public class BytesRefFieldComparatorSource extends IndexFieldData.XFieldComparat
     @Override
     public FieldComparator<?> newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
         assert fieldname.equals(indexFieldData.getFieldNames().indexName());
-        BytesRef missingBytes = null;
-        if (missingValue == null || "_last".equals(missingValue)) {
-            missingBytes = reversed ? null : MAX_TERM;
-        } else if ("_first".equals(missingValue)) {
-            missingBytes = reversed ? MAX_TERM : null;
-        } else if (missingValue instanceof BytesRef) {
-            missingBytes = (BytesRef) missingValue;
-        } else if (missingValue instanceof String) {
-            missingBytes = new BytesRef((String) missingValue);
-        } else if (missingValue instanceof byte[]) {
-            missingBytes = new BytesRef((byte[]) missingValue);
-        } else {
-            throw new ElasticSearchIllegalArgumentException("Unsupported missing value: " + missingValue);
-        }
+        final BytesRef missingBytes = (BytesRef) missingObject(missingValue, reversed);
 
         if (indexFieldData.valuesOrdered() && indexFieldData instanceof IndexFieldData.WithOrdinals) {
             return new BytesRefOrdValComparator((IndexFieldData.WithOrdinals<?>) indexFieldData, numHits, sortMode, missingBytes);

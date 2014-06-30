@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.search;
 
 import org.apache.lucene.search.Explanation;
-import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.Streamable;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -124,7 +124,7 @@ public interface SearchHit extends Streamable, ToXContent, Iterable<SearchHitFie
     /**
      * The source of the document as a map (can be <tt>null</tt>).
      */
-    Map<String, Object> sourceAsMap() throws ElasticSearchParseException;
+    Map<String, Object> sourceAsMap() throws ElasticsearchParseException;
 
     /**
      * If enabled, the explanation of the search hit.
@@ -174,24 +174,12 @@ public interface SearchHit extends Streamable, ToXContent, Iterable<SearchHitFie
     Object[] getSortValues();
 
     /**
-     * @deprecated In favor for {@link #matchedQueries()}.
-     */
-    @Deprecated
-    String[] matchedFilters();
-
-    /**
-     * @deprecated In favor for {@link #getMatchedQueries()}.
-     */
-    @Deprecated
-    String[] getMatchedFilters();
-
-    /**
-     * The set of query and filter names the query matched. Mainly makes sense for compound filters and queries.
+     * The set of query and filter names the query matched with. Mainly makes sense for compound filters and queries.
      */
     String[] matchedQueries();
 
     /**
-     * The set of query and filter names the query matched. Mainly makes sense for compound filters and queries.
+     * The set of query and filter names the query matched with. Mainly makes sense for compound filters and queries.
      */
     String[] getMatchedQueries();
 

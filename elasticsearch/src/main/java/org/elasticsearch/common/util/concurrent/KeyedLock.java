@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.common.util.concurrent;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,15 +38,15 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class KeyedLock<T> {
 
-    private final ConcurrentMap<T, KeyLock> map = new ConcurrentHashMap<T, KeyLock>();
+    private final ConcurrentMap<T, KeyLock> map = new ConcurrentHashMap<>();
 
-    private final ThreadLocal<KeyLock> threadLocal = new ThreadLocal<KeyedLock.KeyLock>();
+    private final ThreadLocal<KeyLock> threadLocal = new ThreadLocal<>();
 
     public void acquire(T key) {
         while (true) {
             if (threadLocal.get() != null) {
                 // if we are here, the thread already has the lock
-                throw new ElasticSearchIllegalStateException("Lock already accquired in Thread" + Thread.currentThread().getId()
+                throw new ElasticsearchIllegalStateException("Lock already accquired in Thread" + Thread.currentThread().getId()
                         + " for key " + key);
             }
             KeyLock perNodeLock = map.get(key);
@@ -72,7 +72,7 @@ public class KeyedLock<T> {
     public void release(T key) {
         KeyLock lock = threadLocal.get();
         if (lock == null) {
-            throw new ElasticSearchIllegalStateException("Lock not accquired");
+            throw new ElasticsearchIllegalStateException("Lock not accquired");
         }
         assert lock.isHeldByCurrentThread();
         assert lock == map.get(key);

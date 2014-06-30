@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -35,7 +35,6 @@ import java.util.Map;
 /**
  *
  */
-//这个Client执行哪部分功能呢?
 public class NodeIndicesAdminClient extends AbstractIndicesAdminClient implements IndicesAdminClient {
 
     private final ThreadPool threadPool;
@@ -45,7 +44,7 @@ public class NodeIndicesAdminClient extends AbstractIndicesAdminClient implement
     @Inject
     public NodeIndicesAdminClient(Settings settings, ThreadPool threadPool, Map<GenericAction, TransportAction> actions) {
         this.threadPool = threadPool;
-        MapBuilder<IndicesAction, TransportAction> actionsBuilder = new MapBuilder<IndicesAction, TransportAction>();
+        MapBuilder<IndicesAction, TransportAction> actionsBuilder = new MapBuilder<>();
         for (Map.Entry<GenericAction, TransportAction> entry : actions.entrySet()) {
             if (entry.getKey() instanceof IndicesAction) {
                 actionsBuilder.put((IndicesAction) entry.getKey(), entry.getValue());
@@ -61,18 +60,15 @@ public class NodeIndicesAdminClient extends AbstractIndicesAdminClient implement
 
     @SuppressWarnings("unchecked")
     @Override
-    public <Request extends ActionRequest, Response extends ActionResponse, RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>> ActionFuture<Response> execute(
-            IndicesAction<Request, Response, RequestBuilder> action, Request request) {
+    public <Request extends ActionRequest, Response extends ActionResponse, RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>> ActionFuture<Response> execute(IndicesAction<Request, Response, RequestBuilder> action, Request request) {
         TransportAction<Request, Response> transportAction = actions.get(action);
         return transportAction.execute(request);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <Request extends ActionRequest, Response extends ActionResponse, RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>> void execute(
-            IndicesAction<Request, Response, RequestBuilder> action, Request request, ActionListener<Response> listener) {
-        //执行动作为AnalyzeAction.INSTANCE,请求为request,对执行的监听着为listener
-        TransportAction<Request, Response> transportAction = actions.get(action); 
-        transportAction.execute(request, listener);//执行请求
+    public <Request extends ActionRequest, Response extends ActionResponse, RequestBuilder extends ActionRequestBuilder<Request, Response, RequestBuilder>> void execute(IndicesAction<Request, Response, RequestBuilder> action, Request request, ActionListener<Response> listener) {
+        TransportAction<Request, Response> transportAction = actions.get(action);
+        transportAction.execute(request, listener);
     }
 }

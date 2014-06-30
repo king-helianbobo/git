@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,9 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.index.fielddata.plain.PackedArrayAtomicFieldData;
-import org.elasticsearch.index.mapper.FieldMapper;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
@@ -46,7 +44,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
     @Override
     protected FieldDataType getFieldDataType() {
         // we don't want to optimize the type so it will always be a long...
-        return new FieldDataType("long", ImmutableSettings.builder());
+        return new FieldDataType("long", getFieldDataSettings());
     }
 
     protected void add2SingleValuedDocumentsAndDeleteOneOfThem() throws Exception {
@@ -77,7 +75,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
         d.add(new LongField("value", Integer.MIN_VALUE - 1l, Field.Store.NO));
         writer.addDocument(d);
 
-        IndexNumericFieldData indexFieldData = ifdService.getForField(new FieldMapper.Names("value"), new FieldDataType("long"));
+        IndexNumericFieldData indexFieldData = getForField("value");
         AtomicNumericFieldData fieldData = indexFieldData.load(refreshReader());
         assertThat(fieldData, instanceOf(PackedArrayAtomicFieldData.class));
         assertThat(getFirst(fieldData.getLongValues(), 0), equalTo((long) Integer.MAX_VALUE + 1l));
@@ -86,13 +84,13 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
 
     private static long getFirst(LongValues values, int docId) {
         final int numValues = values.setDocument(docId);
-        assertThat(numValues , is(1));
+        assertThat(numValues, is(1));
         return values.nextValue();
     }
 
     private static double getFirst(DoubleValues values, int docId) {
         final int numValues = values.setDocument(docId);
-        assertThat(numValues , is(1));
+        assertThat(numValues, is(1));
         return values.nextValue();
     }
 
@@ -242,6 +240,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
             public int numValues(Random r) {
                 return 1;
             }
+
             @Override
             public long nextValue(Random r) {
                 return 1 + r.nextInt(16);
@@ -251,6 +250,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
             public int numValues(Random r) {
                 return 1;
             }
+
             @Override
             public long nextValue(Random r) {
                 // somewhere in-between 2010 and 2012
@@ -261,6 +261,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
             public int numValues(Random r) {
                 return r.nextInt(3);
             }
+
             @Override
             public long nextValue(Random r) {
                 // somewhere in-between 2010 and 2012
@@ -271,6 +272,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
             public int numValues(Random r) {
                 return r.nextInt(3);
             }
+
             @Override
             public long nextValue(Random r) {
                 return 3 + r.nextInt(8);
@@ -278,8 +280,9 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
         },
         SINGLE_VALUED_SPARSE_RANDOM {
             public int numValues(Random r) {
-                return r.nextFloat() < 0.1f ? 1 : 0;
+                return r.nextFloat() < 0.01 ? 1 : 0;
             }
+
             @Override
             public long nextValue(Random r) {
                 return r.nextLong();
@@ -287,8 +290,9 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
         },
         MULTI_VALUED_SPARSE_RANDOM {
             public int numValues(Random r) {
-                return r.nextFloat() < 0.1f ? 1 + r.nextInt(5) : 0;
+                return r.nextFloat() < 0.01f ? 1 + r.nextInt(5) : 0;
             }
+
             @Override
             public long nextValue(Random r) {
                 return r.nextLong();
@@ -298,12 +302,15 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
             public int numValues(Random r) {
                 return 1 + r.nextInt(3);
             }
+
             @Override
             public long nextValue(Random r) {
                 return r.nextLong();
             }
         };
+
         public abstract int numValues(Random r);
+
         public abstract long nextValue(Random r);
     }
 
@@ -326,7 +333,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
             }
             writer.addDocument(doc);
         }
-        writer.forceMerge(1);
+        writer.forceMerge(1, true);
 
         final IndexNumericFieldData indexFieldData = getForField("value");
         final AtomicNumericFieldData atomicFieldData = indexFieldData.load(refreshReader());
@@ -373,7 +380,7 @@ public class LongFieldDataTests extends AbstractNumericFieldDataTests {
     private void test(Data data) throws Exception {
         Random r = getRandom();
         final int numDocs = 1000 + r.nextInt(19000);
-        final List<LongOpenHashSet> values = new ArrayList<LongOpenHashSet>(numDocs);
+        final List<LongOpenHashSet> values = new ArrayList<>(numDocs);
         for (int i = 0; i < numDocs; ++i) {
             final int numValues = data.numValues(r);
             final LongOpenHashSet vals = new LongOpenHashSet(numValues);

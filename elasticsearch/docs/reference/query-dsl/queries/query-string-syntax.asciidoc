@@ -3,10 +3,8 @@
 ==== Query string syntax
 
 The query string ``mini-language'' is used by the
-<<query-dsl-query-string-query>> and <<query-dsl-field-query>>, by the
-`q` query string parameter in the <<search-search,`search` API>> and
-by the `percolate` parameter  in the <<docs-index_,`index`>> and
-<<docs-bulk,`bulk`>> APIs.
+<<query-dsl-query-string-query>> and by the
+`q` query string parameter in the <<search-search,`search` API>>.
 
 The query string is parsed into a series of _terms_ and _operators_. A
 term can be a single word -- `quick` or `brown` -- or a phrase, surrounded by
@@ -289,3 +287,9 @@ query as a search for `"wi OR fi"`, while the token stored in your
 index is actually `"wifi"`.  Escaping the space will protect it from
 being touched by the query string parser: `"wi\ fi"`.
 ****
+
+===== Empty Query
+
+If the query string is empty or only contains whitespaces the
+query string is interpreted as a `no_docs_query` and will yield
+an empty result set. 

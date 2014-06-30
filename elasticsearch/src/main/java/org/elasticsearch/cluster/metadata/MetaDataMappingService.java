@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -47,6 +47,7 @@ import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.indices.InvalidTypeNameException;
 import org.elasticsearch.indices.TypeMissingException;
+import org.elasticsearch.percolator.PercolatorService;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import java.util.*;
@@ -65,7 +66,7 @@ public class MetaDataMappingService extends AbstractComponent {
 
     // the mutex protect all the refreshOrUpdate variables!
     private final Object refreshOrUpdateMutex = new Object();
-    private final List<MappingTask> refreshOrUpdateQueue = new ArrayList<MappingTask>();
+    private final List<MappingTask> refreshOrUpdateQueue = new ArrayList<>();
     private long refreshOrUpdateInsertOrder;
     private long refreshOrUpdateProcessedInsertOrder;
 
@@ -119,7 +120,7 @@ public class MetaDataMappingService extends AbstractComponent {
      * and generate a single cluster change event out of all of those.
      */
     ClusterState executeRefreshOrUpdate(final ClusterState currentState, final long insertionOrder) throws Exception {
-        final List<MappingTask> allTasks = new ArrayList<MappingTask>();
+        final List<MappingTask> allTasks = new ArrayList<>();
 
         synchronized (refreshOrUpdateMutex) {
             if (refreshOrUpdateQueue.isEmpty()) {
@@ -152,7 +153,7 @@ public class MetaDataMappingService extends AbstractComponent {
             }
             List<MappingTask> indexTasks = tasksPerIndex.get(task.index);
             if (indexTasks == null) {
-                indexTasks = new ArrayList<MappingTask>();
+                indexTasks = new ArrayList<>();
                 tasksPerIndex.put(task.index, indexTasks);
             }
             indexTasks.add(task);
@@ -172,7 +173,7 @@ public class MetaDataMappingService extends AbstractComponent {
             // the tasks lists to iterate over, filled with the list of mapping tasks, trying to keep
             // the latest (based on order) update mapping one per node
             List<MappingTask> allIndexTasks = entry.getValue();
-            List<MappingTask> tasks = new ArrayList<MappingTask>();
+            List<MappingTask> tasks = new ArrayList<>();
             for (MappingTask task : allIndexTasks) {
                 if (!indexMetaData.isSameUUID(task.indexUUID)) {
                     logger.debug("[{}] ignoring task [{}] - index meta data doesn't match task uuid", index, task);
@@ -384,7 +385,7 @@ public class MetaDataMappingService extends AbstractComponent {
     }
 
     public void removeMapping(final DeleteMappingClusterStateUpdateRequest request, final ClusterStateUpdateListener listener) {
-        clusterService.submitStateUpdateTask("remove-mapping [" + request.type() + "]", Priority.HIGH, new AckedClusterStateUpdateTask() {
+        clusterService.submitStateUpdateTask("remove-mapping [" + Arrays.toString(request.types()) + "]", Priority.HIGH, new AckedClusterStateUpdateTask() {
 
             @Override
             public boolean mustAck(DiscoveryNode discoveryNode) {
@@ -427,21 +428,30 @@ public class MetaDataMappingService extends AbstractComponent {
                 String latestIndexWithout = null;
                 for (String indexName : request.indices()) {
                     IndexMetaData indexMetaData = currentState.metaData().index(indexName);
+                    IndexMetaData.Builder indexBuilder = IndexMetaData.builder(indexMetaData);
+                    
                     if (indexMetaData != null) {
-                        if (indexMetaData.mappings().containsKey(request.type())) {
-                            builder.put(IndexMetaData.builder(indexMetaData).removeMapping(request.type()));
-                            changed = true;
-                        } else {
+                        boolean isLatestIndexWithout = true;
+                        for (String type : request.types()) {
+                            if (indexMetaData.mappings().containsKey(type)) {
+                                indexBuilder.removeMapping(type);
+                                changed = true;
+                                isLatestIndexWithout = false;
+                            }
+                        }
+                        if (isLatestIndexWithout) {
                             latestIndexWithout = indexMetaData.index();
                         }
+
                     }
+                    builder.put(indexBuilder);
                 }
 
                 if (!changed) {
-                    throw new TypeMissingException(new Index(latestIndexWithout), request.type());
+                    throw new TypeMissingException(new Index(latestIndexWithout), request.types());
                 }
 
-                logger.info("[{}] remove_mapping [{}]", request.indices(), request.type());
+                logger.info("[{}] remove_mapping [{}]", request.indices(), request.types());
 
                 return ClusterState.builder(currentState).metaData(builder).build();
             }
@@ -491,9 +501,6 @@ public class MetaDataMappingService extends AbstractComponent {
             public ClusterState execute(final ClusterState currentState) throws Exception {
                 List<String> indicesToClose = Lists.newArrayList();
                 try {
-                    if (request.indices().length == 0) {
-                        throw new IndexMissingException(new Index("_all"));
-                    }
                     for (String index : request.indices()) {
                         if (!currentState.metaData().hasIndex(index)) {
                             throw new IndexMissingException(new Index(index));
@@ -557,7 +564,7 @@ public class MetaDataMappingService extends AbstractComponent {
                     } else if (!mappingType.equals(newMappers.values().iterator().next().type())) {
                         throw new InvalidTypeNameException("Type name provided does not match type name within mapping definition");
                     }
-                    if (!MapperService.DEFAULT_MAPPING.equals(mappingType) && mappingType.charAt(0) == '_') {
+                    if (!MapperService.DEFAULT_MAPPING.equals(mappingType) && !PercolatorService.TYPE_NAME.equals(mappingType) && mappingType.charAt(0) == '_') {
                         throw new InvalidTypeNameException("Document mapping type name can't start with '_'");
                     }
 

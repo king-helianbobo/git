@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,11 +21,13 @@ package org.elasticsearch.cluster.node;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.Version;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
+import org.elasticsearch.common.network.NetworkUtils;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.transport.TransportAddressSerializers;
@@ -52,7 +54,7 @@ public class DiscoveryNode implements Streamable, Serializable {
             } else if ("network".equals(nodeMode)) {
                 return false;
             } else {
-                throw new ElasticSearchIllegalArgumentException("unsupported node.mode [" + nodeMode + "]");
+                throw new ElasticsearchIllegalArgumentException("unsupported node.mode [" + nodeMode + "]. Should be one of [local, network].");
             }
         }
         return false;
@@ -87,6 +89,8 @@ public class DiscoveryNode implements Streamable, Serializable {
 
     private String nodeName = "";
     private String nodeId;
+    private String hostName;
+    private String hostAddress;
     private TransportAddress address;
     private ImmutableMap<String, String> attributes;
     private Version version = Version.CURRENT;
@@ -99,6 +103,10 @@ public class DiscoveryNode implements Streamable, Serializable {
     }
 
     public DiscoveryNode(String nodeName, String nodeId, TransportAddress address, Map<String, String> attributes, Version version) {
+        this(nodeName, nodeId, NetworkUtils.getLocalHostName(""), NetworkUtils.getLocalHostAddress(""), address, attributes, version);
+    }
+
+    public DiscoveryNode(String nodeName, String nodeId, String hostName, String hostAddress, TransportAddress address, Map<String, String> attributes, Version version) {
         if (nodeName != null) {
             this.nodeName = nodeName.intern();
         }
@@ -108,6 +116,8 @@ public class DiscoveryNode implements Streamable, Serializable {
         }
         this.attributes = builder.build();
         this.nodeId = nodeId.intern();
+        this.hostName = hostName.intern();
+        this.hostAddress = hostAddress.intern();
         this.address = address;
         this.version = version;
     }
@@ -230,6 +240,14 @@ public class DiscoveryNode implements Streamable, Serializable {
         return this.version;
     }
 
+    public String getHostName() {
+        return this.hostName;
+    }
+
+    public String getHostAddress() {
+        return this.hostAddress;
+    }
+
     public Version getVersion() {
         return this.version;
     }
@@ -244,6 +262,8 @@ public class DiscoveryNode implements Streamable, Serializable {
     public void readFrom(StreamInput in) throws IOException {
         nodeName = in.readString().intern();
         nodeId = in.readString().intern();
+        hostName = in.readString().intern();
+        hostAddress = in.readString().intern();
         address = TransportAddressSerializers.addressFromStream(in);
         int size = in.readVInt();
         ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
@@ -258,6 +278,8 @@ public class DiscoveryNode implements Streamable, Serializable {
     public void writeTo(StreamOutput out) throws IOException {
         out.writeString(nodeName);
         out.writeString(nodeId);
+        out.writeString(hostName);
+        out.writeString(hostAddress);
         addressToStream(out, address);
         out.writeVInt(attributes.size());
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
@@ -289,6 +311,9 @@ public class DiscoveryNode implements Streamable, Serializable {
         }
         if (nodeId != null) {
             sb.append('[').append(nodeId).append(']');
+        }
+        if (Strings.hasLength(hostName)) {
+            sb.append('[').append(hostName).append(']');
         }
         if (address != null) {
             sb.append('[').append(address).append(']');

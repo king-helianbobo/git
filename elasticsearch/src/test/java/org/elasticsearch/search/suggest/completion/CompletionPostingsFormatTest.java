@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -33,15 +33,18 @@ import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.XAnalyzingSuggester;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LineFileDocs;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
-import org.elasticsearch.index.codec.postingsformat.ElasticSearch090PostingsFormat;
+import org.elasticsearch.index.codec.postingsformat.Elasticsearch090PostingsFormat;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PreBuiltPostingsFormatProvider;
 import org.elasticsearch.index.mapper.FieldMapper.Names;
+import org.elasticsearch.index.mapper.core.AbstractFieldMapper;
 import org.elasticsearch.index.mapper.core.CompletionFieldMapper;
 import org.elasticsearch.search.suggest.SuggestUtils;
 import org.elasticsearch.search.suggest.completion.Completion090PostingsFormat.LookupFactory;
+import org.elasticsearch.search.suggest.context.ContextMapping;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.junit.Test;
 
@@ -50,6 +53,7 @@ import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -68,9 +72,9 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
 
         IndexInput input = dir.openInput("foo.txt", IOContext.DEFAULT);
         LookupFactory load = currentProvider.load(input);
-        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new ElasticSearch090PostingsFormat());
+        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new Elasticsearch090PostingsFormat());
         NamedAnalyzer analyzer = new NamedAnalyzer("foo", new StandardAnalyzer(TEST_VERSION_CURRENT));
-        Lookup lookup = load.getLookup(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE), new CompletionSuggestionContext(null));
+        Lookup lookup = load.getLookup(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE, AbstractFieldMapper.MultiFields.empty(), null, ContextMapping.EMPTY_MAPPING), new CompletionSuggestionContext(null));
         List<LookupResult> result = lookup.lookup("ge", false, 10);
         assertThat(result.get(0).key.toString(), equalTo("Generator - Foo Fighters"));
         assertThat(result.get(0).payload.utf8ToString(), equalTo("id:10"));
@@ -87,9 +91,9 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
 
         IndexInput input = dir.openInput("foo.txt", IOContext.DEFAULT);
         LookupFactory load = currentProvider.load(input);
-        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new ElasticSearch090PostingsFormat());
+        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new Elasticsearch090PostingsFormat());
         NamedAnalyzer analyzer = new NamedAnalyzer("foo", new StandardAnalyzer(TEST_VERSION_CURRENT));
-        AnalyzingCompletionLookupProvider.AnalyzingSuggestHolder analyzingSuggestHolder = load.getAnalyzingSuggestHolder(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE));
+        AnalyzingCompletionLookupProvider.AnalyzingSuggestHolder analyzingSuggestHolder = load.getAnalyzingSuggestHolder(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE, AbstractFieldMapper.MultiFields.empty(), null, ContextMapping.EMPTY_MAPPING));
         assertThat(analyzingSuggestHolder.sepLabel, is(AnalyzingCompletionLookupProviderV1.SEP_LABEL));
         assertThat(analyzingSuggestHolder.payloadSep, is(AnalyzingCompletionLookupProviderV1.PAYLOAD_SEP));
         assertThat(analyzingSuggestHolder.endByte, is(AnalyzingCompletionLookupProviderV1.END_BYTE));
@@ -105,9 +109,9 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
 
         IndexInput input = dir.openInput("foo.txt", IOContext.DEFAULT);
         LookupFactory load = currentProvider.load(input);
-        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new ElasticSearch090PostingsFormat());
+        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new Elasticsearch090PostingsFormat());
         NamedAnalyzer analyzer = new NamedAnalyzer("foo", new StandardAnalyzer(TEST_VERSION_CURRENT));
-        AnalyzingCompletionLookupProvider.AnalyzingSuggestHolder analyzingSuggestHolder = load.getAnalyzingSuggestHolder(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE));
+        AnalyzingCompletionLookupProvider.AnalyzingSuggestHolder analyzingSuggestHolder = load.getAnalyzingSuggestHolder(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE, AbstractFieldMapper.MultiFields.empty(), null, ContextMapping.EMPTY_MAPPING));
         assertThat(analyzingSuggestHolder.sepLabel, is(XAnalyzingSuggester.SEP_LABEL));
         assertThat(analyzingSuggestHolder.payloadSep, is(XAnalyzingSuggester.PAYLOAD_SEP));
         assertThat(analyzingSuggestHolder.endByte, is(XAnalyzingSuggester.END_BYTE));
@@ -122,10 +126,10 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
         final boolean usePayloads = getRandom().nextBoolean();
         final int options = preserveSeparators ? AnalyzingSuggester.PRESERVE_SEP : 0;
 
-        XAnalyzingSuggester reference = new XAnalyzingSuggester(new StandardAnalyzer(TEST_VERSION_CURRENT), new StandardAnalyzer(
+        XAnalyzingSuggester reference = new XAnalyzingSuggester(new StandardAnalyzer(TEST_VERSION_CURRENT), null, new StandardAnalyzer(
                 TEST_VERSION_CURRENT), options, 256, -1, preservePositionIncrements, null, false, 1, XAnalyzingSuggester.SEP_LABEL, XAnalyzingSuggester.PAYLOAD_SEP, XAnalyzingSuggester.END_BYTE, XAnalyzingSuggester.HOLE_CHARACTER);
         LineFileDocs docs = new LineFileDocs(getRandom());
-        int num = atLeast(150);
+        int num = scaledRandomIntBetween(150, 300);
         final String[] titles = new String[num];
         final long[] weights = new long[num];
         for (int i = 0; i < titles.length; i++) {
@@ -169,6 +173,16 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
                 return false;
             }
 
+            @Override
+            public Set<BytesRef> contexts() {
+                return null;
+            }
+
+            @Override
+            public boolean hasContexts() {
+                return false;
+            }
+
         };
         InputIterator iter;
         if (usePayloads) {
@@ -197,16 +211,26 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
                 public boolean hasPayloads() {
                     return true;
                 }
+                
+                @Override
+                public Set<BytesRef> contexts() {
+                    return null;
+                }
+
+                @Override
+                public boolean hasContexts() {
+                    return false;
+                }
             };
         } else {
             iter = primaryIter;
         }
         reference.build(iter);
-        PostingsFormatProvider provider = new PreBuiltPostingsFormatProvider(new ElasticSearch090PostingsFormat());
+        PostingsFormatProvider provider = new PreBuiltPostingsFormatProvider(new Elasticsearch090PostingsFormat());
 
         NamedAnalyzer namedAnalzyer = new NamedAnalyzer("foo", new StandardAnalyzer(TEST_VERSION_CURRENT));
         final CompletionFieldMapper mapper = new CompletionFieldMapper(new Names("foo"), namedAnalzyer, namedAnalzyer, provider, null, usePayloads,
-                preserveSeparators, preservePositionIncrements, Integer.MAX_VALUE);
+                preserveSeparators, preservePositionIncrements, Integer.MAX_VALUE, AbstractFieldMapper.MultiFields.empty(), null, ContextMapping.EMPTY_MAPPING);
         Lookup buildAnalyzingLookup = buildAnalyzingLookup(mapper, titles, titles, weights);
         Field field = buildAnalyzingLookup.getClass().getDeclaredField("maxAnalyzedPathsForOneInput");
         field.setAccessible(true);
@@ -257,14 +281,14 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
         for (int i = 0; i < weights.length; i++) {
             Document doc = new Document();
             BytesRef payload = mapper.buildPayload(new BytesRef(surfaces[i]), weights[i], new BytesRef(Long.toString(weights[i])));
-            doc.add(mapper.getCompletionField(terms[i], payload));
+            doc.add(mapper.getCompletionField(ContextMapping.EMPTY_CONTEXT, terms[i], payload));
             if (randomBoolean()) {
                 writer.commit();
             }
             writer.addDocument(doc);
         }
         writer.commit();
-        writer.forceMerge(1);
+        writer.forceMerge(1, true);
         writer.commit();
         DirectoryReader reader = DirectoryReader.open(writer, true);
         assertThat(reader.leaves().size(), equalTo(1));
@@ -293,9 +317,9 @@ public class CompletionPostingsFormatTest extends ElasticsearchTestCase {
 
         IndexInput input = dir.openInput("foo.txt", IOContext.DEFAULT);
         LookupFactory load = provider.load(input);
-        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new ElasticSearch090PostingsFormat());
+        PostingsFormatProvider format = new PreBuiltPostingsFormatProvider(new Elasticsearch090PostingsFormat());
         NamedAnalyzer analyzer = new NamedAnalyzer("foo", new StandardAnalyzer(TEST_VERSION_CURRENT));
-        assertNull(load.getLookup(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE), new CompletionSuggestionContext(null)));
+        assertNull(load.getLookup(new CompletionFieldMapper(new Names("foo"), analyzer, analyzer, format, null, true, true, true, Integer.MAX_VALUE, AbstractFieldMapper.MultiFields.empty(), null, ContextMapping.EMPTY_MAPPING), new CompletionSuggestionContext(null)));
         dir.close();
     }
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this 
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,9 +20,10 @@
 package org.elasticsearch.action.admin.indices.mapping.put;
 
 import com.carrotsearch.hppc.ObjectOpenHashSet;
-import org.elasticsearch.ElasticSearchGenerationException;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchGenerationException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.action.ActionRequestValidationException;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.master.AcknowledgedRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -56,6 +57,8 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
     );
 
     private String[] indices;
+
+    private IndicesOptions indicesOptions = IndicesOptions.fromOptions(false, false, true, true);
 
     private String type;
 
@@ -99,6 +102,15 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
      */
     public String[] indices() {
         return indices;
+    }
+
+    public IndicesOptions indicesOptions() {
+        return indicesOptions;
+    }
+
+    public PutMappingRequest indicesOptions(IndicesOptions indicesOptions) {
+        this.indicesOptions = indicesOptions;
+        return this;
     }
 
     /**
@@ -150,7 +162,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
                     for (String s : s1) {
                         String[] s2 = Strings.split(s, "=");
                         if (s2.length != 2) {
-                            throw new ElasticSearchIllegalArgumentException("malformed " + s);
+                            throw new ElasticsearchIllegalArgumentException("malformed " + s);
                         }
                         builder.field(s2[0], s2[1]);
                     }
@@ -170,7 +182,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
                 for (String s : s1) {
                     String[] s2 = Strings.split(s, "=");
                     if (s2.length != 2) {
-                        throw new ElasticSearchIllegalArgumentException("malformed " + s);
+                        throw new ElasticsearchIllegalArgumentException("malformed " + s);
                     }
                     builder.field(s2[0], s2[1]);
                 }
@@ -183,7 +195,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
             builder.endObject();
             return builder;
         } catch (Exception e) {
-            throw new ElasticSearchIllegalArgumentException("failed to generate simplified mapping definition", e);
+            throw new ElasticsearchIllegalArgumentException("failed to generate simplified mapping definition", e);
         }
     }
 
@@ -194,7 +206,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
         try {
             return source(mappingBuilder.string());
         } catch (IOException e) {
-            throw new ElasticSearchIllegalArgumentException("Failed to build json for mapping request", e);
+            throw new ElasticsearchIllegalArgumentException("Failed to build json for mapping request", e);
         }
     }
 
@@ -208,7 +220,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
             builder.map(mappingSource);
             return source(builder.string());
         } catch (IOException e) {
-            throw new ElasticSearchGenerationException("Failed to generate [" + mappingSource + "]", e);
+            throw new ElasticsearchGenerationException("Failed to generate [" + mappingSource + "]", e);
         }
     }
 
@@ -243,6 +255,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         indices = in.readStringArray();
+        indicesOptions = IndicesOptions.readIndicesOptions(in);
         type = in.readOptionalString();
         source = in.readString();
         readTimeout(in);
@@ -253,6 +266,7 @@ public class PutMappingRequest extends AcknowledgedRequest<PutMappingRequest> {
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
         out.writeStringArrayNullable(indices);
+        indicesOptions.writeIndicesOptions(out);
         out.writeOptionalString(type);
         out.writeString(source);
         writeTimeout(out);

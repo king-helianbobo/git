@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,6 @@
 package org.elasticsearch.index.analysis;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.NumericTokenStream;
@@ -55,7 +54,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tr.TurkishAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.collect.MapBuilder;
@@ -107,10 +106,10 @@ public class Analysis {
                 return new CharArraySet(version, Strings.commaDelimitedListToSet(value), false);
             }
         }
-        String[] stopWords = settings.getAsArray("stem_exclusion", null);
-        if (stopWords != null) {
+        String[] stemExclusion = settings.getAsArray("stem_exclusion", null);
+        if (stemExclusion != null) {
             // LUCENE 4 UPGRADE: Should be settings.getAsBoolean("stem_exclusion_case", false)?
-            return new CharArraySet(version, ImmutableList.of(stopWords), false);
+            return new CharArraySet(version, Arrays.asList(stemExclusion), false);
         } else {
             return defaultStemExclusion;
         }
@@ -205,7 +204,7 @@ public class Analysis {
      * Fetches a list of words from the specified settings file. The list should either be available at the key
      * specified by settingsPrefix or in a file specified by settingsPrefix + _path.
      *
-     * @throws ElasticSearchIllegalArgumentException
+     * @throws org.elasticsearch.ElasticsearchIllegalArgumentException
      *          If the word list cannot be found at either key.
      */
     public static List<String> getWordList(Environment env, Settings settings, String settingPrefix) {
@@ -226,12 +225,12 @@ public class Analysis {
             return loadWordList(new InputStreamReader(wordListFile.openStream(), Charsets.UTF_8), "#");
         } catch (IOException ioe) {
             String message = String.format(Locale.ROOT, "IOException while reading %s_path: %s", settingPrefix, ioe.getMessage());
-            throw new ElasticSearchIllegalArgumentException(message);
+            throw new ElasticsearchIllegalArgumentException(message);
         }
     }
 
     public static List<String> loadWordList(Reader reader, String comment) throws IOException {
-        final List<String> result = new ArrayList<String>();
+        final List<String> result = new ArrayList<>();
         BufferedReader br = null;
         try {
             if (reader instanceof BufferedReader) {
@@ -257,7 +256,7 @@ public class Analysis {
 
     /**
      * @return null If no settings set for "settingsPrefix" then return <code>null</code>.
-     * @throws ElasticSearchIllegalArgumentException
+     * @throws org.elasticsearch.ElasticsearchIllegalArgumentException
      *          If the Reader can not be instantiated.
      */
     public static Reader getReaderFromFile(Environment env, Settings settings, String settingPrefix) {
@@ -274,7 +273,7 @@ public class Analysis {
             reader = new InputStreamReader(fileUrl.openStream(), Charsets.UTF_8);
         } catch (IOException ioe) {
             String message = String.format(Locale.ROOT, "IOException while reading %s_path: %s", settingPrefix, ioe.getMessage());
-            throw new ElasticSearchIllegalArgumentException(message);
+            throw new ElasticsearchIllegalArgumentException(message);
         }
 
         return reader;

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,7 +29,6 @@ import org.elasticsearch.common.util.SlicedObjectList;
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,7 +37,9 @@ import java.util.List;
  */
 public abstract class ScriptDocValues {
 
-    public static final ScriptDocValues EMPTY = new Empty();
+    public static final Longs EMPTY_LONGS = new Longs(LongValues.EMPTY);
+    public static final Doubles EMPTY_DOUBLES = new Doubles(DoubleValues.EMPTY);
+    public static final GeoPoints EMPTY_GEOPOINTS = new GeoPoints(GeoPointValues.EMPTY);
     public static final Strings EMPTY_STRINGS = new Strings(BytesValues.EMPTY);
     protected int docId;
     protected boolean listLoaded = false;
@@ -51,23 +52,6 @@ public abstract class ScriptDocValues {
     public abstract boolean isEmpty();
 
     public abstract List<?> getValues();
-
-    public static class Empty extends ScriptDocValues {
-        @Override
-        public void setNextDocId(int docId) {
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return true;
-        }
-
-        @Override
-        public List<?> getValues() {
-            return Collections.emptyList();
-        }
-
-    }
 
     public final static class Strings extends ScriptDocValues {
 
@@ -135,7 +119,6 @@ public abstract class ScriptDocValues {
         }
 
     }
-
 
     public static class Longs extends ScriptDocValues {
 
@@ -252,7 +235,6 @@ public abstract class ScriptDocValues {
             };
         }
 
-
         @Override
         public boolean isEmpty() {
             return values.setDocument(docId) == 0;
@@ -292,7 +274,6 @@ public abstract class ScriptDocValues {
             return getValue().lon();
         }
 
-
         public List<GeoPoint> getValues() {
             if (!listLoaded) {
                 int numValues = values.setDocument(docId);
@@ -316,7 +297,7 @@ public abstract class ScriptDocValues {
 
         public double factorDistance(double lat, double lon) {
             GeoPoint point = getValue();
-            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT);
         }
 
         public double factorDistanceWithDefault(double lat, double lon, double defaultValue) {
@@ -324,22 +305,22 @@ public abstract class ScriptDocValues {
                 return defaultValue;
             }
             GeoPoint point = getValue();
-            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT);
         }
 
         public double factorDistance02(double lat, double lon) {
             GeoPoint point = getValue();
-            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES) + 1;
+            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT) + 1;
         }
 
         public double factorDistance13(double lat, double lon) {
             GeoPoint point = getValue();
-            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES) + 2;
+            return GeoDistance.FACTOR.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT) + 2;
         }
 
         public double arcDistance(double lat, double lon) {
             GeoPoint point = getValue();
-            return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT);
         }
 
         public double arcDistanceWithDefault(double lat, double lon, double defaultValue) {
@@ -347,7 +328,7 @@ public abstract class ScriptDocValues {
                 return defaultValue;
             }
             GeoPoint point = getValue();
-            return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT);
         }
 
         public double arcDistanceInKm(double lat, double lon) {
@@ -363,9 +344,22 @@ public abstract class ScriptDocValues {
             return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.KILOMETERS);
         }
 
+        public double arcDistanceInMiles(double lat, double lon) {
+            GeoPoint point = getValue();
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+        }
+
+        public double arcDistanceInMilesWithDefault(double lat, double lon, double defaultValue) {
+            if (isEmpty()) {
+                return defaultValue;
+            }
+            GeoPoint point = getValue();
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+        }
+
         public double distance(double lat, double lon) {
             GeoPoint point = getValue();
-            return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+            return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT);
         }
 
         public double distanceWithDefault(double lat, double lon, double defaultValue) {
@@ -373,7 +367,7 @@ public abstract class ScriptDocValues {
                 return defaultValue;
             }
             GeoPoint point = getValue();
-            return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+            return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.DEFAULT);
         }
 
         public double distanceInKm(double lat, double lon) {
@@ -388,5 +382,37 @@ public abstract class ScriptDocValues {
             GeoPoint point = getValue();
             return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.KILOMETERS);
         }
+
+        public double distanceInMiles(double lat, double lon) {
+            GeoPoint point = getValue();
+            return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+        }
+
+        public double distanceInMilesWithDefault(double lat, double lon, double defaultValue) {
+            if (isEmpty()) {
+                return defaultValue;
+            }
+            GeoPoint point = getValue();
+            return GeoDistance.PLANE.calculate(point.lat(), point.lon(), lat, lon, DistanceUnit.MILES);
+        }
+
+        public double geohashDistance(String geohash) {
+            GeoPoint point = getValue();
+            GeoPoint p = new GeoPoint().resetFromGeoHash(geohash);
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), p.lat(), p.lon(), DistanceUnit.DEFAULT);
+        }
+
+        public double geohashDistanceInKm(String geohash) {
+            GeoPoint point = getValue();
+            GeoPoint p = new GeoPoint().resetFromGeoHash(geohash);
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), p.lat(), p.lon(), DistanceUnit.KILOMETERS);
+        }
+
+        public double geohashDistanceInMiles(String geohash) {
+            GeoPoint point = getValue();
+            GeoPoint p = new GeoPoint().resetFromGeoHash(geohash);
+            return GeoDistance.ARC.calculate(point.lat(), point.lon(), p.lat(), p.lon(), DistanceUnit.MILES);
+        }
+
     }
 }

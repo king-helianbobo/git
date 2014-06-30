@@ -1,13 +1,13 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,15 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.index.fielddata.plain;
 
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.elasticsearch.common.geo.GeoPoint;
-import org.elasticsearch.common.util.BigDoubleArrayList;
+import org.elasticsearch.common.util.DoubleArray;
 import org.elasticsearch.index.fielddata.AtomicGeoPointFieldData;
-import org.elasticsearch.index.fielddata.BytesValues;
 import org.elasticsearch.index.fielddata.GeoPointValues;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.index.fielddata.ordinals.Ordinals;
@@ -33,25 +31,10 @@ import org.elasticsearch.index.fielddata.ordinals.Ordinals;
  */
 public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointFieldData<ScriptDocValues> {
 
-    public static GeoPointDoubleArrayAtomicFieldData empty(int numDocs) {
-        return new Empty(numDocs);
-    }
-
-    private final int numDocs;
-
     protected long size = -1;
-
-    public GeoPointDoubleArrayAtomicFieldData(int numDocs) {
-        this.numDocs = numDocs;
-    }
 
     @Override
     public void close() {
-    }
-
-    @Override
-    public int getNumDocs() {
-        return numDocs;
     }
 
     @Override
@@ -59,55 +42,13 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
         return new ScriptDocValues.GeoPoints(getGeoPointValues());
     }
 
-    static class Empty extends GeoPointDoubleArrayAtomicFieldData {
-
-        Empty(int numDocs) {
-            super(numDocs);
-        }
-
-        @Override
-        public boolean isMultiValued() {
-            return false;
-        }
-
-        @Override
-        public boolean isValuesOrdered() {
-            return false;
-        }
-
-        @Override
-        public long getNumberUniqueValues() {
-            return 0;
-        }
-
-        @Override
-        public long getMemorySizeInBytes() {
-            return 0;
-        }
-
-        @Override
-        public BytesValues getBytesValues(boolean needsHashes) {
-            return BytesValues.EMPTY;
-        }
-
-        @Override
-        public GeoPointValues getGeoPointValues() {
-            return GeoPointValues.EMPTY;
-        }
-
-        @Override
-        public ScriptDocValues getScriptValues() {
-            return ScriptDocValues.EMPTY;
-        }
-    }
-
     static class WithOrdinals extends GeoPointDoubleArrayAtomicFieldData {
 
-        private final BigDoubleArrayList lon, lat;
+        private final DoubleArray lon, lat;
         private final Ordinals ordinals;
 
-        public WithOrdinals(BigDoubleArrayList lon, BigDoubleArrayList lat, int numDocs, Ordinals ordinals) {
-            super(numDocs);
+        public WithOrdinals(DoubleArray lon, DoubleArray lat, Ordinals ordinals) {
+            super();
             this.lon = lon;
             this.lat = lat;
             this.ordinals = ordinals;
@@ -119,19 +60,14 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
         }
 
         @Override
-        public boolean isValuesOrdered() {
-            return true;
-        }
-
-        @Override
         public long getNumberUniqueValues() {
-            return ordinals.getNumOrds();
+            return ordinals.getMaxOrd() - Ordinals.MIN_ORDINAL;
         }
 
         @Override
         public long getMemorySizeInBytes() {
             if (size == -1) {
-                size = RamUsageEstimator.NUM_BYTES_INT/*size*/ + RamUsageEstimator.NUM_BYTES_INT/*numDocs*/ + lon.sizeInBytes() + lat.sizeInBytes();
+                size = RamUsageEstimator.NUM_BYTES_INT/*size*/ + lon.sizeInBytes() + lat.sizeInBytes();
             }
             return size;
         }
@@ -143,12 +79,12 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
 
         public static class GeoPointValuesWithOrdinals extends GeoPointValues {
 
-            private final BigDoubleArrayList lon, lat;
+            private final DoubleArray lon, lat;
             private final Ordinals.Docs ordinals;
 
             private final GeoPoint scratch = new GeoPoint();
 
-            GeoPointValuesWithOrdinals(BigDoubleArrayList lon, BigDoubleArrayList lat, Ordinals.Docs ordinals) {
+            GeoPointValuesWithOrdinals(DoubleArray lon, DoubleArray lat, Ordinals.Docs ordinals) {
                 super(ordinals.isMultiValued());
                 this.lon = lon;
                 this.lat = lat;
@@ -158,7 +94,6 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
             @Override
             public GeoPoint nextValue() {
                 final long ord = ordinals.nextOrd();
-                assert ord > 0;
                 return scratch.reset(lat.get(ord), lon.get(ord));
             }
 
@@ -175,12 +110,12 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
      */
     public static class SingleFixedSet extends GeoPointDoubleArrayAtomicFieldData {
 
-        private final BigDoubleArrayList lon, lat;
+        private final DoubleArray lon, lat;
         private final FixedBitSet set;
         private final long numOrds;
 
-        public SingleFixedSet(BigDoubleArrayList lon, BigDoubleArrayList lat, int numDocs, FixedBitSet set, long numOrds) {
-            super(numDocs);
+        public SingleFixedSet(DoubleArray lon, DoubleArray lat, FixedBitSet set, long numOrds) {
+            super();
             this.lon = lon;
             this.lat = lat;
             this.set = set;
@@ -193,11 +128,6 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
         }
 
         @Override
-        public boolean isValuesOrdered() {
-            return false;
-        }
-
-        @Override
         public long getNumberUniqueValues() {
             return numOrds;
         }
@@ -205,7 +135,7 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
         @Override
         public long getMemorySizeInBytes() {
             if (size == -1) {
-                size = RamUsageEstimator.NUM_BYTES_INT/*size*/ + RamUsageEstimator.NUM_BYTES_INT/*numDocs*/ + lon.sizeInBytes() + lat.sizeInBytes() + RamUsageEstimator.sizeOf(set.getBits());
+                size = RamUsageEstimator.NUM_BYTES_INT/*size*/ + lon.sizeInBytes() + lat.sizeInBytes() + RamUsageEstimator.sizeOf(set.getBits());
             }
             return size;
         }
@@ -218,13 +148,13 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
 
         static class GeoPointValuesSingleFixedSet extends GeoPointValues {
 
-            private final BigDoubleArrayList lon;
-            private final BigDoubleArrayList lat;
+            private final DoubleArray lon;
+            private final DoubleArray lat;
             private final FixedBitSet set;
             private final GeoPoint scratch = new GeoPoint();
 
 
-            GeoPointValuesSingleFixedSet(BigDoubleArrayList lon, BigDoubleArrayList lat, FixedBitSet set) {
+            GeoPointValuesSingleFixedSet(DoubleArray lon, DoubleArray lat, FixedBitSet set) {
                 super(false);
                 this.lon = lon;
                 this.lat = lat;
@@ -249,11 +179,11 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
      */
     public static class Single extends GeoPointDoubleArrayAtomicFieldData {
 
-        private final BigDoubleArrayList lon, lat;
+        private final DoubleArray lon, lat;
         private final long numOrds;
 
-        public Single(BigDoubleArrayList lon, BigDoubleArrayList lat, int numDocs, long numOrds) {
-            super(numDocs);
+        public Single(DoubleArray lon, DoubleArray lat, long numOrds) {
+            super();
             this.lon = lon;
             this.lat = lat;
             this.numOrds = numOrds;
@@ -261,11 +191,6 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
 
         @Override
         public boolean isMultiValued() {
-            return false;
-        }
-
-        @Override
-        public boolean isValuesOrdered() {
             return false;
         }
 
@@ -290,13 +215,13 @@ public abstract class GeoPointDoubleArrayAtomicFieldData extends AtomicGeoPointF
 
         static class GeoPointValuesSingle extends GeoPointValues {
 
-            private final BigDoubleArrayList lon;
-            private final BigDoubleArrayList lat;
+            private final DoubleArray lon;
+            private final DoubleArray lat;
 
             private final GeoPoint scratch = new GeoPoint();
 
 
-            GeoPointValuesSingle(BigDoubleArrayList lon, BigDoubleArrayList lat) {
+            GeoPointValuesSingle(DoubleArray lon, DoubleArray lat) {
                 super(false);
                 this.lon = lon;
                 this.lat = lat;

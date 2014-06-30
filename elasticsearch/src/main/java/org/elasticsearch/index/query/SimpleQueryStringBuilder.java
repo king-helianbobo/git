@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -31,10 +31,14 @@ import java.util.Map;
  * query, but won't throw exceptions for any weird string syntax.
  */
 public class SimpleQueryStringBuilder extends BaseQueryBuilder {
-    private Map<String, Float> fields = new HashMap<String, Float>();
+    private Map<String, Float> fields = new HashMap<>();
     private String analyzer;
     private Operator operator;
     private final String queryText;
+    private int flags = -1;
+    private Boolean lowercaseExpandedTerms;
+    private Boolean lenient;
+    private Locale locale;
 
     /**
      * Operators for the default_operator
@@ -84,6 +88,37 @@ public class SimpleQueryStringBuilder extends BaseQueryBuilder {
         return this;
     }
 
+    /**
+     * Specify the enabled features of the SimpleQueryString.
+     */
+    public SimpleQueryStringBuilder flags(SimpleQueryStringFlag... flags) {
+        int value = 0;
+        if (flags.length == 0) {
+            value = SimpleQueryStringFlag.ALL.value;
+        } else {
+            for (SimpleQueryStringFlag flag : flags) {
+                value |= flag.value;
+            }
+        }
+        this.flags = value;
+        return this;
+    }
+
+    public SimpleQueryStringBuilder lowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
+        this.lowercaseExpandedTerms = lowercaseExpandedTerms;
+        return this;
+    }
+
+    public SimpleQueryStringBuilder locale(Locale locale) {
+        this.locale = locale;
+        return this;
+    }
+
+    public SimpleQueryStringBuilder lenient(boolean lenient) {
+        this.lenient = lenient;
+        return this;
+    }
+
     @Override
     public void doXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(SimpleQueryStringParser.NAME);
@@ -104,12 +139,28 @@ public class SimpleQueryStringBuilder extends BaseQueryBuilder {
             builder.endArray();
         }
 
+        if (flags != -1) {
+            builder.field("flags", flags);
+        }
+
         if (analyzer != null) {
             builder.field("analyzer", analyzer);
         }
 
         if (operator != null) {
             builder.field("default_operator", operator.name().toLowerCase(Locale.ROOT));
+        }
+
+        if (lowercaseExpandedTerms != null) {
+            builder.field("lowercase_expanded_terms", lowercaseExpandedTerms);
+        }
+
+        if (lenient != null) {
+            builder.field("lenient", lenient);
+        }
+
+        if (locale != null) {
+            builder.field("locale", locale.toString());
         }
 
         builder.endObject();

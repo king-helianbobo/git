@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,6 +20,7 @@
 package org.elasticsearch.cluster;
 
 import com.google.common.base.Predicate;
+import org.elasticsearch.action.percolate.PercolateSourceBuilder;
 import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
@@ -28,19 +29,23 @@ import org.elasticsearch.discovery.Discovery;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
-import org.elasticsearch.test.ElasticsearchIntegrationTest.Scope;
+import org.elasticsearch.test.junit.annotations.TestLogging;
 import org.junit.Test;
 
+import java.util.HashMap;
+
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 
 /**
  */
-@ClusterScope(scope=Scope.TEST, numNodes=0)
+@ClusterScope(scope= Scope.TEST, numDataNodes =0)
 public class NoMasterNodeTests extends ElasticsearchIntegrationTest {
 
     @Test
+    @TestLogging("action:TRACE,cluster.service:TRACE")
     public void testNoMasterActions() throws Exception {
         Settings settings = settingsBuilder()
                 .put("discovery.type", "zen")
@@ -48,7 +53,6 @@ public class NoMasterNodeTests extends ElasticsearchIntegrationTest {
                 .put("discovery.zen.minimum_master_nodes", 2)
                 .put("discovery.zen.ping_timeout", "200ms")
                 .put("discovery.initial_state_timeout", "500ms")
-                .put("index.number_of_shards", 1)
                 .build();
 
         TimeValue timeout = TimeValue.timeValueMillis(200);
@@ -58,7 +62,7 @@ public class NoMasterNodeTests extends ElasticsearchIntegrationTest {
         cluster().startNode(settings);
         createIndex("test");
         client().admin().cluster().prepareHealth("test").setWaitForGreenStatus().execute().actionGet();
-        cluster().stopRandomNode();
+        cluster().stopRandomDataNode();
         assertThat(awaitBusy(new Predicate<Object>() {
             public boolean apply(Object o) {
                 ClusterState state = client().admin().cluster().prepareState().setLocal(true).execute().actionGet().getState();
@@ -82,7 +86,11 @@ public class NoMasterNodeTests extends ElasticsearchIntegrationTest {
         }
 
         try {
-            client().preparePercolate("test", "type1").setSource(XContentFactory.jsonBuilder().startObject().endObject()).execute().actionGet();
+            PercolateSourceBuilder percolateSource = new PercolateSourceBuilder();
+            percolateSource.percolateDocument().setDoc(new HashMap());
+            client().preparePercolate()
+                    .setIndices("test").setDocumentType("type1")
+                    .setSource(percolateSource).execute().actionGet();
             fail("Expected ClusterBlockException");
         } catch (ClusterBlockException e) {
             assertThat(e.status(), equalTo(RestStatus.SERVICE_UNAVAILABLE));
@@ -119,5 +127,8 @@ public class NoMasterNodeTests extends ElasticsearchIntegrationTest {
             assertThat(System.currentTimeMillis() - now, greaterThan(timeout.millis() - 50));
             assertThat(e.status(), equalTo(RestStatus.SERVICE_UNAVAILABLE));
         }
+
+        cluster().startNode(settings);
+        client().admin().cluster().prepareHealth().setWaitForGreenStatus().setWaitForNodes("2").execute().actionGet();
     }
 }

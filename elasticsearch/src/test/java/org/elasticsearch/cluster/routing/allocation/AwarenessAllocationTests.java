@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,23 +29,22 @@ import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.cluster.routing.ShardRoutingState;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.junit.Test;
 
 import static org.elasticsearch.cluster.routing.ShardRoutingState.*;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.*;
 
 /**
  */
-public class AwarenessAllocationTests extends ElasticsearchTestCase {
+public class AwarenessAllocationTests extends ElasticsearchAllocationTestCase {
 
     private final ESLogger logger = Loggers.getLogger(AwarenessAllocationTests.class);
 
     @Test
     public void moveShardOnceNewNodeWithAttributeAdded1() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.awareness.attributes", "rack_id")
@@ -61,7 +60,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -114,7 +113,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void moveShardOnceNewNodeWithAttributeAdded2() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.awareness.attributes", "rack_id")
@@ -130,7 +129,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -184,7 +183,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void moveShardOnceNewNodeWithAttributeAdded3() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.node_concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.node_initial_primaries_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
@@ -205,7 +204,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -285,7 +284,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void moveShardOnceNewNodeWithAttributeAdded4() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.node_concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.node_initial_primaries_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
@@ -305,7 +304,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test2"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -348,9 +347,9 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
 
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(20));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(10));
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(5));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(10));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(5));
 
         logger.info("--> do another reroute, make sure nothing moves");
         assertThat(strategy.reroute(clusterState).routingTable(), sameInstance(clusterState.routingTable()));
@@ -370,10 +369,10 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
             clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
         }
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(20));
-        assertThat(clusterState.getRoutingNodes().node("node3").shards().size(), equalTo(5));
-        assertThat(clusterState.getRoutingNodes().node("node4").shards().size(), equalTo(5));
-        assertThat(clusterState.getRoutingNodes().node("node2").shards().size(), equalTo(5));
-        assertThat(clusterState.getRoutingNodes().node("node1").shards().size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("node3").size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("node4").size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("node2").size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("node1").size(), equalTo(5));
 
         logger.info("--> do another reroute, make sure nothing moves");
         assertThat(strategy.reroute(clusterState).routingTable(), sameInstance(clusterState.routingTable()));
@@ -381,7 +380,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void moveShardOnceNewNodeWithAttributeAdded5() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.awareness.attributes", "rack_id")
@@ -397,7 +396,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -460,7 +459,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void moveShardOnceNewNodeWithAttributeAdded6() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.awareness.attributes", "rack_id")
@@ -476,7 +475,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -541,7 +540,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void fullAwareness1() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.awareness.force.rack_id.values", "1,2")
@@ -558,7 +557,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -609,7 +608,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void fullAwareness2() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
                 .put("cluster.routing.allocation.awareness.force.rack_id.values", "1,2")
@@ -626,7 +625,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -678,7 +677,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void fullAwareness3() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.node_concurrent_recoveries", 10)
                 .put("cluster.routing.allocation.node_initial_primaries_recoveries", 10)
                 .put("cluster.routing.allocation.allow_rebalance", "always")
@@ -702,7 +701,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test2"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -763,7 +762,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
 
     @Test
     public void testUnbalancedZones() {
-        AllocationService strategy = new AllocationService(settingsBuilder()
+        AllocationService strategy = createAllocationService(settingsBuilder()
                 .put("cluster.routing.allocation.awareness.force.zone.values", "a,b")
                 .put("cluster.routing.allocation.awareness.attributes", "zone")
                 .put("cluster.routing.allocation.node_concurrent_recoveries", 10)
@@ -782,7 +781,7 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
                 .addAsNew(metaData.index("test"))
                 .build();
 
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
 
         logger.info("--> adding two nodes on same rack and do rerouting");
         clusterState = ClusterState.builder(clusterState).nodes(DiscoveryNodes.builder()
@@ -821,8 +820,8 @@ public class AwarenessAllocationTests extends ElasticsearchTestCase {
         clusterState = ClusterState.builder(clusterState).routingTable(routingTable).build();
 
         assertThat(clusterState.routingNodes().shardsWithState(ShardRoutingState.STARTED).size(), equalTo(10));
-        assertThat(clusterState.getRoutingNodes().node("A-1").shards().size(), equalTo(2));
-        assertThat(clusterState.getRoutingNodes().node("A-0").shards().size(), equalTo(3));
-        assertThat(clusterState.getRoutingNodes().node("B-0").shards().size(), equalTo(5));
+        assertThat(clusterState.getRoutingNodes().node("A-1").size(), equalTo(2));
+        assertThat(clusterState.getRoutingNodes().node("A-0").size(), equalTo(3));
+        assertThat(clusterState.getRoutingNodes().node("B-0").size(), equalTo(5));
     }
 }

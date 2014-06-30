@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -39,4 +39,11 @@ public abstract class NestedWrappableComparator<T> extends FieldComparator<T> {
      */
     public abstract int compareBottomMissing();
 
+    /**
+     * Compares the missing value to the top.
+     *
+     * @return any N < 0 if the tope is not competitive with the missing value, any N > 0 if the top is competitive
+     * with the top and 0 if they are equal.
+     */
+    public abstract int compareTopMissing();
 }

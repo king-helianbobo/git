@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action.admin.indices.warmer.put;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.TransportSearchAction;
@@ -83,18 +83,18 @@ public class TransportPutWarmerAction extends TransportMasterNodeOperationAction
 
     @Override
     protected ClusterBlockException checkBlock(PutWarmerRequest request, ClusterState state) {
-        String[] concreteIndices = clusterService.state().metaData().concreteIndices(request.searchRequest().indices());
+        String[] concreteIndices = clusterService.state().metaData().concreteIndices(request.searchRequest().indicesOptions(), request.searchRequest().indices());
         return state.blocks().indicesBlockedException(ClusterBlockLevel.METADATA, concreteIndices);
     }
 
     @Override
-    protected void masterOperation(final PutWarmerRequest request, final ClusterState state, final ActionListener<PutWarmerResponse> listener) throws ElasticSearchException {
+    protected void masterOperation(final PutWarmerRequest request, final ClusterState state, final ActionListener<PutWarmerResponse> listener) throws ElasticsearchException {
         // first execute the search request, see that its ok...
         searchAction.execute(request.searchRequest(), new ActionListener<SearchResponse>() {
             @Override
             public void onResponse(SearchResponse searchResponse) {
                 if (searchResponse.getFailedShards() > 0) {
-                    listener.onFailure(new ElasticSearchException("search failed with failed shards: " + Arrays.toString(searchResponse.getShardFailures())));
+                    listener.onFailure(new ElasticsearchException("search failed with failed shards: " + Arrays.toString(searchResponse.getShardFailures())));
                     return;
                 }
 
@@ -134,7 +134,7 @@ public class TransportPutWarmerAction extends TransportMasterNodeOperationAction
                     @Override
                     public ClusterState execute(ClusterState currentState) {
                         MetaData metaData = currentState.metaData();
-                        String[] concreteIndices = metaData.concreteIndices(request.searchRequest().indices());
+                        String[] concreteIndices = metaData.concreteIndices(request.searchRequest().indicesOptions(), request.searchRequest().indices());
 
                         BytesReference source = null;
                         if (request.searchRequest().source() != null && request.searchRequest().source().length() > 0) {
@@ -157,7 +157,7 @@ public class TransportPutWarmerAction extends TransportMasterNodeOperationAction
                                 warmers = new IndexWarmersMetaData(new IndexWarmersMetaData.Entry(request.name(), request.searchRequest().types(), source));
                             } else {
                                 boolean found = false;
-                                List<IndexWarmersMetaData.Entry> entries = new ArrayList<IndexWarmersMetaData.Entry>(warmers.entries().size() + 1);
+                                List<IndexWarmersMetaData.Entry> entries = new ArrayList<>(warmers.entries().size() + 1);
                                 for (IndexWarmersMetaData.Entry entry : warmers.entries()) {
                                     if (entry.name().equals(request.name())) {
                                         found = true;

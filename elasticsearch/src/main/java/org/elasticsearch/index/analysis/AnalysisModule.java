@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,7 +21,7 @@ package org.elasticsearch.index.analysis;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.common.inject.Scopes;
@@ -115,6 +115,7 @@ public class AnalysisModule extends AbstractModule {
     private final Map<String, Class<? extends TokenizerFactory>> tokenizers = Maps.newHashMap();
     private final Map<String, Class<? extends AnalyzerProvider>> analyzers = Maps.newHashMap();
 
+
     public AnalysisModule(Settings settings) {
         this(settings, null);
     }
@@ -157,8 +158,8 @@ public class AnalysisModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        MapBinder<String, CharFilterFactoryFactory> charFilterBinder = MapBinder.newMapBinder(binder(), String.class,
-                CharFilterFactoryFactory.class);
+        MapBinder<String, CharFilterFactoryFactory> charFilterBinder
+                = MapBinder.newMapBinder(binder(), String.class, CharFilterFactoryFactory.class);
 
         // CHAR FILTERS
 
@@ -185,19 +186,16 @@ public class AnalysisModule extends AbstractModule {
                     }
                 }
                 if (type == null) {
-                    throw new ElasticSearchIllegalArgumentException("failed to find char filter type [" + charFilterSettings.get("type")
-                            + "] for [" + charFilterName + "]", e);
+                    throw new ElasticsearchIllegalArgumentException("failed to find char filter type [" + charFilterSettings.get("type") + "] for [" + charFilterName + "]", e);
                 }
             }
             if (type == null) {
                 // nothing found, see if its in bindings as a binding name
-                throw new ElasticSearchIllegalArgumentException("Char Filter [" + charFilterName + "] must have a type associated with it");
+                throw new ElasticsearchIllegalArgumentException("Char Filter [" + charFilterName + "] must have a type associated with it");
             }
-            charFilterBinder.addBinding(charFilterName).toProvider(FactoryProvider.newFactory(CharFilterFactoryFactory.class, type))
-                    .in(Scopes.SINGLETON);
+            charFilterBinder.addBinding(charFilterName).toProvider(FactoryProvider.newFactory(CharFilterFactoryFactory.class, type)).in(Scopes.SINGLETON);
         }
-        // go over the char filters in the bindings and register the ones that
-        // are not configured
+        // go over the char filters in the bindings and register the ones that are not configured
         for (Map.Entry<String, Class<? extends CharFilterFactory>> entry : charFiltersBindings.charFilters.entrySet()) {
             String charFilterName = entry.getKey();
             Class<? extends CharFilterFactory> clazz = entry.getValue();
@@ -205,26 +203,24 @@ public class AnalysisModule extends AbstractModule {
             if (charFiltersSettings.containsKey(charFilterName)) {
                 continue;
             }
-            // check, if it requires settings, then don't register it, we know
-            // default has no settings...
+            // check, if it requires settings, then don't register it, we know default has no settings...
             if (clazz.getAnnotation(AnalysisSettingsRequired.class) != null) {
                 continue;
             }
             // register it as default under the name
             if (indicesAnalysisService != null && indicesAnalysisService.hasCharFilter(charFilterName)) {
-                // don't register it here, we will use explicitly register it in
-                // the AnalysisService
-                // charFilterBinder.addBinding(charFilterName).toInstance(indicesAnalysisService.charFilterFactoryFactory(charFilterName));
+                // don't register it here, we will use explicitly register it in the AnalysisService
+                //charFilterBinder.addBinding(charFilterName).toInstance(indicesAnalysisService.charFilterFactoryFactory(charFilterName));
             } else {
-                charFilterBinder.addBinding(charFilterName).toProvider(FactoryProvider.newFactory(CharFilterFactoryFactory.class, clazz))
-                        .in(Scopes.SINGLETON);
+                charFilterBinder.addBinding(charFilterName).toProvider(FactoryProvider.newFactory(CharFilterFactoryFactory.class, clazz)).in(Scopes.SINGLETON);
             }
         }
 
+
         // TOKEN FILTERS
 
-        MapBinder<String, TokenFilterFactoryFactory> tokenFilterBinder = MapBinder.newMapBinder(binder(), String.class,
-                TokenFilterFactoryFactory.class);
+        MapBinder<String, TokenFilterFactoryFactory> tokenFilterBinder
+                = MapBinder.newMapBinder(binder(), String.class, TokenFilterFactoryFactory.class);
 
         // initial default bindings
         AnalysisBinderProcessor.TokenFiltersBindings tokenFiltersBindings = new AnalysisBinderProcessor.TokenFiltersBindings();
@@ -250,19 +246,15 @@ public class AnalysisModule extends AbstractModule {
                     }
                 }
                 if (type == null) {
-                    throw new ElasticSearchIllegalArgumentException("failed to find token filter type [" + tokenFilterSettings.get("type")
-                            + "] for [" + tokenFilterName + "]", e);
+                    throw new ElasticsearchIllegalArgumentException("failed to find token filter type [" + tokenFilterSettings.get("type") + "] for [" + tokenFilterName + "]", e);
                 }
             }
             if (type == null) {
-                throw new ElasticSearchIllegalArgumentException("token filter [" + tokenFilterName
-                        + "] must have a type associated with it");
+                throw new ElasticsearchIllegalArgumentException("token filter [" + tokenFilterName + "] must have a type associated with it");
             }
-            tokenFilterBinder.addBinding(tokenFilterName).toProvider(FactoryProvider.newFactory(TokenFilterFactoryFactory.class, type))
-                    .in(Scopes.SINGLETON);
+            tokenFilterBinder.addBinding(tokenFilterName).toProvider(FactoryProvider.newFactory(TokenFilterFactoryFactory.class, type)).in(Scopes.SINGLETON);
         }
-        // go over the filters in the bindings and register the ones that are
-        // not configured
+        // go over the filters in the bindings and register the ones that are not configured
         for (Map.Entry<String, Class<? extends TokenFilterFactory>> entry : tokenFiltersBindings.tokenFilters.entrySet()) {
             String tokenFilterName = entry.getKey();
             Class<? extends TokenFilterFactory> clazz = entry.getValue();
@@ -270,26 +262,23 @@ public class AnalysisModule extends AbstractModule {
             if (tokenFiltersSettings.containsKey(tokenFilterName)) {
                 continue;
             }
-            // check, if it requires settings, then don't register it, we know
-            // default has no settings...
+            // check, if it requires settings, then don't register it, we know default has no settings...
             if (clazz.getAnnotation(AnalysisSettingsRequired.class) != null) {
                 continue;
             }
             // register it as default under the name
             if (indicesAnalysisService != null && indicesAnalysisService.hasTokenFilter(tokenFilterName)) {
-                // don't register it here, we will use explicitly register it in
-                // the AnalysisService
+                // don't register it here, we will use explicitly register it in the AnalysisService
                 // tokenFilterBinder.addBinding(tokenFilterName).toInstance(indicesAnalysisService.tokenFilterFactoryFactory(tokenFilterName));
             } else {
-                tokenFilterBinder.addBinding(tokenFilterName)
-                        .toProvider(FactoryProvider.newFactory(TokenFilterFactoryFactory.class, clazz)).in(Scopes.SINGLETON);
+                tokenFilterBinder.addBinding(tokenFilterName).toProvider(FactoryProvider.newFactory(TokenFilterFactoryFactory.class, clazz)).in(Scopes.SINGLETON);
             }
         }
 
         // TOKENIZER
 
-        MapBinder<String, TokenizerFactoryFactory> tokenizerBinder = MapBinder.newMapBinder(binder(), String.class,
-                TokenizerFactoryFactory.class);
+        MapBinder<String, TokenizerFactoryFactory> tokenizerBinder
+                = MapBinder.newMapBinder(binder(), String.class, TokenizerFactoryFactory.class);
 
         // initial default bindings
         AnalysisBinderProcessor.TokenizersBindings tokenizersBindings = new AnalysisBinderProcessor.TokenizersBindings();
@@ -303,6 +292,7 @@ public class AnalysisModule extends AbstractModule {
             String tokenizerName = entry.getKey();
             Settings tokenizerSettings = entry.getValue();
 
+
             Class<? extends TokenizerFactory> type = null;
             try {
                 type = tokenizerSettings.getAsClass("type", null, "org.elasticsearch.index.analysis.", "TokenizerFactory");
@@ -315,18 +305,15 @@ public class AnalysisModule extends AbstractModule {
                     }
                 }
                 if (type == null) {
-                    throw new ElasticSearchIllegalArgumentException("failed to find tokenizer type [" + tokenizerSettings.get("type")
-                            + "] for [" + tokenizerName + "]", e);
+                    throw new ElasticsearchIllegalArgumentException("failed to find tokenizer type [" + tokenizerSettings.get("type") + "] for [" + tokenizerName + "]", e);
                 }
             }
             if (type == null) {
-                throw new ElasticSearchIllegalArgumentException("token filter [" + tokenizerName + "] must have a type associated with it");
+                throw new ElasticsearchIllegalArgumentException("token filter [" + tokenizerName + "] must have a type associated with it");
             }
-            tokenizerBinder.addBinding(tokenizerName).toProvider(FactoryProvider.newFactory(TokenizerFactoryFactory.class, type))
-                    .in(Scopes.SINGLETON);
+            tokenizerBinder.addBinding(tokenizerName).toProvider(FactoryProvider.newFactory(TokenizerFactoryFactory.class, type)).in(Scopes.SINGLETON);
         }
-        // go over the tokenizers in the bindings and register the ones that are
-        // not configured
+        // go over the tokenizers in the bindings and register the ones that are not configured
         for (Map.Entry<String, Class<? extends TokenizerFactory>> entry : tokenizersBindings.tokenizers.entrySet()) {
             String tokenizerName = entry.getKey();
             Class<? extends TokenizerFactory> clazz = entry.getValue();
@@ -334,27 +321,23 @@ public class AnalysisModule extends AbstractModule {
             if (tokenizersSettings.containsKey(tokenizerName)) {
                 continue;
             }
-            // check, if it requires settings, then don't register it, we know
-            // default has no settings...
+            // check, if it requires settings, then don't register it, we know default has no settings...
             if (clazz.getAnnotation(AnalysisSettingsRequired.class) != null) {
                 continue;
             }
             // register it as default under the name
             if (indicesAnalysisService != null && indicesAnalysisService.hasTokenizer(tokenizerName)) {
-                // don't register it here, we will use explicitly register it in
-                // the AnalysisService
-                // tokenizerBinder.addBinding(tokenizerName).toProvider(FactoryProvider.newFactory(TokenizerFactoryFactory.class,
-                // clazz)).in(Scopes.SINGLETON);
+                // don't register it here, we will use explicitly register it in the AnalysisService
+                // tokenizerBinder.addBinding(tokenizerName).toProvider(FactoryProvider.newFactory(TokenizerFactoryFactory.class, clazz)).in(Scopes.SINGLETON);
             } else {
-                tokenizerBinder.addBinding(tokenizerName).toProvider(FactoryProvider.newFactory(TokenizerFactoryFactory.class, clazz))
-                        .in(Scopes.SINGLETON);
+                tokenizerBinder.addBinding(tokenizerName).toProvider(FactoryProvider.newFactory(TokenizerFactoryFactory.class, clazz)).in(Scopes.SINGLETON);
             }
         }
 
         // ANALYZER
 
-        MapBinder<String, AnalyzerProviderFactory> analyzerBinder = MapBinder.newMapBinder(binder(), String.class,
-                AnalyzerProviderFactory.class);
+        MapBinder<String, AnalyzerProviderFactory> analyzerBinder
+                = MapBinder.newMapBinder(binder(), String.class, AnalyzerProviderFactory.class);
 
         // initial default bindings
         AnalysisBinderProcessor.AnalyzersBindings analyzersBindings = new AnalysisBinderProcessor.AnalyzersBindings();
@@ -380,36 +363,31 @@ public class AnalysisModule extends AbstractModule {
                     }
                 }
                 if (type == null) {
-                    // no specific type, check if it has a tokenizer associated
-                    // with it
+                    // no specific type, check if it has a tokenizer associated with it
                     String tokenizerName = analyzerSettings.get("tokenizer");
                     if (tokenizerName != null) {
                         // we have a tokenizer, use the CustomAnalyzer
                         type = CustomAnalyzerProvider.class;
                     } else {
-                        throw new ElasticSearchIllegalArgumentException("failed to find analyzer type [" + analyzerSettings.get("type")
-                                + "] or tokenizer for [" + analyzerName + "]", e);
+                        throw new ElasticsearchIllegalArgumentException("failed to find analyzer type [" + analyzerSettings.get("type") + "] or tokenizer for [" + analyzerName + "]", e);
                     }
                 }
             }
             if (type == null) {
-                // no specific type, check if it has a tokenizer associated with
-                // it
+                // no specific type, check if it has a tokenizer associated with it
                 String tokenizerName = analyzerSettings.get("tokenizer");
                 if (tokenizerName != null) {
                     // we have a tokenizer, use the CustomAnalyzer
                     type = CustomAnalyzerProvider.class;
                 } else {
-                    throw new ElasticSearchIllegalArgumentException("failed to find analyzer type [" + analyzerSettings.get("type")
-                            + "] or tokenizer for [" + analyzerName + "]");
+                    throw new ElasticsearchIllegalArgumentException("failed to find analyzer type [" + analyzerSettings.get("type") + "] or tokenizer for [" + analyzerName + "]");
                 }
             }
-            analyzerBinder.addBinding(analyzerName).toProvider(FactoryProvider.newFactory(AnalyzerProviderFactory.class, type))
-                    .in(Scopes.SINGLETON);
+            analyzerBinder.addBinding(analyzerName).toProvider(FactoryProvider.newFactory(AnalyzerProviderFactory.class, type)).in(Scopes.SINGLETON);
         }
 
-        // go over the analyzers in the bindings and register the ones that are
-        // not configured
+
+        // go over the analyzers in the bindings and register the ones that are not configured
         for (Map.Entry<String, Class<? extends AnalyzerProvider>> entry : analyzersBindings.analyzers.entrySet()) {
             String analyzerName = entry.getKey();
             Class<? extends AnalyzerProvider> clazz = entry.getValue();
@@ -417,20 +395,16 @@ public class AnalysisModule extends AbstractModule {
             if (analyzersSettings.containsKey(analyzerName)) {
                 continue;
             }
-            // check, if it requires settings, then don't register it, we know
-            // default has no settings...
+            // check, if it requires settings, then don't register it, we know default has no settings...
             if (clazz.getAnnotation(AnalysisSettingsRequired.class) != null) {
                 continue;
             }
             // register it as default under the name
             if (indicesAnalysisService != null && indicesAnalysisService.hasAnalyzer(analyzerName)) {
-                // don't register it here, we will use explicitly register it in
-                // the AnalysisService
-                // analyzerBinder.addBinding(analyzerName).toProvider(FactoryProvider.newFactory(AnalyzerProviderFactory.class,
-                // clazz)).in(Scopes.SINGLETON);
+                // don't register it here, we will use explicitly register it in the AnalysisService
+                // analyzerBinder.addBinding(analyzerName).toProvider(FactoryProvider.newFactory(AnalyzerProviderFactory.class, clazz)).in(Scopes.SINGLETON);
             } else {
-                analyzerBinder.addBinding(analyzerName).toProvider(FactoryProvider.newFactory(AnalyzerProviderFactory.class, clazz))
-                        .in(Scopes.SINGLETON);
+                analyzerBinder.addBinding(analyzerName).toProvider(FactoryProvider.newFactory(AnalyzerProviderFactory.class, clazz)).in(Scopes.SINGLETON);
             }
         }
 
@@ -452,6 +426,7 @@ public class AnalysisModule extends AbstractModule {
             tokenFiltersBindings.processTokenFilter("asciifolding", ASCIIFoldingTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("length", LengthTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("lowercase", LowerCaseTokenFilterFactory.class);
+            tokenFiltersBindings.processTokenFilter("uppercase", UpperCaseTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("porter_stem", PorterStemTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("kstem", KStemTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("standard", StandardTokenFilterFactory.class);
@@ -506,6 +481,7 @@ public class AnalysisModule extends AbstractModule {
             tokenFiltersBindings.processTokenFilter("snowball", SnowballTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("stemmer", StemmerTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("word_delimiter", WordDelimiterTokenFilterFactory.class);
+            tokenFiltersBindings.processTokenFilter("delimited_payload_filter", DelimitedPayloadTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("synonym", SynonymTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("elision", ElisionTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("keep", KeepWordFilterFactory.class);
@@ -532,6 +508,7 @@ public class AnalysisModule extends AbstractModule {
             tokenFiltersBindings.processTokenFilter("hunspell", HunspellTokenFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("cjk_bigram", CJKBigramFilterFactory.class);
             tokenFiltersBindings.processTokenFilter("cjk_width", CJKWidthFilterFactory.class);
+
 
         }
 

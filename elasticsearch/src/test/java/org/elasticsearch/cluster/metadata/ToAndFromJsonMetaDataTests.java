@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,6 +29,7 @@ import java.io.IOException;
 import static org.elasticsearch.cluster.metadata.AliasMetaData.newAliasMetaDataBuilder;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 /**
@@ -89,6 +90,15 @@ public class ToAndFromJsonMetaDataTests extends ElasticsearchTestCase {
                         .putAlias(newAliasMetaDataBuilder("alias1").filter(ALIAS_FILTER1))
                         .putAlias(newAliasMetaDataBuilder("alias2"))
                         .putAlias(newAliasMetaDataBuilder("alias4").filter(ALIAS_FILTER2)))
+                        .put(IndexTemplateMetaData.builder("foo")
+                                .template("bar")
+                                .order(1)
+                                .settings(settingsBuilder()
+                                        .put("setting1", "value1")
+                                        .put("setting2", "value2"))
+                                .putAlias(newAliasMetaDataBuilder("alias-bar1"))
+                                .putAlias(newAliasMetaDataBuilder("alias-bar2").filter("{\"term\":{\"user\":\"kimchy\"}}"))
+                                .putAlias(newAliasMetaDataBuilder("alias-bar3").routing("routing-bar")))
                 .build();
 
         String metaDataSource = MetaData.Builder.toXContent(metaData);
@@ -172,6 +182,19 @@ public class ToAndFromJsonMetaDataTests extends ElasticsearchTestCase {
         assertThat(indexMetaData.aliases().get("alias3").filter(), nullValue());
         assertThat(indexMetaData.aliases().get("alias4").alias(), equalTo("alias4"));
         assertThat(indexMetaData.aliases().get("alias4").filter().string(), equalTo(ALIAS_FILTER2));
+
+        // templates
+        assertThat(parsedMetaData.templates().get("foo").name(), is("foo"));
+        assertThat(parsedMetaData.templates().get("foo").template(), is("bar"));
+        assertThat(parsedMetaData.templates().get("foo").settings().get("index.setting1"), is("value1"));
+        assertThat(parsedMetaData.templates().get("foo").settings().getByPrefix("index.").get("setting2"), is("value2"));
+        assertThat(parsedMetaData.templates().get("foo").aliases().size(), equalTo(3));
+        assertThat(parsedMetaData.templates().get("foo").aliases().get("alias-bar1").alias(), equalTo("alias-bar1"));
+        assertThat(parsedMetaData.templates().get("foo").aliases().get("alias-bar2").alias(), equalTo("alias-bar2"));
+        assertThat(parsedMetaData.templates().get("foo").aliases().get("alias-bar2").filter().string(), equalTo("{\"term\":{\"user\":\"kimchy\"}}"));
+        assertThat(parsedMetaData.templates().get("foo").aliases().get("alias-bar3").alias(), equalTo("alias-bar3"));
+        assertThat(parsedMetaData.templates().get("foo").aliases().get("alias-bar3").indexRouting(), equalTo("routing-bar"));
+        assertThat(parsedMetaData.templates().get("foo").aliases().get("alias-bar3").searchRouting(), equalTo("routing-bar"));
     }
 
     private static final String MAPPING_SOURCE1 = "{\"mapping1\":{\"text1\":{\"type\":\"string\"}}}";

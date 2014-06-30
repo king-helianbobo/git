@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,19 +22,22 @@ package org.elasticsearch.index.mapper.internal;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.XStringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.lucene.Lucene;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.mapper.*;
 import org.elasticsearch.index.mapper.core.AbstractFieldMapper;
-import org.elasticsearch.index.mapper.core.NumberFieldMapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.support.XContentMapValues.nodeBooleanValue;
@@ -89,7 +92,7 @@ public class RoutingFieldMapper extends AbstractFieldMapper<String> implements I
 
         @Override
         public RoutingFieldMapper build(BuilderContext context) {
-            return new RoutingFieldMapper(fieldType, required, path, provider, fieldDataSettings);
+            return new RoutingFieldMapper(fieldType, required, path, postingsProvider, docValuesProvider, fieldDataSettings, context.indexSettings());
         }
     }
 
@@ -117,12 +120,13 @@ public class RoutingFieldMapper extends AbstractFieldMapper<String> implements I
     private final String path;
 
     public RoutingFieldMapper() {
-        this(new FieldType(Defaults.FIELD_TYPE), Defaults.REQUIRED, Defaults.PATH, null, null);
+        this(new FieldType(Defaults.FIELD_TYPE), Defaults.REQUIRED, Defaults.PATH, null, null, null, ImmutableSettings.EMPTY);
     }
 
-    protected RoutingFieldMapper(FieldType fieldType, boolean required, String path, PostingsFormatProvider provider, @Nullable Settings fieldDataSettings) {
-        super(new Names(Defaults.NAME, Defaults.NAME, Defaults.NAME, Defaults.NAME), 1.0f, fieldType, Lucene.KEYWORD_ANALYZER,
-                Lucene.KEYWORD_ANALYZER, provider, null, fieldDataSettings);
+    protected RoutingFieldMapper(FieldType fieldType, boolean required, String path, PostingsFormatProvider postingsProvider,
+                                 DocValuesFormatProvider docValuesProvider, @Nullable Settings fieldDataSettings, Settings indexSettings) {
+        super(new Names(Defaults.NAME, Defaults.NAME, Defaults.NAME, Defaults.NAME), 1.0f, fieldType, null, Lucene.KEYWORD_ANALYZER,
+                Lucene.KEYWORD_ANALYZER, postingsProvider, docValuesProvider, null, null, fieldDataSettings, indexSettings);
         this.required = required;
         this.path = path;
     }
@@ -135,6 +139,11 @@ public class RoutingFieldMapper extends AbstractFieldMapper<String> implements I
     @Override
     public FieldDataType defaultFieldDataType() {
         return new FieldDataType("string");
+    }
+
+    @Override
+    public boolean hasDocValues() {
+        return false;
     }
 
     public void markAsRequired() {
@@ -163,31 +172,6 @@ public class RoutingFieldMapper extends AbstractFieldMapper<String> implements I
     }
 
     @Override
-    public void validate(ParseContext context) throws MapperParsingException {
-        String routing = context.sourceToParse().routing();
-        if (path != null && routing != null) {
-            // we have a path, check if we can validate we have the same routing value as the one in the doc...
-            String value = null;
-            Field field = (Field) context.doc().getField(path);
-            if (field != null) {
-                value = field.stringValue();
-                if (value == null) {
-                    // maybe its a numeric field...
-                    if (field instanceof NumberFieldMapper.CustomNumericField) {
-                        value = ((NumberFieldMapper.CustomNumericField) field).numericAsString();
-                    }
-                }
-            }
-            if (value == null) {
-                value = context.ignoredValue(path);
-            }
-            if (!routing.equals(value)) {
-                throw new MapperParsingException("External routing [" + routing + "] and document path routing [" + value + "] mismatch");
-            }
-        }
-    }
-
-    @Override
     public void preParse(ParseContext context) throws IOException {
         super.parse(context);
     }
@@ -209,19 +193,17 @@ public class RoutingFieldMapper extends AbstractFieldMapper<String> implements I
     }
 
     @Override
-    protected Field parseCreateField(ParseContext context) throws IOException {
+    protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
         if (context.sourceToParse().routing() != null) {
             String routing = context.sourceToParse().routing();
             if (routing != null) {
                 if (!fieldType.indexed() && !fieldType.stored()) {
                     context.ignoredValue(names.indexName(), routing);
-                    return null;
+                    return;
                 }
-                return new Field(names.indexName(), routing, fieldType);
+                fields.add(new XStringField(names.indexName(), routing, fieldType));
             }
         }
-        return null;
-
     }
 
     @Override

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -41,13 +41,12 @@ import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.mlt.MoreLikeThisRequest;
 import org.elasticsearch.action.mlt.MoreLikeThisRequestBuilder;
-import org.elasticsearch.action.percolate.PercolateRequest;
-import org.elasticsearch.action.percolate.PercolateRequestBuilder;
-import org.elasticsearch.action.percolate.PercolateResponse;
+import org.elasticsearch.action.percolate.*;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.action.suggest.SuggestRequest;
 import org.elasticsearch.action.suggest.SuggestRequestBuilder;
 import org.elasticsearch.action.suggest.SuggestResponse;
+import org.elasticsearch.action.termvector.*;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.action.update.UpdateResponse;
@@ -443,6 +442,50 @@ public interface Client {
      */
     MoreLikeThisRequestBuilder prepareMoreLikeThis(String index, String type, String id);
 
+
+    /**
+     * An action that returns the term vectors for a specific document.
+     *
+     * @param request The term vector request
+     * @return The response future
+     */
+    ActionFuture<TermVectorResponse> termVector(TermVectorRequest request);
+
+    /**
+     * An action that returns the term vectors for a specific document.
+     *
+     * @param request The term vector request
+     * @return The response future
+     */
+    void termVector(TermVectorRequest request, ActionListener<TermVectorResponse> listener);
+
+
+    /**
+     * Builder for the term vector request.
+     *
+     * @param index The index to load the document from
+     * @param type  The type of the document
+     * @param id    The id of the document
+     */
+    TermVectorRequestBuilder prepareTermVector(String index, String type, String id);
+
+
+    /**
+     * Multi get term vectors.
+     */
+    ActionFuture<MultiTermVectorsResponse> multiTermVectors(MultiTermVectorsRequest request);
+
+    /**
+     * Multi get term vectors.
+     */
+    void multiTermVectors(MultiTermVectorsRequest request, ActionListener<MultiTermVectorsResponse> listener);
+
+    /**
+     * Multi get term vectors.
+     */
+    MultiTermVectorsRequestBuilder prepareMultiTermVectors();
+
+
     /**
      * Percolates a request returning the matches documents.
      */
@@ -455,11 +498,23 @@ public interface Client {
 
     /**
      * Percolates a request returning the matches documents.
-     *
-     * @param index The index to percolate the doc
-     * @param type  The type of the doc
      */
-    PercolateRequestBuilder preparePercolate(String index, String type);
+    PercolateRequestBuilder preparePercolate();
+
+    /**
+     * Performs multiple percolate requests.
+     */
+    ActionFuture<MultiPercolateResponse> multiPercolate(MultiPercolateRequest request);
+
+    /**
+     * Performs multiple percolate requests.
+     */
+    void multiPercolate(MultiPercolateRequest request, ActionListener<MultiPercolateResponse> listener);
+
+    /**
+     * Performs multiple percolate requests.
+     */
+    MultiPercolateRequestBuilder prepareMultiPercolate();
 
     /**
      * Computes a score explanation for the specified request.
@@ -499,5 +554,4 @@ public interface Client {
      * Clears the search contexts associated with specified scroll ids.
      */
     void clearScroll(ClearScrollRequest request, ActionListener<ClearScrollResponse> listener);
-
 }

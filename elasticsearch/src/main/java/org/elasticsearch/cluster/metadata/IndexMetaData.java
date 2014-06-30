@@ -1,11 +1,11 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this 
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,8 +22,8 @@ package org.elasticsearch.cluster.metadata;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import com.google.common.collect.ImmutableMap;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.cluster.block.ClusterBlock;
 import org.elasticsearch.cluster.block.ClusterBlockLevel;
 import org.elasticsearch.cluster.node.DiscoveryNodeFilters;
@@ -46,6 +46,7 @@ import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.warmer.IndexWarmersMetaData;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -86,7 +87,7 @@ public class IndexMetaData {
         }
     }
 
-    public static Map<String, Custom.Factory> customFactories = new HashMap<String, Custom.Factory>();
+    public static Map<String, Custom.Factory> customFactories = new HashMap<>();
 
     static {
         // register non plugin custom metadata
@@ -105,18 +106,18 @@ public class IndexMetaData {
         return customFactories.get(type);
     }
 
-    public static <T extends Custom> Custom.Factory<T> lookupFactorySafe(String type) throws ElasticSearchIllegalArgumentException {
+    public static <T extends Custom> Custom.Factory<T> lookupFactorySafe(String type) throws ElasticsearchIllegalArgumentException {
         Custom.Factory<T> factory = customFactories.get(type);
         if (factory == null) {
-            throw new ElasticSearchIllegalArgumentException("No custom index metadata factoy registered for type [" + type + "]");
+            throw new ElasticsearchIllegalArgumentException("No custom index metadata factoy registered for type [" + type + "]");
         }
         return factory;
     }
 
-    public static final ClusterBlock INDEX_READ_ONLY_BLOCK = new ClusterBlock(5, "index read-only (api)", false, false, RestStatus.FORBIDDEN, ClusterBlockLevel.WRITE, ClusterBlockLevel.METADATA);
-    public static final ClusterBlock INDEX_READ_BLOCK = new ClusterBlock(7, "index read (api)", false, false, RestStatus.FORBIDDEN, ClusterBlockLevel.READ);
-    public static final ClusterBlock INDEX_WRITE_BLOCK = new ClusterBlock(8, "index write (api)", false, false, RestStatus.FORBIDDEN, ClusterBlockLevel.WRITE);
-    public static final ClusterBlock INDEX_METADATA_BLOCK = new ClusterBlock(9, "index metadata (api)", false, false, RestStatus.FORBIDDEN, ClusterBlockLevel.METADATA);
+    public static final ClusterBlock INDEX_READ_ONLY_BLOCK = new ClusterBlock(5, "index read-only (api)", false, false, RestStatus.FORBIDDEN, EnumSet.of(ClusterBlockLevel.WRITE, ClusterBlockLevel.METADATA));
+    public static final ClusterBlock INDEX_READ_BLOCK = new ClusterBlock(7, "index read (api)", false, false, RestStatus.FORBIDDEN, EnumSet.of(ClusterBlockLevel.READ));
+    public static final ClusterBlock INDEX_WRITE_BLOCK = new ClusterBlock(8, "index write (api)", false, false, RestStatus.FORBIDDEN, EnumSet.of(ClusterBlockLevel.WRITE));
+    public static final ClusterBlock INDEX_METADATA_BLOCK = new ClusterBlock(9, "index metadata (api)", false, false, RestStatus.FORBIDDEN, EnumSet.of(ClusterBlockLevel.METADATA));
 
     public static enum State {
         OPEN((byte) 0),
@@ -138,7 +139,7 @@ public class IndexMetaData {
             } else if (id == 1) {
                 return CLOSE;
             }
-            throw new ElasticSearchIllegalStateException("No state match for id [" + id + "]");
+            throw new ElasticsearchIllegalStateException("No state match for id [" + id + "]");
         }
 
         public static State fromString(String state) {
@@ -147,7 +148,7 @@ public class IndexMetaData {
             } else if ("close".equals(state)) {
                 return CLOSE;
             }
-            throw new ElasticSearchIllegalStateException("No state match for [" + state + "]");
+            throw new ElasticsearchIllegalStateException("No state match for [" + state + "]");
         }
     }
 
@@ -335,6 +336,7 @@ public class IndexMetaData {
         return this.customs;
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Custom> T custom(String type) {
         return (T) customs.get(type);
     }
@@ -476,11 +478,8 @@ public class IndexMetaData {
         }
 
         public Builder putMapping(String type, String source) throws IOException {
-            XContentParser parser = XContentFactory.xContent(source).createParser(source);
-            try {
+            try (XContentParser parser = XContentFactory.xContent(source).createParser(source)) {
                 putMapping(new MappingMetaData(type, parser.mapOrdered()));
-            } finally {
-                parser.close();
             }
             return this;
         }
@@ -505,7 +504,7 @@ public class IndexMetaData {
             return this;
         }
 
-        public Builder removerAlias(String alias) {
+        public Builder removeAlias(String alias) {
             aliases.remove(alias);
             return this;
         }

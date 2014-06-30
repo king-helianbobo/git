@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action.support.nodes;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.action.NoSuchNodeException;
@@ -91,7 +91,7 @@ public abstract class TransportNodesOperationAction<Request extends NodesOperati
 
     protected abstract NodeResponse newNodeResponse();
 
-    protected abstract NodeResponse nodeOperation(NodeRequest request) throws ElasticSearchException;
+    protected abstract NodeResponse nodeOperation(NodeRequest request) throws ElasticsearchException;
 
     protected abstract boolean accumulateExceptions();
 
@@ -114,7 +114,7 @@ public abstract class TransportNodesOperationAction<Request extends NodesOperati
             clusterState = clusterService.state();
             String[] nodesIds = clusterState.nodes().resolveNodesIds(request.nodesIds());
             this.nodesIds = filterNodeIds(clusterState.nodes(), nodesIds);
-            this.responses = new AtomicReferenceArray<Object>(this.nodesIds.length);
+            this.responses = new AtomicReferenceArray<>(this.nodesIds.length);
         }
 
         private void start() {
@@ -163,6 +163,8 @@ public abstract class TransportNodesOperationAction<Request extends NodesOperati
                     } else {
                         if (node == null) {
                             onFailure(idx, nodeId, new NoSuchNodeException(nodeId));
+                        } else if (!clusterService.localNode().shouldConnectTo(node)) {
+                            onFailure(idx, nodeId, new NodeShouldNotConnectException(clusterService.localNode(), node));
                         } else {
                             NodeRequest nodeRequest = newNodeRequest(nodeId, request);
                             transportService.sendRequest(node, transportNodeAction, nodeRequest, transportRequestOptions, new BaseTransportResponseHandler<NodeResponse>() {
@@ -202,7 +204,7 @@ public abstract class TransportNodesOperationAction<Request extends NodesOperati
         }
 
         private void onFailure(int idx, String nodeId, Throwable t) {
-            if (logger.isDebugEnabled()) {
+            if (logger.isDebugEnabled() && !(t instanceof NodeShouldNotConnectException)) {
                 logger.debug("failed to execute on node [{}]", t, nodeId);
             }
             if (accumulateExceptions()) {

@@ -2,7 +2,8 @@
 == Suggesters
 
 The suggest feature suggests similar looking terms based on a provided
-text by using a suggester.
+text by using a suggester. Parts of the suggest feature are still under
+development.
 
 The suggest request part is either defined alongside the query part in a
 `_search` request or via the REST `_suggest` endpoint.
@@ -16,7 +17,7 @@ curl -s -XPOST 'localhost:9200/_search' -d '{
   "suggest" : {
     ...
   }
-}'
+}' 
 --------------------------------------------------
 
 Suggest requests executed against the `_suggest` endpoint should omit
@@ -77,11 +78,11 @@ in the suggest text and if found an arbitrary number of options.
         "options": [
            ...
         ]
-      },
-      ...
+      },     
+      ...       
     ],
     "my-suggest-2" : [
-      ...
+      ... 
     ]
   }
   ...
@@ -102,7 +103,7 @@ term suggester's score is based on the edit distance.
     "score": 0.8888889
   },
   ...
-]
+]  
 --------------------------------------------------
 
 [float]
@@ -135,7 +136,7 @@ suggestion specific option. The suggest text specified on suggestion
 level override the suggest text on the global level.
 
 [float]
-=== Other suggest example.
+=== Other suggest example
 
 In the below example we request suggestions for the following suggest
 text: `devloping distibutd saerch engies` on the `title` field with a
@@ -153,7 +154,7 @@ curl -s -XPOST 'localhost:9200/_search?search_type=count' -d '{
       "text" : "devloping distibutd saerch engies",
       "term" : {
         "size" : 3,
-        "field" : "title"
+        "field" : "title"  
       }
     }
   }
@@ -270,5 +271,7 @@ include::suggesters/term-suggest.asciidoc[]
 include::suggesters/phrase-suggest.asciidoc[]
 
 include::suggesters/completion-suggest.asciidoc[]
+
+include::suggesters/context-suggest.asciidoc[]
 
 

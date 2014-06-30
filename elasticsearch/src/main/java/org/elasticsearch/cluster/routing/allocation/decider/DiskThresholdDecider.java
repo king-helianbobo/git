@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,16 +19,16 @@
 
 package org.elasticsearch.cluster.routing.allocation.decider;
 
-import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.cluster.ClusterInfo;
 import org.elasticsearch.cluster.DiskUsage;
 import org.elasticsearch.cluster.routing.RoutingNode;
 import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.cluster.routing.allocation.RoutingAllocation;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.unit.RatioValue;
 import org.elasticsearch.node.settings.NodeSettingsService;
 
 import java.util.Map;
@@ -60,6 +60,8 @@ import static org.elasticsearch.cluster.InternalClusterInfoService.shardIdentifi
  */
 public class DiskThresholdDecider extends AllocationDecider {
 
+    public static final String NAME = "disk_threshold";
+
     private volatile Double freeDiskThresholdLow;
     private volatile Double freeDiskThresholdHigh;
     private volatile ByteSizeValue freeBytesThresholdLow;
@@ -84,7 +86,7 @@ public class DiskThresholdDecider extends AllocationDecider {
             }
             if (newLowWatermark != null) {
                 if (!validWatermarkSetting(newLowWatermark)) {
-                    throw new ElasticSearchParseException("Unable to parse low watermark: [" + newLowWatermark + "]");
+                    throw new ElasticsearchParseException("Unable to parse low watermark: [" + newLowWatermark + "]");
                 }
                 logger.info("updating [{}] to [{}]", CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, newLowWatermark);
                 DiskThresholdDecider.this.freeDiskThresholdLow = 100.0 - thresholdPercentageFromWatermark(newLowWatermark);
@@ -92,7 +94,7 @@ public class DiskThresholdDecider extends AllocationDecider {
             }
             if (newHighWatermark != null) {
                 if (!validWatermarkSetting(newHighWatermark)) {
-                    throw new ElasticSearchParseException("Unable to parse high watermark: [" + newHighWatermark + "]");
+                    throw new ElasticsearchParseException("Unable to parse high watermark: [" + newHighWatermark + "]");
                 }
                 logger.info("updating [{}] to [{}]", CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, newHighWatermark);
                 DiskThresholdDecider.this.freeDiskThresholdHigh = 100.0 - thresholdPercentageFromWatermark(newHighWatermark);
@@ -101,25 +103,21 @@ public class DiskThresholdDecider extends AllocationDecider {
         }
     }
 
-    public DiskThresholdDecider() {
-        this(ImmutableSettings.Builder.EMPTY_SETTINGS);
-    }
-
     public DiskThresholdDecider(Settings settings) {
         this(settings, new NodeSettingsService(settings));
     }
 
     @Inject
-    protected DiskThresholdDecider(Settings settings, NodeSettingsService nodeSettingsService) {
+    public DiskThresholdDecider(Settings settings, NodeSettingsService nodeSettingsService) {
         super(settings);
-        String lowWatermark = settings.get(CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, "0.7");
-        String highWatermark = settings.get(CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, "0.85");
+        String lowWatermark = settings.get(CLUSTER_ROUTING_ALLOCATION_LOW_DISK_WATERMARK, "70%");
+        String highWatermark = settings.get(CLUSTER_ROUTING_ALLOCATION_HIGH_DISK_WATERMARK, "85%");
 
         if (!validWatermarkSetting(lowWatermark)) {
-            throw new ElasticSearchParseException("Unable to parse low watermark: [" + lowWatermark + "]");
+            throw new ElasticsearchParseException("Unable to parse low watermark: [" + lowWatermark + "]");
         }
         if (!validWatermarkSetting(highWatermark)) {
-            throw new ElasticSearchParseException("Unable to parse high watermark: [" + highWatermark + "]");
+            throw new ElasticsearchParseException("Unable to parse high watermark: [" + highWatermark + "]");
         }
         // Watermark is expressed in terms of used data, but we need "free" data watermark
         this.freeDiskThresholdLow = 100.0 - thresholdPercentageFromWatermark(lowWatermark);
@@ -134,11 +132,11 @@ public class DiskThresholdDecider extends AllocationDecider {
 
     public Decision canAllocate(ShardRouting shardRouting, RoutingNode node, RoutingAllocation allocation) {
         if (!enabled) {
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "disk threshold decider disabled");
         }
         // Allow allocation regardless if only a single node is available
         if (allocation.nodes().size() <= 1) {
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "only a single node is present");
         }
 
         ClusterInfo clusterInfo = allocation.clusterInfo();
@@ -146,7 +144,7 @@ public class DiskThresholdDecider extends AllocationDecider {
             if (logger.isTraceEnabled()) {
                 logger.trace("Cluster info unavailable for disk threshold decider, allowing allocation.");
             }
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "cluster info unavailable");
         }
 
         Map<String, DiskUsage> usages = clusterInfo.getNodeDiskUsages();
@@ -155,7 +153,7 @@ public class DiskThresholdDecider extends AllocationDecider {
             if (logger.isTraceEnabled()) {
                 logger.trace("Unable to determine disk usages for disk-aware allocation, allowing allocation");
             }
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "disk usages unavailable");
         }
 
         DiskUsage usage = usages.get(node.nodeId());
@@ -180,14 +178,16 @@ public class DiskThresholdDecider extends AllocationDecider {
                 logger.debug("Less than the required {} free bytes threshold ({} bytes free) on node {}, preventing allocation",
                         freeBytesThresholdLow, freeBytes, node.nodeId());
             }
-            return Decision.NO;
+            return allocation.decision(Decision.NO, NAME, "less than required [%s] free on node, free: [%s]",
+                    freeBytesThresholdLow, new ByteSizeValue(freeBytes));
         }
         if (freeDiskPercentage < freeDiskThresholdLow) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Less than the required {}% free disk threshold ({}% free) on node [{}], preventing allocation",
                         freeDiskThresholdLow, freeDiskPercentage, node.nodeId());
             }
-            return Decision.NO;
+            return allocation.decision(Decision.NO, NAME, "less than required [%s%%] free disk on node, free: [%s%%]",
+                    freeDiskThresholdLow, freeDiskThresholdLow);
         }
 
         // Secondly, check that allocating the shard to this node doesn't put it above the high watermark
@@ -198,24 +198,26 @@ public class DiskThresholdDecider extends AllocationDecider {
         if (freeBytesAfterShard < freeBytesThresholdHigh.bytes()) {
             logger.warn("After allocating, node [{}] would have less than the required {} free bytes threshold ({} bytes free), preventing allocation",
                     node.nodeId(), freeBytesThresholdHigh, freeBytesAfterShard);
-            return Decision.NO;
+            return allocation.decision(Decision.NO, NAME, "after allocation less than required [%s] free on node, free: [%s]",
+                    freeBytesThresholdLow, new ByteSizeValue(freeBytesAfterShard));
         }
         if (freeSpaceAfterShard < freeDiskThresholdHigh) {
             logger.warn("After allocating, node [{}] would have less than the required {}% free disk threshold ({}% free), preventing allocation",
                     node.nodeId(), freeDiskThresholdHigh, freeSpaceAfterShard);
-            return Decision.NO;
+            return allocation.decision(Decision.NO, NAME, "after allocation less than required [%s%%] free disk on node, free: [%s%%]",
+                    freeDiskThresholdLow, freeSpaceAfterShard);
         }
 
-        return Decision.YES;
+        return allocation.decision(Decision.YES, NAME, "enough disk for shard on node, free: [%s]", new ByteSizeValue(freeBytes));
     }
 
     public Decision canRemain(ShardRouting shardRouting, RoutingNode node, RoutingAllocation allocation) {
         if (!enabled) {
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "disk threshold decider disabled");
         }
         // Allow allocation regardless if only a single node is available
         if (allocation.nodes().size() <= 1) {
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "only a single node is present");
         }
 
         ClusterInfo clusterInfo = allocation.clusterInfo();
@@ -223,7 +225,7 @@ public class DiskThresholdDecider extends AllocationDecider {
             if (logger.isTraceEnabled()) {
                 logger.trace("Cluster info unavailable for disk threshold decider, allowing allocation.");
             }
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "cluster info unavailable");
         }
 
         Map<String, DiskUsage> usages = clusterInfo.getNodeDiskUsages();
@@ -231,7 +233,7 @@ public class DiskThresholdDecider extends AllocationDecider {
             if (logger.isTraceEnabled()) {
                 logger.trace("Unable to determine disk usages for disk-aware allocation, allowing allocation");
             }
-            return Decision.YES;
+            return allocation.decision(Decision.YES, NAME, "disk usages unavailable");
         }
 
         DiskUsage usage = usages.get(node.nodeId());
@@ -256,17 +258,19 @@ public class DiskThresholdDecider extends AllocationDecider {
                 logger.debug("Less than the required {} free bytes threshold ({} bytes free) on node {}, shard cannot remain",
                         freeBytesThresholdHigh, freeBytes, node.nodeId());
             }
-            return Decision.NO;
+            return allocation.decision(Decision.NO, NAME, "after allocation less than required [%s] free on node, free: [%s]",
+                    freeBytesThresholdHigh, new ByteSizeValue(freeBytes));
         }
         if (freeDiskPercentage < freeDiskThresholdHigh) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Less than the required {}% free disk threshold ({}% free) on node {}, shard cannot remain",
                         freeDiskThresholdHigh, freeDiskPercentage, node.nodeId());
             }
-            return Decision.NO;
+            return allocation.decision(Decision.NO, NAME, "after allocation less than required [%s%%] free disk on node, free: [%s%%]",
+                    freeDiskThresholdHigh, freeDiskPercentage);
         }
 
-        return Decision.YES;
+        return allocation.decision(Decision.YES, NAME, "enough disk for shard to remain on node, free: [%s]", new ByteSizeValue(freeBytes));
     }
 
     /**
@@ -304,8 +308,8 @@ public class DiskThresholdDecider extends AllocationDecider {
      */
     public double thresholdPercentageFromWatermark(String watermark) {
         try {
-            return 100.0 * Double.parseDouble(watermark);
-        } catch (NumberFormatException ex) {
+            return RatioValue.parseRatioValue(watermark).getAsPercent();
+        } catch (ElasticsearchParseException ex) {
             return 100.0;
         }
     }
@@ -317,7 +321,7 @@ public class DiskThresholdDecider extends AllocationDecider {
     public ByteSizeValue thresholdBytesFromWatermark(String watermark) {
         try {
             return ByteSizeValue.parseBytesSizeValue(watermark);
-        } catch (ElasticSearchParseException ex) {
+        } catch (ElasticsearchParseException ex) {
             return ByteSizeValue.parseBytesSizeValue("0b");
         }
     }
@@ -328,16 +332,13 @@ public class DiskThresholdDecider extends AllocationDecider {
      */
     public boolean validWatermarkSetting(String watermark) {
         try {
-            double w = Double.parseDouble(watermark);
-            if (w < 0 || w > 1.0) {
-                return false;
-            }
+            RatioValue.parseRatioValue(watermark);
             return true;
-        } catch (NumberFormatException e) {
+        } catch (ElasticsearchParseException e) {
             try {
                 ByteSizeValue.parseBytesSizeValue(watermark);
                 return true;
-            } catch (ElasticSearchParseException ex) {
+            } catch (ElasticsearchParseException ex) {
                 return false;
             }
         }

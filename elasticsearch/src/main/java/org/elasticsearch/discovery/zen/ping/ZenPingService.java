@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,8 +20,8 @@
 package org.elasticsearch.discovery.zen.ping;
 
 import com.google.common.collect.ImmutableList;
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -93,7 +93,7 @@ public class ZenPingService extends AbstractLifecycleComponent<ZenPing> implemen
     @Override
     public void setNodesProvider(DiscoveryNodesProvider nodesProvider) {
         if (lifecycle.started()) {
-            throw new ElasticSearchIllegalStateException("Can't set nodes provider when started");
+            throw new ElasticsearchIllegalStateException("Can't set nodes provider when started");
         }
         for (ZenPing zenPing : zenPings) {
             zenPing.setNodesProvider(nodesProvider);
@@ -101,28 +101,28 @@ public class ZenPingService extends AbstractLifecycleComponent<ZenPing> implemen
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
         for (ZenPing zenPing : zenPings) {
             zenPing.start();
         }
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
         for (ZenPing zenPing : zenPings) {
             zenPing.stop();
         }
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
         for (ZenPing zenPing : zenPings) {
             zenPing.close();
         }
     }
 
     public PingResponse[] pingAndWait(TimeValue timeout) {
-        final AtomicReference<PingResponse[]> response = new AtomicReference<PingResponse[]>();
+        final AtomicReference<PingResponse[]> response = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         ping(new PingListener() {
             @Override
@@ -141,7 +141,7 @@ public class ZenPingService extends AbstractLifecycleComponent<ZenPing> implemen
     }
 
     @Override
-    public void ping(PingListener listener, TimeValue timeout) throws ElasticSearchException {
+    public void ping(PingListener listener, TimeValue timeout) throws ElasticsearchException {
         ImmutableList<? extends ZenPing> zenPings = this.zenPings;
         CompoundPingListener compoundPingListener = new CompoundPingListener(listener, zenPings);
         for (ZenPing zenPing : zenPings) {

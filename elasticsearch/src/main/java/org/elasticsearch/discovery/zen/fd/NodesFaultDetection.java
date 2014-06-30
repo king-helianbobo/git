@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.discovery.zen.fd;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.cluster.node.DiscoveryNodes;
 import org.elasticsearch.common.component.AbstractComponent;
@@ -66,7 +66,7 @@ public class NodesFaultDetection extends AbstractComponent {
     private final boolean registerConnectionListener;
 
 
-    private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<Listener>();
+    private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
 
     private final ConcurrentMap<DiscoveryNode, NodeFD> nodesFD = newConcurrentMap();
 
@@ -292,7 +292,7 @@ public class NodesFaultDetection extends AbstractComponent {
             // if we are not the node we are supposed to be pinged, send an exception
             // this can happen when a kill -9 is sent, and another node is started using the same port
             if (!latestNodes.localNodeId().equals(request.nodeId)) {
-                throw new ElasticSearchIllegalStateException("Got pinged as node [" + request.nodeId + "], but I am node [" + latestNodes.localNodeId() + "]");
+                throw new ElasticsearchIllegalStateException("Got pinged as node [" + request.nodeId + "], but I am node [" + latestNodes.localNodeId() + "]");
             }
             channel.sendResponse(new PingResponse());
         }

@@ -19,8 +19,8 @@ optional_source\n
 
 *NOTE*: the final line of data must end with a newline character `\n`.
 
-The possible actions are `index`, `create`, `delete` and since version
-`0.90.1` also `update`. `index` and `create` expect a source on the next
+The possible actions are `index`, `create`, `delete` and `update`. 
+`index` and `create` expect a source on the next
 line, and have the same semantics as the `op_type` parameter to the
 standard index API (i.e. create will fail if a document with the same
 index and type exists already, whereas index will add or replace a
@@ -39,7 +39,7 @@ $ cat requests
 { "index" : { "_index" : "test", "_type" : "type1", "_id" : "1" } }
 { "field1" : "value1" }
 $ curl -s -XPOST localhost:9200/_bulk --data-binary @requests; echo
-{"took":7,"items":[{"create":{"_index":"test","_type":"type1","_id":"1","_version":1,"ok":true}}]}
+{"took":7,"items":[{"create":{"_index":"test","_type":"type1","_id":"1","_version":1}}]}
 --------------------------------------------------
 
 Because this format uses literal `\n`'s as delimiters, please be sure
@@ -60,7 +60,7 @@ example of a correct sequence of bulk commands:
 In the above example `doc` for the `update` action is a partial
 document, that will be merged with the already stored document.
 
-The endpoints are `/_bulk`, `/{index}/_bulk`, and `{index}/type/_bulk`.
+The endpoints are `/_bulk`, `/{index}/_bulk`, and `{index}/{type}/_bulk`.
 When the index or the index/type are provided, they will be used by
 default on bulk items that don't provide them explicitly.
 
@@ -91,8 +91,7 @@ chunks, as this will slow things down.
 Each bulk item can include the version value using the
 `_version`/`version` field. It automatically follows the behavior of the
 index / delete operation based on the `_version` mapping. It also
-support the `version_type`/`_version_type` when using `external`
-versioning.
+support the `version_type`/`_version_type` (see <<index-versioning, versioning>>)
 
 [float]
 [[bulk-routing]]
@@ -101,13 +100,6 @@ versioning.
 Each bulk item can include the routing value using the
 `_routing`/`routing` field. It automatically follows the behavior of the
 index / delete operation based on the `_routing` mapping.
-
-[float]
-[[percolator]]
-=== Percolator
-
-Each bulk index action can include a percolate value using the
-`_percolate`/`percolate` field.
 
 [float]
 [[bulk-parent]]

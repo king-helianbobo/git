@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,13 +20,15 @@
 package org.elasticsearch.plugins;
 
 import com.google.common.base.Strings;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchTimeoutException;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.http.client.HttpDownloadHelper;
 import org.elasticsearch.common.io.FileSystemUtils;
 import org.elasticsearch.common.io.Streams;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
 
@@ -60,15 +62,20 @@ public class PluginManager {
         DEFAULT, SILENT, VERBOSE
     }
 
+    // By default timeout is 0 which means no timeout
+    public static final TimeValue DEFAULT_TIMEOUT = TimeValue.timeValueMillis(0);
+
     private final Environment environment;
 
     private String url;
     private OutputMode outputMode;
+    private TimeValue timeout;
 
-    public PluginManager(Environment environment, String url, OutputMode outputMode) {
+    public PluginManager(Environment environment, String url, OutputMode outputMode, TimeValue timeout) {
         this.environment = environment;
         this.url = url;
         this.outputMode = outputMode;
+        this.timeout = timeout;
 
         TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
@@ -124,9 +131,11 @@ public class PluginManager {
             URL pluginUrl = new URL(url);
             log("Trying " + pluginUrl.toExternalForm() + "...");
             try {
-                downloadHelper.download(pluginUrl, pluginFile, progress);
+                downloadHelper.download(pluginUrl, pluginFile, progress, this.timeout);
                 downloaded = true;
-            } catch (IOException e) {
+            } catch (ElasticsearchTimeoutException e) {
+                throw e;
+            } catch (Exception e) {
                 // ignore
                 log("Failed: " + ExceptionsHelper.detailedMessage(e));
             }
@@ -137,9 +146,11 @@ public class PluginManager {
             for (URL url : pluginHandle.urls()) {
                 log("Trying " + url.toExternalForm() + "...");
                 try {
-                    downloadHelper.download(url, pluginFile, progress);
+                    downloadHelper.download(url, pluginFile, progress, this.timeout);
                     downloaded = true;
                     break;
+                } catch (ElasticsearchTimeoutException e) {
+                    throw e;
                 } catch (Exception e) {
                     debug("Failed: " + ExceptionsHelper.detailedMessage(e));
                 }
@@ -224,7 +235,7 @@ public class PluginManager {
         boolean removed = false;
 
         if (Strings.isNullOrEmpty(pluginHandle.name)) {
-            throw new ElasticSearchIllegalArgumentException("plugin name is incorrect");
+            throw new ElasticsearchIllegalArgumentException("plugin name is incorrect");
         }
 
         File pluginToDelete = pluginHandle.extractedDir(environment);
@@ -273,7 +284,7 @@ public class PluginManager {
         //We don't rely on ZipEntry#isDirectory because it might be that there is no explicit dir
         //but the files path do contain dirs, thus they are going to be extracted on sub-folders anyway
         Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
-        Set<String> topLevelDirNames = new HashSet<String>();
+        Set<String> topLevelDirNames = new HashSet<>();
         while (zipEntries.hasMoreElements()) {
             ZipEntry zipEntry = zipEntries.nextElement();
             String zipEntryName = zipEntry.getName().replace('\\', '/');
@@ -308,6 +319,7 @@ public class PluginManager {
         String url = null;
         OutputMode outputMode = OutputMode.DEFAULT;
         String pluginName = null;
+        TimeValue timeout = DEFAULT_TIMEOUT;
         int action = ACTION.NONE;
 
         if (args.length < 1) {
@@ -332,7 +344,9 @@ public class PluginManager {
                         || command.equals("install") || command.equals("-install")) {
                     pluginName = args[++c];
                     action = ACTION.INSTALL;
-
+                } else if (command.equals("-t") || command.equals("--timeout")
+                        || command.equals("timeout") || command.equals("-timeout")) {
+                    timeout = TimeValue.parseTimeValue(args[++c], DEFAULT_TIMEOUT);
                 } else if (command.equals("-r") || command.equals("--remove")
                         // Deprecated commands
                         || command.equals("remove") || command.equals("-remove")) {
@@ -357,7 +371,7 @@ public class PluginManager {
 
         if (action > ACTION.NONE) {
             int exitCode = EXIT_CODE_ERROR; // we fail unless it's reset
-            PluginManager pluginManager = new PluginManager(initialSettings.v2(), url, outputMode);
+            PluginManager pluginManager = new PluginManager(initialSettings.v2(), url, outputMode, timeout);
             switch (action) {
                 case ACTION.INSTALL:
                     try {
@@ -378,7 +392,7 @@ public class PluginManager {
                         pluginManager.log("-> Removing " + pluginName + " ");
                         pluginManager.removePlugin(pluginName);
                         exitCode = EXIT_CODE_OK;
-                    } catch (ElasticSearchIllegalArgumentException e) {
+                    } catch (ElasticsearchIllegalArgumentException e) {
                         exitCode = EXIT_CODE_CMD_USAGE;
                         pluginManager.log("Failed to remove " + pluginName + ", reason: " + e.getMessage());
                     } catch (IOException e) {
@@ -413,6 +427,7 @@ public class PluginManager {
         System.out.println("Usage:");
         System.out.println("    -u, --url     [plugin location]   : Set exact URL to download the plugin from");
         System.out.println("    -i, --install [plugin name]       : Downloads and installs listed plugins [*]");
+        System.out.println("    -t, --timeout [duration]          : Timeout setting: 30s, 1m, 1h... (infinite by default)");
         System.out.println("    -r, --remove  [plugin name]       : Removes listed plugins");
         System.out.println("    -l, --list                        : List installed plugins");
         System.out.println("    -v, --verbose                     : Prints verbose messages");
@@ -458,7 +473,7 @@ public class PluginManager {
         }
 
         List<URL> urls() {
-            List<URL> urls = new ArrayList<URL>();
+            List<URL> urls = new ArrayList<>();
             if (version != null) {
                 // Elasticsearch download service
                 addUrl(urls, "http://download.elasticsearch.org/" + user + "/" + repo + "/" + repo + "-" + version + ".zip");
@@ -476,7 +491,6 @@ public class PluginManager {
 
         private static void addUrl(List<URL> urls, String url) {
             try {
-                URL _url = new URL(url);
                 urls.add(new URL(url));
             } catch (MalformedURLException e) {
                 // We simply ignore malformed URL

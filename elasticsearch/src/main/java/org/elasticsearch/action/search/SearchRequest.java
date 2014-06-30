@@ -1,11 +1,11 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this 
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,11 +19,12 @@
 
 package org.elasticsearch.action.search;
 
-import org.elasticsearch.ElasticSearchGenerationException;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchGenerationException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.ActionRequestValidationException;
-import org.elasticsearch.action.support.IgnoreIndices;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
@@ -34,11 +35,11 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.elasticsearch.search.Scroll.readScroll;
@@ -58,8 +59,6 @@ import static org.elasticsearch.search.Scroll.readScroll;
  */
 public class SearchRequest extends ActionRequest<SearchRequest> {
 
-    private static final XContentType contentType = Requests.CONTENT_TYPE;
-
     private SearchType searchType = SearchType.DEFAULT;
 
     private String[] indices;
@@ -68,6 +67,11 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
     private String routing;
     @Nullable
     private String preference;
+
+    private BytesReference templateSource;
+    private boolean templateSourceUnsafe;
+    private String templateName;
+    private Map<String, String> templateParams = Collections.emptyMap();
 
     private BytesReference source;
     private boolean sourceUnsafe;
@@ -79,9 +83,7 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
 
     private String[] types = Strings.EMPTY_ARRAY;
 
-    private SearchOperationThreading operationThreading = SearchOperationThreading.THREAD_PER_SHARD;
-
-    private IgnoreIndices ignoreIndices = IgnoreIndices.DEFAULT;
+    private IndicesOptions indicesOptions = IndicesOptions.strictExpandOpen();
 
     public SearchRequest() {
     }
@@ -123,12 +125,10 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
             extraSource = extraSource.copyBytesArray();
             extraSourceUnsafe = false;
         }
-    }
-
-    /**
-     * Internal.
-     */
-    public void beforeLocalFork() {
+        if (templateSource != null && templateSourceUnsafe) {
+            templateSource = templateSource.copyBytesArray();
+            templateSourceUnsafe = false;
+        }
     }
 
     /**
@@ -136,11 +136,11 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
      */
     public SearchRequest indices(String... indices) {
         if (indices == null) {
-            throw new ElasticSearchIllegalArgumentException("indices must not be null");
+            throw new ElasticsearchIllegalArgumentException("indices must not be null");
         } else {
             for (int i = 0; i < indices.length; i++) {
                 if (indices[i] == null) {
-                    throw new ElasticSearchIllegalArgumentException("indices[" + i +"] must not be null");
+                    throw new ElasticsearchIllegalArgumentException("indices[" + i +"] must not be null");
                 }
             }
         }
@@ -148,35 +148,12 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
         return this;
     }
 
-    /**
-     * Controls the the search operation threading model.
-     */
-    public SearchOperationThreading operationThreading() {
-        return this.operationThreading;
+    public IndicesOptions indicesOptions() {
+        return indicesOptions;
     }
 
-    /**
-     * Controls the the search operation threading model.
-     */
-    public SearchRequest operationThreading(SearchOperationThreading operationThreading) {
-        this.operationThreading = operationThreading;
-        return this;
-    }
-
-    /**
-     * Sets the string representation of the operation threading model. Can be one of
-     * "no_threads", "single_thread" and "thread_per_shard".
-     */
-    public SearchRequest operationThreading(String operationThreading) {
-        return operationThreading(SearchOperationThreading.fromString(operationThreading, this.operationThreading));
-    }
-
-    public IgnoreIndices ignoreIndices() {
-        return ignoreIndices;
-    }
-
-    public SearchRequest ignoreIndices(IgnoreIndices ignoreIndices) {
-        this.ignoreIndices = ignoreIndices;
+    public SearchRequest indicesOptions(IndicesOptions indicesOptions) {
+        this.indicesOptions = indicesOptions;
         return this;
     }
 
@@ -247,7 +224,7 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
      * one of "dfs_query_then_fetch"/"dfsQueryThenFetch", "dfs_query_and_fetch"/"dfsQueryAndFetch",
      * "query_then_fetch"/"queryThenFetch", and "query_and_fetch"/"queryAndFetch".
      */
-    public SearchRequest searchType(String searchType) throws ElasticSearchIllegalArgumentException {
+    public SearchRequest searchType(String searchType) throws ElasticsearchIllegalArgumentException {
         return searchType(SearchType.fromString(searchType));
     }
 
@@ -255,7 +232,7 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
      * The source of the search request.
      */
     public SearchRequest source(SearchSourceBuilder sourceBuilder) {
-        this.source = sourceBuilder.buildAsBytes(contentType);
+        this.source = sourceBuilder.buildAsBytes(Requests.CONTENT_TYPE);
         this.sourceUnsafe = false;
         return this;
     }
@@ -275,11 +252,11 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
      */
     public SearchRequest source(Map source) {
         try {
-            XContentBuilder builder = XContentFactory.contentBuilder(contentType);
+            XContentBuilder builder = XContentFactory.contentBuilder(Requests.CONTENT_TYPE);
             builder.map(source);
             return source(builder);
         } catch (IOException e) {
-            throw new ElasticSearchGenerationException("Failed to generate [" + source + "]", e);
+            throw new ElasticsearchGenerationException("Failed to generate [" + source + "]", e);
         }
     }
 
@@ -328,6 +305,13 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
     }
 
     /**
+     * The search source template to execute.
+     */
+    public BytesReference templateSource() {
+        return templateSource;
+    }
+
+    /**
      * Allows to provide additional source that will be used as well.
      */
     public SearchRequest extraSource(SearchSourceBuilder sourceBuilder) {
@@ -335,18 +319,18 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
             extraSource = null;
             return this;
         }
-        this.extraSource = sourceBuilder.buildAsBytes(contentType);
+        this.extraSource = sourceBuilder.buildAsBytes(Requests.CONTENT_TYPE);
         this.extraSourceUnsafe = false;
         return this;
     }
 
     public SearchRequest extraSource(Map extraSource) {
         try {
-            XContentBuilder builder = XContentFactory.contentBuilder(contentType);
+            XContentBuilder builder = XContentFactory.contentBuilder(Requests.CONTENT_TYPE);
             builder.map(extraSource);
             return extraSource(builder);
         } catch (IOException e) {
-            throw new ElasticSearchGenerationException("Failed to generate [" + source + "]", e);
+            throw new ElasticsearchGenerationException("Failed to generate [" + source + "]", e);
         }
     }
 
@@ -393,6 +377,52 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
         this.extraSource = source;
         this.extraSourceUnsafe = unsafe;
         return this;
+    }
+
+    /**
+     * Allows to provide template as source.
+     */
+    public SearchRequest templateSource(BytesReference template, boolean unsafe) {
+        this.templateSource = template;
+        this.templateSourceUnsafe = unsafe;
+        return this;
+    }
+
+    /**
+     * The template of the search request.
+     */
+    public SearchRequest templateSource(String template) {
+        this.templateSource = new BytesArray(template);
+        this.templateSourceUnsafe = false;
+        return this;
+    }
+
+    /**
+     * The name of the stored template
+     */
+    public void templateName(String name) {
+        this.templateName = name;
+    }
+
+    /**
+     * Template parameters used for rendering
+     */
+    public void templateParams(Map<String, String> params) {
+        this.templateParams = params;
+    }
+
+    /**
+     * The name of the stored template
+     */
+    public String templateName() {
+        return templateName;
+    }
+
+    /**
+     * Template parameters used for rendering
+     */
+    public Map<String, String> templateParams() {
+        return templateParams;
     }
 
     /**
@@ -448,7 +478,9 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        operationThreading = SearchOperationThreading.fromId(in.readByte());
+        if (in.getVersion().before(Version.V_1_2_0)) {
+            in.readByte(); // backward comp. for operation threading
+        }
         searchType = SearchType.fromId(in.readByte());
 
         indices = new String[in.readVInt()];
@@ -470,13 +502,24 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
         extraSource = in.readBytesReference();
 
         types = in.readStringArray();
-        ignoreIndices = IgnoreIndices.fromId(in.readByte());
+        indicesOptions = IndicesOptions.readIndicesOptions(in);
+
+        if (in.getVersion().onOrAfter(Version.V_1_1_0)) {
+            templateSourceUnsafe = false;
+            templateSource = in.readBytesReference();
+            templateName =  in.readOptionalString();
+            if (in.readBoolean()) {
+                templateParams = (Map<String, String>) in.readGenericValue();
+            }
+        }
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeByte(operationThreading.id());
+        if (out.getVersion().before(Version.V_1_2_0)) {
+            out.writeByte((byte) 2); // operation threading
+        }
         out.writeByte(searchType.id());
 
         out.writeVInt(indices.length);
@@ -496,6 +539,17 @@ public class SearchRequest extends ActionRequest<SearchRequest> {
         out.writeBytesReference(source);
         out.writeBytesReference(extraSource);
         out.writeStringArray(types);
-        out.writeByte(ignoreIndices.id());
+        indicesOptions.writeIndicesOptions(out);
+
+        if (out.getVersion().onOrAfter(Version.V_1_1_0)) {
+            out.writeBytesReference(templateSource);
+            out.writeOptionalString(templateName);
+
+            boolean existTemplateParams = templateParams != null;
+            out.writeBoolean(existTemplateParams);
+            if (existTemplateParams) {
+                out.writeGenericValue(templateParams);
+            }
+        }
     }
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -58,14 +58,14 @@ public class PartialFieldsParseElement implements SearchParseElement {
                     } else if (token == XContentParser.Token.START_ARRAY) {
                         if ("includes".equals(currentFieldName) || "include".equals(currentFieldName)) {
                             if (includes == null) {
-                                includes = new ArrayList<String>(2);
+                                includes = new ArrayList<>(2);
                             }
                             while ((token = parser.nextToken()) != XContentParser.Token.END_ARRAY) {
                                 includes.add(parser.text());
                             }
                         } else if ("excludes".equals(currentFieldName) || "exclude".equals(currentFieldName)) {
                             if (excludes == null) {
-                                excludes = new ArrayList<String>(2);
+                                excludes = new ArrayList<>(2);
                             }
                             while ((token = parser.nextToken()) != XContentParser.Token.END_ARRAY) {
                                 excludes.add(parser.text());
@@ -74,12 +74,12 @@ public class PartialFieldsParseElement implements SearchParseElement {
                     } else if (token.isValue()) {
                         if ("include".equals(currentFieldName)) {
                             if (includes == null) {
-                                includes = new ArrayList<String>(2);
+                                includes = new ArrayList<>(2);
                             }
                             includes.add(parser.text());
                         } else if ("exclude".equals(currentFieldName)) {
                             if (excludes == null) {
-                                excludes = new ArrayList<String>(2);
+                                excludes = new ArrayList<>(2);
                             }
                             excludes.add(parser.text());
                         }

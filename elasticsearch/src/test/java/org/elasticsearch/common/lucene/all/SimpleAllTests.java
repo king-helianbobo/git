@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -317,5 +317,26 @@ public class SimpleAllTests extends ElasticsearchTestCase {
         assertThat(docs.scoreDocs[1].doc, equalTo(1));
 
         indexWriter.close();
+    }
+
+    @Test
+    public void testNoTokensWithKeywordAnalyzer() throws Exception {
+        Directory dir = new RAMDirectory();
+        IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(Lucene.VERSION, Lucene.KEYWORD_ANALYZER));
+
+        Document doc = new Document();
+        doc.add(new Field("_id", "1", StoredField.TYPE));
+        AllEntries allEntries = new AllEntries();
+        allEntries.reset();
+        doc.add(new TextField("_all", AllTokenStream.allTokenStream("_all", allEntries, Lucene.KEYWORD_ANALYZER)));
+
+        indexWriter.addDocument(doc);
+
+        IndexReader reader = DirectoryReader.open(indexWriter, true);
+        IndexSearcher searcher = new IndexSearcher(reader);
+
+        TopDocs docs = searcher.search(new MatchAllDocsQuery(), 10);
+        assertThat(docs.totalHits, equalTo(1));
+        assertThat(docs.scoreDocs[0].doc, equalTo(0));
     }
 }

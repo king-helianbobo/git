@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,10 +26,13 @@ import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.GeoUtils;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.Matchers.*;
 
 /**
@@ -250,6 +253,17 @@ public class GeoUtilsTests extends ElasticsearchTestCase {
             qNode = qNode.getSubCells(null).iterator().next();
         }
     }
+
+    @Test
+    public void testTryParsingLatLonFromString() throws Exception {
+        XContentBuilder builder = jsonBuilder().startObject().field("lat", "52").field("lon", "4").endObject();
+        XContentParser parser = XContentHelper.createParser(builder.bytes());
+        parser.nextToken();
+        GeoPoint geoPoint = GeoUtils.parseGeoPoint(parser);
+        assertThat(geoPoint.lat(), is(52.0));
+        assertThat(geoPoint.lon(), is(4.0));
+    }
+
 
     private static void assertNormalizedPoint(GeoPoint input, GeoPoint expected) {
         GeoUtils.normalizePoint(input);

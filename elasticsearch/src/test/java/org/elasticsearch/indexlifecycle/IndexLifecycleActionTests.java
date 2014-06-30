@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,6 +20,9 @@
 package org.elasticsearch.indexlifecycle;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
@@ -27,16 +30,15 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.routing.RoutingNode;
+import org.elasticsearch.cluster.routing.RoutingNodes;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.discovery.Discovery;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
-import org.elasticsearch.test.ElasticsearchIntegrationTest.Scope;
 import org.elasticsearch.test.TestCluster;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.Set;
 
 import static org.elasticsearch.client.Requests.*;
@@ -44,13 +46,14 @@ import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF
 import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_SHARDS;
 import static org.elasticsearch.cluster.routing.ShardRoutingState.*;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
 import static org.hamcrest.Matchers.*;
 
 
 /**
  *
  */
-@ClusterScope(scope=Scope.TEST, numNodes=0)
+@ClusterScope(scope = Scope.TEST, numDataNodes = 0)
 public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
 
     @Slow
@@ -89,7 +92,7 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(clusterHealth.getStatus(), equalTo(ClusterHealthStatus.YELLOW));
 
         ClusterState clusterState = client().admin().cluster().prepareState().get().getState();
-        RoutingNode routingNodeEntry1 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node1);
+        RoutingNode routingNodeEntry1 = clusterState.readOnlyRoutingNodes().node(node1);
         assertThat(routingNodeEntry1.numberOfShardsWithState(STARTED), equalTo(11));
 
         logger.info("Starting server2");
@@ -102,9 +105,8 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         logger.info("Done Cluster Health, status " + clusterHealth.getStatus());
         assertThat(clusterHealth.isTimedOut(), equalTo(false));
         assertThat(clusterHealth.getStatus(), equalTo(ClusterHealthStatus.GREEN));
-
+        setMinimumMasterNodes(2);
         final String node2 = getLocalNodeId(server_2);
-
 
         // explicitly call reroute, so shards will get relocated to the new node (we delay it in ES in case other nodes join)
         client().admin().cluster().prepareReroute().execute().actionGet();
@@ -121,11 +123,11 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
 
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node1, node2);
-        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node1);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node1, node2);
+        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().node(node1);
         assertThat(routingNodeEntry1.numberOfShardsWithState(RELOCATING), equalTo(0));
         assertThat(routingNodeEntry1.numberOfShardsWithState(STARTED), equalTo(11));
-        RoutingNode routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
+        RoutingNode routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
         assertThat(routingNodeEntry2.numberOfShardsWithState(INITIALIZING), equalTo(0));
         assertThat(routingNodeEntry2.numberOfShardsWithState(STARTED), equalTo(11));
 
@@ -157,11 +159,11 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
 
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node1, node2, node3);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node1, node2, node3);
 
-        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node1);
-        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
-        RoutingNode routingNodeEntry3 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node3);
+        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().node(node1);
+        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
+        RoutingNode routingNodeEntry3 = clusterState.readOnlyRoutingNodes().node(node3);
 
         assertThat(routingNodeEntry1.numberOfShardsWithState(STARTED) + routingNodeEntry2.numberOfShardsWithState(STARTED) + routingNodeEntry3.numberOfShardsWithState(STARTED), equalTo(22));
 
@@ -174,9 +176,6 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(routingNodeEntry3.numberOfShardsWithState(INITIALIZING), equalTo(0));
         assertThat(routingNodeEntry3.numberOfShardsWithState(STARTED), equalTo(7));
 
-        client().admin().cluster().prepareUpdateSettings().setTransientSettings(settingsBuilder()
-                .put("discovery.zen.minimum_master_nodes", 2)) // we are shutting down a node - make sure we don't have 2 clusters if we test network
-                .get();
         logger.info("Closing server1");
         // kill the first server
         cluster().stopRandomNode(TestCluster.nameFilter(server_1));
@@ -197,9 +196,9 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(clusterHealth.getActivePrimaryShards(), equalTo(11));
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node3, node2);
-        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
-        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node3);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node3, node2);
+        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
+        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().node(node3);
 
         assertThat(routingNodeEntry2.numberOfShardsWithState(STARTED) + routingNodeEntry3.numberOfShardsWithState(STARTED), equalTo(22));
 
@@ -216,12 +215,12 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(deleteIndexResponse.isAcknowledged(), equalTo(true));
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node3, node2);
-        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
-        assertThat(routingNodeEntry2.shards().isEmpty(), equalTo(true));
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node3, node2);
+        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
+        assertThat(routingNodeEntry2.isEmpty(), equalTo(true));
 
-        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node3);
-        assertThat(routingNodeEntry3.shards().isEmpty(), equalTo(true));
+        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().node(node3);
+        assertThat(routingNodeEntry3.isEmpty(), equalTo(true));
     }
 
     private String getLocalNodeId(String name) {
@@ -230,7 +229,7 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(nodeId, not(nullValue()));
         return nodeId;
     }
-    
+
     @Slow
     @Nightly
     @Test
@@ -262,8 +261,8 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(clusterHealth.getActivePrimaryShards(), equalTo(11));
 
         ClusterState clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node1);
-        RoutingNode routingNodeEntry1 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node1);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node1);
+        RoutingNode routingNodeEntry1 = clusterState.readOnlyRoutingNodes().node(node1);
         assertThat(routingNodeEntry1.numberOfShardsWithState(STARTED), equalTo(11));
 
         // start another server
@@ -274,7 +273,7 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         clusterHealth = client().admin().cluster().health(clusterHealthRequest().waitForGreenStatus().waitForNodes("2")).actionGet();
         assertThat(clusterHealth.isTimedOut(), equalTo(false));
         assertThat(clusterHealth.getStatus(), equalTo(ClusterHealthStatus.GREEN));
-
+        setMinimumMasterNodes(2);
         final String node2 = getLocalNodeId(server_2);
 
         // explicitly call reroute, so shards will get relocated to the new node (we delay it in ES in case other nodes join)
@@ -292,11 +291,11 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
 
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node1, node2);
-        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node1);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node1, node2);
+        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().node(node1);
         assertThat(routingNodeEntry1.numberOfShardsWithState(RELOCATING), equalTo(0));
         assertThat(routingNodeEntry1.numberOfShardsWithState(STARTED), anyOf(equalTo(6), equalTo(5)));
-        RoutingNode routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
+        RoutingNode routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
         assertThat(routingNodeEntry2.numberOfShardsWithState(INITIALIZING), equalTo(0));
         assertThat(routingNodeEntry2.numberOfShardsWithState(STARTED), anyOf(equalTo(5), equalTo(6)));
 
@@ -325,10 +324,10 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
 
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node1, node2, node3);
-        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node1);
-        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
-        RoutingNode routingNodeEntry3 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node3);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node1, node2, node3);
+        routingNodeEntry1 = clusterState.readOnlyRoutingNodes().node(node1);
+        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
+        RoutingNode routingNodeEntry3 = clusterState.readOnlyRoutingNodes().node(node3);
 
         assertThat(routingNodeEntry1.numberOfShardsWithState(STARTED) + routingNodeEntry2.numberOfShardsWithState(STARTED) + routingNodeEntry3.numberOfShardsWithState(STARTED), equalTo(11));
 
@@ -341,9 +340,6 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(routingNodeEntry3.numberOfShardsWithState(INITIALIZING), equalTo(0));
         assertThat(routingNodeEntry3.numberOfShardsWithState(STARTED), equalTo(3));
 
-        client().admin().cluster().prepareUpdateSettings().setTransientSettings(settingsBuilder()
-                .put("discovery.zen.minimum_master_nodes", 2)) // we are shutting down a node - make sure we don't have 2 clusters if we test network
-                .get();
         logger.info("Closing server1");
         // kill the first server
         cluster().stopRandomNode(TestCluster.nameFilter(server_1));
@@ -366,10 +362,10 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(clusterHealth.getActivePrimaryShards(), equalTo(11));
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node3, node2);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node3, node2);
 
-        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
-        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node3);
+        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
+        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().node(node3);
 
         assertThat(routingNodeEntry2.numberOfShardsWithState(STARTED) + routingNodeEntry3.numberOfShardsWithState(STARTED), equalTo(11));
 
@@ -387,17 +383,22 @@ public class IndexLifecycleActionTests extends ElasticsearchIntegrationTest {
         assertThat(deleteIndexResponse.isAcknowledged(), equalTo(true));
 
         clusterState = client().admin().cluster().prepareState().get().getState();
-        assertNodesPresent(clusterState.readOnlyRoutingNodes().nodesToShards(), node3, node2);
+        assertNodesPresent(clusterState.readOnlyRoutingNodes(), node3, node2);
 
-        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node2);
-        assertThat(routingNodeEntry2.shards().isEmpty(), equalTo(true));
+        routingNodeEntry2 = clusterState.readOnlyRoutingNodes().node(node2);
+        assertThat(routingNodeEntry2.isEmpty(), equalTo(true));
 
-        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().nodesToShards().get(node3);
-        assertThat(routingNodeEntry3.shards().isEmpty(), equalTo(true));
+        routingNodeEntry3 = clusterState.readOnlyRoutingNodes().node(node3);
+        assertThat(routingNodeEntry3.isEmpty(), equalTo(true));
     }
 
-    private void assertNodesPresent(Map<String, ?> nodesToShards, String...nodes) {
-        Set<String> keySet = nodesToShards.keySet();
+    private void assertNodesPresent(RoutingNodes routingNodes, String... nodes) {
+        final Set<String> keySet = Sets.newHashSet(Iterables.transform(routingNodes, new Function<RoutingNode, String>() {
+            @Override
+            public String apply(RoutingNode input) {
+                return input.nodeId();
+            }
+        }));
         assertThat(keySet, containsInAnyOrder(nodes));
     }
 }

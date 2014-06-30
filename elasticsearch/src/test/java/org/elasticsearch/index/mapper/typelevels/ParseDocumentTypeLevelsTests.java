@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -26,9 +26,7 @@ import org.elasticsearch.index.mapper.ParsedDocument;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
 
 /**
  *
@@ -68,9 +66,9 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .endObject().endObject()
                 .bytes());
 
-        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
-        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
-        assertThat(doc.rootDoc().get("inner.inner_field"), equalTo("inner_value"));
+        assertThat(doc.rootDoc().get("type.test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("type.test2"), equalTo("value2"));
+        assertThat(doc.rootDoc().get("type.inner.inner_field"), equalTo("inner_value"));
     }
 
     @Test
@@ -109,10 +107,10 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .endObject().endObject()
                 .bytes());
 
-        assertThat(doc.rootDoc().get("type"), equalTo("value_type"));
-        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
-        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
-        assertThat(doc.rootDoc().get("inner.inner_field"), equalTo("inner_value"));
+        assertThat(doc.rootDoc().get("type.type"), equalTo("value_type"));
+        assertThat(doc.rootDoc().get("type.test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("type.test2"), equalTo("value2"));
+        assertThat(doc.rootDoc().get("type.inner.inner_field"), equalTo("inner_value"));
     }
 
     @Test
@@ -131,9 +129,9 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .bytes());
 
         // in this case, we analyze the type object as the actual document, and ignore the other same level fields
-        assertThat(doc.rootDoc().get("type_field"), equalTo("type_value"));
-        assertThat(doc.rootDoc().get("test1"), nullValue());
-        assertThat(doc.rootDoc().get("test2"), nullValue());
+        assertThat(doc.rootDoc().get("type.type_field"), equalTo("type_value"));
+        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
     }
 
     @Test
@@ -151,10 +149,10 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .endObject().endObject()
                 .bytes());
 
-        assertThat(doc.rootDoc().get("type.type_field"), equalTo("type_value"));
-        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
-        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
-        assertThat(doc.rootDoc().get("inner.inner_field"), equalTo("inner_value"));
+        assertThat(doc.rootDoc().get("type.type.type_field"), equalTo("type_value"));
+        assertThat(doc.rootDoc().get("type.test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("type.test2"), equalTo("value2"));
+        assertThat(doc.rootDoc().get("type.inner.inner_field"), equalTo("inner_value"));
     }
 
     @Test
@@ -172,10 +170,10 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .endObject().endObject()
                 .bytes());
 
-        assertThat(doc.rootDoc().get("type"), equalTo("value_type"));
-        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
-        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
-        assertThat(doc.rootDoc().get("inner.inner_field"), equalTo("inner_value"));
+        assertThat(doc.rootDoc().get("type.type"), equalTo("value_type"));
+        assertThat(doc.rootDoc().get("type.test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("type.test2"), equalTo("value2"));
+        assertThat(doc.rootDoc().get("type.inner.inner_field"), equalTo("inner_value"));
     }
 
     @Test
@@ -193,10 +191,10 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .endObject().endObject()
                 .bytes());
 
-        assertThat(doc.rootDoc().get("type"), equalTo("value_type"));
-        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
-        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
-        assertThat(doc.rootDoc().get("inner.inner_field"), equalTo("inner_value"));
+        assertThat(doc.rootDoc().get("type.type"), equalTo("value_type"));
+        assertThat(doc.rootDoc().get("type.test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("type.test2"), equalTo("value2"));
+        assertThat(doc.rootDoc().get("type.inner.inner_field"), equalTo("inner_value"));
     }
 
     @Test
@@ -236,9 +234,9 @@ public class ParseDocumentTypeLevelsTests extends ElasticsearchTestCase {
                 .endObject().endObject()
                 .bytes());
 
-        assertThat(doc.rootDoc().get("type.type_field"), equalTo("type_value"));
-        assertThat(doc.rootDoc().get("test1"), equalTo("value1"));
-        assertThat(doc.rootDoc().get("test2"), equalTo("value2"));
-        assertThat(doc.rootDoc().get("inner.inner_field"), equalTo("inner_value"));
+        assertThat(doc.rootDoc().get("type.type.type_field"), equalTo("type_value"));
+        assertThat(doc.rootDoc().get("type.test1"), equalTo("value1"));
+        assertThat(doc.rootDoc().get("type.test2"), equalTo("value2"));
+        assertThat(doc.rootDoc().get("type.inner.inner_field"), equalTo("inner_value"));
     }
 }

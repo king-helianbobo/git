@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -27,7 +27,9 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.engine.DocumentMissingException;
+import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.junit.Test;
 
@@ -38,6 +40,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertThrows;
 import static org.hamcrest.Matchers.*;
 
 public class UpdateTests extends ElasticsearchIntegrationTest {
@@ -45,6 +48,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
 
     protected void createIndex() throws Exception {
         logger.info("--> creating index test");
+
         client().admin().indices().prepareCreate("test")
                 .addMapping("type1", XContentFactory.jsonBuilder()
                         .startObject()
@@ -138,6 +142,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
                 .setUpsert(XContentFactory.jsonBuilder().startObject().field("field", 1).endObject())
                 .setScript("ctx._source.field += 1")
                 .execute().actionGet();
+        assertTrue(updateResponse.isCreated());
 
         for (int i = 0; i < 5; i++) {
             GetResponse getResponse = client().prepareGet("test", "type1", "1").execute().actionGet();
@@ -148,6 +153,8 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
                 .setUpsert(XContentFactory.jsonBuilder().startObject().field("field", 1).endObject())
                 .setScript("ctx._source.field += 1")
                 .execute().actionGet();
+        assertFalse(updateResponse.isCreated());
+
 
         for (int i = 0; i < 5; i++) {
             GetResponse getResponse = client().prepareGet("test", "type1", "1").execute().actionGet();
@@ -169,17 +176,17 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
         assertThat(updateResponse.getGetResult().sourceAsMap().get("bar").toString(), equalTo("baz"));
     }
 
-    @Test(expected = DocumentMissingException.class)
+    @Test
     // See: https://github.com/elasticsearch/elasticsearch/issues/3265
     public void testNotUpsertDoc() throws Exception {
         createIndex();
         ensureGreen();
 
-        client().prepareUpdate("test", "type1", "1")
+        assertThrows(client().prepareUpdate("test", "type1", "1")
                 .setDoc(XContentFactory.jsonBuilder().startObject().field("bar", "baz").endObject())
                 .setDocAsUpsert(false)
                 .setFields("_source")
-                .execute().actionGet();
+                .execute(), DocumentMissingException.class);
     }
 
     @Test
@@ -208,6 +215,56 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
         assertThat(updateResponse.getGetResult().sourceAsMap().get("extra").toString(), equalTo("foo"));
     }
 
+    @Test
+    public void testVersionedUpdate() throws Exception {
+        createIndex("test");
+        ensureGreen();
+
+        index("test", "type", "1", "text", "value"); // version is now 1
+
+        assertThrows(client().prepareUpdate("test", "type", "1").setScript("ctx._source.text = 'v2'").setVersion(2).execute(),
+                VersionConflictEngineException.class);
+
+        client().prepareUpdate("test", "type", "1").setScript("ctx._source.text = 'v2'").setVersion(1).get();
+        assertThat(client().prepareGet("test", "type", "1").get().getVersion(), equalTo(2l));
+
+        // and again with a higher version..
+        client().prepareUpdate("test", "type", "1").setScript("ctx._source.text = 'v3'").setVersion(2).get();
+
+        assertThat(client().prepareGet("test", "type", "1").get().getVersion(), equalTo(3l));
+
+        // after delete
+        client().prepareDelete("test", "type", "1").get();
+        assertThrows(client().prepareUpdate("test", "type", "1").setScript("ctx._source.text = 'v2'").setVersion(3).execute(),
+                DocumentMissingException.class);
+
+        // external versioning
+        client().prepareIndex("test", "type", "2").setSource("text", "value").setVersion(10).setVersionType(VersionType.EXTERNAL).get();
+        assertThrows(client().prepareUpdate("test", "type", "2").setScript("ctx._source.text = 'v2'").setVersion(2).setVersionType(VersionType.EXTERNAL).execute(),
+                ActionRequestValidationException.class);
+
+
+        // upserts - the combination with versions is a bit weird. Test are here to ensure we do not change our behavior unintentionally
+
+        // With internal versions, tt means "if object is there with version X, update it or explode. If it is not there, index.
+        client().prepareUpdate("test", "type", "3").setScript("ctx._source.text = 'v2'").setVersion(10).setUpsert("{ \"text\": \"v0\" }").get();
+        GetResponse get = get("test", "type", "3");
+        assertThat(get.getVersion(), equalTo(1l));
+        assertThat((String) get.getSource().get("text"), equalTo("v0"));
+
+        // With force version
+        client().prepareUpdate("test", "type", "4").setScript("ctx._source.text = 'v2'").
+                setVersion(10).setVersionType(VersionType.FORCE).setUpsert("{ \"text\": \"v0\" }").get();
+        get = get("test", "type", "4");
+        assertThat(get.getVersion(), equalTo(10l));
+        assertThat((String) get.getSource().get("text"), equalTo("v0"));
+
+
+        // retry on conflict is rejected:
+
+        assertThrows(client().prepareUpdate("test", "type", "1").setVersion(10).setRetryOnConflict(5), ActionRequestValidationException.class);
+
+    }
 
     @Test
     public void testIndexAutoCreation() throws Exception {
@@ -229,7 +286,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
 
         try {
             client().prepareUpdate("test", "type1", "1").setScript("ctx._source.field++").execute().actionGet();
-            assert false;
+            fail();
         } catch (DocumentMissingException e) {
             // all is well
         }
@@ -238,6 +295,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
 
         UpdateResponse updateResponse = client().prepareUpdate("test", "type1", "1").setScript("ctx._source.field += 1").execute().actionGet();
         assertThat(updateResponse.getVersion(), equalTo(2L));
+        assertFalse(updateResponse.isCreated());
 
         for (int i = 0; i < 5; i++) {
             GetResponse getResponse = client().prepareGet("test", "type1", "1").execute().actionGet();
@@ -246,6 +304,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
 
         updateResponse = client().prepareUpdate("test", "type1", "1").setScript("ctx._source.field += count").addScriptParam("count", 3).execute().actionGet();
         assertThat(updateResponse.getVersion(), equalTo(3L));
+        assertFalse(updateResponse.isCreated());
 
         for (int i = 0; i < 5; i++) {
             GetResponse getResponse = client().prepareGet("test", "type1", "1").execute().actionGet();
@@ -255,6 +314,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
         // check noop
         updateResponse = client().prepareUpdate("test", "type1", "1").setScript("ctx.op = 'none'").execute().actionGet();
         assertThat(updateResponse.getVersion(), equalTo(3L));
+        assertFalse(updateResponse.isCreated());
 
         for (int i = 0; i < 5; i++) {
             GetResponse getResponse = client().prepareGet("test", "type1", "1").execute().actionGet();
@@ -264,25 +324,12 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
         // check delete
         updateResponse = client().prepareUpdate("test", "type1", "1").setScript("ctx.op = 'delete'").execute().actionGet();
         assertThat(updateResponse.getVersion(), equalTo(4L));
+        assertFalse(updateResponse.isCreated());
 
         for (int i = 0; i < 5; i++) {
             GetResponse getResponse = client().prepareGet("test", "type1", "1").execute().actionGet();
             assertThat(getResponse.isExists(), equalTo(false));
         }
-
-        // check percolation
-        // disable for now, need to chase up... (not supported in master...)
-//        client().prepareIndex("test", "type1", "1").setSource("field", 1).execute().actionGet();
-//        logger.info("--> register a query");
-//        client().prepareIndex("_percolator", "test", "1")
-//                .setSource(jsonBuilder().startObject()
-//                        .field("query", termQuery("field", 2))
-//                        .endObject())
-//                .setRefresh(true)
-//                .execute().actionGet();
-//        ensureGreen();
-//        updateResponse = client().prepareUpdate("test", "type1", "1").setScript("ctx._source.field += 1").setPercolate("*").execute().actionGet();
-//        assertThat(updateResponse.getMatches().size(), equalTo(1));
 
         // check TTL is kept after an update without TTL
         client().prepareIndex("test", "type1", "2").setSource("field", 1).setTTL(86400000L).setRefresh(true).execute().actionGet();
@@ -334,9 +381,9 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
         }
 
         // recursive map
-        Map<String, Object> testMap = new HashMap<String, Object>();
-        Map<String, Object> testMap2 = new HashMap<String, Object>();
-        Map<String, Object> testMap3 = new HashMap<String, Object>();
+        Map<String, Object> testMap = new HashMap<>();
+        Map<String, Object> testMap2 = new HashMap<>();
+        Map<String, Object> testMap3 = new HashMap<>();
         testMap3.put("commonkey", testMap);
         testMap3.put("map3", 5);
         testMap2.put("map2", 6);
@@ -402,16 +449,18 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
         createIndex();
         ensureGreen();
 
-        int numberOfThreads = between(2, 5);
+        int numberOfThreads = scaledRandomIntBetween(2,5);
         final CountDownLatch latch = new CountDownLatch(numberOfThreads);
-        final int numberOfUpdatesPerThread = between(1000, 10000);
-        final List<Throwable> failures = new CopyOnWriteArrayList<Throwable>();
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        final int numberOfUpdatesPerThread = scaledRandomIntBetween(100, 10000);
+        final List<Throwable> failures = new CopyOnWriteArrayList<>();
         for (int i = 0; i < numberOfThreads; i++) {
             Runnable r = new Runnable() {
 
                 @Override
                 public void run() {
                     try {
+                        startLatch.await();
                         for (int i = 0; i < numberOfUpdatesPerThread; i++) {
                             if (useBulkApi) {
                                 UpdateRequestBuilder updateRequestBuilder = client().prepareUpdate("test", "type1", Integer.toString(i))
@@ -436,6 +485,7 @@ public class UpdateTests extends ElasticsearchIntegrationTest {
             };
             new Thread(r).start();
         }
+        startLatch.countDown();
         latch.await();
         for (Throwable throwable : failures) {
             logger.info("Captured failure on concurrent update:", throwable);

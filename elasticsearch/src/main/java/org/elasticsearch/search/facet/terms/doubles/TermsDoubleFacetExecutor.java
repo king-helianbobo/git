@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.search.facet.terms.doubles;
 
 import com.carrotsearch.hppc.DoubleIntOpenHashMap;
@@ -102,7 +101,7 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
     @Override
     public InternalFacet buildFacet(String facetName) {
         if (facets.v().isEmpty()) {
-            facets.release();
+            facets.close();
             return new InternalDoubleTermsFacet(facetName, comparatorType, size, ImmutableList.<InternalDoubleTermsFacet.DoubleEntry>of(), missing, total);
         } else {
             final boolean[] states = facets.v().allocated;
@@ -119,16 +118,16 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
                 for (int i = ordered.size() - 1; i >= 0; i--) {
                     list[i] = (InternalDoubleTermsFacet.DoubleEntry) ordered.pop();
                 }
-                facets.release();
+                facets.close();
                 return new InternalDoubleTermsFacet(facetName, comparatorType, size, Arrays.asList(list), missing, total);
             } else {
-                BoundedTreeSet<InternalDoubleTermsFacet.DoubleEntry> ordered = new BoundedTreeSet<InternalDoubleTermsFacet.DoubleEntry>(comparatorType.comparator(), shardSize);
+                BoundedTreeSet<InternalDoubleTermsFacet.DoubleEntry> ordered = new BoundedTreeSet<>(comparatorType.comparator(), shardSize);
                 for (int i = 0; i < states.length; i++) {
                     if (states[i]) {
                         ordered.add(new InternalDoubleTermsFacet.DoubleEntry(keys[i], values[i]));
                     }
                 }
-                facets.release();
+                facets.close();
                 return new InternalDoubleTermsFacet(facetName, comparatorType, size, ordered, missing, total);
             }
         }

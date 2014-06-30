@@ -52,17 +52,21 @@ Further instructions for specific projects are given below.
 Once your changes and tests are ready to submit for review:
 
 1. Test your changes
-Run the test suite to make sure that nothing is broken. See the
+
+    Run the test suite to make sure that nothing is broken. See the
 [TESTING](TESTING.asciidoc) file for help running tests.
 
 2. Sign the Contributor License Agreement
-Please make sure you have signed our [Contributor License Agreement](http://www.elasticsearch.org/contributor-agreement/). We are not asking you to assign copyright to us, but to give us the right to distribute your code without restriction. We ask this of all contributors in order to assure our users of the origin and continuing existence of the code. You only need to sign the CLA once.
+
+    Please make sure you have signed our [Contributor License Agreement](http://www.elasticsearch.org/contributor-agreement/). We are not asking you to assign copyright to us, but to give us the right to distribute your code without restriction. We ask this of all contributors in order to assure our users of the origin and continuing existence of the code. You only need to sign the CLA once.
 
 3. Rebase your changes
-Update your local repository with the most recent code from the main Elasticsearch repository, and rebase your branch on top of the latest master branch. We prefer your changes to be squashed into a single commit.
+
+    Update your local repository with the most recent code from the main Elasticsearch repository, and rebase your branch on top of the latest master branch. We prefer your changes to be squashed into a single commit.
 
 4. Submit a pull request
-Push your local changes to your forked copy of the repository and [submit a pull request](https://help.github.com/articles/using-pull-requests). In the pull request, describe what your changes do and mention the number of the issue where discussion has taken place, eg "Closes #123".
+
+    Push your local changes to your forked copy of the repository and [submit a pull request](https://help.github.com/articles/using-pull-requests). In the pull request, describe what your changes do and mention the number of the issue where discussion has taken place, eg "Closes #123".
 
 Then sit back and wait. There will probably be discussion about the pull request and, if any changes are needed, we would love to work with you to get your pull request merged into Elasticsearch.
 
@@ -82,6 +86,7 @@ Please follow these formatting guidelines:
 * Line width is 140 characters
 * The rest is left to Java coding standards
 * Disable “auto-format on save” to prevent unnecessary format changes. This makes reviews much harder as it generates unnecessary formatting changes. If your IDE supports formatting only modified chunks that is fine to do.
+* Don't worry too much about imports.  Try not to change the order but don't worry about fighting your IDE to stop it from switching from * imports to specific imports or from specific to * imports.
 
 To create a distribution from the source, simply run:
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,30 +19,40 @@
 
 package org.elasticsearch.routing;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.RoutingMissingException;
+import org.elasticsearch.action.explain.ExplainResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetResponse;
+import org.elasticsearch.action.termvector.MultiTermVectorsResponse;
+import org.elasticsearch.action.termvector.TermVectorRequest;
+import org.elasticsearch.action.termvector.TermVectorResponse;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Requests;
-import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.mapper.MapperParsingException;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.junit.Test;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.*;
 
 /**
  *
  */
 public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
-   
-    
+
+    @Override
+    protected int minimumNumberOfShards() {
+        return 2;
+    }
+
     @Test
     public void testSimpleCrudRouting() throws Exception {
         createIndex("test");
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         logger.info("--> indexing with id [1], and routing [0]");
         client().prepareIndex("test", "type1", "1").setRouting("0").setSource("field", "value1").setRefresh(true).execute().actionGet();
@@ -100,7 +110,7 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
     @Test
     public void testSimpleSearchRouting() {
         createIndex("test");
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         logger.info("--> indexing with id [1], and routing [0]");
         client().prepareIndex("test", "type1", "1").setRouting("0").setSource("field", "value1").setRefresh(true).execute().actionGet();
@@ -169,17 +179,17 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
         client().admin().indices().prepareCreate("test")
                 .addMapping("type1", XContentFactory.jsonBuilder().startObject().startObject("type1").startObject("_routing").field("required", true).endObject().endObject().endObject())
                 .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         logger.info("--> indexing with id [1], and routing [0]");
         client().prepareIndex("test", "type1", "1").setRouting("0").setSource("field", "value1").setRefresh(true).execute().actionGet();
-        logger.info("--> verifying get with no routing, should not find anything");
+        logger.info("--> verifying get with no routing, should fail");
 
         logger.info("--> indexing with id [1], with no routing, should fail");
         try {
             client().prepareIndex("test", "type1", "1").setSource("field", "value1").setRefresh(true).execute().actionGet();
-            assert false;
-        } catch (ElasticSearchException e) {
+            fail();
+        } catch (ElasticsearchException e) {
             assertThat(e.unwrapCause(), instanceOf(RoutingMissingException.class));
         }
 
@@ -191,7 +201,13 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
         logger.info("--> deleting with no routing, should broadcast the delete since _routing is required");
         client().prepareDelete("test", "type1", "1").setRefresh(true).execute().actionGet();
         for (int i = 0; i < 5; i++) {
-            assertThat(client().prepareGet("test", "type1", "1").execute().actionGet().isExists(), equalTo(false));
+            try {
+                client().prepareGet("test", "type1", "1").execute().actionGet().isExists();
+                fail();
+            } catch (RoutingMissingException e) {
+                assertThat(e.status(), equalTo(RestStatus.BAD_REQUEST));
+                assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+            }
             assertThat(client().prepareGet("test", "type1", "1").setRouting("0").execute().actionGet().isExists(), equalTo(false));
         }
 
@@ -203,7 +219,13 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
         client().prepareBulk().add(Requests.deleteRequest("test").type("type1").id("1")).execute().actionGet();
         client().admin().indices().prepareRefresh().execute().actionGet();
         for (int i = 0; i < 5; i++) {
-            assertThat(client().prepareGet("test", "type1", "1").execute().actionGet().isExists(), equalTo(false));
+            try {
+                client().prepareGet("test", "type1", "1").execute().actionGet().isExists();
+                fail();
+            } catch (RoutingMissingException e) {
+                assertThat(e.status(), equalTo(RestStatus.BAD_REQUEST));
+                assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+            }
             assertThat(client().prepareGet("test", "type1", "1").setRouting("0").execute().actionGet().isExists(), equalTo(false));
         }
     }
@@ -212,10 +234,11 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
     public void testRequiredRoutingWithPathMapping() throws Exception {
         client().admin().indices().prepareCreate("test")
                 .addMapping("type1", XContentFactory.jsonBuilder().startObject().startObject("type1")
-                        .startObject("_routing").field("required", true).field("path", "routing_field").endObject()
+                        .startObject("_routing").field("required", true).field("path", "routing_field").endObject().startObject("properties")
+                        .startObject("routing_field").field("type", "string").field("index", randomBoolean() ? "no" : "not_analyzed").field("doc_values", randomBoolean() ? "yes" : "no").endObject().endObject()
                         .endObject().endObject())
                 .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         logger.info("--> indexing with id [1], and routing [0]");
         client().prepareIndex("test", "type1", "1").setSource("field", "value1", "routing_field", "0").setRefresh(true).execute().actionGet();
@@ -223,15 +246,21 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
         logger.info("--> check failure with different routing");
         try {
             client().prepareIndex("test", "type1", "1").setRouting("1").setSource("field", "value1", "routing_field", "0").setRefresh(true).execute().actionGet();
-            assert false;
-        } catch (ElasticSearchException e) {
+            fail();
+        } catch (ElasticsearchException e) {
             assertThat(e.unwrapCause(), instanceOf(MapperParsingException.class));
         }
 
 
-        logger.info("--> verifying get with no routing, should not find anything");
+        logger.info("--> verifying get with no routing, should fail");
         for (int i = 0; i < 5; i++) {
-            assertThat(client().prepareGet("test", "type1", "1").execute().actionGet().isExists(), equalTo(false));
+            try {
+                client().prepareGet("test", "type1", "1").execute().actionGet().isExists();
+                fail();
+            } catch (RoutingMissingException e) {
+                assertThat(e.status(), equalTo(RestStatus.BAD_REQUEST));
+                assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+            }
         }
         logger.info("--> verifying get with routing, should find");
         for (int i = 0; i < 5; i++) {
@@ -246,16 +275,22 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
                         .startObject("_routing").field("required", true).field("path", "routing_field").endObject()
                         .endObject().endObject())
                 .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         logger.info("--> indexing with id [1], and routing [0]");
         client().prepareBulk().add(
                 client().prepareIndex("test", "type1", "1").setSource("field", "value1", "routing_field", "0")).execute().actionGet();
         client().admin().indices().prepareRefresh().execute().actionGet();
 
-        logger.info("--> verifying get with no routing, should not find anything");
+        logger.info("--> verifying get with no routing, should fail");
         for (int i = 0; i < 5; i++) {
-            assertThat(client().prepareGet("test", "type1", "1").execute().actionGet().isExists(), equalTo(false));
+            try {
+                client().prepareGet("test", "type1", "1").execute().actionGet().isExists();
+                fail();
+            } catch (RoutingMissingException e) {
+                assertThat(e.status(), equalTo(RestStatus.BAD_REQUEST));
+                assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+            }
         }
         logger.info("--> verifying get with routing, should find");
         for (int i = 0; i < 5; i++) {
@@ -271,19 +306,137 @@ public class SimpleRoutingTests extends ElasticsearchIntegrationTest {
                         .startObject("_routing").field("required", true).field("path", "routing_field").endObject()
                         .endObject().endObject())
                 .execute().actionGet();
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForGreenStatus().execute().actionGet();
+        ensureGreen();
 
         logger.info("--> indexing with id [1], and routing [0]");
         client().prepareIndex("test", "type1", "1").setSource("field", "value1", "routing_field", 0).execute().actionGet();
         client().admin().indices().prepareRefresh().execute().actionGet();
 
-        logger.info("--> verifying get with no routing, should not find anything");
+        logger.info("--> verifying get with no routing, should fail");
         for (int i = 0; i < 5; i++) {
-            assertThat(client().prepareGet("test", "type1", "1").execute().actionGet().isExists(), equalTo(false));
+            try {
+                client().prepareGet("test", "type1", "1").execute().actionGet().isExists();
+                fail();
+            } catch (RoutingMissingException e) {
+                assertThat(e.status(), equalTo(RestStatus.BAD_REQUEST));
+                assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+            }
         }
         logger.info("--> verifying get with routing, should find");
         for (int i = 0; i < 5; i++) {
             assertThat(client().prepareGet("test", "type1", "1").setRouting("0").execute().actionGet().isExists(), equalTo(true));
         }
+    }
+
+    @Test
+    public void testRequiredRoutingMapping_variousAPIs() throws Exception {
+        client().admin().indices().prepareCreate("test")
+                .addMapping("type1", XContentFactory.jsonBuilder().startObject().startObject("type1").startObject("_routing").field("required", true).endObject().endObject().endObject())
+                .execute().actionGet();
+        ensureGreen();
+
+        logger.info("--> indexing with id [1], and routing [0]");
+        client().prepareIndex("test", "type1", "1").setRouting("0").setSource("field", "value1").get();
+        logger.info("--> indexing with id [2], and routing [0]");
+        client().prepareIndex("test", "type1", "2").setRouting("0").setSource("field", "value2").setRefresh(true).get();
+
+        logger.info("--> verifying get with id [1] with routing [0], should succeed");
+        assertThat(client().prepareGet("test", "type1", "1").setRouting("0").execute().actionGet().isExists(), equalTo(true));
+
+        logger.info("--> verifying get with id [1], with no routing, should fail");
+        try {
+            client().prepareGet("test", "type1", "1").get();
+            fail();
+        } catch (RoutingMissingException e) {
+            assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+        }
+
+        logger.info("--> verifying explain with id [2], with routing [0], should succeed");
+        ExplainResponse explainResponse = client().prepareExplain("test", "type1", "2")
+                .setQuery(QueryBuilders.matchAllQuery())
+                .setRouting("0").get();
+        assertThat(explainResponse.isExists(), equalTo(true));
+        assertThat(explainResponse.isMatch(), equalTo(true));
+
+        logger.info("--> verifying explain with id [2], with no routing, should fail");
+        try {
+            client().prepareExplain("test", "type1", "2")
+                    .setQuery(QueryBuilders.matchAllQuery()).get();
+            fail();
+        } catch (RoutingMissingException e) {
+            assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[2]"));
+        }
+
+        logger.info("--> verifying term vector with id [1], with routing [0], should succeed");
+        TermVectorResponse termVectorResponse = client().prepareTermVector("test", "type1", "1").setRouting("0").get();
+        assertThat(termVectorResponse.isExists(), equalTo(true));
+        assertThat(termVectorResponse.getId(), equalTo("1"));
+
+        try {
+            client().prepareTermVector("test", "type1", "1").get();
+            fail();
+        } catch (RoutingMissingException e) {
+            assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+        }
+
+        UpdateResponse updateResponse = client().prepareUpdate("test", "type1", "1").setRouting("0")
+                .setDoc("field1", "value1").get();
+        assertThat(updateResponse.getId(), equalTo("1"));
+        assertThat(updateResponse.getVersion(), equalTo(2l));
+
+        try {
+            client().prepareUpdate("test", "type1", "1").setDoc("field1", "value1").get();
+            fail();
+        } catch (RoutingMissingException e) {
+            assertThat(e.getMessage(), equalTo("routing is required for [test]/[type1]/[1]"));
+        }
+
+        logger.info("--> verifying mget with ids [1,2], with routing [0], should succeed");
+        MultiGetResponse multiGetResponse = client().prepareMultiGet()
+                .add(new MultiGetRequest.Item("test", "type1", "1").routing("0"))
+                .add(new MultiGetRequest.Item("test", "type1", "2").routing("0")).get();
+        assertThat(multiGetResponse.getResponses().length, equalTo(2));
+        assertThat(multiGetResponse.getResponses()[0].isFailed(), equalTo(false));
+        assertThat(multiGetResponse.getResponses()[0].getResponse().getId(), equalTo("1"));
+        assertThat(multiGetResponse.getResponses()[1].isFailed(), equalTo(false));
+        assertThat(multiGetResponse.getResponses()[1].getResponse().getId(), equalTo("2"));
+
+        logger.info("--> verifying mget with ids [1,2], with no routing, should fail");
+        multiGetResponse = client().prepareMultiGet()
+                .add(new MultiGetRequest.Item("test", "type1", "1"))
+                .add(new MultiGetRequest.Item("test", "type1", "2")).get();
+        assertThat(multiGetResponse.getResponses().length, equalTo(2));
+        assertThat(multiGetResponse.getResponses()[0].isFailed(), equalTo(true));
+        assertThat(multiGetResponse.getResponses()[0].getFailure().getId(), equalTo("1"));
+        assertThat(multiGetResponse.getResponses()[0].getFailure().getMessage(), equalTo("routing is required, but hasn't been specified"));
+        assertThat(multiGetResponse.getResponses()[1].isFailed(), equalTo(true));
+        assertThat(multiGetResponse.getResponses()[1].getFailure().getId(), equalTo("2"));
+        assertThat(multiGetResponse.getResponses()[1].getFailure().getMessage(), equalTo("routing is required, but hasn't been specified"));
+
+        MultiTermVectorsResponse multiTermVectorsResponse = client().prepareMultiTermVectors()
+                .add(new TermVectorRequest("test", "type1", "1").routing("0"))
+                .add(new TermVectorRequest("test", "type1", "2").routing("0")).get();
+        assertThat(multiTermVectorsResponse.getResponses().length, equalTo(2));
+        assertThat(multiTermVectorsResponse.getResponses()[0].getId(), equalTo("1"));
+        assertThat(multiTermVectorsResponse.getResponses()[0].isFailed(), equalTo(false));
+        assertThat(multiTermVectorsResponse.getResponses()[0].getResponse().getId(), equalTo("1"));
+        assertThat(multiTermVectorsResponse.getResponses()[0].getResponse().isExists(), equalTo(true));
+        assertThat(multiTermVectorsResponse.getResponses()[1].getId(), equalTo("2"));
+        assertThat(multiTermVectorsResponse.getResponses()[1].isFailed(), equalTo(false));
+        assertThat(multiTermVectorsResponse.getResponses()[1].getResponse().getId(), equalTo("2"));
+        assertThat(multiTermVectorsResponse.getResponses()[1].getResponse().isExists(), equalTo(true));
+
+        multiTermVectorsResponse = client().prepareMultiTermVectors()
+                .add(new TermVectorRequest("test", "type1", "1"))
+                .add(new TermVectorRequest("test", "type1", "2")).get();
+        assertThat(multiTermVectorsResponse.getResponses().length, equalTo(2));
+        assertThat(multiTermVectorsResponse.getResponses()[0].getId(), equalTo("1"));
+        assertThat(multiTermVectorsResponse.getResponses()[0].isFailed(), equalTo(true));
+        assertThat(multiTermVectorsResponse.getResponses()[0].getFailure().getMessage(), equalTo("routing is required, but hasn't been specified"));
+        assertThat(multiTermVectorsResponse.getResponses()[0].getResponse(), nullValue());
+        assertThat(multiTermVectorsResponse.getResponses()[1].getId(), equalTo("2"));
+        assertThat(multiTermVectorsResponse.getResponses()[1].isFailed(), equalTo(true));
+        assertThat(multiTermVectorsResponse.getResponses()[1].getResponse(),nullValue());
+        assertThat(multiTermVectorsResponse.getResponses()[1].getFailure().getMessage(), equalTo("routing is required, but hasn't been specified"));
     }
 }

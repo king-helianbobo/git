@@ -1,3 +1,22 @@
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.elasticsearch.common.lucene.search;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
@@ -9,6 +28,7 @@ import org.apache.lucene.queries.FilterClause;
 import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.elasticsearch.common.lucene.Lucene;
 import org.elasticsearch.test.ElasticsearchLuceneTestCase;
@@ -41,7 +61,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
                 {'a', 'a', 'a', 'a', 'x'}
         };
 
-        List<Document> documents = new ArrayList<Document>(documentMatrix.length);
+        List<Document> documents = new ArrayList<>(documentMatrix.length);
         for (char[] fields : documentMatrix) {
             Document document = new Document();
             for (int i = 0; i < fields.length; i++) {
@@ -66,7 +86,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testWithTwoClausesOfEachOccur_allFixedBitsetFilters() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         booleanFilters.add(createBooleanFilter(
                 newFilterClause(0, 'a', MUST, false), newFilterClause(1, 'b', MUST, false),
                 newFilterClause(2, 'c', SHOULD, false), newFilterClause(3, 'd', SHOULD, false),
@@ -95,7 +115,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testWithTwoClausesOfEachOccur_allBitsBasedFilters() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         booleanFilters.add(createBooleanFilter(
                 newFilterClause(0, 'a', MUST, true), newFilterClause(1, 'b', MUST, true),
                 newFilterClause(2, 'c', SHOULD, true), newFilterClause(3, 'd', SHOULD, true),
@@ -124,7 +144,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testWithTwoClausesOfEachOccur_allFilterTypes() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         booleanFilters.add(createBooleanFilter(
                 newFilterClause(0, 'a', MUST, true), newFilterClause(1, 'b', MUST, false),
                 newFilterClause(2, 'c', SHOULD, true), newFilterClause(3, 'd', SHOULD, false),
@@ -179,7 +199,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testWithTwoClausesOfEachOccur_singleClauseOptimisation() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         booleanFilters.add(createBooleanFilter(
                 newFilterClause(1, 'b', MUST, true)
         ));
@@ -222,7 +242,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testOnlyShouldClauses() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         // 2 slow filters
         // This case caused: https://github.com/elasticsearch/elasticsearch/issues/2826
         booleanFilters.add(createBooleanFilter(
@@ -252,7 +272,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testOnlyMustClauses() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         // Slow filters
         booleanFilters.add(createBooleanFilter(
                 newFilterClause(3, 'd', MUST, true),
@@ -280,7 +300,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testOnlyMustNotClauses() throws Exception {
-        List<XBooleanFilter> booleanFilters = new ArrayList<XBooleanFilter>();
+        List<XBooleanFilter> booleanFilters = new ArrayList<>();
         // Slow filters
         booleanFilters.add(createBooleanFilter(
                 newFilterClause(1, 'a', MUST_NOT, true),
@@ -414,7 +434,7 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
 
     @Test
     public void testRandom() throws IOException {
-        int iterations = atLeast(400); // don't worry that is fast!
+        int iterations = scaledRandomIntBetween(100, 1000); // don't worry that is fast!
         for (int iter = 0; iter < iterations; iter++) {
             int numClauses = 1 + random().nextInt(10);
             FilterClause[] clauses = new FilterClause[numClauses];
@@ -433,21 +453,36 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
                     case 6:
                     case 5:
                         hasMust = true;
-                        clauses[i] = newFilterClause(field, value, MUST, random().nextBoolean());
-                        topLevel.add(new BooleanClause(new TermQuery(new Term(String.valueOf(field), String.valueOf(value))), MUST));
+                        if (rarely()) {
+                            clauses[i] = new FilterClause(new EmptyFilter(), MUST);
+                            topLevel.add(new BooleanClause(new MatchNoDocsQuery(), MUST));
+                        } else {
+                            clauses[i] = newFilterClause(field, value, MUST, random().nextBoolean());
+                            topLevel.add(new BooleanClause(new TermQuery(new Term(String.valueOf(field), String.valueOf(value))), MUST));
+                        }
                         break;
                     case 4:
                     case 3:
                     case 2:
                     case 1:
                         hasShould = true;
-                        clauses[i] = newFilterClause(field, value, SHOULD, random().nextBoolean());
-                        orQuery.add(new BooleanClause(new TermQuery(new Term(String.valueOf(field), String.valueOf(value))), SHOULD));
+                        if (rarely()) {
+                            clauses[i] = new FilterClause(new EmptyFilter(), SHOULD);
+                            orQuery.add(new BooleanClause(new MatchNoDocsQuery(), SHOULD));
+                        } else {
+                            clauses[i] = newFilterClause(field, value, SHOULD, random().nextBoolean());
+                            orQuery.add(new BooleanClause(new TermQuery(new Term(String.valueOf(field), String.valueOf(value))), SHOULD));
+                        }
                         break;
                     case 0:
                         hasMustNot = true;
-                        clauses[i] = newFilterClause(field, value, MUST_NOT, random().nextBoolean());
-                        topLevel.add(new BooleanClause(new TermQuery(new Term(String.valueOf(field), String.valueOf(value))), MUST_NOT));
+                        if (rarely()) {
+                            clauses[i] = new FilterClause(new EmptyFilter(), MUST_NOT);
+                            topLevel.add(new BooleanClause(new MatchNoDocsQuery(), MUST_NOT));
+                        } else {
+                            clauses[i] = newFilterClause(field, value, MUST_NOT, random().nextBoolean());
+                            topLevel.add(new BooleanClause(new TermQuery(new Term(String.valueOf(field), String.valueOf(value))), MUST_NOT));
+                        }
                         break;
 
                 }
@@ -509,6 +544,22 @@ public class XBooleanFilterTests extends ElasticsearchLuceneTestCase {
         @Override
         public String toString() {
             return "SLOW(" + field + ":" + value + ")";
+        }
+    }
+
+    public final class EmptyFilter extends Filter {
+
+        @Override
+        public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+            return random().nextBoolean() ? new Empty() : null;
+        }
+
+        private class Empty extends DocIdSet {
+
+            @Override
+            public DocIdSetIterator iterator() throws IOException {
+                return null;
+            }
         }
     }
 

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.routing.RoutingNode;
 import org.elasticsearch.cluster.routing.ShardRouting;
@@ -42,6 +42,7 @@ import org.elasticsearch.index.shard.IllegalIndexShardStateException;
 import org.elasticsearch.index.shard.IndexShardClosedException;
 import org.elasticsearch.index.shard.IndexShardState;
 import org.elasticsearch.index.shard.service.InternalIndexShard;
+import org.elasticsearch.index.store.Store;
 import org.elasticsearch.index.store.StoreFileMetaData;
 import org.elasticsearch.index.translog.Translog;
 import org.elasticsearch.indices.IndicesService;
@@ -96,6 +97,7 @@ public class RecoverySource extends AbstractComponent {
         // the index operations will not be routed to it properly
         RoutingNode node = clusterService.state().readOnlyRoutingNodes().node(request.targetNode().id());
         if (node == null) {
+            logger.debug("delaying recovery of {} as source node {} is unknown", request.shardId(), request.targetNode());
             throw new DelayRecoveryException("source node does not have the node [" + request.targetNode() + "] in its state yet..");
         }
         ShardRouting targetShardRouting = null;
@@ -106,9 +108,12 @@ public class RecoverySource extends AbstractComponent {
             }
         }
         if (targetShardRouting == null) {
+            logger.debug("delaying recovery of {} as it is not listed as assigned to target node {}", request.shardId(), request.targetNode());
             throw new DelayRecoveryException("source node does not have the shard listed in its state as allocated on the node");
         }
         if (!targetShardRouting.initializing()) {
+            logger.debug("delaying recovery of {} as it is not listed as initializing on the target node {}. known shards state is [{}]",
+                    request.shardId(), request.targetNode(), targetShardRouting.state());
             throw new DelayRecoveryException("source node has the state of the target shard to be [" + targetShardRouting.state() + "], expecting to be [initializing]");
         }
 
@@ -116,14 +121,16 @@ public class RecoverySource extends AbstractComponent {
         final RecoveryResponse response = new RecoveryResponse();
         shard.recover(new Engine.RecoveryHandler() {
             @Override
-            public void phase1(final SnapshotIndexCommit snapshot) throws ElasticSearchException {
+            public void phase1(final SnapshotIndexCommit snapshot) throws ElasticsearchException {
                 long totalSize = 0;
                 long existingTotalSize = 0;
+                final Store store = shard.store();
+                store.incRef();
                 try {
                     StopWatch stopWatch = new StopWatch().start();
 
                     for (String name : snapshot.getFiles()) {
-                        StoreFileMetaData md = shard.store().metaData(name);
+                        StoreFileMetaData md = store.metaData(name);
                         boolean useExisting = false;
                         if (request.existingFiles().containsKey(name)) {
                             // we don't compute checksum for segments, so always recover them
@@ -158,7 +165,7 @@ public class RecoverySource extends AbstractComponent {
                     transportService.submitRequest(request.targetNode(), RecoveryTarget.Actions.FILES_INFO, recoveryInfoFilesRequest, TransportRequestOptions.options().withTimeout(internalActionTimeout), EmptyTransportResponseHandler.INSTANCE_SAME).txGet();
 
                     final CountDownLatch latch = new CountDownLatch(response.phase1FileNames.size());
-                    final AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
+                    final AtomicReference<Throwable> lastException = new AtomicReference<>();
                     int fileIndex = 0;
                     for (final String name : response.phase1FileNames) {
                         ThreadPoolExecutor pool;
@@ -173,12 +180,13 @@ public class RecoverySource extends AbstractComponent {
                             @Override
                             public void run() {
                                 IndexInput indexInput = null;
+                                store.incRef();
                                 try {
                                     final int BUFFER_SIZE = (int) recoverySettings.fileChunkSize().bytes();
                                     byte[] buf = new byte[BUFFER_SIZE];
-                                    StoreFileMetaData md = shard.store().metaData(name);
+                                    StoreFileMetaData md = store.metaData(name);
                                     // TODO: maybe use IOContext.READONCE?
-                                    indexInput = shard.store().openInputRaw(name, IOContext.READ);
+                                    indexInput = store.openInputRaw(name, IOContext.READ);
                                     boolean shouldCompressRequest = recoverySettings.compress();
                                     if (CompressorFactory.isCompressed(indexInput)) {
                                         shouldCompressRequest = false;
@@ -207,7 +215,11 @@ public class RecoverySource extends AbstractComponent {
                                     lastException.set(e);
                                 } finally {
                                     IOUtils.closeWhileHandlingException(indexInput);
-                                    latch.countDown();
+                                    try {
+                                        store.decRef();
+                                    } finally {
+                                        latch.countDown();
+                                    }
                                 }
                             }
                         });
@@ -229,11 +241,13 @@ public class RecoverySource extends AbstractComponent {
                     response.phase1Time = stopWatch.totalTime().millis();
                 } catch (Throwable e) {
                     throw new RecoverFilesRecoveryException(request.shardId(), response.phase1FileNames.size(), new ByteSizeValue(totalSize), e);
+                } finally {
+                    store.decRef();
                 }
             }
 
             @Override
-            public void phase2(Translog.Snapshot snapshot) throws ElasticSearchException {
+            public void phase2(Translog.Snapshot snapshot) throws ElasticsearchException {
                 if (shard.state() == IndexShardState.CLOSED) {
                     throw new IndexShardClosedException(request.shardId());
                 }
@@ -254,7 +268,7 @@ public class RecoverySource extends AbstractComponent {
             }
 
             @Override
-            public void phase3(Translog.Snapshot snapshot) throws ElasticSearchException {
+            public void phase3(Translog.Snapshot snapshot) throws ElasticsearchException {
                 if (shard.state() == IndexShardState.CLOSED) {
                     throw new IndexShardClosedException(request.shardId());
                 }
@@ -278,7 +292,7 @@ public class RecoverySource extends AbstractComponent {
                 response.phase3Operations = totalOperations;
             }
 
-            private int sendSnapshot(Translog.Snapshot snapshot) throws ElasticSearchException {
+            private int sendSnapshot(Translog.Snapshot snapshot) throws ElasticsearchException {
                 int ops = 0;
                 long size = 0;
                 int totalOperations = 0;
@@ -294,9 +308,13 @@ public class RecoverySource extends AbstractComponent {
                     totalOperations++;
                     if (ops >= recoverySettings.translogOps() || size >= recoverySettings.translogSize().bytes()) {
 
-                        if (recoverySettings.rateLimiter() != null) {
-                            recoverySettings.rateLimiter().pause(size);
-                        }
+                        // don't throttle translog, since we lock for phase3 indexing, so we need to move it as
+                        // fast as possible. Note, sine we index docs to replicas while the index files are recovered
+                        // the lock can potentially be removed, in which case, it might make sense to re-enable
+                        // throttling in this phase
+//                        if (recoverySettings.rateLimiter() != null) {
+//                            recoverySettings.rateLimiter().pause(size);
+//                        }
 
                         RecoveryTranslogOperationsRequest translogOperationsRequest = new RecoveryTranslogOperationsRequest(request.recoveryId(), request.shardId(), operations);
                         transportService.submitRequest(request.targetNode(), RecoveryTarget.Actions.TRANSLOG_OPS, translogOperationsRequest, TransportRequestOptions.options().withCompress(recoverySettings.compress()).withType(TransportRequestOptions.Type.RECOVERY).withTimeout(internalActionLongTimeout), EmptyTransportResponseHandler.INSTANCE_SAME).txGet();

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,10 +19,12 @@
 
 package org.elasticsearch.action.support;
 
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.index.shard.IndexShardException;
+import org.elasticsearch.rest.RestStatus;
 
 import java.io.IOException;
 
@@ -39,6 +41,8 @@ public class DefaultShardOperationFailedException implements ShardOperationFaile
 
     private String reason;
 
+    private RestStatus status;
+
     private DefaultShardOperationFailedException() {
 
     }
@@ -47,12 +51,18 @@ public class DefaultShardOperationFailedException implements ShardOperationFaile
         this.index = e.shardId().index().name();
         this.shardId = e.shardId().id();
         this.reason = detailedMessage(e);
+        this.status = e.status();
     }
 
     public DefaultShardOperationFailedException(String index, int shardId, Throwable t) {
         this.index = index;
         this.shardId = shardId;
         this.reason = detailedMessage(t);
+        if (t != null && t instanceof ElasticsearchException) {
+            status = ((ElasticsearchException) t).status();
+        } else {
+            status = RestStatus.INTERNAL_SERVER_ERROR;
+        }
     }
 
     @Override
@@ -70,6 +80,11 @@ public class DefaultShardOperationFailedException implements ShardOperationFaile
         return this.reason;
     }
 
+    @Override
+    public RestStatus status() {
+        return status;
+    }
+
     public static DefaultShardOperationFailedException readShardOperationFailed(StreamInput in) throws IOException {
         DefaultShardOperationFailedException exp = new DefaultShardOperationFailedException();
         exp.readFrom(in);
@@ -83,6 +98,7 @@ public class DefaultShardOperationFailedException implements ShardOperationFaile
         }
         shardId = in.readVInt();
         reason = in.readString();
+        status = RestStatus.readFrom(in);
     }
 
     @Override
@@ -95,6 +111,7 @@ public class DefaultShardOperationFailedException implements ShardOperationFaile
         }
         out.writeVInt(shardId);
         out.writeString(reason);
+        RestStatus.writeTo(out, status);
     }
 
     @Override

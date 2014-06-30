@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -32,11 +32,11 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.recycler.Recycler;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.unit.MemorySizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
 import org.elasticsearch.common.util.concurrent.EsRejectedExecutionException;
 import org.elasticsearch.index.cache.filter.weighted.WeightedFilterCache;
-import org.elasticsearch.monitor.jvm.JvmInfo;
 import org.elasticsearch.node.settings.NodeSettingsService;
 import org.elasticsearch.threadpool.ThreadPool;
 
@@ -95,7 +95,7 @@ public class IndicesFilterCache extends AbstractComponent implements RemovalList
         super(settings);
         this.threadPool = threadPool;
         this.cacheRecycler = cacheRecycler;
-        this.size = componentSettings.get("size", "20%");
+        this.size = componentSettings.get("size", "10%");
         this.expire = componentSettings.getAsTime("expire", null);
         this.cleanInterval = componentSettings.getAsTime("clean_interval", TimeValue.timeValueSeconds(60));
         computeSizeInBytes();
@@ -123,12 +123,16 @@ public class IndicesFilterCache extends AbstractComponent implements RemovalList
     }
 
     private void computeSizeInBytes() {
-        if (size.endsWith("%")) {
-            double percent = Double.parseDouble(size.substring(0, size.length() - 1));
-            sizeInBytes = (long) ((percent / 100) * JvmInfo.jvmInfo().getMem().getHeapMax().bytes());
-        } else {
-            sizeInBytes = ByteSizeValue.parseBytesSizeValue(size).bytes();
+        long sizeInBytes = MemorySizeValue.parseBytesSizeValueOrHeapRatio(size).bytes();
+        if (sizeInBytes > ByteSizeValue.MAX_GUAVA_CACHE_SIZE.bytes()) {
+            logger.warn("reducing requested filter cache size of [{}] to the maximum allowed size of [{}]", new ByteSizeValue(sizeInBytes),
+                    ByteSizeValue.MAX_GUAVA_CACHE_SIZE);
+            sizeInBytes = ByteSizeValue.MAX_GUAVA_CACHE_SIZE.bytes();
+            // Even though it feels wrong for size and sizeInBytes to get out of
+            // sync we don't update size here because it might cause the cache
+            // to be rebuilt every time new settings are applied.
         }
+        this.sizeInBytes = sizeInBytes;
     }
 
     public void addReaderKeyToClean(Object readerKey) {
@@ -194,7 +198,7 @@ public class IndicesFilterCache extends AbstractComponent implements RemovalList
                             }
                             schedule();
                         } finally {
-                            keys.release();
+                            keys.close();
                         }
                     }
                 });

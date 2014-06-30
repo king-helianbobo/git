@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,13 +21,16 @@ package org.elasticsearch.index.mapper.internal;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.elasticsearch.common.Explicit;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.joda.FormatDateTimeFormatter;
 import org.elasticsearch.common.joda.Joda;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.mapper.*;
 import org.elasticsearch.index.mapper.core.DateFieldMapper;
@@ -35,6 +38,7 @@ import org.elasticsearch.index.mapper.core.LongFieldMapper;
 import org.elasticsearch.index.mapper.core.NumberFieldMapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -63,7 +67,7 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
             FIELD_TYPE.freeze();
         }
 
-        public static final EnabledAttributeMapper ENABLED = EnabledAttributeMapper.DISABLED;
+        public static final EnabledAttributeMapper ENABLED = EnabledAttributeMapper.UNSET_DISABLED;
         public static final String PATH = null;
         public static final FormatDateTimeFormatter DATE_TIME_FORMATTER = Joda.forPattern(DEFAULT_DATE_TIME_FORMAT);
     }
@@ -75,7 +79,7 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
         private FormatDateTimeFormatter dateTimeFormatter = Defaults.DATE_TIME_FORMATTER;
 
         public Builder() {
-            super(Defaults.NAME, new FieldType(Defaults.FIELD_TYPE));
+            super(Defaults.NAME, new FieldType(Defaults.FIELD_TYPE), Defaults.PRECISION_STEP_64_BIT);
         }
 
         public Builder enabled(EnabledAttributeMapper enabledState) {
@@ -98,10 +102,10 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
             boolean roundCeil = Defaults.ROUND_CEIL;
             if (context.indexSettings() != null) {
                 Settings settings = context.indexSettings();
-                roundCeil = settings.getAsBoolean("index.mapping.date.round_ceil", settings.getAsBoolean("index.mapping.date.parse_upper_inclusive", Defaults.ROUND_CEIL));
+                roundCeil =  settings.getAsBoolean("index.mapping.date.round_ceil", settings.getAsBoolean("index.mapping.date.parse_upper_inclusive", Defaults.ROUND_CEIL));
             }
-            return new TimestampFieldMapper(fieldType, enabledState, path, dateTimeFormatter, roundCeil,
-                    ignoreMalformed(context), provider, fieldDataSettings);
+            return new TimestampFieldMapper(fieldType, docValues, enabledState, path, dateTimeFormatter, roundCeil,
+                    ignoreMalformed(context), coerce(context), postingsProvider, docValuesProvider, normsLoading, fieldDataSettings, context.indexSettings());
         }
     }
 
@@ -132,17 +136,20 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
     private final String path;
 
     public TimestampFieldMapper() {
-        this(new FieldType(Defaults.FIELD_TYPE), Defaults.ENABLED, Defaults.PATH, Defaults.DATE_TIME_FORMATTER,
-                Defaults.ROUND_CEIL, Defaults.IGNORE_MALFORMED, null, null);
+        this(new FieldType(Defaults.FIELD_TYPE), null, Defaults.ENABLED, Defaults.PATH, Defaults.DATE_TIME_FORMATTER,
+                Defaults.ROUND_CEIL, Defaults.IGNORE_MALFORMED, Defaults.COERCE, null, null, null, null, ImmutableSettings.EMPTY);
     }
 
-    protected TimestampFieldMapper(FieldType fieldType, EnabledAttributeMapper enabledState, String path,
+    protected TimestampFieldMapper(FieldType fieldType, Boolean docValues, EnabledAttributeMapper enabledState, String path,
                                    FormatDateTimeFormatter dateTimeFormatter, boolean roundCeil,
-                                   Explicit<Boolean> ignoreMalformed, PostingsFormatProvider provider, @Nullable Settings fieldDataSettings) {
+                                   Explicit<Boolean> ignoreMalformed,Explicit<Boolean> coerce, PostingsFormatProvider postingsProvider,
+                                   DocValuesFormatProvider docValuesProvider, Loading normsLoading,
+                                   @Nullable Settings fieldDataSettings, Settings indexSettings) {
         super(new Names(Defaults.NAME, Defaults.NAME, Defaults.NAME, Defaults.NAME), dateTimeFormatter,
-                Defaults.PRECISION_STEP, Defaults.BOOST, fieldType,
+                Defaults.PRECISION_STEP_64_BIT, Defaults.BOOST, fieldType, docValues,
                 Defaults.NULL_VALUE, TimeUnit.MILLISECONDS /*always milliseconds*/,
-                roundCeil, ignoreMalformed, provider, null, fieldDataSettings);
+                roundCeil, ignoreMalformed, coerce, postingsProvider, docValuesProvider, null, normsLoading, fieldDataSettings, 
+                indexSettings, MultiFields.empty(), null);
         this.enabledState = enabledState;
         this.path = path;
     }
@@ -173,10 +180,6 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
     }
 
     @Override
-    public void validate(ParseContext context) throws MapperParsingException {
-    }
-
-    @Override
     public void preParse(ParseContext context) throws IOException {
         super.parse(context);
     }
@@ -196,16 +199,19 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
     }
 
     @Override
-    protected Field innerParseCreateField(ParseContext context) throws IOException {
+    protected void innerParseCreateField(ParseContext context, List<Field> fields) throws IOException {
         if (enabledState.enabled) {
             long timestamp = context.sourceToParse().timestamp();
-            if (!fieldType.indexed() && !fieldType.stored()) {
+            if (!fieldType.indexed() && !fieldType.stored() && !hasDocValues()) {
                 context.ignoredValue(names.indexName(), String.valueOf(timestamp));
-                return null;
             }
-            return new LongFieldMapper.CustomLongNumericField(this, timestamp, fieldType);
+            if (fieldType.indexed() || fieldType.stored()) {
+                fields.add(new LongFieldMapper.CustomLongNumericField(this, timestamp, fieldType));
+            }
+            if (hasDocValues()) {
+                fields.add(new NumericDocValuesField(names.indexName(), timestamp));
+            }
         }
-        return null;
     }
 
     @Override
@@ -224,7 +230,7 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
             return builder;
         }
         builder.startObject(CONTENT_TYPE);
-        if (includeDefaults || enabledState != Defaults.ENABLED) {
+        if (includeDefaults || enabledState.enabled != Defaults.ENABLED.enabled) {
             builder.field("enabled", enabledState.enabled);
         }
         if (enabledState.enabled) {
@@ -245,6 +251,7 @@ public class TimestampFieldMapper extends DateFieldMapper implements InternalMap
             } else if (includeDefaults) {
                 builder.field("fielddata", (Map) fieldDataType.getSettings().getAsMap());
             }
+
         }
         builder.endObject();
         return builder;

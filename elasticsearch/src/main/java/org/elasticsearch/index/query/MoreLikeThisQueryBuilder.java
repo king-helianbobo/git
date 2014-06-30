@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,10 +19,20 @@
 
 package org.elasticsearch.index.query;
 
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.lucene.uid.Versions;
+import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.VersionType;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * A more like this query that finds documents that are "like" the provided {@link #likeText(String)}
@@ -30,17 +40,77 @@ import java.io.IOException;
  */
 public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements BoostableQueryBuilder<MoreLikeThisQueryBuilder> {
 
+    /**
+     * A single get item. Pure delegate to multi get.
+     */
+    public static final class Item extends MultiGetRequest.Item implements ToXContent {
+        public Item() {
+            super();
+        }
+
+        public Item(String index, @Nullable String type, String id) {
+            super(index, type, id);
+        }
+
+        @Override
+        public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+            builder.startObject();
+            if (this.index() != null) {
+                builder.field("_index", this.index());
+            }
+            if (this.id() != null) {
+                builder.field("_id", this.id());
+            }
+            if (this.type() != null) {
+                builder.field("_type", this.type());
+            }
+            if (this.fields() != null) {
+                builder.array("fields", this.fields());
+            }
+            if (this.routing() != null) {
+                builder.field("_routing", this.routing());
+            }
+            if (this.fetchSourceContext() != null) {
+                FetchSourceContext source = this.fetchSourceContext();
+                String[] includes = source.includes();
+                String[] excludes = source.excludes();
+                if (includes.length == 0 && excludes.length == 0) {
+                    builder.field("_source", source.fetchSource());
+                } else if (includes.length > 0 && excludes.length == 0) {
+                    builder.array("_source", source.includes());
+                } else if (excludes.length > 0) {
+                    builder.startObject("_source");
+                    if (includes.length > 0) {
+                        builder.array("includes", source.includes());
+                    }
+                    builder.array("excludes", source.excludes());
+                    builder.endObject();
+                }
+            }
+            if (this.version() != Versions.MATCH_ANY) {
+                builder.field("_version", this.version());
+            }
+            if (this.versionType() != VersionType.INTERNAL) {
+                builder.field("_version_type", this.versionType().toString().toLowerCase(Locale.ROOT));
+            }
+            return builder.endObject();
+        }
+    }
+
     private final String[] fields;
 
     private String likeText;
+    private List<String> ids = new ArrayList<>();
+    private List<Item> docs = new ArrayList<>();
+    private Boolean exclude = null;
     private float percentTermsToMatch = -1;
     private int minTermFreq = -1;
     private int maxQueryTerms = -1;
     private String[] stopWords = null;
     private int minDocFreq = -1;
     private int maxDocFreq = -1;
-    private int minWordLen = -1;
-    private int maxWordLen = -1;
+    private int minWordLength = -1;
+    private int maxWordLength = -1;
     private float boostTerms = -1;
     private float boost = -1;
     private String analyzer;
@@ -68,6 +138,26 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
      */
     public MoreLikeThisQueryBuilder likeText(String likeText) {
         this.likeText = likeText;
+        return this;
+    }
+
+    public MoreLikeThisQueryBuilder ids(String... ids) {
+        this.ids = Arrays.asList(ids);
+        return this;
+    }
+
+    public MoreLikeThisQueryBuilder docs(Item... docs) {
+        this.docs = Arrays.asList(docs);
+        return this;
+    }
+
+    public MoreLikeThisQueryBuilder addItem(Item item) {
+        this.docs.add(item);
+        return this;
+    }
+
+    public MoreLikeThisQueryBuilder exclude(boolean exclude) {
+        this.exclude = exclude;
         return this;
     }
 
@@ -131,8 +221,8 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
      * Sets the minimum word length below which words will be ignored. Defaults
      * to <tt>0</tt>.
      */
-    public MoreLikeThisQueryBuilder minWordLen(int minWordLen) {
-        this.minWordLen = minWordLen;
+    public MoreLikeThisQueryBuilder minWordLength(int minWordLength) {
+        this.minWordLength = minWordLength;
         return this;
     }
 
@@ -140,8 +230,8 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
      * Sets the maximum word length above which words will be ignored. Defaults to
      * unbounded (<tt>0</tt>).
      */
-    public MoreLikeThisQueryBuilder maxWordLen(int maxWordLen) {
-        this.maxWordLen = maxWordLen;
+    public MoreLikeThisQueryBuilder maxWordLength(int maxWordLength) {
+        this.maxWordLength = maxWordLength;
         return this;
     }
 
@@ -192,40 +282,41 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
             }
             builder.endArray();
         }
-        if (likeText == null) {
-            throw new ElasticSearchIllegalArgumentException("moreLikeThis requires 'likeText' to be provided");
+        if (likeText == null && this.docs.isEmpty() && this.ids.isEmpty()) {
+                throw new ElasticsearchIllegalArgumentException("more_like_this requires either '"+
+                    MoreLikeThisQueryParser.Fields.LIKE_TEXT.getPreferredName() +"' or 'docs/ids' to be provided");
         }
-        builder.field("like_text", likeText);
+        builder.field(MoreLikeThisQueryParser.Fields.LIKE_TEXT.getPreferredName(), likeText);
         if (percentTermsToMatch != -1) {
-            builder.field("percent_terms_to_match", percentTermsToMatch);
+            builder.field(MoreLikeThisQueryParser.Fields.PERCENT_TERMS_TO_MATCH.getPreferredName(), percentTermsToMatch);
         }
         if (minTermFreq != -1) {
-            builder.field("min_term_freq", minTermFreq);
+            builder.field(MoreLikeThisQueryParser.Fields.MIN_TERM_FREQ.getPreferredName(), minTermFreq);
         }
         if (maxQueryTerms != -1) {
-            builder.field("max_query_terms", maxQueryTerms);
+            builder.field(MoreLikeThisQueryParser.Fields.MAX_QUERY_TERMS.getPreferredName(), maxQueryTerms);
         }
         if (stopWords != null && stopWords.length > 0) {
-            builder.startArray("stop_words");
+            builder.startArray(MoreLikeThisQueryParser.Fields.STOP_WORDS.getPreferredName());
             for (String stopWord : stopWords) {
                 builder.value(stopWord);
             }
             builder.endArray();
         }
         if (minDocFreq != -1) {
-            builder.field("min_doc_freq", minDocFreq);
+            builder.field(MoreLikeThisQueryParser.Fields.MIN_DOC_FREQ.getPreferredName(), minDocFreq);
         }
         if (maxDocFreq != -1) {
-            builder.field("max_doc_freq", maxDocFreq);
+            builder.field(MoreLikeThisQueryParser.Fields.MAX_DOC_FREQ.getPreferredName(), maxDocFreq);
         }
-        if (minWordLen != -1) {
-            builder.field("min_word_len", minWordLen);
+        if (minWordLength != -1) {
+            builder.field(MoreLikeThisQueryParser.Fields.MIN_WORD_LENGTH.getPreferredName(), minWordLength);
         }
-        if (maxWordLen != -1) {
-            builder.field("max_word_len", maxWordLen);
+        if (maxWordLength != -1) {
+            builder.field(MoreLikeThisQueryParser.Fields.MAX_WORD_LENGTH.getPreferredName(), maxWordLength);
         }
         if (boostTerms != -1) {
-            builder.field("boost_terms", boostTerms);
+            builder.field(MoreLikeThisQueryParser.Fields.BOOST_TERMS.getPreferredName(), boostTerms);
         }
         if (boost != -1) {
             builder.field("boost", boost);
@@ -234,10 +325,19 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
             builder.field("analyzer", analyzer);
         }
         if (failOnUnsupportedField != null) {
-            builder.field("fail_on_unsupported_field", failOnUnsupportedField);
+            builder.field(MoreLikeThisQueryParser.Fields.FAIL_ON_UNSUPPORTED_FIELD.getPreferredName(), failOnUnsupportedField);
         }
         if (queryName != null) {
             builder.field("_name", queryName);
+        }
+        if (!ids.isEmpty()) {
+            builder.array("ids", ids.toArray());
+        }
+        if (!docs.isEmpty()) {
+            builder.array("docs", docs.toArray());
+        }
+        if (exclude != null) {
+            builder.field("exclude", exclude);
         }
         builder.endObject();
     }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -29,19 +29,20 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.elasticsearch.common.lucene.Lucene;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.fielddata.IndexFieldData;
 import org.elasticsearch.index.fielddata.IndexFieldDataService;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
-import org.elasticsearch.index.mapper.ContentPath;
-import org.elasticsearch.index.mapper.FieldMapper;
-import org.elasticsearch.index.mapper.Mapper;
+import org.elasticsearch.index.mapper.*;
 import org.elasticsearch.index.mapper.core.DoubleFieldMapper;
 import org.elasticsearch.index.mapper.core.LongFieldMapper;
 import org.elasticsearch.index.mapper.core.NumberFieldMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
+import org.elasticsearch.indices.fielddata.breaker.DummyCircuitBreakerService;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.index.service.StubIndexService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,7 +79,9 @@ public class FieldDataTermsFilterTests extends ElasticsearchTestCase {
                 .build(new Mapper.BuilderContext(null, new ContentPath(1)));
 
         // create index and fielddata service
-        ifdService = new IndexFieldDataService(new Index("test"));
+        ifdService = new IndexFieldDataService(new Index("test"), new DummyCircuitBreakerService());
+        MapperService mapperService = MapperTestUtils.newMapperService(ifdService.index(), ImmutableSettings.Builder.EMPTY_SETTINGS);
+        ifdService.setIndexService(new StubIndexService(mapperService));
         writer = new IndexWriter(new RAMDirectory(),
                 new IndexWriterConfig(Lucene.VERSION, new StandardAnalyzer(Lucene.VERSION)));
 
@@ -115,8 +118,8 @@ public class FieldDataTermsFilterTests extends ElasticsearchTestCase {
     public void testBytes() throws Exception {
         List<Integer> docs = Arrays.asList(1, 5, 7);
 
-        ObjectOpenHashSet<BytesRef> hTerms = new ObjectOpenHashSet<BytesRef>();
-        List<BytesRef> cTerms = new ArrayList<BytesRef>(docs.size());
+        ObjectOpenHashSet<BytesRef> hTerms = new ObjectOpenHashSet<>();
+        List<BytesRef> cTerms = new ArrayList<>(docs.size());
         for (int i = 0; i < docs.size(); i++) {
             BytesRef term = new BytesRef("str" + docs.get(i));
             hTerms.add(term);
@@ -167,7 +170,7 @@ public class FieldDataTermsFilterTests extends ElasticsearchTestCase {
         List<Integer> docs = Arrays.asList(1, 5, 7);
 
         LongOpenHashSet hTerms = new LongOpenHashSet();
-        List<Long> cTerms = new ArrayList<Long>(docs.size());
+        List<Long> cTerms = new ArrayList<>(docs.size());
         for (int i = 0; i < docs.size(); i++) {
             long term = docs.get(i).longValue();
             hTerms.add(term);
@@ -206,7 +209,7 @@ public class FieldDataTermsFilterTests extends ElasticsearchTestCase {
         List<Integer> docs = Arrays.asList(1, 5, 7);
 
         DoubleOpenHashSet hTerms = new DoubleOpenHashSet();
-        List<Double> cTerms = new ArrayList<Double>(docs.size());
+        List<Double> cTerms = new ArrayList<>(docs.size());
         for (int i = 0; i < docs.size(); i++) {
             double term = Double.valueOf(docs.get(i));
             hTerms.add(term);

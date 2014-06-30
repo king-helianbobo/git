@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.transport.netty;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.Version;
 import org.elasticsearch.common.component.Lifecycle;
 import org.elasticsearch.common.compress.Compressor;
@@ -38,8 +38,8 @@ import org.jboss.netty.channel.*;
 import java.io.IOException;
 
 /**
- * A handler (must be the last one!) that does size based frame decoding and
- * forwards the actual message to the relevant action.
+ * A handler (must be the last one!) that does size based frame decoding and forwards the actual message
+ * to the relevant action.
  */
 public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
 
@@ -78,8 +78,7 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
         int markedReaderIndex = buffer.readerIndex();
         int expectedIndexReader = markedReaderIndex + size;
 
-        // netty always copies a buffer, either in NioWorker in its read
-        // handler, where it copies to a fresh
+        // netty always copies a buffer, either in NioWorker in its read handler, where it copies to a fresh
         // buffer, or in the cumlation buffer, which is cleaned each time
         StreamInput streamIn = ChannelBufferStreamInputFactory.create(buffer, size);
 
@@ -93,14 +92,12 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
             if (compressor == null) {
                 int maxToRead = Math.min(buffer.readableBytes(), 10);
                 int offset = buffer.readerIndex();
-                StringBuilder sb = new StringBuilder("stream marked as compressed, but no compressor found, first [").append(maxToRead)
-                        .append("] content bytes out of [").append(buffer.readableBytes()).append("] readable bytes with message size [")
-                        .append(size).append("] ").append("] are [");
+                StringBuilder sb = new StringBuilder("stream marked as compressed, but no compressor found, first [").append(maxToRead).append("] content bytes out of [").append(buffer.readableBytes()).append("] readable bytes with message size [").append(size).append("] ").append("] are [");
                 for (int i = 0; i < maxToRead; i++) {
                     sb.append(buffer.getByte(offset + i)).append(",");
                 }
                 sb.append("]");
-                throw new ElasticSearchIllegalStateException(sb.toString());
+                throw new ElasticsearchIllegalStateException(sb.toString());
             }
             wrappedStream = CachedStreamInput.cachedHandlesCompressed(compressor, streamIn);
         } else {
@@ -133,11 +130,9 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
             }
             if (buffer.readerIndex() != expectedIndexReader) {
                 if (buffer.readerIndex() < expectedIndexReader) {
-                    logger.warn("Message not fully read (response) for [{}] handler {}, error [{}], resetting", requestId, handler,
-                            TransportStatus.isError(status));
+                    logger.warn("Message not fully read (response) for [{}] handler {}, error [{}], resetting", requestId, handler, TransportStatus.isError(status));
                 } else {
-                    logger.warn("Message read past expected size (response) for [{}] handler {}, error [{}], resetting", requestId,
-                            handler, TransportStatus.isError(status));
+                    logger.warn("Message read past expected size (response) for [{}] handler {}, error [{}], resetting", requestId, handler, TransportStatus.isError(status));
                 }
                 buffer.readerIndex(expectedIndexReader);
             }
@@ -150,13 +145,12 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
         try {
             response.readFrom(buffer);
         } catch (Throwable e) {
-            handleException(handler, new TransportSerializationException("Failed to deserialize response of type ["
-                    + response.getClass().getName() + "]", e));
+            handleException(handler, new TransportSerializationException("Failed to deserialize response of type [" + response.getClass().getName() + "]", e));
             return;
         }
         try {
             if (handler.executor() == ThreadPool.Names.SAME) {
-                // noinspection unchecked
+                //noinspection unchecked
                 handler.handleResponse(response);
             } else {
                 threadPool.executor(handler.executor()).execute(new ResponseHandler(handler, response));
@@ -204,7 +198,7 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
 
     private String handleRequest(Channel channel, StreamInput buffer, long requestId, Version version) throws IOException {
         final String action = buffer.readString();
-        // 获得操作名称,这里的名称为 "indices/analyze"
+
         final NettyTransportChannel transportChannel = new NettyTransportChannel(transport, action, channel, requestId, version);
         try {
             final TransportRequestHandler handler = transportServiceAdapter.handler(action);
@@ -214,7 +208,7 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
             final TransportRequest request = handler.newInstance();
             request.readFrom(buffer);
             if (handler.executor() == ThreadPool.Names.SAME) {
-                // noinspection unchecked
+                //noinspection unchecked
                 handler.messageReceived(request, transportChannel);
             } else {
                 threadPool.executor(handler.executor()).execute(new RequestHandler(handler, request, transportChannel, action));
@@ -262,8 +256,7 @@ public class MessageChannelHandler extends SimpleChannelUpstreamHandler {
         private final NettyTransportChannel transportChannel;
         private final String action;
 
-        public RequestHandler(TransportRequestHandler handler, TransportRequest request, NettyTransportChannel transportChannel,
-                String action) {
+        public RequestHandler(TransportRequestHandler handler, TransportRequest request, NettyTransportChannel transportChannel, String action) {
             this.handler = handler;
             this.request = request;
             this.transportChannel = transportChannel;

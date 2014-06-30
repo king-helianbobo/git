@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,18 +19,21 @@
 package org.elasticsearch.index.mapper.core;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.XStringField;
 import org.apache.lucene.search.suggest.analyzing.XAnalyzingSuggester;
 import org.apache.lucene.util.BytesRef;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchParseException;
+import org.elasticsearch.common.ParseField;
+import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.common.xcontent.XContentParser.NumberType;
+import org.elasticsearch.common.xcontent.XContentParser.Token;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
 import org.elasticsearch.index.fielddata.FieldDataType;
@@ -39,15 +42,16 @@ import org.elasticsearch.index.similarity.SimilarityProvider;
 import org.elasticsearch.search.suggest.completion.AnalyzingCompletionLookupProvider;
 import org.elasticsearch.search.suggest.completion.CompletionPostingsFormatProvider;
 import org.elasticsearch.search.suggest.completion.CompletionTokenStream;
+import org.elasticsearch.search.suggest.context.ContextBuilder;
+import org.elasticsearch.search.suggest.context.ContextMapping;
+import org.elasticsearch.search.suggest.context.ContextMapping.ContextConfig;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.elasticsearch.index.mapper.MapperBuilders.completionField;
+import static org.elasticsearch.index.mapper.core.TypeParsers.parseMultiField;
 
 /**
  *
@@ -73,44 +77,35 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
     public static class Fields {
         // Mapping field names
         public static final String ANALYZER = "analyzer";
-        public static final String INDEX_ANALYZER = "index_analyzer";
-        public static final String SEARCH_ANALYZER = "search_analyzer";
-        public static final String PRESERVE_SEPARATORS = "preserve_separators";
-        public static final String PRESERVE_POSITION_INCREMENTS = "preserve_position_increments";
+        public static final ParseField INDEX_ANALYZER = new ParseField("index_analyzer");
+        public static final ParseField SEARCH_ANALYZER = new ParseField("search_analyzer");
+        public static final ParseField PRESERVE_SEPARATORS = new ParseField("preserve_separators");
+        public static final ParseField PRESERVE_POSITION_INCREMENTS = new ParseField("preserve_position_increments");
         public static final String PAYLOADS = "payloads";
         public static final String TYPE = "type";
-        public static final String MAX_INPUT_LENGTH = "max_input_len";
+        public static final ParseField MAX_INPUT_LENGTH = new ParseField("max_input_length", "max_input_len");
         // Content field names
         public static final String CONTENT_FIELD_NAME_INPUT = "input";
         public static final String CONTENT_FIELD_NAME_OUTPUT = "output";
         public static final String CONTENT_FIELD_NAME_PAYLOAD = "payload";
         public static final String CONTENT_FIELD_NAME_WEIGHT = "weight";
+        public static final String CONTEXT = "context";
     }
 
-    public static Set<String> ALLOWED_CONTENT_FIELD_NAMES = Sets.newHashSet(Fields.CONTENT_FIELD_NAME_INPUT,
-            Fields.CONTENT_FIELD_NAME_OUTPUT, Fields.CONTENT_FIELD_NAME_PAYLOAD, Fields.CONTENT_FIELD_NAME_WEIGHT);
+    public static final Set<String> ALLOWED_CONTENT_FIELD_NAMES = Sets.newHashSet(Fields.CONTENT_FIELD_NAME_INPUT,
+            Fields.CONTENT_FIELD_NAME_OUTPUT, Fields.CONTENT_FIELD_NAME_PAYLOAD, Fields.CONTENT_FIELD_NAME_WEIGHT, Fields.CONTEXT);
 
-    public static class Builder extends AbstractFieldMapper.OpenBuilder<Builder, CompletionFieldMapper> {
+    public static class Builder extends AbstractFieldMapper.Builder<Builder, CompletionFieldMapper> {
 
-        private NamedAnalyzer searchAnalyzer;
-        private NamedAnalyzer indexAnalyzer;
         private boolean preserveSeparators = Defaults.DEFAULT_PRESERVE_SEPARATORS;
         private boolean payloads = Defaults.DEFAULT_HAS_PAYLOADS;
         private boolean preservePositionIncrements = Defaults.DEFAULT_POSITION_INCREMENTS;
         private int maxInputLength = Defaults.DEFAULT_MAX_INPUT_LENGTH;
+        private SortedMap<String, ContextMapping> contextMapping = ContextMapping.EMPTY_MAPPING;
 
         public Builder(String name) {
-            super(name, Defaults.FIELD_TYPE);
-        }
-
-        public Builder searchAnalyzer(NamedAnalyzer searchAnalyzer) {
-            this.searchAnalyzer = searchAnalyzer;
-            return this;
-        }
-
-        public Builder indexAnalyzer(NamedAnalyzer indexAnalyzer) {
-            this.indexAnalyzer = indexAnalyzer;
-            return this;
+            super(name, new FieldType(Defaults.FIELD_TYPE));
+            builder = this;
         }
 
         public Builder payloads(boolean payloads) {
@@ -130,17 +125,23 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
 
         public Builder maxInputLength(int maxInputLength) {
             if (maxInputLength <= 0) {
-                throw new ElasticSearchIllegalArgumentException(Fields.MAX_INPUT_LENGTH + " must be > 0 but was [" + maxInputLength + "]");
+                throw new ElasticsearchIllegalArgumentException(Fields.MAX_INPUT_LENGTH.getPreferredName() + " must be > 0 but was [" + maxInputLength + "]");
             }
             this.maxInputLength = maxInputLength;
             return this;
         }
 
+        public Builder contextMapping(SortedMap<String, ContextMapping> contextMapping) {
+            this.contextMapping = contextMapping;
+            return this;
+        }
+
         @Override
         public CompletionFieldMapper build(Mapper.BuilderContext context) {
-            return new CompletionFieldMapper(buildNames(context), indexAnalyzer, searchAnalyzer, provider, similarity, payloads,
-                    preserveSeparators, preservePositionIncrements, maxInputLength);
+            return new CompletionFieldMapper(buildNames(context), indexAnalyzer, searchAnalyzer, postingsProvider, similarity, payloads,
+                    preserveSeparators, preservePositionIncrements, maxInputLength, multiFieldsBuilder.build(this, context), copyTo, this.contextMapping);
         }
+
     }
 
     public static class TypeParser implements Mapper.TypeParser {
@@ -158,18 +159,22 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
                     NamedAnalyzer analyzer = getNamedAnalyzer(parserContext, fieldNode.toString());
                     builder.indexAnalyzer(analyzer);
                     builder.searchAnalyzer(analyzer);
-                } else if (fieldName.equals(Fields.INDEX_ANALYZER) || fieldName.equals("indexAnalyzer")) {
+                } else if (Fields.INDEX_ANALYZER.match(fieldName)) {
                     builder.indexAnalyzer(getNamedAnalyzer(parserContext, fieldNode.toString()));
-                } else if (fieldName.equals(Fields.SEARCH_ANALYZER) || fieldName.equals("searchAnalyzer")) {
+                } else if (Fields.SEARCH_ANALYZER.match(fieldName)) {
                     builder.searchAnalyzer(getNamedAnalyzer(parserContext, fieldNode.toString()));
                 } else if (fieldName.equals(Fields.PAYLOADS)) {
                     builder.payloads(Boolean.parseBoolean(fieldNode.toString()));
-                } else if (fieldName.equals(Fields.PRESERVE_SEPARATORS) || fieldName.equals("preserveSeparators")) {
+                } else if (Fields.PRESERVE_SEPARATORS.match(fieldName)) {
                     builder.preserveSeparators(Boolean.parseBoolean(fieldNode.toString()));
-                } else if (fieldName.equals(Fields.PRESERVE_POSITION_INCREMENTS) || fieldName.equals("preservePositionIncrements")) {
+                } else if (Fields.PRESERVE_POSITION_INCREMENTS.match(fieldName)) {
                     builder.preservePositionIncrements(Boolean.parseBoolean(fieldNode.toString()));
-                } else if (fieldName.equals(Fields.MAX_INPUT_LENGTH) || fieldName.equals("maxInputLen")) {
+                } else if (Fields.MAX_INPUT_LENGTH.match(fieldName)) {
                     builder.maxInputLength(Integer.parseInt(fieldNode.toString()));
+                } else if ("fields".equals(fieldName) || "path".equals(fieldName)) {
+                    parseMultiField(builder, name, node, parserContext, fieldName, fieldNode);
+                } else if (fieldName.equals(Fields.CONTEXT)) {
+                    builder.contextMapping(ContextBuilder.loadMappings(fieldNode));
                 } else {
                     throw new MapperParsingException("Unknown field [" + fieldName + "]");
                 }
@@ -190,7 +195,7 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
         private NamedAnalyzer getNamedAnalyzer(ParserContext parserContext, String name) {
             NamedAnalyzer analyzer = parserContext.analysisService().analyzer(name);
             if (analyzer == null) {
-                throw new ElasticSearchIllegalArgumentException("Can't find default or mapped analyzer with name [" + name + "]");
+                throw new ElasticsearchIllegalArgumentException("Can't find default or mapped analyzer with name [" + name + "]");
             }
             return analyzer;
         }
@@ -204,18 +209,23 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
     private final boolean preservePositionIncrements;
     private final boolean preserveSeparators;
     private int maxInputLength;
+    private final SortedMap<String, ContextMapping> contextMapping;
 
-    public CompletionFieldMapper(Names names, NamedAnalyzer indexAnalyzer, NamedAnalyzer searchAnalyzer, PostingsFormatProvider provider, SimilarityProvider similarity, boolean payloads,
-                                 boolean preserveSeparators, boolean preservePositionIncrements, int maxInputLength) {
-        super(names, 1.0f, Defaults.FIELD_TYPE, indexAnalyzer, searchAnalyzer, provider, similarity, null);
+    /**
+     * 
+     * @param contextMappings Configuration of context type. If none should be used set {@link ContextMapping.EMPTY_MAPPING}
+     */
+    public CompletionFieldMapper(Names names, NamedAnalyzer indexAnalyzer, NamedAnalyzer searchAnalyzer, PostingsFormatProvider postingsProvider, SimilarityProvider similarity, boolean payloads,
+                                 boolean preserveSeparators, boolean preservePositionIncrements, int maxInputLength, MultiFields multiFields, CopyTo copyTo, SortedMap<String, ContextMapping> contextMappings) {
+        super(names, 1.0f, Defaults.FIELD_TYPE, null, indexAnalyzer, searchAnalyzer, postingsProvider, null, similarity, null, null, null, multiFields, copyTo);
         analyzingSuggestLookupProvider = new AnalyzingCompletionLookupProvider(preserveSeparators, false, preservePositionIncrements, payloads);
-        this.completionPostingsFormatProvider = new CompletionPostingsFormatProvider("completion", provider, analyzingSuggestLookupProvider);
+        this.completionPostingsFormatProvider = new CompletionPostingsFormatProvider("completion", postingsProvider, analyzingSuggestLookupProvider);
         this.preserveSeparators = preserveSeparators;
         this.payloads = payloads;
         this.preservePositionIncrements = preservePositionIncrements;
         this.maxInputLength = maxInputLength;
+        this.contextMapping = contextMappings;
     }
-
 
     @Override
     public PostingsFormatProvider postingsFormatProvider() {
@@ -232,15 +242,40 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
         long weight = -1;
         List<String> inputs = Lists.newArrayListWithExpectedSize(4);
 
+        SortedMap<String, ContextConfig> contextConfig = null;
+
         if (token == XContentParser.Token.VALUE_STRING) {
             inputs.add(parser.text());
+            multiFields.parse(this, context);
         } else {
             String currentFieldName = null;
             while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
                 if (token == XContentParser.Token.FIELD_NAME) {
                     currentFieldName = parser.currentName();
                     if (!ALLOWED_CONTENT_FIELD_NAMES.contains(currentFieldName)) {
-                        throw new ElasticSearchIllegalArgumentException("Unknown field name[" + currentFieldName + "], must be one of " + ALLOWED_CONTENT_FIELD_NAMES);
+                        throw new ElasticsearchIllegalArgumentException("Unknown field name[" + currentFieldName + "], must be one of " + ALLOWED_CONTENT_FIELD_NAMES);
+                    }
+                } else if (Fields.CONTEXT.equals(currentFieldName)) {
+                    SortedMap<String, ContextConfig> configs = Maps.newTreeMap(); 
+                    
+                    if (token == Token.START_OBJECT) {
+                        while ((token = parser.nextToken()) != Token.END_OBJECT) {
+                            String name = parser.text();
+                            ContextMapping mapping = contextMapping.get(name);
+                            if (mapping == null) {
+                                throw new ElasticsearchParseException("context [" + name + "] is not defined");
+                            } else {
+                                token = parser.nextToken();
+                                configs.put(name, mapping.parseContext(context, parser));
+                            }
+                        }
+                        contextConfig = Maps.newTreeMap();
+                        for (ContextMapping mapping : contextMapping.values()) {
+                            ContextConfig config = configs.get(mapping.name());
+                            contextConfig.put(mapping.name(), config==null ? mapping.defaultConfig() : config);
+                        }
+                    } else {
+                        throw new ElasticsearchParseException("context must be an object");
                     }
                 } else if (Fields.CONTENT_FIELD_NAME_PAYLOAD.equals(currentFieldName)) {
                     if (!isStoringPayloads()) {
@@ -266,11 +301,11 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
                     if (Fields.CONTENT_FIELD_NAME_WEIGHT.equals(currentFieldName)) {
                         NumberType numberType = parser.numberType();
                         if (NumberType.LONG != numberType && NumberType.INT != numberType) {
-                            throw new ElasticSearchIllegalArgumentException("Weight must be an integer, but was [" + parser.numberValue() + "]");
+                            throw new ElasticsearchIllegalArgumentException("Weight must be an integer, but was [" + parser.numberValue() + "]");
                         }
                         weight = parser.longValue(); // always parse a long to make sure we don't get the overflow value
                         if (weight < 0 || weight > Integer.MAX_VALUE) {
-                            throw new ElasticSearchIllegalArgumentException("Weight must be in the interval [0..2147483647], but was [" + weight + "]");
+                            throw new ElasticsearchIllegalArgumentException("Weight must be in the interval [0..2147483647], but was [" + weight + "]");
                         }
                     }
                 } else if (token == XContentParser.Token.START_ARRAY) {
@@ -282,23 +317,49 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
                 }
             }
         }
+
+        if(contextConfig == null) {
+            contextConfig = Maps.newTreeMap();
+            for (ContextMapping mapping : contextMapping.values()) {
+                contextConfig.put(mapping.name(), mapping.defaultConfig());
+            }
+        }
+
+        final ContextMapping.Context ctx = new ContextMapping.Context(contextConfig, context.doc());
+
         payload = payload == null ? EMPTY : payload;
         if (surfaceForm == null) { // no surface form use the input
             for (String input : inputs) {
                 BytesRef suggestPayload = analyzingSuggestLookupProvider.buildPayload(new BytesRef(
                         input), weight, payload);
-                context.doc().add(getCompletionField(input, suggestPayload));
+                context.doc().add(getCompletionField(ctx, input, suggestPayload));
             }
         } else {
             BytesRef suggestPayload = analyzingSuggestLookupProvider.buildPayload(new BytesRef(
                     surfaceForm), weight, payload);
             for (String input : inputs) {
-                context.doc().add(getCompletionField(input, suggestPayload));
+                context.doc().add(getCompletionField(ctx, input, suggestPayload));
             }
         }
     }
 
+    /**
+     * Get the context mapping associated with this completion field.
+     */
+    public SortedMap<String, ContextMapping> getContextMapping() {
+        return contextMapping;
+    }
+
+    /** @return true if a context mapping has been defined */
+    public boolean requiresContext() {
+        return !contextMapping.isEmpty();
+    }
+
     public Field getCompletionField(String input, BytesRef payload) {
+        return getCompletionField(ContextMapping.EMPTY_CONTEXT, input, payload);
+    }
+
+    public Field getCompletionField(ContextMapping.Context ctx, String input, BytesRef payload) {
         final String originalInput = input;
         if (input.length() > maxInputLength) {
             final int len = correctSubStringLen(input, Math.min(maxInputLength, input.length()));
@@ -306,12 +367,12 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
         }
         for (int i = 0; i < input.length(); i++) {
             if (isReservedChar(input.charAt(i))) {
-                throw new ElasticSearchIllegalArgumentException("Illegal input [" + originalInput + "] UTF-16 codepoint  [0x"
+                throw new ElasticsearchIllegalArgumentException("Illegal input [" + originalInput + "] UTF-16 codepoint  [0x"
                         + Integer.toHexString((int) input.charAt(i)).toUpperCase(Locale.ROOT)
                         + "] at position " + i + " is a reserved character");
             }
         }
-        return new SuggestField(names.indexName(), input, this.fieldType, payload, analyzingSuggestLookupProvider);
+        return new SuggestField(names.indexName(), ctx, input, this.fieldType, payload, analyzingSuggestLookupProvider);
     }
 
     public static int correctSubStringLen(String input, int len) {
@@ -327,30 +388,25 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
                 surfaceForm, weight, payload);
     }
 
-    private static final class SuggestField extends Field {
+    private static final class SuggestField extends XStringField {
         private final BytesRef payload;
         private final CompletionTokenStream.ToFiniteStrings toFiniteStrings;
+        private final ContextMapping.Context ctx;
 
-        public SuggestField(String name, Reader value, FieldType type, BytesRef payload, CompletionTokenStream.ToFiniteStrings toFiniteStrings) {
+        public SuggestField(String name, ContextMapping.Context ctx, String value, FieldType type, BytesRef payload, CompletionTokenStream.ToFiniteStrings toFiniteStrings) {
             super(name, value, type);
             this.payload = payload;
             this.toFiniteStrings = toFiniteStrings;
-        }
-
-        public SuggestField(String name, String value, FieldType type, BytesRef payload, CompletionTokenStream.ToFiniteStrings toFiniteStrings) {
-            super(name, value, type);
-            this.payload = payload;
-            this.toFiniteStrings = toFiniteStrings;
+            this.ctx = ctx;
         }
 
         @Override
         public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-            TokenStream ts = super.tokenStream(analyzer);
+            TokenStream ts = ctx.wrapTokenStream(super.tokenStream(analyzer));
             return new CompletionTokenStream(ts, payload, toFiniteStrings);
         }
     }
-
-
+    
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(name())
@@ -358,21 +414,29 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
         if (indexAnalyzer.name().equals(searchAnalyzer.name())) {
             builder.field(Fields.ANALYZER, indexAnalyzer.name());
         } else {
-            builder.field(Fields.INDEX_ANALYZER, indexAnalyzer.name())
-                    .field(Fields.SEARCH_ANALYZER, searchAnalyzer.name());
+            builder.field(Fields.INDEX_ANALYZER.getPreferredName(), indexAnalyzer.name())
+                    .field(Fields.SEARCH_ANALYZER.getPreferredName(), searchAnalyzer.name());
         }
         builder.field(Fields.PAYLOADS, this.payloads);
-        builder.field(Fields.PRESERVE_SEPARATORS, this.preserveSeparators);
-        builder.field(Fields.PRESERVE_POSITION_INCREMENTS, this.preservePositionIncrements);
-        builder.field(Fields.MAX_INPUT_LENGTH, this.maxInputLength);
+        builder.field(Fields.PRESERVE_SEPARATORS.getPreferredName(), this.preserveSeparators);
+        builder.field(Fields.PRESERVE_POSITION_INCREMENTS.getPreferredName(), this.preservePositionIncrements);
+        builder.field(Fields.MAX_INPUT_LENGTH.getPreferredName(), this.maxInputLength);
+        multiFields.toXContent(builder, params);
+
+        if(!contextMapping.isEmpty()) {
+            builder.startObject(Fields.CONTEXT);
+            for (ContextMapping mapping : contextMapping.values()) {
+                builder.value(mapping);
+            }
+            builder.endObject();
+        }
+
         return builder.endObject();
     }
 
     @Override
-    protected Field parseCreateField(ParseContext context) throws IOException {
-        return null;
+    protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
     }
-
 
     @Override
     protected String contentType() {
@@ -381,6 +445,11 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
 
     @Override
     public boolean isSortable() {
+        return false;
+    }
+
+    @Override
+    public boolean hasDocValues() {
         return false;
     }
 
@@ -419,6 +488,9 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
         if (preserveSeparators != fieldMergeWith.preserveSeparators) {
             mergeContext.addConflict("mapper [" + names.fullName() + "] has different 'preserve_separators' values");
         }
+        if(!ContextMapping.mappingsAreEqual(getContextMapping(), fieldMergeWith.getContextMapping())) {
+            mergeContext.addConflict("mapper [" + names.fullName() + "] has different 'context_mapping' values");
+        }
         if (!mergeContext.mergeFlags().simulate()) {
             this.maxInputLength = fieldMergeWith.maxInputLength;
         }
@@ -435,9 +507,10 @@ public class CompletionFieldMapper extends AbstractFieldMapper<String> {
              case  XAnalyzingSuggester.END_BYTE:
              case  XAnalyzingSuggester.SEP_LABEL:
              case  XAnalyzingSuggester.HOLE_CHARACTER:
+             case  ContextMapping.SEPARATOR:
                 return true;
             default:
                 return false;
-         }
+        }
     }
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,7 @@
 package org.elasticsearch.action.admin.indices.stats;
 
 import com.google.common.collect.Lists;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
@@ -135,7 +135,7 @@ public class TransportIndicesStatsAction extends TransportBroadcastOperationActi
     }
 
     @Override
-    protected ShardStats shardOperation(IndexShardStatsRequest request) throws ElasticSearchException {
+    protected ShardStats shardOperation(IndexShardStatsRequest request) throws ElasticsearchException {
         InternalIndexService indexService = (InternalIndexService) indicesService.indexServiceSafe(request.index());
         InternalIndexShard indexShard = (InternalIndexShard) indexService.shardSafe(request.shardId());
 
@@ -180,12 +180,21 @@ public class TransportIndicesStatsAction extends TransportBroadcastOperationActi
             flags.set(CommonStatsFlags.Flag.FieldData);
             flags.fieldDataFields(request.request.fieldDataFields());
         }
+        if (request.request.percolate()) {
+            flags.set(CommonStatsFlags.Flag.Percolate);
+        }
         if (request.request.segments()) {
             flags.set(CommonStatsFlags.Flag.Segments);
         }
         if (request.request.completion()) {
             flags.set(CommonStatsFlags.Flag.Completion);
             flags.completionDataFields(request.request.completionFields());
+        }
+        if (request.request.translog()) {
+            flags.set(CommonStatsFlags.Flag.Translog);
+        }
+        if (request.request.suggest()) {
+            flags.set(CommonStatsFlags.Flag.Suggest);
         }
 
         return new ShardStats(indexShard, flags);

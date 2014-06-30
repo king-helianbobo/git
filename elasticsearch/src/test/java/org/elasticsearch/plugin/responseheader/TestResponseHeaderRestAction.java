@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -34,11 +34,11 @@ public class TestResponseHeaderRestAction extends BaseRestHandler {
     @Override
     public void handleRequest(RestRequest request, RestChannel channel) {
         if ("password".equals(request.header("Secret"))) {
-            RestResponse response = new StringRestResponse(RestStatus.OK, "Access granted");
+            RestResponse response = new BytesRestResponse(RestStatus.OK, "Access granted");
             response.addHeader("Secret", "granted");
             channel.sendResponse(response);
         } else {
-            RestResponse response = new StringRestResponse(RestStatus.UNAUTHORIZED, "Access denied");
+            RestResponse response = new BytesRestResponse(RestStatus.UNAUTHORIZED, "Access denied");
             response.addHeader("Secret", "required");
             channel.sendResponse(response);
         }

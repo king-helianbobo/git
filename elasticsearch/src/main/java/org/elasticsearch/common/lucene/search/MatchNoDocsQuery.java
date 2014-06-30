@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -32,14 +32,6 @@ import java.util.Set;
  */
 public final class MatchNoDocsQuery extends Query {
 
-    public static MatchNoDocsQuery INSTANCE = new MatchNoDocsQuery();
-
-    /**
-     * Since all instances of this class are equal to each other,
-     * we have a constant hash code.
-     */
-    private static final int HASH_CODE = 12345;
-
     /**
      * Weight implementation that matches no documents.
      */
@@ -65,7 +57,7 @@ public final class MatchNoDocsQuery extends Query {
         }
 
         @Override
-        public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Bits acceptDocs) throws IOException {
+        public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
             return null;
         }
 
@@ -92,11 +84,14 @@ public final class MatchNoDocsQuery extends Query {
 
     @Override
     public boolean equals(final Object o) {
-        return o instanceof MatchAllDocsQuery;
+        if (o instanceof MatchNoDocsQuery) {
+            return getBoost() == ((MatchNoDocsQuery) o).getBoost();
+        }
+        return false;
     }
 
     @Override
     public int hashCode() {
-        return HASH_CODE;
+        return getClass().hashCode() ^ Float.floatToIntBits(getBoost());
     }
 }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,7 +20,6 @@
 package org.elasticsearch.monitor.jvm;
 
 import com.google.common.collect.Iterators;
-import org.elasticsearch.Version;
 import org.elasticsearch.common.Booleans;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -145,18 +144,31 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
         stats.mem.nonHeapCommitted = memUsage.getCommitted() < 0 ? 0 : memUsage.getCommitted();
 
         List<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getMemoryPoolMXBeans();
-        stats.mem.pools = new MemoryPool[memoryPoolMXBeans.size()];
+        List<MemoryPool> pools = new ArrayList<>();
         for (int i = 0; i < memoryPoolMXBeans.size(); i++) {
-            MemoryPoolMXBean memoryPoolMXBean = memoryPoolMXBeans.get(i);
-            MemoryUsage usage = memoryPoolMXBean.getUsage();
-            MemoryUsage peakUsage = memoryPoolMXBean.getPeakUsage();
-            stats.mem.pools[i] = new MemoryPool(memoryPoolMXBean.getName(),
-                    usage.getUsed() < 0 ? 0 : usage.getUsed(),
-                    usage.getMax() < 0 ? 0 : usage.getMax(),
-                    peakUsage.getUsed() < 0 ? 0 : peakUsage.getUsed(),
-                    peakUsage.getMax() < 0 ? 0 : peakUsage.getMax()
-            );
+            try {
+                MemoryPoolMXBean memoryPoolMXBean = memoryPoolMXBeans.get(i);
+                MemoryUsage usage = memoryPoolMXBean.getUsage();
+                MemoryUsage peakUsage = memoryPoolMXBean.getPeakUsage();
+                String name = GcNames.getByMemoryPoolName(memoryPoolMXBean.getName(), null);
+                if (name == null) { // if we can't resolve it, its not interesting.... (Per Gen, Code Cache)
+                    continue;
+                }
+                pools.add(new MemoryPool(name,
+                        usage.getUsed() < 0 ? 0 : usage.getUsed(),
+                        usage.getMax() < 0 ? 0 : usage.getMax(),
+                        peakUsage.getUsed() < 0 ? 0 : peakUsage.getUsed(),
+                        peakUsage.getMax() < 0 ? 0 : peakUsage.getMax()
+                ));
+            } catch (OutOfMemoryError err) {
+                throw err; // rethrow
+            } catch (Throwable ex) {
+                /* ignore some JVMs might barf here with:
+                 * java.lang.InternalError: Memory Pool not found
+                 * we just omit the pool in that case!*/
+            }
         }
+        stats.mem.pools = pools.toArray(new MemoryPool[pools.size()]);
 
         stats.threads = new Threads();
         stats.threads.count = threadMXBean.getThreadCount();
@@ -168,7 +180,7 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
         for (int i = 0; i < stats.gc.collectors.length; i++) {
             GarbageCollectorMXBean gcMxBean = gcMxBeans.get(i);
             stats.gc.collectors[i] = new GarbageCollector();
-            stats.gc.collectors[i].name = gcMxBean.getName();
+            stats.gc.collectors[i].name = GcNames.getByGcName(gcMxBean.getName(), gcMxBean.getName());
             stats.gc.collectors[i].collectionCount = gcMxBean.getCollectionCount();
             stats.gc.collectors[i].collectionTime = gcMxBean.getCollectionTime();
             if (enableLastGc) {
@@ -205,7 +217,7 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
         if (bufferPoolsEnabled) {
             try {
                 List bufferPools = (List) managementFactoryPlatformMXBeansMethod.invoke(null, bufferPoolMXBeanClass);
-                stats.bufferPools = new ArrayList<BufferPool>(bufferPools.size());
+                stats.bufferPools = new ArrayList<>(bufferPools.size());
                 for (Object bufferPool : bufferPools) {
                     String name = (String) bufferPoolMXBeanNameMethod.invoke(bufferPool);
                     Long count = (Long) bufferPoolMXBeanCountMethod.invoke(bufferPool);
@@ -321,8 +333,6 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
         }
         if (gc != null) {
             builder.startObject(Fields.GC);
-            builder.field(Fields.COLLECTION_COUNT, gc.collectionCount());
-            builder.timeValueField(Fields.COLLECTION_TIME_IN_MILLIS, Fields.COLLECTION_TIME, gc.collectionTime());
 
             builder.startObject(Fields.COLLECTORS);
             for (GarbageCollector collector : gc) {
@@ -416,7 +426,7 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
 
         if (in.readBoolean()) {
             int size = in.readVInt();
-            bufferPools = new ArrayList<BufferPool>(size);
+            bufferPools = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 BufferPool bufferPool = new BufferPool();
                 bufferPool.readFrom(in);
@@ -481,22 +491,6 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
         @Override
         public Iterator<GarbageCollector> iterator() {
             return Iterators.forArray(collectors);
-        }
-
-        public long collectionCount() {
-            long collectionCount = 0;
-            for (GarbageCollector gc : collectors) {
-                collectionCount += gc.collectionCount();
-            }
-            return collectionCount;
-        }
-
-        public TimeValue collectionTime() {
-            long collectionTime = 0;
-            for (GarbageCollector gc : collectors) {
-                collectionTime += gc.collectionTime;
-            }
-            return new TimeValue(collectionTime, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -835,11 +829,7 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
             heapUsed = in.readVLong();
             nonHeapCommitted = in.readVLong();
             nonHeapUsed = in.readVLong();
-
-            if (in.getVersion().onOrAfter(Version.V_0_90_7)) {
-                heapMax = in.readVLong();
-            }
-
+            heapMax = in.readVLong();
             pools = new MemoryPool[in.readVInt()];
             for (int i = 0; i < pools.length; i++) {
                 pools[i] = MemoryPool.readMemoryPool(in);
@@ -852,11 +842,7 @@ public class JvmStats implements Streamable, Serializable, ToXContent {
             out.writeVLong(heapUsed);
             out.writeVLong(nonHeapCommitted);
             out.writeVLong(nonHeapUsed);
-
-            if (out.getVersion().onOrAfter(Version.V_0_90_7)) {
-                out.writeVLong(heapMax);
-            }
-
+            out.writeVLong(heapMax);
             out.writeVInt(pools.length);
             for (MemoryPool pool : pools) {
                 pool.writeTo(out);

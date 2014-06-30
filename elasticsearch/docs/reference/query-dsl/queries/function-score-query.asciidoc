@@ -1,17 +1,14 @@
 [[query-dsl-function-score-query]]
 === Function Score Query
 
-added[0.90.4]
-
 The `function_score` allows you to modify the score of documents that are
 retrieved by a query. This can be useful if, for example, a score
 function is computationally expensive and it is sufficient to compute
 the score on a filtered set of documents.
 
 `function_score` provides the same functionality that
-<<query-dsl-custom-boost-factor-query>>,
-<<query-dsl-custom-score-query>> and
-<<query-dsl-custom-filters-score-query>> provided
+`custom_boost_factor`, `custom_score` and
+`custom_filters_score` provided
 but furthermore adds futher scoring functionality such as
 distance and recency scoring (see description below).
 
@@ -65,7 +62,6 @@ First, each document is scored by the defined functons. The parameter
 
 [horizontal]
 `multiply`::    scores are multiplied (default)
-`mult`::        scores are multiplied (default), deprecated [0.90.5, Renamed to `multiply`]
 `sum`::         scores are summed
 `avg`::         scores are averaged
 `first`::       the first function that has a matching filter
@@ -79,6 +75,7 @@ the `max_boost` parameter. The default for `max_boost` is FLT_MAX.
 Finally, the newly computed score is combined with the score of the
 query. The parameter `boost_mode` defines how:
 
+[horizontal]
 `multiply`::    query score and function score is multiplied (default)
 `replace`::     only function score is used, the query score is ignored
 `sum`::         query score and function score are added
@@ -125,7 +122,7 @@ script, and provide parameters to it:
 }
 --------------------------------------------------
 
-Note that unlike the <<query-dsl-custom-score-query>>, the
+Note that unlike the `custom_score` query, the
 score of the query is multiplied with the result of the script scoring. If
 you wish to inhibit this, set `"boost_mode": "replace"`
 
@@ -153,6 +150,46 @@ that is initialized with a `seed`.
 }
 --------------------------------------------------
 
+===== Field Value factor
+The `field_value_factor` function allows you to use a field from a document to
+influence the score. It's similar to using the `script_score` function, however,
+it avoids the overhead of scripting. If used on a multi-valued field, only the
+first value of the field is used in calculations.
+
+As an example, imagine you have a document indexed with a numeric `popularity`
+field and wish in influence the score of a document with this field, an example
+doing so would look like:
+
+[source,js]
+--------------------------------------------------
+"field_value_factor": {
+  "field": "popularity",
+  "factor": 1.2,
+  "modifier": "sqrt"
+}
+--------------------------------------------------
+
+Which will translate into the following forumla for scoring:
+
+`sqrt(1.2 * doc['popularity'].value)`
+
+There are a number of options for the `field_value_factor` function:
+
+[cols="<,<",options="header",]
+|=======================================================================
+| Parameter |Description
+|`field` |Field to be extracted from the document.
+|`factor` |Optional factor to multiply the field value with, defaults to 1.
+|`modifier` |Modifier to apply to the field value, can be one of: `none`, `log`,
+ `log1p`, `log2p`, `ln`, `ln1p`, `ln2p`, `square`, `sqrt`, or `reciprocal`.
+ Defaults to `none`.
+|=======================================================================
+
+Keep in mind that taking the log() of 0, or the square root of a negative number
+is an illegal operation, and an exception will be thrown. Be sure to limit the
+values of the field with a range filter to avoid this, or use `log1p` and
+`ln1p`.
+
 ===== Decay functions
 
 Decay functions score a document with a function that decays depending
@@ -178,7 +215,7 @@ decay function is specified as
 }
 --------------------------------------------------
 
-where `DECAY_FUNCTION` can be "linear", "exp" and "gauss" (see below). The specified field must be a numeric field. In the above example, the field is a <<mapping-geo-point-type>> and origin can be provided in geo format. `scale` and `offset` must be given with a unit in this case. If your field is a date field, you can set `scale` and `offset` as days, weeks, and so on. Example: 
+where `DECAY_FUNCTION` can be "linear", "exp" and "gauss" (see below). The specified field must be a numeric field. In the above example, the field is a <<mapping-geo-point-type>> and origin can be provided in geo format. `scale` and `offset` must be given with a unit in this case. If your field is a date field, you can set `scale` and `offset` as days, weeks, and so on. Example:
 
 [source,js]
 --------------------------------------------------
@@ -193,20 +230,21 @@ where `DECAY_FUNCTION` can be "linear", "exp" and "gauss" (see below). The speci
 --------------------------------------------------
 
 
-The format of the origin depends on the <<mapping-date-format>> defined in your mapping. If you do not define the origin, the current time is used. 
+The format of the origin depends on the <<mapping-date-format>> defined in your mapping. If you do not define the origin, the current time is used.
 
- 
+
 The `offset` and `decay` parameters are optional.
 
+[horizontal]
 `offset`::
-    If an `offset` is defined, the decay function will only compute a the
+    If an `offset` is defined, the decay function will only compute the
     decay function for documents with a distance greater that the defined
     `offset`. The default is 0.
-`decay`::
 
-The `decay` parameter defines how documents are scored at the distance
-given at `scale`. If no `decay` is defined, documents at the distance
-`scale` will be scored 0.5.
+`decay`::
+    The `decay` parameter defines how documents are scored at the distance
+    given at `scale`. If no `decay` is defined, documents at the distance
+    `scale` will be scored 0.5.
 
 In the first example, your documents might represents hotels and contain a geo
 location field. You want to compute a decay function depending on how
@@ -219,7 +257,7 @@ the score function computes a score of 0.5 for hotels that are 2km away
 from the desired location.
 
 
-In the second example, documents with a field value between 2013-09-12 and 2013-09-22 would get a weight of 1.0 and documents which are 15 days from that date a weight of 0.5. 
+In the second example, documents with a field value between 2013-09-12 and 2013-09-22 would get a weight of 1.0 and documents which are 15 days from that date a weight of 0.5.
 
 
 
@@ -247,6 +285,32 @@ image:images/Linear.png[].
 In contrast to the normal and exponential decay, this function actually
 sets the score to 0 if the field value exceeds twice the user given
 scale value.
+
+===== Multiple values:
+
+If a field used for computing the decay contains multiple values, per default the value closest to the origin is chosen for determining the distance.
+This can be changed by setting `multi_value_mode`.
+
+[horizontal]
+`min`:: Distance is the minimum distance
+`max`:: Distance is the maximum distance
+`avg`:: Distance is the average distance
+`sum`:: Distance is the sum of all distances
+
+Example:
+
+[source,js]
+--------------------------------------------------
+    "DECAY_FUNCTION": {
+        "FIELD_NAME": {
+              "origin": ...,
+              "scale": ...
+        },
+        "multi_value_mode": "avg"
+    }
+--------------------------------------------------
+
+
 
 ==== Detailed example
 
@@ -382,14 +446,14 @@ image::https://f.cloud.github.com/assets/4320215/768165/19d8b1aa-e899-11e2-91bc-
 Only single valued numeric fields, including time and geo locations,
 are supported.
 
-==== What is a field is missing?
+==== What if a field is missing?
 
 If the numeric field is missing in the document, the function will
 return 1.
 
 ==== Relation to `custom_boost`, `custom_score` and `custom_filters_score`
 
-The <<query-dsl-custom-boost-factor-query>>
+The `custom_boost_factor` query
 
 [source,js]
 --------------------------------------------------
@@ -409,7 +473,7 @@ becomes
 }
 --------------------------------------------------
 
-The <<query-dsl-custom-score-query>>
+The `custom_score` query
 
 [source,js]
 --------------------------------------------------
@@ -440,18 +504,18 @@ becomes
 }
 --------------------------------------------------
 
-and the <<query-dsl-custom-filters-score-query>>
+and the `custom_filters_score`
 
 [source,js]
 --------------------------------------------------
 "custom_filters_score": {
     "filters": [
         {
-            "boost_factor": "3",
+            "boost": "3",
             "filter": {...}
         },
         {
-            "filter": {â¦},
+            "filter": {...},
             "script": "_score * doc['my_numeric_field'].value / pow(param1, param2)"
         }
     ],
@@ -489,5 +553,3 @@ becomes:
     "score_mode": "first"
 }
 --------------------------------------------------
-
-

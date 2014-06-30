@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.cluster.routing.operation.plain;
 
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.node.DiscoveryNodes;
@@ -97,7 +97,7 @@ public class PlainOperationRouting extends AbstractComponent implements Operatio
         }
 
         // we use set here and not identity set since we might get duplicates
-        HashSet<ShardIterator> set = new HashSet<ShardIterator>();
+        HashSet<ShardIterator> set = new HashSet<>();
         IndexRoutingTable indexRouting = indexRoutingTable(clusterState, index);
         for (String r : routing) {
             int shardId = shardId(clusterState, index, null, null, r);
@@ -112,14 +112,14 @@ public class PlainOperationRouting extends AbstractComponent implements Operatio
 
     @Override
     public int searchShardsCount(ClusterState clusterState, String[] indices, String[] concreteIndices, @Nullable Map<String, Set<String>> routing, @Nullable String preference) throws IndexMissingException {
-        final Set<IndexShardRoutingTable> shards = computeTargetedShards(clusterState, indices, concreteIndices, routing);
+        final Set<IndexShardRoutingTable> shards = computeTargetedShards(clusterState, concreteIndices, routing);
         return shards.size();
     }
 
     @Override
     public GroupShardsIterator searchShards(ClusterState clusterState, String[] indices, String[] concreteIndices, @Nullable Map<String, Set<String>> routing, @Nullable String preference) throws IndexMissingException {
-        final Set<IndexShardRoutingTable> shards = computeTargetedShards(clusterState, indices, concreteIndices, routing);
-        final Set<ShardIterator> set = new HashSet<ShardIterator>(shards.size());
+        final Set<IndexShardRoutingTable> shards = computeTargetedShards(clusterState, concreteIndices, routing);
+        final Set<ShardIterator> set = new HashSet<>(shards.size());
         for (IndexShardRoutingTable shard : shards) {
             ShardIterator iterator = preferenceActiveShardIterator(shard, clusterState.nodes().localNodeId(), clusterState.nodes(), preference);
             if (iterator != null) {
@@ -131,12 +131,9 @@ public class PlainOperationRouting extends AbstractComponent implements Operatio
 
     private static final Map<String, Set<String>> EMPTY_ROUTING = Collections.emptyMap();
 
-    private Set<IndexShardRoutingTable> computeTargetedShards(ClusterState clusterState, String[] indices, String[] concreteIndices, @Nullable Map<String, Set<String>> routing) throws IndexMissingException {
-        if (concreteIndices == null || concreteIndices.length == 0) {
-            concreteIndices = clusterState.metaData().concreteAllOpenIndices();
-        }
+    private Set<IndexShardRoutingTable> computeTargetedShards(ClusterState clusterState, String[] concreteIndices, @Nullable Map<String, Set<String>> routing) throws IndexMissingException {
         routing = routing == null ? EMPTY_ROUTING : routing; // just use an empty map
-        final Set<IndexShardRoutingTable> set = new HashSet<IndexShardRoutingTable>();
+        final Set<IndexShardRoutingTable> set = new HashSet<>();
         // we use set here and not list since we might get duplicates
         for (String index : concreteIndices) {
             final IndexRoutingTable indexRouting = indexRoutingTable(clusterState, index);
@@ -282,14 +279,14 @@ public class PlainOperationRouting extends AbstractComponent implements Operatio
 
     protected int hash(String type, String id) {
         if (type == null || "_all".equals(type)) {
-            throw new ElasticSearchIllegalArgumentException("Can't route an operation with no type and having type part of the routing (for backward comp)");
+            throw new ElasticsearchIllegalArgumentException("Can't route an operation with no type and having type part of the routing (for backward comp)");
         }
         return hashFunction.hash(type, id);
     }
 
     private void ensureNodeIdExists(DiscoveryNodes nodes, String nodeId) {
         if (!nodes.dataNodes().keys().contains(nodeId)) {
-            throw new ElasticSearchIllegalArgumentException("No data node with id[" + nodeId + "] found");
+            throw new ElasticsearchIllegalArgumentException("No data node with id[" + nodeId + "] found");
         }
     }
 }

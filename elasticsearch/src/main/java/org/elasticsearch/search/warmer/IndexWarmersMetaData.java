@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -42,10 +42,6 @@ public class IndexWarmersMetaData implements IndexMetaData.Custom {
     public static final String TYPE = "warmers";
 
     public static final Factory FACTORY = new Factory();
-
-    static {
-        IndexMetaData.registerFactory(TYPE, FACTORY);
-    }
 
     public static class Entry {
         private final String name;
@@ -126,13 +122,10 @@ public class IndexWarmersMetaData implements IndexMetaData.Custom {
                 map = (Map<String, Object>) map.values().iterator().next();
             }
             XContentBuilder builder = XContentFactory.smileBuilder().map(map);
-            XContentParser parser = XContentFactory.xContent(XContentType.SMILE).createParser(builder.bytes());
-            try {
+            try (XContentParser parser = XContentFactory.xContent(XContentType.SMILE).createParser(builder.bytes())) {
                 // move to START_OBJECT
                 parser.nextToken();
                 return fromXContent(parser);
-            } finally {
-                parser.close();
             }
         }
 
@@ -141,13 +134,13 @@ public class IndexWarmersMetaData implements IndexMetaData.Custom {
             // we get here after we are at warmers token
             String currentFieldName = null;
             XContentParser.Token token;
-            List<Entry> entries = new ArrayList<Entry>();
+            List<Entry> entries = new ArrayList<>();
             while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
                 if (token == XContentParser.Token.FIELD_NAME) {
                     currentFieldName = parser.currentName();
                 } else if (token == XContentParser.Token.START_OBJECT) {
                     String name = currentFieldName;
-                    List<String> types = new ArrayList<String>(2);
+                    List<String> types = new ArrayList<>(2);
                     BytesReference source = null;
                     while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
                         if (token == XContentParser.Token.FIELD_NAME) {

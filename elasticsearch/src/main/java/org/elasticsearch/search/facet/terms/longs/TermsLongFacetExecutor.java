@@ -1,13 +1,13 @@
 /*
- * Licensed to Elastic Search and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. Elastic Search licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.elasticsearch.search.facet.terms.longs;
 
 import com.carrotsearch.hppc.LongIntOpenHashMap;
@@ -101,7 +100,7 @@ public class TermsLongFacetExecutor extends FacetExecutor {
     @Override
     public InternalFacet buildFacet(String facetName) {
         if (facets.v().isEmpty()) {
-            facets.release();
+            facets.close();
             return new InternalLongTermsFacet(facetName, comparatorType, size, ImmutableList.<InternalLongTermsFacet.LongEntry>of(), missing, total);
         } else {
             LongIntOpenHashMap facetEntries  = facets.v();
@@ -119,16 +118,16 @@ public class TermsLongFacetExecutor extends FacetExecutor {
                 for (int i = ordered.size() - 1; i >= 0; i--) {
                     list[i] = (InternalLongTermsFacet.LongEntry) ordered.pop();
                 }
-                facets.release();
+                facets.close();
                 return new InternalLongTermsFacet(facetName, comparatorType, size, Arrays.asList(list), missing, total);
             } else {
-                BoundedTreeSet<InternalLongTermsFacet.LongEntry> ordered = new BoundedTreeSet<InternalLongTermsFacet.LongEntry>(comparatorType.comparator(), shardSize);
+                BoundedTreeSet<InternalLongTermsFacet.LongEntry> ordered = new BoundedTreeSet<>(comparatorType.comparator(), shardSize);
                 for (int i = 0; i < states.length; i++) {
                     if (states[i]) {
                         ordered.add(new InternalLongTermsFacet.LongEntry(keys[i], values[i]));
                     }
                 }
-                facets.release();
+                facets.close();
                 return new InternalLongTermsFacet(facetName, comparatorType, size, ordered, missing, total);
             }
         }

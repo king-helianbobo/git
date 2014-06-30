@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -35,7 +35,7 @@ import org.elasticsearch.cluster.routing.allocation.decider.AllocationDeciders;
 import org.elasticsearch.cluster.routing.allocation.decider.Decision;
 import org.elasticsearch.cluster.routing.allocation.decider.SameShardAllocationDecider;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.test.ElasticsearchTestCase;
+import org.elasticsearch.test.ElasticsearchAllocationTestCase;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -44,11 +44,10 @@ import java.util.HashSet;
 import java.util.Random;
 
 import static org.elasticsearch.cluster.routing.ShardRoutingState.INITIALIZING;
-import static org.elasticsearch.cluster.routing.allocation.RoutingAllocationTests.newNode;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.hamcrest.Matchers.equalTo;
 
-public class RandomAllocationDeciderTests extends ElasticsearchTestCase {
+public class RandomAllocationDeciderTests extends ElasticsearchAllocationTestCase {
 
     /* This test will make random allocation decision on a growing and shrinking
      * cluster leading to a random distribution of the shards. After a certain
@@ -59,16 +58,16 @@ public class RandomAllocationDeciderTests extends ElasticsearchTestCase {
     public void testRandomDecisions() {
         RandomAllocationDecider randomAllocationDecider = new RandomAllocationDecider(getRandom());
         AllocationService strategy = new AllocationService(settingsBuilder().build(), new AllocationDeciders(ImmutableSettings.EMPTY,
-                new HashSet<AllocationDecider>(Arrays.asList(new SameShardAllocationDecider(ImmutableSettings.EMPTY),
+                new HashSet<>(Arrays.asList(new SameShardAllocationDecider(ImmutableSettings.EMPTY),
                         randomAllocationDecider))), new ShardsAllocators(), ClusterInfoService.EMPTY);
-        int indices = between(1, 20);
+        int indices = scaledRandomIntBetween(1, 20);
         Builder metaBuilder = MetaData.builder();
         int maxNumReplicas = 1;
         int totalNumShards = 0;
         for (int i = 0; i < indices; i++) {
-            int replicas = between(0, 6);
+            int replicas = scaledRandomIntBetween(0, 6);
             maxNumReplicas = Math.max(maxNumReplicas, replicas + 1);
-            int numShards = between(1, 20);
+            int numShards = scaledRandomIntBetween(1, 20);
             totalNumShards += numShards * (replicas + 1);
             metaBuilder.put(IndexMetaData.builder("INDEX_" + i).numberOfShards(numShards).numberOfReplicas(replicas));
 
@@ -80,18 +79,19 @@ public class RandomAllocationDeciderTests extends ElasticsearchTestCase {
         }
 
         RoutingTable routingTable = routingTableBuilder.build();
-        ClusterState clusterState = ClusterState.builder().metaData(metaData).routingTable(routingTable).build();
-        int numIters = atLeast(20);
+        ClusterState clusterState = ClusterState.builder(org.elasticsearch.cluster.ClusterName.DEFAULT).metaData(metaData).routingTable(routingTable).build();
+        int numIters = scaledRandomIntBetween(5, 15);
         int nodeIdCounter = 0;
-        int atMostNodes = between(Math.max(1, maxNumReplicas), numIters);
+        int atMostNodes = scaledRandomIntBetween(Math.max(1, maxNumReplicas), 15);
         final boolean frequentNodes = randomBoolean();
         for (int i = 0; i < numIters; i++) {
+            logger.info("Start iteration [{}]", i);
             ClusterState.Builder stateBuilder = ClusterState.builder(clusterState);
             DiscoveryNodes.Builder newNodesBuilder = DiscoveryNodes.builder(clusterState.nodes());
 
             if (clusterState.nodes().size() <= atMostNodes &&
                     (nodeIdCounter == 0 || (frequentNodes ? frequently() : rarely()))) {
-                int numNodes = atLeast(1);
+                int numNodes = scaledRandomIntBetween(1, 3);
                 for (int j = 0; j < numNodes; j++) {
                     logger.info("adding node [{}]", nodeIdCounter);
                     newNodesBuilder.put(newNode("NODE_" + (nodeIdCounter++)));
@@ -99,7 +99,7 @@ public class RandomAllocationDeciderTests extends ElasticsearchTestCase {
             }
 
             if (nodeIdCounter > 1 && rarely()) {
-                int nodeId = between(0, nodeIdCounter - 2);
+                int nodeId = scaledRandomIntBetween(0, nodeIdCounter - 2);
                 logger.info("removing node [{}]", nodeId);
                 newNodesBuilder.remove("NODE_" + nodeId);
             }
@@ -156,7 +156,7 @@ public class RandomAllocationDeciderTests extends ElasticsearchTestCase {
             if (clusterState.getRoutingNodes().node("NODE_" + i) == null) {
                 continue;
             }
-            assertThat(clusterState.getRoutingNodes().node("NODE_" + i).shards().size(), Matchers.anyOf(
+            assertThat(clusterState.getRoutingNodes().node("NODE_" + i).size(), Matchers.anyOf(
                     Matchers.anyOf(equalTo((shards / numNodes) + 1), equalTo((shards / numNodes) - 1), equalTo((shards / numNodes))),
                     Matchers.allOf(Matchers.greaterThanOrEqualTo(lowerBound), Matchers.lessThanOrEqualTo(upperBound))));
         }

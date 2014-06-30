@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.http.netty;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.netty.NettyStaticSetup;
@@ -33,6 +33,7 @@ import org.elasticsearch.common.transport.NetworkExceptionHelper;
 import org.elasticsearch.common.transport.PortsRange;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.common.util.BigArrays;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.http.*;
 import org.elasticsearch.http.HttpRequest;
@@ -64,6 +65,7 @@ public class NettyHttpServerTransport extends AbstractLifecycleComponent<HttpSer
     }
 
     private final NetworkService networkService;
+    final BigArrays bigArrays;
 
     final ByteSizeValue maxContentLength;
     final ByteSizeValue maxInitialLineLength;
@@ -110,9 +112,10 @@ public class NettyHttpServerTransport extends AbstractLifecycleComponent<HttpSer
     private volatile HttpServerAdapter httpServerAdapter;
 
     @Inject
-    public NettyHttpServerTransport(Settings settings, NetworkService networkService) {
+    public NettyHttpServerTransport(Settings settings, NetworkService networkService, BigArrays bigArrays) {
         super(settings);
         this.networkService = networkService;
+        this.bigArrays = bigArrays;
 
         if (settings.getAsBoolean("netty.epollBugWorkaround", false)) {
             System.setProperty("org.jboss.netty.epollBugWorkaround", "true");
@@ -177,7 +180,7 @@ public class NettyHttpServerTransport extends AbstractLifecycleComponent<HttpSer
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
         this.serverOpenChannels = new OpenChannelsHandler(logger);
 
         if (blockingServer) {
@@ -223,7 +226,7 @@ public class NettyHttpServerTransport extends AbstractLifecycleComponent<HttpSer
         final InetAddress hostAddress = hostAddressX;
 
         PortsRange portsRange = new PortsRange(port);
-        final AtomicReference<Exception> lastException = new AtomicReference<Exception>();
+        final AtomicReference<Exception> lastException = new AtomicReference<>();
         boolean success = portsRange.iterate(new PortsRange.PortCallback() {
             @Override
             public boolean onPortNumber(int portNumber) {
@@ -251,7 +254,7 @@ public class NettyHttpServerTransport extends AbstractLifecycleComponent<HttpSer
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
         if (serverChannel != null) {
             serverChannel.close().awaitUninterruptibly();
             serverChannel = null;
@@ -269,7 +272,7 @@ public class NettyHttpServerTransport extends AbstractLifecycleComponent<HttpSer
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
     }
 
     public BoundTransportAddress boundAddress() {

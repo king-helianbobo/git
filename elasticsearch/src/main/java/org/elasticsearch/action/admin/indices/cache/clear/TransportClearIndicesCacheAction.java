@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.action.admin.indices.cache.clear;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ShardOperationFailedException;
 import org.elasticsearch.action.support.DefaultShardOperationFailedException;
 import org.elasticsearch.action.support.broadcast.BroadcastShardOperationFailedException;
@@ -33,6 +33,7 @@ import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.mapper.internal.ParentFieldMapper;
 import org.elasticsearch.index.service.IndexService;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.indices.cache.filter.terms.IndicesTermsFilterCache;
@@ -116,7 +117,7 @@ public class TransportClearIndicesCacheAction extends TransportBroadcastOperatio
     }
 
     @Override
-    protected ShardClearIndicesCacheResponse shardOperation(ShardClearIndicesCacheRequest request) throws ElasticSearchException {
+    protected ShardClearIndicesCacheResponse shardOperation(ShardClearIndicesCacheRequest request) throws ElasticsearchException {
         IndexService service = indicesService.indexService(request.index());
         if (service != null) {
             // we always clear the query cache
@@ -143,13 +144,13 @@ public class TransportClearIndicesCacheAction extends TransportBroadcastOperatio
                 }
             }
             if (request.recycler()) {
-                logger.info("Clear CacheRecycler on index [{}]", service.index());
+                logger.debug("Clear CacheRecycler on index [{}]", service.index());
                 clearedAtLeastOne = true;
                 // cacheRecycler.clear();
             }
             if (request.idCache()) {
                 clearedAtLeastOne = true;
-                service.cache().idCache().clear();
+                service.fieldData().clearField(ParentFieldMapper.NAME);
             }
             if (!clearedAtLeastOne) {
                 if (request.fields() != null && request.fields().length > 0) {

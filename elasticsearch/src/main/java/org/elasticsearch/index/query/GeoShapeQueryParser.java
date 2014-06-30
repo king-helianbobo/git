@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,16 +19,15 @@
 
 package org.elasticsearch.index.query;
 
-import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.mapper.FieldMapper;
@@ -61,12 +60,12 @@ public class GeoShapeQueryParser implements QueryParser {
         String fieldName = null;
         ShapeRelation shapeRelation = ShapeRelation.INTERSECTS;
         String strategyName = null;
-        Shape shape = null;
+        ShapeBuilder shape = null;
 
         String id = null;
         String type = null;
         String index = DEFAULTS.INDEX_NAME;
-        String shapeFieldName = DEFAULTS.SHAPE_FIELD_NAME;
+        String shapePath = DEFAULTS.SHAPE_FIELD_NAME;
 
         XContentParser.Token token;
         String currentFieldName = null;
@@ -84,7 +83,7 @@ public class GeoShapeQueryParser implements QueryParser {
                         currentFieldName = parser.currentName();
                         token = parser.nextToken();
                         if ("shape".equals(currentFieldName)) {
-                            shape = GeoJSONShapeParser.parse(parser);
+                            shape = ShapeBuilder.parse(parser);
                         } else if ("strategy".equals(currentFieldName)) {
                             strategyName = parser.text();
                         } else if ("relation".equals(currentFieldName)) {
@@ -103,8 +102,8 @@ public class GeoShapeQueryParser implements QueryParser {
                                         type = parser.text();
                                     } else if ("index".equals(currentFieldName)) {
                                         index = parser.text();
-                                    } else if ("shape_field_name".equals(currentFieldName)) {
-                                        shapeFieldName = parser.text();
+                                    } else if ("path".equals(currentFieldName)) {
+                                        shapePath = parser.text();
                                     }
                                 }
                             }
@@ -113,7 +112,9 @@ public class GeoShapeQueryParser implements QueryParser {
                             } else if (type == null) {
                                 throw new QueryParsingException(parseContext.index(), "Type for indexed shape not provided");
                             }
-                            shape = fetchService.fetch(id, type, index, shapeFieldName);
+                            shape = fetchService.fetch(id, type, index, shapePath);
+                        } else {
+                            throw new QueryParsingException(parseContext.index(), "[geo_shape] query does not support [" + currentFieldName + "]");
                         }
                     }
                 }
@@ -122,6 +123,8 @@ public class GeoShapeQueryParser implements QueryParser {
                     boost = parser.floatValue();
                 } else if ("_name".equals(currentFieldName)) {
                     queryName = parser.text();
+                } else {
+                    throw new QueryParsingException(parseContext.index(), "[geo_shape] query does not support [" + currentFieldName + "]");
                 }
             }
         }
@@ -162,16 +165,16 @@ public class GeoShapeQueryParser implements QueryParser {
         this.fetchService = fetchService;
     }
     
-    public static SpatialArgs getArgs(Shape shape, ShapeRelation relation) {
+    public static SpatialArgs getArgs(ShapeBuilder shape, ShapeRelation relation) {
         switch(relation) {
         case DISJOINT:
-            return new SpatialArgs(SpatialOperation.IsDisjointTo, shape);
+            return new SpatialArgs(SpatialOperation.IsDisjointTo, shape.build());
         case INTERSECTS:
-            return new SpatialArgs(SpatialOperation.Intersects, shape);
+            return new SpatialArgs(SpatialOperation.Intersects, shape.build());
         case WITHIN:
-            return new SpatialArgs(SpatialOperation.IsWithin, shape);
+            return new SpatialArgs(SpatialOperation.IsWithin, shape.build());
         default:
-            throw new ElasticSearchIllegalArgumentException("");
+            throw new ElasticsearchIllegalArgumentException("");
         
         }
     }

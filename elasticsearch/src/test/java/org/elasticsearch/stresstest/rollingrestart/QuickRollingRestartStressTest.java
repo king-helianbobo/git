@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,8 +20,7 @@
 package org.elasticsearch.stresstest.rollingrestart;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import jsr166y.ThreadLocalRandom;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -32,6 +31,7 @@ import org.elasticsearch.node.NodeBuilder;
 
 import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  */
@@ -55,7 +55,7 @@ public class QuickRollingRestartStressTest {
         if (client.client().admin().indices().prepareExists("test").execute().actionGet().isExists()) {
             ClusterHealthResponse clusterHealthResponse = client.client().admin().cluster().prepareHealth().setWaitForGreenStatus().setTimeout("10m").execute().actionGet();
             if (clusterHealthResponse.isTimedOut()) {
-                throw new ElasticSearchException("failed to wait for green state on startup...");
+                throw new ElasticsearchException("failed to wait for green state on startup...");
             }
             COUNT = client.client().prepareCount().execute().actionGet().getCount();
             System.out.println("--> existing index, count [" + COUNT + "]");
@@ -97,7 +97,7 @@ public class QuickRollingRestartStressTest {
                 System.out.println(state.nodes().prettyPrint());
                 System.out.println(state.routingTable().prettyPrint());
                 System.out.println(state.routingNodes().prettyPrint());
-                throw new ElasticSearchException("timed out waiting for green state");
+                throw new ElasticsearchException("timed out waiting for green state");
             } else {
                 System.out.println("--> got green status");
             }

@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,8 +19,9 @@
 
 package org.elasticsearch.discovery.local;
 
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import com.google.common.base.Objects;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.*;
 import org.elasticsearch.cluster.block.ClusterBlocks;
@@ -35,10 +36,7 @@ import org.elasticsearch.common.inject.internal.Nullable;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
-import org.elasticsearch.discovery.AckClusterStatePublishResponseHandler;
-import org.elasticsearch.discovery.ClusterStatePublishResponseHandler;
-import org.elasticsearch.discovery.Discovery;
-import org.elasticsearch.discovery.InitialStateDiscoveryListener;
+import org.elasticsearch.discovery.*;
 import org.elasticsearch.node.service.NodeService;
 import org.elasticsearch.transport.TransportService;
 
@@ -47,7 +45,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static org.elasticsearch.cluster.ClusterState.Builder;
@@ -66,7 +63,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
     private final ClusterName clusterName;
     private final Version version;
 
-    private final TimeValue publishTimeout;
+    private final DiscoverySettings discoverySettings;
 
     private DiscoveryNode localNode;
 
@@ -74,23 +71,20 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
 
     private final AtomicBoolean initialStateSent = new AtomicBoolean();
 
-    private final CopyOnWriteArrayList<InitialStateDiscoveryListener> initialStateListeners = new CopyOnWriteArrayList<InitialStateDiscoveryListener>();
+    private final CopyOnWriteArrayList<InitialStateDiscoveryListener> initialStateListeners = new CopyOnWriteArrayList<>();
 
     private static final ConcurrentMap<ClusterName, ClusterGroup> clusterGroups = ConcurrentCollections.newConcurrentMap();
 
-    private static final AtomicLong nodeIdGenerator = new AtomicLong();
-
     @Inject
     public LocalDiscovery(Settings settings, ClusterName clusterName, TransportService transportService, ClusterService clusterService,
-                          DiscoveryNodeService discoveryNodeService, Version version) {
+                          DiscoveryNodeService discoveryNodeService, Version version, DiscoverySettings discoverySettings) {
         super(settings);
         this.clusterName = clusterName;
         this.clusterService = clusterService;
         this.transportService = transportService;
         this.discoveryNodeService = discoveryNodeService;
         this.version = version;
-
-        this.publishTimeout = settings.getAsTime("discovery.zen.publish_timeout", DEFAULT_PUBLISH_TIMEOUT);
+        this.discoverySettings = discoverySettings;
     }
 
     @Override
@@ -104,7 +98,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
         synchronized (clusterGroups) {
             ClusterGroup clusterGroup = clusterGroups.get(clusterName);
             if (clusterGroup == null) {
@@ -112,7 +106,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
                 clusterGroups.put(clusterName, clusterGroup);
             }
             logger.debug("Connected to cluster [{}]", clusterName);
-            this.localNode = new DiscoveryNode(settings.get("name"), Long.toString(nodeIdGenerator.incrementAndGet()), transportService.boundAddress().publishAddress(),
+            this.localNode = new DiscoveryNode(settings.get("name"), DiscoveryService.generateNodeId(settings), transportService.boundAddress().publishAddress(),
                     discoveryNodeService.buildAttributes(), version);
 
             clusterGroup.members().add(this);
@@ -197,7 +191,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
         synchronized (clusterGroups) {
             ClusterGroup clusterGroup = clusterGroups.get(clusterName);
             if (clusterGroup == null) {
@@ -255,7 +249,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
     }
 
     @Override
-    protected void doClose() throws ElasticSearchException {
+    protected void doClose() throws ElasticsearchException {
     }
 
     @Override
@@ -280,7 +274,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
 
     public void publish(ClusterState clusterState, final Discovery.AckListener ackListener) {
         if (!master) {
-            throw new ElasticSearchIllegalStateException("Shouldn't publish state when not master");
+            throw new ElasticsearchIllegalStateException("Shouldn't publish state when not master");
         }
         LocalDiscovery[] members = members();
         if (members.length > 0) {
@@ -308,11 +302,16 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
                     continue;
                 }
                 final ClusterState nodeSpecificClusterState = ClusterState.Builder.fromBytes(clusterStateBytes, discovery.localNode);
+                nodeSpecificClusterState.status(ClusterState.ClusterStateStatus.RECEIVED);
                 // ignore cluster state messages that do not include "me", not in the game yet...
                 if (nodeSpecificClusterState.nodes().localNode() != null) {
                     discovery.clusterService.submitStateUpdateTask("local-disco-receive(from master)", new ProcessedClusterStateUpdateTask() {
                         @Override
                         public ClusterState execute(ClusterState currentState) {
+                            if (nodeSpecificClusterState.version() < currentState.version() && Objects.equal(nodeSpecificClusterState.nodes().masterNodeId(), currentState.nodes().masterNodeId())) {
+                                return currentState;
+                            }
+
                             ClusterState.Builder builder = ClusterState.builder(nodeSpecificClusterState);
                             // if the routing table did not change, use the original one
                             if (nodeSpecificClusterState.routingTable().version() == currentState.routingTable().version()) {
@@ -342,6 +341,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
                 }
             }
 
+            TimeValue publishTimeout = discoverySettings.getPublishTimeout();
             if (publishTimeout.millis() > 0) {
                 try {
                     boolean awaited = publishResponseHandler.awaitAllNodes(publishTimeout);
@@ -357,7 +357,7 @@ public class LocalDiscovery extends AbstractLifecycleComponent<Discovery> implem
 
         } catch (Exception e) {
             // failure to marshal or un-marshal
-            throw new ElasticSearchIllegalStateException("Cluster state failed to serialize", e);
+            throw new ElasticsearchIllegalStateException("Cluster state failed to serialize", e);
         }
     }
 

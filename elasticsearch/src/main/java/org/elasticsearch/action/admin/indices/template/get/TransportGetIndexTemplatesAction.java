@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -20,9 +20,9 @@ package org.elasticsearch.action.admin.indices.template.get;
 
 import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import com.google.common.collect.Lists;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.support.master.TransportMasterNodeOperationAction;
+import org.elasticsearch.action.support.master.TransportMasterNodeReadOperationAction;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexTemplateMetaData;
@@ -37,7 +37,7 @@ import java.util.List;
 /**
  *
  */
-public class TransportGetIndexTemplatesAction extends TransportMasterNodeOperationAction<GetIndexTemplatesRequest, GetIndexTemplatesResponse> {
+public class TransportGetIndexTemplatesAction extends TransportMasterNodeReadOperationAction<GetIndexTemplatesRequest, GetIndexTemplatesResponse> {
 
     @Inject
     public TransportGetIndexTemplatesAction(Settings settings, TransportService transportService, ClusterService clusterService, ThreadPool threadPool) {
@@ -65,7 +65,7 @@ public class TransportGetIndexTemplatesAction extends TransportMasterNodeOperati
     }
 
     @Override
-    protected void masterOperation(GetIndexTemplatesRequest request, ClusterState state, ActionListener<GetIndexTemplatesResponse> listener) throws ElasticSearchException {
+    protected void masterOperation(GetIndexTemplatesRequest request, ClusterState state, ActionListener<GetIndexTemplatesResponse> listener) throws ElasticsearchException {
         List<IndexTemplateMetaData> results;
 
         // If we did not ask for a specific name, then we return all templates

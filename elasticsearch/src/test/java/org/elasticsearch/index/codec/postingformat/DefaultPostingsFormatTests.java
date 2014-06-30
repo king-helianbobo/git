@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -30,7 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.elasticsearch.common.lucene.Lucene;
 import org.elasticsearch.index.codec.postingsformat.BloomFilterPostingsFormat;
-import org.elasticsearch.index.codec.postingsformat.ElasticSearch090PostingsFormat;
+import org.elasticsearch.index.codec.postingsformat.Elasticsearch090PostingsFormat;
 import org.elasticsearch.index.mapper.internal.UidFieldMapper;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import java.util.Set;
 import static org.hamcrest.Matchers.*;
 
 /**
- * Simple smoke test for {@link ElasticSearch090PostingsFormat}
+ * Simple smoke test for {@link org.elasticsearch.index.codec.postingsformat.Elasticsearch090PostingsFormat}
  */
 public class DefaultPostingsFormatTests extends ElasticsearchTestCase {
 
@@ -52,7 +52,7 @@ public class DefaultPostingsFormatTests extends ElasticsearchTestCase {
 
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
-            return new ElasticSearch090PostingsFormat();
+            return new Elasticsearch090PostingsFormat();
         }
     }
 
@@ -93,7 +93,7 @@ public class DefaultPostingsFormatTests extends ElasticsearchTestCase {
         for (int i = 0; i < 100; i++) {
             writer.addDocument(Arrays.asList(new TextField("foo", "foo bar foo bar", Store.YES), new TextField("some_other_field", "1234", Store.YES)));
         }
-        writer.forceMerge(1);
+        writer.forceMerge(1, true);
         writer.commit();
         
         DirectoryReader reader = DirectoryReader.open(writer, false);
@@ -107,7 +107,7 @@ public class DefaultPostingsFormatTests extends ElasticsearchTestCase {
         assertThat(terms, not(instanceOf(BloomFilterPostingsFormat.BloomFilteredTerms.class)));
         assertThat(some_other_field, not(instanceOf(BloomFilterPostingsFormat.BloomFilteredTerms.class)));
         TermsEnum iterator = terms.iterator(null);
-        Set<String> expected = new HashSet<String>();
+        Set<String> expected = new HashSet<>();
         expected.add("foo");
         expected.add("bar");
         while(iterator.next() != null) {

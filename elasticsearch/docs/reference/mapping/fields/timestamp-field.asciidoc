@@ -9,7 +9,7 @@ to the date the document was processed by the indexing chain.
 [float]
 ==== enabled
 
-By default it is disabled, in order to enable it, the following mapping
+By default it is disabled. In order to enable it, the following mapping
 should be defined:
 
 [source,js]
@@ -24,7 +24,7 @@ should be defined:
 [float]
 ==== store / index
 
-By default the `_timestamp` field has `store` set to `no` and `index`
+By default the `_timestamp` field has `store` set to `false` and `index`
 set to `not_analyzed`. It can be queried as a standard date field.
 
 [float]

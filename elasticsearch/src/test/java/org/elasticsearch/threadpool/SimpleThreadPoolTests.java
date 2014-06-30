@@ -1,3 +1,22 @@
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.elasticsearch.threadpool;
 
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
@@ -11,7 +30,6 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
-import org.elasticsearch.test.ElasticsearchIntegrationTest.Scope;
 import org.elasticsearch.threadpool.ThreadPool.Names;
 import org.junit.Test;
 
@@ -20,11 +38,12 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.test.ElasticsearchIntegrationTest.*;
 import static org.hamcrest.Matchers.*;
 
 /**
  */
-@ClusterScope(scope=Scope.TEST, numNodes=2)
+@ClusterScope(scope= Scope.TEST, numDataNodes =2)
 public class SimpleThreadPoolTests extends ElasticsearchIntegrationTest {
 
     @Override
@@ -34,7 +53,7 @@ public class SimpleThreadPoolTests extends ElasticsearchIntegrationTest {
 
     @Test(timeout = 20000)
     public void testUpdatingThreadPoolSettings() throws Exception {
-        ThreadPool threadPool = cluster().getInstance(ThreadPool.class);
+        ThreadPool threadPool = cluster().getDataNodeInstance(ThreadPool.class);
         // Check that settings are changed
         assertThat(((ThreadPoolExecutor) threadPool.executor(Names.SEARCH)).getKeepAliveTime(TimeUnit.MINUTES), equalTo(5L));
         client().admin().cluster().prepareUpdateSettings().setTransientSettings(settingsBuilder().put("threadpool.search.keep_alive", "10m").build()).execute().actionGet();

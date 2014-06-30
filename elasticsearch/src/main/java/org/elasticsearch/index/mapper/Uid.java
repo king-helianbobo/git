@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -21,7 +21,7 @@ package org.elasticsearch.index.mapper;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.elasticsearch.common.bytes.HashedBytesArray;
+import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.common.lucene.BytesRefs;
 
 import java.util.Collection;
@@ -83,10 +83,6 @@ public final class Uid {
         return createUidAsBytes(type, id);
     }
 
-    public static String typePrefix(String type) {
-        return type + DELIMITER;
-    }
-
     public static BytesRef typePrefixAsBytes(BytesRef type) {
         BytesRef bytesRef = new BytesRef(type.length + 1);
         bytesRef.append(type);
@@ -94,27 +90,18 @@ public final class Uid {
         return bytesRef;
     }
 
-    public static String idFromUid(String uid) {
-        int delimiterIndex = uid.indexOf(DELIMITER); // type is not allowed to have # in it..., ids can
-        return uid.substring(delimiterIndex + 1);
-    }
-
-    public static HashedBytesArray idFromUid(BytesRef uid) {
-        return splitUidIntoTypeAndId(uid)[1];
-    }
-
-    public static HashedBytesArray typeFromUid(BytesRef uid) {
-        return splitUidIntoTypeAndId(uid)[0];
-    }
-
-    public static String typeFromUid(String uid) {
-        int delimiterIndex = uid.indexOf(DELIMITER); // type is not allowed to have # in it..., ids can
-        return uid.substring(0, delimiterIndex);
-    }
-
     public static Uid createUid(String uid) {
         int delimiterIndex = uid.indexOf(DELIMITER); // type is not allowed to have # in it..., ids can
         return new Uid(uid.substring(0, delimiterIndex), uid.substring(delimiterIndex + 1));
+    }
+
+    public static BytesRef[] createUids(List<MultiGetRequest.Item> items) {
+        BytesRef[] uids = new BytesRef[items.size()];
+        int idx = 0;
+        for (MultiGetRequest.Item item : items) {
+            uids[idx++] = createUidAsBytes(item);
+        }
+        return uids;
     }
 
     public static BytesRef createUidAsBytes(String type, String id) {
@@ -123,6 +110,10 @@ public final class Uid {
 
     public static BytesRef createUidAsBytes(String type, BytesRef id) {
         return createUidAsBytes(new BytesRef(type), id);
+    }
+
+    public static BytesRef createUidAsBytes(MultiGetRequest.Item item) {
+        return createUidAsBytes(item.type(), item.id());
     }
 
     public static BytesRef createUidAsBytes(BytesRef type, BytesRef id) {
@@ -179,8 +170,7 @@ public final class Uid {
         return false;
     }
 
-    // LUCENE 4 UPGRADE: HashedBytesArray or BytesRef as return type?
-    public static HashedBytesArray[] splitUidIntoTypeAndId(BytesRef uid) {
+    public static BytesRef[] splitUidIntoTypeAndId(BytesRef uid) {
         int loc = -1;
         final int limit = uid.offset + uid.length;
         for (int i = uid.offset; i < limit; i++) {
@@ -194,12 +184,11 @@ public final class Uid {
             return null;
         }
 
-        byte[] type = new byte[loc - uid.offset];
-        System.arraycopy(uid.bytes, uid.offset, type, 0, type.length);
-
-        byte[] id = new byte[uid.length - type.length - 1];
-        System.arraycopy(uid.bytes, loc + 1, id, 0, id.length);
-        return new HashedBytesArray[]{new HashedBytesArray(type), new HashedBytesArray(id)};
+        int idStart = loc + 1;
+        return new BytesRef[] {
+                new BytesRef(uid.bytes, uid.offset, loc - uid.offset),
+                new BytesRef(uid.bytes, idStart, limit - idStart)
+        };
     }
 
 }

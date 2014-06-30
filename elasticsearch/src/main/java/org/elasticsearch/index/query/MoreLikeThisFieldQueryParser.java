@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -22,7 +22,7 @@ package org.elasticsearch.index.query;
 import com.google.common.collect.Sets;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.Query;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.lucene.search.MoreLikeThisQuery;
@@ -51,6 +51,7 @@ public class MoreLikeThisFieldQueryParser implements QueryParser {
         return new String[]{NAME, "more_like_this_field", Strings.toCamelCase(NAME), "moreLikeThisField"};
     }
 
+    
     @Override
     public Query parse(QueryParseContext parseContext) throws IOException, QueryParsingException {
         XContentParser parser = parseContext.parser();
@@ -75,30 +76,33 @@ public class MoreLikeThisFieldQueryParser implements QueryParser {
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
             } else if (token.isValue()) {
-                if ("like_text".equals(currentFieldName)) {
+                if (MoreLikeThisQueryParser.Fields.LIKE_TEXT.match(currentFieldName,parseContext.parseFlags()) ) {
                     mltQuery.setLikeText(parser.text());
-                } else if ("min_term_freq".equals(currentFieldName) || "minTermFreq".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.MIN_TERM_FREQ.match(currentFieldName,parseContext.parseFlags()) ) {
                     mltQuery.setMinTermFrequency(parser.intValue());
-                } else if ("max_query_terms".equals(currentFieldName) || "maxQueryTerms".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.MAX_QUERY_TERMS.match(currentFieldName,parseContext.parseFlags())) {
                     mltQuery.setMaxQueryTerms(parser.intValue());
-                } else if ("min_doc_freq".equals(currentFieldName) || "minDocFreq".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.MIN_DOC_FREQ.match(currentFieldName,parseContext.parseFlags())) {
                     mltQuery.setMinDocFreq(parser.intValue());
-                } else if ("max_doc_freq".equals(currentFieldName) || "maxDocFreq".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.MAX_DOC_FREQ.match(currentFieldName,parseContext.parseFlags())) {
                     mltQuery.setMaxDocFreq(parser.intValue());
-                } else if ("min_word_len".equals(currentFieldName) || "minWordLen".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.MIN_WORD_LENGTH.match(currentFieldName,parseContext.parseFlags())) {
                     mltQuery.setMinWordLen(parser.intValue());
-                } else if ("max_word_len".equals(currentFieldName) || "maxWordLen".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.MAX_WORD_LENGTH.match(currentFieldName,parseContext.parseFlags())) {
                     mltQuery.setMaxWordLen(parser.intValue());
-                } else if ("boost_terms".equals(currentFieldName) || "boostTerms".equals(currentFieldName)) {
-                    mltQuery.setBoostTerms(true);
-                    mltQuery.setBoostTermsFactor(parser.floatValue());
-                } else if ("percent_terms_to_match".equals(currentFieldName) || "percentTermsToMatch".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.BOOST_TERMS.match(currentFieldName,parseContext.parseFlags())) {
+                    float boostFactor = parser.floatValue();
+                    if (boostFactor != 0) {
+                        mltQuery.setBoostTerms(true);
+                        mltQuery.setBoostTermsFactor(boostFactor);
+                    }
+                } else if (MoreLikeThisQueryParser.Fields.PERCENT_TERMS_TO_MATCH.match(currentFieldName,parseContext.parseFlags())) {
                     mltQuery.setPercentTermsToMatch(parser.floatValue());
                 } else if ("analyzer".equals(currentFieldName)) {
                     analyzer = parseContext.analysisService().analyzer(parser.text());
                 } else if ("boost".equals(currentFieldName)) {
                     mltQuery.setBoost(parser.floatValue());
-                } else if ("fail_on_unsupported_field".equals(currentFieldName) || "failOnUnsupportedField".equals(currentFieldName)) {
+                } else if (MoreLikeThisQueryParser.Fields.FAIL_ON_UNSUPPORTED_FIELD.match(currentFieldName,parseContext.parseFlags())) {
                     failOnUnsupportedField = parser.booleanValue();
                 } else if ("_name".equals(currentFieldName)) {
                     queryName = parser.text();
@@ -106,7 +110,8 @@ public class MoreLikeThisFieldQueryParser implements QueryParser {
                     throw new QueryParsingException(parseContext.index(), "[mlt_field] query does not support [" + currentFieldName + "]");
                 }
             } else if (token == XContentParser.Token.START_ARRAY) {
-                if ("stop_words".equals(currentFieldName) || "stopWords".equals(currentFieldName)) {
+                if (MoreLikeThisQueryParser.Fields.STOP_WORDS.match(currentFieldName,parseContext.parseFlags())) {
+
                     Set<String> stopWords = Sets.newHashSet();
                     while ((token = parser.nextToken()) != XContentParser.Token.END_ARRAY) {
                         stopWords.add(parser.text());
@@ -140,7 +145,7 @@ public class MoreLikeThisFieldQueryParser implements QueryParser {
         }
         if (!Analysis.generatesCharacterTokenStream(analyzer, fieldName)) {
             if (failOnUnsupportedField) {
-                throw new ElasticSearchIllegalArgumentException("more_like_this_field doesn't support binary/numeric fields: [" + fieldName + "]");
+                throw new ElasticsearchIllegalArgumentException("more_like_this_field doesn't support binary/numeric fields: [" + fieldName + "]");
             } else {
                 return null;
             }

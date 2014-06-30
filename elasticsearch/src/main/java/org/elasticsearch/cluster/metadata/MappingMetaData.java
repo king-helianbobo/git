@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,8 +19,7 @@
 
 package org.elasticsearch.cluster.metadata;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
-import org.elasticsearch.Version;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.action.TimestampParsingException;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
@@ -274,7 +273,7 @@ public class MappingMetaData {
         this.source = mapping;
         Map<String, Object> mappingMap = XContentHelper.createParser(mapping.compressed(), 0, mapping.compressed().length).mapOrderedAndClose();
         if (mappingMap.size() != 1) {
-            throw new ElasticSearchIllegalStateException("Can't derive type from mapping, no root type: " + mapping.string());
+            throw new ElasticsearchIllegalStateException("Can't derive type from mapping, no root type: " + mapping.string());
         }
         this.type = mappingMap.keySet().iterator().next();
         initMappers((Map<String, Object>) mappingMap.get(this.type));
@@ -419,9 +418,11 @@ public class MappingMetaData {
     }
 
     public ParseContext createParseContext(@Nullable String id, @Nullable String routing, @Nullable String timestamp) {
+        // We parse the routing even if there is already a routing key in the request in order to make sure that
+        // they are the same
         return new ParseContext(
                 id == null && id().hasPath(),
-                routing == null && routing().hasPath(),
+                routing().hasPath(),
                 timestamp == null && timestamp().hasPath()
         );
     }
@@ -435,28 +436,28 @@ public class MappingMetaData {
             return;
         }
 
-        XContentParser.Token t = parser.currentToken();
-        if (t == null) {
-            t = parser.nextToken();
+        XContentParser.Token token = parser.currentToken();
+        if (token == null) {
+            token = parser.nextToken();
         }
-        if (t == XContentParser.Token.START_OBJECT) {
-            t = parser.nextToken();
+        if (token == XContentParser.Token.START_OBJECT) {
+            token = parser.nextToken();
         }
         String idPart = context.idParsingStillNeeded() ? id().pathElements()[context.locationId] : null;
         String routingPart = context.routingParsingStillNeeded() ? routing().pathElements()[context.locationRouting] : null;
         String timestampPart = context.timestampParsingStillNeeded() ? timestamp().pathElements()[context.locationTimestamp] : null;
 
-        for (; t == XContentParser.Token.FIELD_NAME; t = parser.nextToken()) {
+        for (; token == XContentParser.Token.FIELD_NAME; token = parser.nextToken()) {
             // Must point to field name
             String fieldName = parser.currentName();
             // And then the value...
-            t = parser.nextToken();
+            token = parser.nextToken();
             boolean incLocationId = false;
             boolean incLocationRouting = false;
             boolean incLocationTimestamp = false;
             if (context.idParsingStillNeeded() && fieldName.equals(idPart)) {
                 if (context.locationId + 1 == id.pathElements().length) {
-                    if (!t.isValue()) {
+                    if (!token.isValue()) {
                         throw new MapperParsingException("id field must be a value but was either an object or an array");
                     }
                     context.id = parser.textOrNull();
@@ -483,7 +484,7 @@ public class MappingMetaData {
             }
 
             if (incLocationId || incLocationRouting || incLocationTimestamp) {
-                if (t == XContentParser.Token.START_OBJECT) {
+                if (token == XContentParser.Token.START_OBJECT) {
                     context.locationId += incLocationId ? 1 : 0;
                     context.locationRouting += incLocationRouting ? 1 : 0;
                     context.locationTimestamp += incLocationTimestamp ? 1 : 0;
@@ -529,9 +530,7 @@ public class MappingMetaData {
             out.writeBoolean(false);
         }
         out.writeString(mappingMd.timestamp().format());
-        if (out.getVersion().onOrAfter(Version.V_0_90_6)) {
-            out.writeBoolean(mappingMd.hasParentField());
-        }
+        out.writeBoolean(mappingMd.hasParentField());
     }
 
     @Override
@@ -569,12 +568,7 @@ public class MappingMetaData {
         Routing routing = new Routing(in.readBoolean(), in.readBoolean() ? in.readString() : null);
         // timestamp
         Timestamp timestamp = new Timestamp(in.readBoolean(), in.readBoolean() ? in.readString() : null, in.readString());
-        final boolean hasParentField;
-        if (in.getVersion().onOrAfter(Version.V_0_90_6)) {
-            hasParentField = in.readBoolean();
-        } else {
-            hasParentField = true; // We assume here that the type has a parent field, which is confirm with the behaviour of <= 0.90.5
-        }
+        final boolean hasParentField = in.readBoolean();
         return new MappingMetaData(type, source, id, routing, timestamp, hasParentField);
     }
 

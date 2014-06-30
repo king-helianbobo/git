@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,9 +23,10 @@ import org.apache.lucene.analysis.NumericTokenStream.NumericTermAttribute;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.util.LocaleUtils;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -81,18 +82,18 @@ public class SimpleDateMappingTests extends ElasticsearchTestCase {
     
     @Test
     public void testParseLocal() {
-        assertThat(Locale.GERMAN, equalTo(DateFieldMapper.parseLocale("de")));
-        assertThat(Locale.GERMANY, equalTo(DateFieldMapper.parseLocale("de_DE")));
-        assertThat(new Locale("de","DE","DE"), equalTo(DateFieldMapper.parseLocale("de_DE_DE")));
+        assertThat(Locale.GERMAN, equalTo(LocaleUtils.parse("de")));
+        assertThat(Locale.GERMANY, equalTo(LocaleUtils.parse("de_DE")));
+        assertThat(new Locale("de","DE","DE"), equalTo(LocaleUtils.parse("de_DE_DE")));
         
         try {
-            DateFieldMapper.parseLocale("de_DE_DE_DE");
-            assert false;
-        } catch(ElasticSearchIllegalArgumentException ex) {
+            LocaleUtils.parse("de_DE_DE_DE");
+            fail();
+        } catch(ElasticsearchIllegalArgumentException ex) {
             // expected
         }
-        assertThat(Locale.ROOT,  equalTo(DateFieldMapper.parseLocale("")));
-        assertThat(Locale.ROOT,  equalTo(DateFieldMapper.parseLocale("ROOT")));
+        assertThat(Locale.ROOT,  equalTo(LocaleUtils.parse("")));
+        assertThat(Locale.ROOT,  equalTo(LocaleUtils.parse("ROOT")));
     }
     
     @Test
@@ -148,7 +149,7 @@ public class SimpleDateMappingTests extends ElasticsearchTestCase {
         TokenStream tokenStream = doc.rootDoc().getField(fieldA).tokenStream(defaultMapper.indexAnalyzer());
         tokenStream.reset();
         NumericTermAttribute nta = tokenStream.addAttribute(NumericTermAttribute.class);
-        List<Long> values = new ArrayList<Long>();
+        List<Long> values = new ArrayList<>();
         while(tokenStream.incrementToken()) {
             values.add(nta.getRawValue());
         }
@@ -222,6 +223,30 @@ public class SimpleDateMappingTests extends ElasticsearchTestCase {
         NumericRangeFilter<Long> rangeFilter = (NumericRangeFilter<Long>) filter;
         assertThat(rangeFilter.getMax(), equalTo(new DateTime(TimeValue.timeValueHours(11).millis() + 999).getMillis())); // +999 to include the 00-01 minute
         assertThat(rangeFilter.getMin(), equalTo(new DateTime(TimeValue.timeValueHours(10).millis()).getMillis()));
+    }
+
+
+    @Test
+    public void testDayWithoutYearFormat() throws Exception {
+        String mapping = XContentFactory.jsonBuilder().startObject().startObject("type")
+                .field("date_detection", false)
+                .startObject("properties").startObject("date_field").field("type", "date").field("format", "MMM dd HH:mm:ss").endObject().endObject()
+                .endObject().endObject().string();
+
+        DocumentMapper defaultMapper = mapper(mapping);
+
+        ParsedDocument doc = defaultMapper.parse("type", "1", XContentFactory.jsonBuilder()
+                .startObject()
+                .field("date_field", "Jan 02 10:00:00")
+                .endObject()
+                .bytes());
+        assertThat(((LongFieldMapper.CustomLongNumericField) doc.rootDoc().getField("date_field")).numericAsString(), equalTo(Long.toString(new DateTime(TimeValue.timeValueHours(34).millis(), DateTimeZone.UTC).getMillis())));
+
+        Filter filter = defaultMapper.mappers().smartNameFieldMapper("date_field").rangeFilter("Jan 02 10:00:00", "Jan 02 11:00:00", true, true, null);
+        assertThat(filter, instanceOf(NumericRangeFilter.class));
+        NumericRangeFilter<Long> rangeFilter = (NumericRangeFilter<Long>) filter;
+        assertThat(rangeFilter.getMax(), equalTo(new DateTime(TimeValue.timeValueHours(35).millis() + 999).getMillis())); // +999 to include the 00-01 minute
+        assertThat(rangeFilter.getMin(), equalTo(new DateTime(TimeValue.timeValueHours(34).millis()).getMillis()));
     }
 
     @Test

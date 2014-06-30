@@ -1,11 +1,11 @@
 /*
- * Licensed to ElasticSearch and Shay Banon under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. ElasticSearch licenses this
- * file to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,7 +19,7 @@
 
 package org.elasticsearch.transport.netty;
 
-import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.ElasticsearchIllegalStateException;
 import org.elasticsearch.common.util.concurrent.KeyedLock;
 import org.elasticsearch.test.ElasticsearchTestCase;
 import org.hamcrest.Matchers;
@@ -38,9 +38,9 @@ public class KeyedLockTests extends ElasticsearchTestCase {
 
     @Test
     public void checkIfMapEmptyAfterLotsOfAcquireAndReleases() throws InterruptedException {
-        ConcurrentHashMap<String, Integer> counter = new ConcurrentHashMap<String, Integer>();
-        ConcurrentHashMap<String, AtomicInteger> safeCounter = new ConcurrentHashMap<String, AtomicInteger>();
-        KeyedLock<String> connectionLock = new KeyedLock<String>();
+        ConcurrentHashMap<String, Integer> counter = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, AtomicInteger> safeCounter = new ConcurrentHashMap<>();
+        KeyedLock<String> connectionLock = new KeyedLock<>();
         String[] names = new String[randomIntBetween(1, 40)];
         for (int i = 0; i < names.length; i++) {
             names[i] = randomRealisticUnicodeOfLengthBetween(10, 20);
@@ -69,26 +69,26 @@ public class KeyedLockTests extends ElasticsearchTestCase {
         }
     }
 
-    @Test(expected = ElasticSearchIllegalStateException.class)
+    @Test(expected = ElasticsearchIllegalStateException.class)
     public void checkCannotAcquireTwoLocks() throws InterruptedException {
-        ConcurrentHashMap<String, Integer> counters = new ConcurrentHashMap<String, Integer>();
-        ConcurrentHashMap<String, AtomicInteger> safeCounter = new ConcurrentHashMap<String, AtomicInteger>();
-        KeyedLock<String> connectionLock = new KeyedLock<String>();
+        ConcurrentHashMap<String, Integer> counters = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, AtomicInteger> safeCounter = new ConcurrentHashMap<>();
+        KeyedLock<String> connectionLock = new KeyedLock<>();
         String[] names = new String[randomIntBetween(1, 40)];
-        connectionLock = new KeyedLock<String>();
-        String name = randomRealisticUnicodeOfLength(atLeast(10));
+        connectionLock = new KeyedLock<>();
+        String name = randomRealisticUnicodeOfLength(scaledRandomIntBetween(10, 50));
         connectionLock.acquire(name);
         connectionLock.acquire(name);
     }
 
-    @Test(expected = ElasticSearchIllegalStateException.class)
+    @Test(expected = ElasticsearchIllegalStateException.class)
     public void checkCannotReleaseUnacquiredLock() throws InterruptedException {
-        ConcurrentHashMap<String, Integer> counters = new ConcurrentHashMap<String, Integer>();
-        ConcurrentHashMap<String, AtomicInteger> safeCounter = new ConcurrentHashMap<String, AtomicInteger>();
-        KeyedLock<String> connectionLock = new KeyedLock<String>();
+        ConcurrentHashMap<String, Integer> counters = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, AtomicInteger> safeCounter = new ConcurrentHashMap<>();
+        KeyedLock<String> connectionLock = new KeyedLock<>();
         String[] names = new String[randomIntBetween(1, 40)];
-        connectionLock = new KeyedLock<String>();
-        String name = randomRealisticUnicodeOfLength(atLeast(10));
+        connectionLock = new KeyedLock<>();
+        String name = randomRealisticUnicodeOfLength(scaledRandomIntBetween(10, 50));
         connectionLock.release(name);
     }
 
@@ -114,7 +114,7 @@ public class KeyedLockTests extends ElasticsearchTestCase {
             } catch (InterruptedException e) {
                 throw new RuntimeException();
             }
-            int numRuns = atLeast(500);
+            int numRuns = scaledRandomIntBetween(500, 5000);
             for (int i = 0; i < numRuns; i++) {
                 String curName = names[randomInt(names.length - 1)];
                 connectionLock.acquire(curName);

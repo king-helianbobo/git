@@ -1,8 +1,10 @@
 \section{工具使用}
+
+\subsection{杂项}
 \par json格式的array中的element是保持顺序的（顺序敏感的），而其它类型不是顺序敏感的。
 \par Eclipse中删除无用的import：《Ctrl+ Shift + O》 do it manually or Window -> Preferences -> Java -> Editor -> Save Actions -> Organize Imports to have it organized automatically whenever save a class。或者在Package Explorer窗口中，使用《Ctrl+ Shift + O》快捷键。
-\subsection{Linux Shell}
 \par 安装Mate桌面环境后，会碰到没有声音的情况，此时可以删除pulseaudio，执行命令后重启机器。
+\subsection{Linux Shell}
 \par 使用nutch时，如果目录中文件太多，且包含了很多不需要的类型（如音频，视频），可使用rsync命令，保持源文件夹目录结构，同时只提取指定类型。
 \begin{verbatim}
 rsync -av --exclude='path1/exclude' --exclude='path2/exclude' [source] [dest]
@@ -39,16 +41,36 @@ stick bit:chmod 1755 xxx
 \end{minipage}
 \subsection{git基本命令}
 \par git add命令主要用于把要提交的文件的信息添加到索引库中，当使用\textbf{git commit}时，git将依据索引库中的内容来进行文件的提交。\textbf{git add <path>}表示add to index only files created or modified and not those deleted，因此\textbf{git add <path>}添加的文件不包括已经删除了的文件，<path>可以是文件也可以是目录。git不仅能判断出<path>中，修改（不包括已删除）了的文件，还能判断出新建的文件，并把它们的信息添加到索引库中。
-\par \textbf{git add -u <path>}表示add to index only files modified or deleted and not those created，即把<path>中所有的tracked文件添加到索引库，它不会处理untracked的文件。\textbf{git add -A <path>}表示把<path>中所有的tracked文件和所有的untracked的文件信息添加到索引库。当省略<path>时，<path>等价于'./'（当前目录）。使用\textbf{git add .}后，如果打算撤销这次add，则使用命令：\textbf{git rm -r --cached ./}。如果忽略某些类型的文件或某些目录时，可在.gitignore文件中添加内容，下面最后一行了忽略\textbf{mapreduce/ESMapReduce/lib/}目录。
+\par \textsl{git add -u <path>}表示add to index only files modified or deleted and not those created，即把<path>中所有的tracked文件添加到索引库，它不会处理untracked的文件。\textsl{git add -A <path>}表示把<path>中所有的tracked文件和所有的untracked的文件信息添加到索引库。当省略<path>时，<path>等价于'./'（当前目录）。
+\par 使用\textsl{git add ./}后，如果打算撤销这次添加，则使用命令：\textsl{git rm -r --cached ./}。如果忽略某些类型或某些目录时，可在.gitignore文件中添加内容，最后一行忽略\textsl{mapreduce/ESMapReduce/lib/}目录下的所有内容。
 \begin{verbatim}
 *.class
 *.jar
 *.ear
 mapreduce/ESMapReduce/lib/
 \end{verbatim}
-\par git提交环节，存在三大部分：working tree,index file,commit。working tree是工作所在的目录，每当在代码中进行了修改，working tree的状态就改变了。index file是索引文件，它是连接working tree和commit的桥梁，每当使用git add命令后，index file的内容就改变了，此时index file和working tree完成了同步。commit是代码的一次提交，只有完成提交，代码才真正地进入git仓库，使用git commit就是将index file里的内容提交到commit中。因此，\textbf{git diff}是查看working tree与index file的差别的，\textbf{git diff --cached}是查看index file与commit的差别的，\textbf{git diff HEAD}是查看working tree和commit的差别的（注意，HEAD代表最近一次commit）。
+\par git提交环节存在三大部分：\textsl{working tree,index file,commit}。working tree是工作所在的目录，每当在代码中进行了修改，working tree的状态就改变了。index file是索引文件，它是连接working tree和commit的桥梁，每当使用git add命令后，index file的内容就改变了，此时index file和working tree完成了同步。commit是代码的一次提交，只有完成提交，代码才真正地进入git仓库，使用git commit就是将index file内容提交到commit中。因此，\textbf{git diff}是查看working tree与index file的差别的，\textbf{git diff --cached}是查看index file与commit的差别的，\textbf{git diff HEAD}是查看working tree和commit的差别的（HEAD代表最近一次commit）。
 \par 发生错误时，如果想回到此前的一个版本，命令为\textbf{git reset --soft}。使用\textbf{git log}命令，查看日志中有哪些commit以及commit的ID，最后使用命令\textbf{git reset commitID}回退到该版本。
-\subsection{Maven使用初步}
+\begin{verbatim}
+git branch 查看本地有哪些分支
+git branch -r 查看远程仓库有哪些分支
+下载远程仓库（origin/1.2）到本地，分枝名同样为1.2
+git checkout -b 1.2 origin/1.2
+git checkout master 切换到master分支
+git checkout 1.2 切换到1.2分支
+\end{verbatim}
+\subsubsection{不同仓库的操作}
+\begin{enumerate}[(1)]
+\item git branch -r 查看远程仓库有哪些分支
+\item git clone gitosis@192.168.2.4:xhw/soul-client
+\item 执行<git init>,修改当前目录下的<.git/config>文件，将xhw改为liubo
+\item 执行<git remote -v>查看有哪些远程仓库
+\item git remote add smq gitosis@192.168.2.4:/smq/soul-client
+\item git remote add chen gitosis@192.168.2.4:/chengjie/soul-client
+\item 再次执行<git remote -v>查看远程仓库有何更新
+\item 执行<git pull smq master>拉取更新
+\end{enumerate}
+\subsection{Maven入门}
 \begin{enumerate}[(1)]
 \item 配置maven环境，最主要的是设置环境变量：M2\_HOME，将其设置为maven安装目录，例子目录为：/usr/share/maven;
 \item 修改仓库位置，仓库用于存放平时项目开发依赖的所有jar包。例子仓库路径：/opt/maven/repo，为设置仓库路径，必须修改\textbf{\${M2\_HOME}/conf}目录下的setting.xml文件。\\
@@ -114,7 +136,7 @@ mapreduce/ESMapReduce/lib/
 mvn exec:java -Dexec.mainClass="org.elasticsearch.application.WebDemo"
   -Dexec.args="/mnt/f/tmp/content.txt /mnt/f/tmp/result3.txt"  
   -Dexec.classpathScope=test
-## 如下命令执行junit框架中的test类(没有main函数)
+## 如下命令执行TestNG框架中的test类(没有main函数)
 mvn test -Dtest="com.soul.elasticsearch.test.OfficialDataTest"
 \end{verbatim}
 \subsection{Maven常用插件}
@@ -180,24 +202,6 @@ hadoop jar ./target/releases/soul_seg-0.3-job.jar /hdfs
 \begin{verbatim}
 mvn clean package -Dmaven.test.skip=true
 \end{verbatim}
-\subsection{编译打包Hadoop2.2.0}
-\par 从网上下载hadoop-2.2.0-src.tar.gz，解压之，然后执行\textbf{mvn clean install -DskipTests}命令。可能遇到的错误是protoc包没有安装，执行如下几个命令安装protoc。
-\begin{verbatim}
-wget https://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz
-./configure --prefix=/usr
-make
-make check
-make install
-protoc --version
-\end{verbatim}
-如果提示libprotoc版本仍然是2.4.1,而hadoop要求的版本为2.5.0，mvn编译将不能通过，此时需要配置
-\begin{verbatim}
-emacs /etc/profile
-export PROTOC_HOME=/opt/protobuf-2.5.0
-export PATH=$PATH:$PROTOC_HOME/src
-\end{verbatim}
-\par 使用命令\textbf{mvn package -Pdist -DskipTests -Dtar}生成可运行的hadoop二进制包，如果没有错误，生成的tar.gz文件应在./hadoop-dist/target目录下。
-\par 如果想导入Eclipse，则进入hadoop-maven-plugins目录，执行命令\textbf{mvn install}。返回basedir目录，执行命令\textbf{mvn eclipse:eclipse -DskipTests}生成Eclipse Project描述文件。
 \subsection{构造Java后台程序}
 \par Lately I have been writing a Java program that needs to run in the background (like a daemon). These ideas probably only work in a Unix environment but they have been tested on Linux and Solaris. So you have your program and you want to start it such that it will not be killed when you log out of the shell in which you start it. You could use \textbf{nohup}, but \textbf{nohup} redirects the standard out and error to files, which is annoying because you are writing all output to a log file anyway. 
 \begin{verbatim}
