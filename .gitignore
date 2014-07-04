@@ -52,8 +52,6 @@ _region_.tex
 
 ## ignore below directories
 soul_seg/
-soul_seg/target/
-soul_seg/test-output/
 elasticsearch/target/
 elasticsearch/test-output/
 synonym/target/
