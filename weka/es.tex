@@ -1,8 +1,8 @@
-\section{ElasticSearch}
-\par Elasticsearch是一个开源分布式搜索引擎，可以看作一个分布式Key-Value数据库，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本机制，Restful风格接口，多数据源，自动搜索负载等。
-\par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added (as best as possible) by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type的值将赋给每个Document的\textbf{\_type}域。
+\section{ElasticSearch基础}
+\par Elasticsearch是一个开源分布式搜索引擎，可以看作一个分布式Key-Value数据库，它的特点有：分布式，零配置，自动发现，索引自动分片，索引副本，Restful接口，多数据源，搜索负载均衡等。
+\par Types are just syntactic sugar to add separation between types of documents. If you know Lucene, type is just a field on a doc。Lucene index has Documents and has no notion of types. Types are something added by elasticsearch. A lucene document is a flat structure（一种扁平结构） key value pair (so objects in json are also translated to this), and a type ends up as another field within the document (called \_type)，也就是说，type的值将赋给每个Document的\textbf{\_type}域。
 \par 当index为cars，type为car时，ElasticSearch将自动为每个查询添加一个必须满足的条件（只有\textbf{\_type}域的值为car的Document才能匹配到查询），更新索引也是如此。This does mean that across types, having the same field name with different mappings types (for example, \textbf{'car'} has field \textbf{'Seat'} of type numeric, and 'bus' also has field \textbf{'Seat'} but of type string) should not be done (\textbf{car}和\textbf{bus}分别作为\textbf{type}的值). The type prefix when you define the field name should allow to only search on a field against that specific type.
-\par Each document indexed is associated with an id and a type, the internal \_uid field is the unique identifier of a document within an index and is composed of the type and the id (meaning that different types can have the same id and still maintain uniqueness).ElasticSearch Index每个分片（实际上是一独立的Lucene Index）中，内部域只有两个（通过Document.getFields()函数获得，而MultiFields.getIndexedFields函数也可以获得多个域，现在还不清楚这两个函数什么区别），分别是\_uid和\_source。The \_uid field is automatically used when \_type is not indexed to perform type based filtering, and does not require the \_id to be indexed（注意Java类：src/main/java/org/elasticsearch/index/mapper/Uid.java）.假如type为table，id为http://www.wuxi.gov.cn/zxzx/wxyw/6711554.shtml，则返回的\textbf{\_uid}为table\#http://www.wuxi.gov.cn/zxzx/wxyw/6711554.shtml，中间添加了一个\#号，因此ES不允许id值中出现\#这种字符。
+\par Each document is associated with an id and a type, the internal \textbf{\_uid} field 确保document的独一性，由type和id组成，因此具有相同id的不同type的document仍能确保唯一性。索引中每个分片（实际上是一独立的Lucene Index）只有两个内部域（通过Document.getFields()函数获得，而MultiFields.getIndexedFields函数也可以获得多个域，现在还不清楚这两个函数什么区别），分别是\textbf{\_uid}和\textbf{\_source}。The \textbf{\_uid} field is automatically used when \textbf{\_type} is not indexed to perform type based filtering, and does not require the \_id to be indexed（注意Java类：src/main/java/org/elasticsearch/index/mapper/Uid.java）.假如type为table，id为http://www.wuxi.gov.cn/zxzx/wxyw/6711554.shtml，则返回的\textbf{\_uid}为table\#http://www.wuxi.gov.cn/zxzx/wxyw/6711554.shtml，中间添加了一个\#号，因此ES不允许id以及field name中出现\#这种字符\footnote{还有其他非ASCII字符。}。
 \subsection{What's a mapping?}
 \par A mapping tells ES what terms are indexed and searchable, is composed of one or more ‘analyzers’（相当于Lucene中的Analyzer）, which are in turn built with one or more ‘filters’. When ES indexes your document, it passes the field into each specified analyzer, which pass the field to individual filters.
 \par Filters are easy to understand: a filter is a function that transforms data. Given a string, it returns another string (after some modifications). An analyzer is simply a group of filters that are executed in-order. So an analyzer may first apply a lowercase filter, then apply a stop-word removal filter（中文分词也可作为其中一个filter）。 Once the analyzer is run, the remaining terms are indexed and stored in ES。因此， a mapping is simply a series of instructions on how to transform your input data into searchable, indexed terms.
@@ -213,6 +213,12 @@ curl -XPUT 'namenode:9200/hivetest/_settings?pretty' -d '{
 }'
 curl -XPOST 'namenode:9200/hivetest/_open'
 \end{verbatim}
+\par 每个节点均有一个等待队列，当向ElasticSearch填充数据时，每个节点有$Ncores\times 5$个线程用于处理bulk请求，如果这些线程都来不及处理，则bulk请求会放入等待队列中，如果队列中的请求数目达到50，ES会抛出异常。如果没办法加快节点处理bulk请求的速度，可将refresh\_interval设置为-1，即关闭刷新机制，refresh\_interval默认值为1s。
+\begin{verbatim}
+var settings = new IndexSettings();
+settings["refresh_interval"] = "-1";
+client.UpdateSettings(indexName, settings);
+\end{verbatim}
 \par Linux主机上硬盘空间有限，经常发现root目录下已没有可利用磁盘空间，为此，将ES的日志和数据输出目录设置在/home目录下,修改config目录下的elasticsearch.yml文件中的选项，其中path.data为索引文件存放目录，path.work为临时文件存放目录，path.logs为日志文件存放目录。
 \begin{verbatim}
 path.data: /home/elasticSearch/data
@@ -362,146 +368,6 @@ TBLPROPERTIES('es.resource' = 'eshive/hive1/',
 );
 INSERT OVERWRITE TABLE hive1 SELECT BLOCK__OFFSET__INSIDE__FILE,* FROM testData2;
 \end{verbatim}
-\subsection{ElasticSearch打分机制}
-\par The default scoring is the DefaultSimilarity algorithm in core Lucene, largely documented here. You can customize scoring by configuring your own Similarity, or using something like a custom\_score query.
-\par In my previous post about elasticsearch, I explained how the built-in Lucene scoring algorithm works. I also briefly mentioned the possibility of assigning boosts to different document fields or query terms to influence the scoring algorithm. In this post I will cover boosting in greater detail.
-\subsubsection{Why Boost?}
-The first question I had when I started working with scoring was: why do I need to boost at all? Isn’t Lucene’s scoring algorithm tried and true? It seemed to work pretty well on the handful of test documents that I put in the index. But as I added more and more documents, the results got worse, and I realized why boosting is necessary. Lucene’s scoring algorithm does great in the general case, but it doesn’t know anything about your specific subject domain or application. Boosting allows you to compensate for different document types, add domain-specific logic, and incorporate additional signals.
-\par Before I can give specific examples, I need to explain a little bit about the search application I’ve been working on. The application powers site search for IGN, a site about “gaming, entertainment, and everything guys enjoy.” We currently index four main types of content from our backend APIs: articles, videos, wiki pages, and “objects” (games, movies, shows, etc.) By default, search results of all types are returned in a single aggregate listing.
-\par \textbf{Compensating for Different Document Types} — Lucene’s scoring algorithm works very well if your documents are homogeneous. But if you have different document types, you may need to make some manual adjustments. For example, we index both articles and videos. Articles have a lot of textual content — the entire body of the article — but videos only have a short description field. By default Lucene will prefer a match in a shorter field, so when videos match they tend to score higher than articles.
-\par Since elasticsearch supports searching across multiple indexes, it may have been possible to compensate for different document types by creating separate indexes for each type and performing searches with a multi-index query. I haven’t tested it, but I think the scores from each query would be normalized by the coordination factor, so a top-scoring video would be given about the same weight as a top-scoring article. However, this approach would also calculate term frequencies for each content type individually, and I’m not sure how that would affect the results. Giving articles a small boost was a much simpler solution, especially since we already wanted to control how important each content type was for separate reasons.
-\par \textbf{Adding Domain-specific Logic} — Sometimes you have domain-specific logic that is difficult for Lucene to discern on its own. For example, our review articles are probably one of the most important types of content on our site. Since our users are often looking for our reviews, we gave review articles a small boost so they would score higher than other articles.
-\par Another example is stub wiki pages. Videos and objects are expected to have relatively short text descriptions. Articles are often longer, although sometimes we’ll have short articles that announce a bit of news or promote some other content, so a short article is okay. However, a short wiki page is often a sign of a stub, so it should score lower than other results. This is opposite of what Lucene would have done on its own — Lucene would have preferred a match in the shorter wiki page and scored it higher.
-\par \textbf{Incorporating Additional Signals} — For the most part, the importance of a particular piece of content on our site fades with time. For example, a review for a game that was just released may be important this week, but less so next month and even less so a year from now. Out of the box, Lucene does not consider the recency/freshness of content in its scoring algorithm. But if recency factors heavily into scoring in your domain, you may want to incorporate it using a boost. (More details on how to implement a recency boost can be found later in this post.)
-\par We boost our game, movie, and TV show objects if we have written/created more articles and videos about them. A more generic example of this might be boosting products that have been purchased more, or boosting articles that have more views or comments. Which attributes suggest importance is very domain-specific, so you have to handle it yourself with a boost.
-\par http://jontai.me/blog/2013/01/advanced-scoring-in-elasticsearch/
-\subsection{ElasticSearch Query}
-\subsubsection{Scroll Query}
-\par A search request can be scrolled by specifying the scroll parameter. The scroll parameter is a time value parameter (for example: scroll=5m), indicating for how long the nodes that participate in the search will maintain relevant resources in order to continue and support it. This is very similar in its idea to opening a cursor against a database.
-\par A scroll\_id is returned from the first search request (and from continuous) scroll requests. The scroll\_id should be used when scrolling (along with the scroll parameter, to stop the scroll from expiring). The scroll id can also be passed as part of the search request body. The scroll\_id changes for each scroll request and only the most recent one should be used.
-\begin{verbatim}
-curl -XGET 'http://localhost:9200/twitter/tweet/_search?scroll=5m' -d '{
-    "query": {
-        "query_string" : {
-            "query" : "some query string here"
-        }
-    }
-}'
-curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM0NDg1ODpzRlBLc0FXNlNyNm5JWUc1'
-\end{verbatim}
-\par Scrolling is not intended for real time user requests, it is intended for cases like scrolling over large portions of data that exists within elasticsearch to reindex it for example. The scan search type allows to efficiently scroll a large result set. It’s used first by executing a search request with scrolling and a query:
-\begin{verbatim}
-curl -XGET 'localhost:9200/sogou_spellcheck/table/_search?search_type=scan&scroll=10m&size=50' -d '{
-    "query" : {
-        "match_all" : {}
-    }
-}'
-\end{verbatim}
-\par The scroll parameter control the keep alive time of the scrolling request and initiates the scrolling process. The timeout applies per round trip (i.e. between the previous scan scroll request, to the next).
-\par The response will include no hits, with two important results, the \textbf{total\_hits} will include the total hits that match the query, and the \textbf{scroll\_id} that allows to start the scroll process. 在后续阶段，必须使用\textbf{\_search/scroll}作为endPoint，然后使用第一步获得的\textbf{scroll\_id}作为查询参数。
-\begin{verbatim}
-curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'cNh***TmZ=='
-\end{verbatim}
-\par 上例中，注意localhost:9200/\_search/scroll与localhost:9200/sogou\_spellcheck/table的区别。Scroll requests will include a number of hits equal to the size multiplied by the number of primary shards.The "breaking" condition out of a scroll is when no hits has been returned. The total\_hits will be maintained between scroll requests。但是， scan search type does not support sorting (either on score or a field) or faceting。
-\subsubsection{查询类型}
-\par There are different execution paths that can be done when executing a distributed search. The distributed search operation needs to be scattered to all the relevant shards and then all the results are gathered back. When doing scatter/gather type execution, there are several ways to do that, specifically with search engines.
-\par One of the questions when executing a distributed search is how much results to retrieve from each shard. For example, if we have 10 shards, the 1st shard might hold the most relevant results from 0 till 10, with other shards results ranking below it. For this reason, when executing a request, we will need to get results from 0 till 10 from all shards, sort them, and then return the results if we want to insure correct results.
-\par Another question, which relates to search engine, is the fact that each shard stands on its own. When a query is executed on a specific shard, it does not take into account term frequencies and other search engine information from other shards. If we want to support accurate ranking, we would need to first execute the query against all shards and gather the relevant term frequencies, and then, based on it, execute the query.
-\par Also, because of the need to sort the results, getting back a large document set, or even scrolling it, while maintaing the correct sorting behavior can be a very expensive operation. \textbf{For large result set scrolling without sorting, the scan search type is available.}
-\par Elasticsearch is very flexible and allows to control the type of search to execute on a per search request basis. The type can be configured by setting the search\_type parameter in the query string（如上例中的Scroll Query）。
-\subsubsection{普通查询}
-\par 假如索引中存在词组：[quick] [brown] [fox] [jump] [over] [lazy] [dog]。搜索“qu”时，Prefix Query查询所有前缀为“qu”的Term，因此如果索引中存在“quack”，“quote”和“quarter”等Term，那么查询将匹配到这些Term。如果索引中存在很多类似Term时，查询效率很差（注意，Prefix Query不是精确匹配，效率肯定不高）。Prefix Query也不能匹配中间字符，如“ball”不能匹配“baseball”，虽然可以采用通配符（Wildcard query）进行修正，但这种方式的查询性能更差。
-\par 如果输入英文时想匹配到目标串[quick]的任意前缀，应该抽取[quick]的前缀序列，其Term序列为：[q]/[qu]/[qui]/[quic]/[quick]，这种Analyzer称为Edge NGram。还有一种Analyzer称为N-Grams（字符串P的N-Gram是P中长度为N的所有子串），以“brown”这个单词为例，设置（minGram=1和maxGram=2），N-Grams输出[b]/[r]/[o]/[w]/[n]/[br]/[ro]/[ow]/[wn]，而Edge NGram输出[b]/[br]（maxGram等于5时，Edge NGram能输出[b]/[br]/[bro]/[brow]/[brown]）。针对document的不同域，应该设置不同的Analyzer。在处理大量网页时，一般只需对标题和关键词建立NGrams索引，而网页内容采用普通的Analyzer即可。下面定义了名为autocomplete的\textbf{Analyzer}，然后通过\textbf{multi\_field}关键字添加了额外的autocomplete分析器。搜索时可使用name来访问name域的默认版本，或者使用name.autocomplete访问另一个版本。
-\begin{verbatim}
-{
-  "settings":{
-    "analysis":{
-      "analyzer":{
-        "autocomplete":{
-          "type":"custom",
-          "tokenizer":"standard",
-          "filter":[ "standard", "lowercase", "stop", "kstem", "ngram" ] 
-        }
-      }
-    }
-  }
-}
-{
-  "articles":{
-    "properties":{
-      "name":{
-        "type":"multi_field",
-        "fields":{
-          "name":{
-            "type":"string"
-          },
-          "autocomplete":{
-            "analyzer":"autocomplete",
-            "type":"string"
-          }
-        }
-      }
-    }
-  }
-}
-\end{verbatim}
-\subsubsection{布尔查询}
-A query that matches documents matching boolean combinations of other queries. The bool query maps to Lucene BooleanQuery. It is built using one or more boolean clauses, each clause with a typed occurrence. 例如：
-\begin{verbatim}
-{
-    "query": {
-        "bool": {
-            "must": [
-                {
-                  "simple_query_string": {
-                      "analyzer": "soul_query", 
-                      "default_operator": "and", 
-                      "fields": [ "content^1.0", "title^2.0" ], 
-                      "query": "中国"
-                   }
-                }, 
-                { "term": { "tag": "行政服务" } }
-            ]
-        }
-    } 
-}
-\end{verbatim}
-\par 布尔查询的主要作用是可将多个查询组合起来，注意下面查询中的minimum\_should\_match，该变量必须设置should语句，否则不起作用，如果该变量没有提及，则默认为0。
-\begin{verbatim}
-curl -XGET 192.168.50.75:9200/official_mini/table/_search?pretty -d '{
-    "query": {
-        "bool": {
-            "must": [ {  "term": { "tag": "锡城资讯" } } ], 
-            "should": [
-                {
-                    "simple_query_string": {
-                        "analyzer": "soul_query", 
-                        "default_operator": "and", 
-                        "fields": [ "content^1.0", "contenttitle^2.0" ], 
-                        "query": "太湖春涛"
-                    }
-                }, 
-                {
-                    "term": {
-                        "contenttitle.untouched^4.0": "太湖春涛"
-                    }
-                }
-            ], 
-            "minimum_should_match" : 1
-        }
-    } 
-}'
-\end{verbatim}
-\subsubsection{Span Multi Term Query}
-\par Matches spans which are near one another. One can specify slop, the maximum number of intervening unmatched positions, as well as whether matches are required to be in-order. The span near query maps to Lucene SpanNearQuery. Here is an example:
-\par SpanNearQuery主要用作精确查询，比如某个term之后，是另一个term，term之间的距离可以自己设定，从而实现精确匹配。例如搜索包含了“共青团中央下发实施意见”字符串的文章。不妨设“共青团中央下发实施意见”分词为：“共青团中央”，“下发”，“实施意见”。当设置slop为0，inOrder为true时，代码如下：
-\begin{verbatim}
-SpanNearQueryBuilder span=QueryBuilders.spanNearQuery();
-span.clause(QueryBuilders.spanTermQuery("content","共青团中央") );
-span.clause(QueryBuilders.spanTermQuery("content","实施意见") );
-span.inOrder(true).slop(1);
-client.prepareSearch("test").setQuery(span).execute().actionGet();
-\end{verbatim}
 \subsection{ElasticSearch源码分析}
 \subsubsection{ES模块}
 \par elasticSearch对Google Guice进行了简单的封装，通过ModulesBuilder类构建es的模块，一个es节点包括下面模块：
@@ -560,7 +426,7 @@ transportClient = new TransportClient()
 						"localhost", 9300));
 \end{verbatim}
 使用transportClient.admin().cluster()可对集群（元数据）进行操作，使用transportClient.admin().indices()可对索引（元数据）进行管理，普通操作可通过类似transportClient.prepareSearch(indexName)等方式操作。还有一种直接使用http协议（即Restful）与ElasticSearch通信，这种方式借力于HttpClient（来自于org.apache.commons.httpclient.HttpClient包）。
-\subsubsection{ElasticSearch缓存}
+\subsubsection{ES缓存}
 \par ElasticSearch缓存机制使用的库为Guava（Google Core Libraries for Java），LoadingCache<K,V>的refresh函数：
 \begin{enumerate}[(1)]
 \item Loads a new value for key, possibly asynchronously. While the new value is loading（当装载新的Value时，先前的Value继续被使用，直到新的Value装载完毕）， the previous value (if any) will continue to be returned by get(key) unless it is evicted. If the new value is loaded successfully it will replace the previous value in the cache; if an exception is thrown while refreshing the previous value will remain, and the exception will be logged (using Logger) and swallowed.
@@ -740,19 +606,5 @@ curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
 }'
 \end{verbatim}
 \end{enumerate}
-\subsection{}
-\par Its the total number of bulk calls that are allowed to be queued for execution irregardless of how many operations you put in each.
-\par Each elasticsearch node has (N cores * 5) fixed dedicated threads doing the bulk index work, if all of them are busy then calls are put in the queue, if that queue reaches 50 it starts bouncing request with the exception you just saw.
-\par Without knowing the exact details of your request (how big is the json, how many ops are per bulk request) my main suspect for poor indexing performance is that you still have the index.refresh\_interval set to 1s this means it will perform a flush on the data every second. Out of the box this is what you want and gives elasticsearch its NRT characteristics with regards to POST'ing a document and it turning up on your searches. But if you are doing bulk operations it is probably a good practice to turn this off prior to indexing (by setting it to -1) and turning it on again afterwards.
-\begin{verbatim}
-var settings = new IndexSettings();
-settings["refresh_interval"] = "-1";
-client.UpdateSettings(indexName, settings);
-\end{verbatim}
-Only do this though if you are indexing into a clean new index, if its an index that is actively posted new documents/updates than those might not be available untill the next flush.
-\begin{verbatim}
-http://blog.sematext.com/2013/07/08/elasticsearch-refresh-interval-vs-indexing-performance/ 
-\end{verbatim}
-\par gives a good indication what the refresh\_interval does to indexing performance. Having said all of that if your batch size is 200 it seems very strange that you are hitting the queue limit.
-\par How many documents are you indexing and what is your batchsize? What also helps is logging the bulk response times (.Took property on the IBulkResponse) to see if there is a pattern somehow i.e is it a ramp up or are there are a couple of rogue calls?
-\par Also following the calls with Fiddler might give some more insights into whats going on.http://fiddler2.com/documentation/Configure-Fiddler/Tasks/ConfigureDotNETApp
+
+

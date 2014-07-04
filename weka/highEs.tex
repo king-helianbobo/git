@@ -1,0 +1,271 @@
+\section{ElasticSearch Query}
+\subsection{ES Score Mechanism}
+Main Formula as:
+$$score(q,d) = coord(q,d) \times queryNorm(q) \times \sum_{t\in q}(tf(t \in d) \times idf(t)^2 \times t.getBoost() \times norm(t,d)) $$
+\begin{itemize}
+\item t:term，term是包含域信息的term，即title:hello和content:hello是不同的term。
+\item coord(q,d):一次搜索可能包含多个term，而一篇文档中也可能包含多个term，此项表示当一篇文档中包含的搜索词越多，则此文档分数越高。只会在BooleanQuery的or查询中该值可能小于1，其余查询该值都为1。
+\item queryNorm(q):查询语句q的标准化值，此值不影响排序，而使得不同的query之间的分数可以比较。其公式为：
+$queryNorm(q) =\frac{1}{\sqrt{\sum_{t\in q}[idf(t) \times t.getBoost()]^2)}} $
+\item $tf(t \in d)$：关于Term t在文档d中出现的词频的一个值，Lucene默认实现：$\sqrt{freq}$。
+\item idf(t):Term t在多少篇文档中出现过，显示t的稀有程度或普遍程度，Lucene默认实现：$1 + \ln{\frac{numDocs}{1+docFreq}}$
+\item $norm(t,d)=d.getBoost()\times lengthNorm(field) \times f.getBoost()$
+  \begin{itemize}
+  \item d.getBoost():Document boost，此值越大，说明此文档越重要。
+  \item f.getBoost():Field boost，此域越大，说明此域越重要。
+  \item lengthNorm(field):域中包含的Term总数越多，也即文档越长，此值越小，文档越短，此值越大，公式：$\frac{1}{\sqrt{numTerms}}$。
+  \end{itemize}
+\end{itemize}
+\par lengthNorm的值必须除以Term总数，在这里叫做归一化处理。Index中不同文档的长度不一样，很显然，对于任意一个term，长文档中的tf要大的多，因而分数高，这样对小文档很不公平。举一个极端例子，在一篇1000万个词的巨著中，"lucene"这个词出现了11次，而在一篇12个词的短小文档中，"lucene"这个词出现了10次，如果不考虑长度，巨著应该分数更高，但这篇小文档才是真正关注"lucene"的。
+\subsection{ES Boost Mechanism}
+The default scoring is the DefaultSimilarity algorithm in core Lucene, you can customize scoring by configuring your own Similarity, or using something like a custom\_score query.
+\subsubsection{Why Boost?}
+The first question I had when I started working with scoring was: why do I need to boost at all? Isn’t Lucene’s scoring algorithm tried and true? It seemed to work pretty well on the handful of test documents that I put in the index. But as I added more and more documents, the results got worse, and I realized why boosting is necessary. Lucene’s scoring algorithm does great in the general case, but it doesn’t know anything about your specific subject domain or application. Boosting allows you to compensate for different document types, add domain-specific logic, and incorporate additional signals.
+\par Before I can give specific examples, I need to explain a little bit about the search application I’ve been working on. The application powers site search for IGN, a site about “gaming, entertainment, and everything guys enjoy.” We currently index four main types of content from our backend APIs: articles, videos, wiki pages, and “objects” (games, movies, shows, etc.) By default, search results of all types are returned in a single aggregate listing.
+\par \textbf{Compensating for Different Document Types} — Lucene’s scoring algorithm works very well if your documents are homogeneous. But if you have different document types, you may need to make some manual adjustments. For example, we index both articles and videos. Articles have a lot of textual content — the entire body of the article — but videos only have a short description field. By default Lucene will prefer a match in a shorter field, so when videos match they tend to score higher than articles.
+\par Since elasticsearch supports searching across multiple indexes, it may have been possible to compensate for different document types by creating separate indexes for each type and performing searches with a multi-index query. I haven’t tested it, but I think the scores from each query would be normalized by the coordination factor, so a top-scoring video would be given about the same weight as a top-scoring article. However, this approach would also calculate term frequencies for each content type individually, and I’m not sure how that would affect the results. Giving articles a small boost was a much simpler solution, especially since we already wanted to control how important each content type was for separate reasons.
+\par \textbf{Adding Domain-specific Logic} — Sometimes you have domain-specific logic that is difficult for Lucene to discern on its own. For example, our review articles are probably one of the most important types of content on our site. Since our users are often looking for our reviews, we gave review articles a small boost so they would score higher than other articles.
+\par Another example is stub wiki pages. Videos and objects are expected to have relatively short text descriptions. Articles are often longer, although sometimes we’ll have short articles that announce a bit of news or promote some other content, so a short article is okay. However, a short wiki page is often a sign of a stub, so it should score lower than other results. This is opposite of what Lucene would have done on its own — Lucene would have preferred a match in the shorter wiki page and scored it higher.
+\par \textbf{Incorporating Additional Signals} — For the most part, the importance of a particular piece of content on our site fades with time. For example, a review for a game that was just released may be important this week, but less so next month and even less so a year from now. Out of the box, Lucene does not consider the recency/freshness of content in its scoring algorithm. But if recency factors heavily into scoring in your domain, you may want to incorporate it using a boost. (More details on how to implement a recency boost can be found later in this post.)
+\par We boost our game, movie, and TV show objects if we have written/created more articles and videos about them. A more generic example of this might be boosting products that have been purchased more, or boosting articles that have more views or comments. Which attributes suggest importance is very domain-specific, so you have to handle it yourself with a boost.
+\subsubsection{Boosting at Index Time vs Query Time}
+\par Boosts can be applied at index time，when the document is indexed, or at query time when a search is performed. If a particular document will always be more important than others, you may want to consider applying the boost when the document is indexed. Pre-boosted documents are faster to search because there is less work to do when a search is performed. However, even if you know that a document will always be more important, you may not know how much more important. If the boost is too strong, the important document will always appear at the top of results (as long as it matched at all); if the boost is too weak, the important document will not get any real advantage over other documents.
+\par Applying a boost at index time requires that you re-index the document to change the boost. Unless you are manually adding documents to your index and deciding the boost on a case-by-case basis, you likely have some kind of script or program that is building your index and the boosts are determined by some logic or a set of rules. A change in the logic or rules will likely affect many documents, so you will effectively need to rebuild your index for the changes to take effect. If your index is small, this may be appropriate. Our index takes several hours to rebuild, so we avoid applying boosts at index time whenever possible. Applying boosts at query time let us add new boosts, change boost criteria, and change boost strength on-the-fly. This flexibility is well worth the additional runtime cost.
+\par Although you can combine boosts applied at index time and at query time, some boosts must be applied at query time because there isn’t enough information at index time to calculate the boost. For example, if you are doing a boost based on document freshness (how close the document’s timestamp is to the current time), the current time (when the search is performed) is not known at index time. In this particular example, you could use the time the document is indexed as the current time if the index is frequently rebuilt and you really want to avoid query time boosts.
+\subsubsection{Implementing Boosts}
+Almost every elasticsearch query type has a boost parameter that allows you to influence the weight of that query versus other queries, but we don’t use this parameter because we only have one main query. The main query is a query\_string query, which parses the user’s query, finds matches, and scores them using Lucene’s default scoring algorithm. Then we apply a number of boosts depending on whether certain criteria is met.
+\par In early prototypes, I accomplished the boosting by wrapping the main query in a custom\_score query. As the name implies, the custom\_score query allows you to calculate the score of each document using custom logic by passing in a script in the script parameter. By default, scripts are interpreted as MVEL, although other languages are supported. You can access the score assigned by the wrapped query via the special \_score variable, so I started off doing something like this:
+\begin{verbatim}
+{
+  "query": {
+    "custom_score": {
+      "query": { ...the main query... },
+      "script": "_score * (doc['class'].value == 'review' ? 1.2 : 1)"
+    }
+  }
+}
+\end{verbatim}
+\par This worked, but it wasn’t very scalable. As I added more boosts, I would end up with an expression with dozens of terms. Also, each document field would have to be stored at index time so that the script can retrieve and evaluate it, which bloats the index and is relatively slow. 
+\par Fortunately, there is a much better tool for the job — the custom\_filters\_score query.This can considerably simplify and increase performance for parameterized based scoring since filters are easily cached for faster performance, and boosting/script is considerably simpler. Converted to a custom\_filters\_score query, the above example looks like this:
+\begin{verbatim}
+{
+  "query": {
+    "custom_filters_score": {
+      "query": { ...the main query... },
+      "filters": [
+        {
+          "filter": {
+            "term": {
+              "class": "review"
+            }
+          },
+          "boost": 1.2
+        }
+      ]
+    }
+  }
+}
+\end{verbatim}
+\par If you want to add additional boosts, just add another filter specifying the criteria and assigning it a boost. You can use any filter, including filters that wrap other filters. If you have multiple filters, you may want to specify how multiple matching filters will be combined by passing the score\_mode parameter. By default, the first matching filter’s boost is used, but if you have multiple filters that may match you can set score\_mode to something like multiply which would apply all the boosts.
+\par The following query boosts reviews by 20\%, boosts articles by 20\% (so review articles would be boosted 44\%), and penalizes wiki pages that are less than 600 characters long by 80\%.
+\begin{verbatim}
+{
+  "query": {
+    "custom_filters_score": {
+      "query": { ...the main query... },
+      "filters": [
+        {
+          "filter": {
+            "term": {
+              "class": "review"
+            }
+          },
+          "boost": 1.2
+        },
+        {
+          "filter": {
+            "term": {
+              "type": "article"
+            }
+          },
+          "boost": 1.2
+        },
+        {
+          "filter": {
+            "and": [
+              {
+                "term": {
+                  "type": "page"
+                }
+              },
+              {
+                "range": {
+                  "descriptionLength": {
+                    "to": 600
+                  }
+                }
+              }
+            ]
+          },
+          "boost": 0.2
+        }
+      ],
+      "score_mode": "multiply"
+    }
+  }
+}
+\end{verbatim}
+\par Sometimes you want to adjust the strength of a boost based on a field in the document. For example, if you want to boost recent documents, an article published today should be boosted more than an article published yesterday, and an article published yesterday should be boosted more than an article published last week, etc. Even though filters are cached and run relatively quickly, it would be impractical to have a filter for articles published today, another filter for articles published yesterday, another filter for articles published last week, etc. Fortunately, the custom\_filters\_score query can accept a script parameter instead of a boost for these situations.
+\par Unfortunately elasticsearch doesn’t have a recip function, but you can easily implement the same underlying function, y = a / (m * x + b), and pass it to elasticsearch as a script. In the example below, I’m using the values of m, a, and b suggested: m=3.16E-11, a=0.08, and b=0.05. Since some documents in our index have dates in the future, I added abs() to take the absolute value of the difference between the time the query is run and the document’s timestamp. I’m also adding 1.0 to the boost value to make it a freshness boost instead of a staleness penalty.
+\begin{verbatim}
+{
+  "query": {
+    "custom_filters_score": {
+      "query": { ...the main query... },
+      "params": {
+        "now": current time when query is run, expressed as milliseconds
+      },
+      "filters": [
+        {
+          "filter": {
+            "exists": {
+              "field": "date"
+            }
+          },
+          "script": 
+       "(0.08/((3.16*pow(10,-11))*abs(now-doc['date'].date.getMillis())+0.05))+ 1.0"
+        }
+      ]
+    }
+  }
+}
+\end{verbatim}
+\par With these values, documents dated right now are boosted up to 160\% (boost value is 2.6). This falls off to a 100\% boost after 10 days, 60\% after a month, 15\% after 6 months, 8\% after a year, and less than 4\% after 2 years. 
+\par Elasticsearch scripts are cached for faster execution. When using scripts with elasticsearch, pass in values that change from query to query as a parameter via the params parameter rather than doing string interpolation in the script itself. This way, the script stays constant and cacheable, but your parameter still changes with every query.
+\subsection{ElasticSearch Query}
+\subsubsection{Scroll Query}
+A search request can be scrolled by specifying the scroll parameter. The scroll parameter is a time value parameter (for example: scroll=5m), indicating for how long the nodes that participate in the search will maintain relevant resources in order to continue and support it. This is very similar in its idea to opening a cursor against a database.
+\par A scroll\_id is returned from the first search request (and from continuous) scroll requests. The scroll\_id should be used when scrolling (along with the scroll parameter, to stop the scroll from expiring). The scroll id can also be passed as part of the search request body. The scroll\_id changes for each scroll request and only the most recent one should be used.
+\begin{verbatim}
+curl -XGET 'http://localhost:9200/twitter/tweet/_search?scroll=5m' -d '{
+    "query": {
+        "query_string" : {
+            "query" : "some query string here"
+        }
+    }
+}'
+curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM0NDg1ODpzRlBLc0FXNlNyNm5JWUc1'
+\end{verbatim}
+\par Scrolling is not intended for real time user requests, it is intended for cases like scrolling over large portions of data that exists within elasticsearch to reindex it for example. The scan search type allows to efficiently scroll a large result set. It’s used first by executing a search request with scrolling and a query:
+\begin{verbatim}
+curl -XGET 'localhost:9200/sogou_spellcheck/table/_search?search_type=scan&scroll=10m&size=50' -d '{
+    "query" : {
+        "match_all" : {}
+    }
+}'
+\end{verbatim}
+\par The scroll parameter control the keep alive time of the scrolling request and initiates the scrolling process. The timeout applies per round trip (i.e. between the previous scan scroll request, to the next).
+\par The response will include no hits, with two important results, the \textbf{total\_hits} will include the total hits that match the query, and the \textbf{scroll\_id} that allows to start the scroll process. 在后续阶段，必须使用\textbf{\_search/scroll}作为endPoint，然后使用第一步获得的\textbf{scroll\_id}作为查询参数。
+\begin{verbatim}
+curl -XGET 'localhost:9200/_search/scroll?scroll=10m' -d 'cNh***TmZ=='
+\end{verbatim}
+\par 上例中，注意localhost:9200/\_search/scroll与localhost:9200/sogou\_spellcheck/table的区别。Scroll requests will include a number of hits equal to the size multiplied by the number of primary shards.The "breaking" condition out of a scroll is when no hits has been returned. The total\_hits will be maintained between scroll requests。但是， scan search type does not support sorting (either on score or a field) or faceting。
+\subsubsection{查询类型}
+\par There are different execution paths that can be done when executing a distributed search. The distributed search operation needs to be scattered to all the relevant shards and then all the results are gathered back. When doing scatter/gather type execution, there are several ways to do that, specifically with search engines.
+\par One of the questions when executing a distributed search is how much results to retrieve from each shard. For example, if we have 10 shards, the 1st shard might hold the most relevant results from 0 till 10, with other shards results ranking below it. For this reason, when executing a request, we will need to get results from 0 till 10 from all shards, sort them, and then return the results if we want to insure correct results.
+\par Another question, which relates to search engine, is the fact that each shard stands on its own. When a query is executed on a specific shard, it does not take into account term frequencies and other search engine information from other shards. If we want to support accurate ranking, we would need to first execute the query against all shards and gather the relevant term frequencies, and then, based on it, execute the query.
+\par Also, because of the need to sort the results, getting back a large document set, or even scrolling it, while maintaing the correct sorting behavior can be a very expensive operation. \textbf{For large result set scrolling without sorting, the scan search type is available.}
+\par Elasticsearch is very flexible and allows to control the type of search to execute on a per search request basis. The type can be configured by setting the search\_type parameter in the query string（如上例中的Scroll Query）。
+\subsubsection{普通查询}
+\par 假如索引中存在词组：[quick] [brown] [fox] [jump] [over] [lazy] [dog]。搜索“qu”时，Prefix Query查询所有前缀为“qu”的Term，因此如果索引中存在“quack”，“quote”和“quarter”等Term，那么查询将匹配到这些Term。如果索引中存在很多类似Term时，查询效率很差（注意，Prefix Query不是精确匹配，效率肯定不高）。Prefix Query也不能匹配中间字符，如“ball”不能匹配“baseball”，虽然可以采用通配符（Wildcard query）进行修正，但这种方式的查询性能更差。
+\par 如果输入英文时想匹配到目标串[quick]的任意前缀，应该抽取[quick]的前缀序列，其Term序列为：[q]/[qu]/[qui]/[quic]/[quick]，这种Analyzer称为Edge NGram。还有一种Analyzer称为N-Grams（字符串P的N-Gram是P中长度为N的所有子串），以“brown”这个单词为例，设置（minGram=1和maxGram=2），N-Grams输出[b]/[r]/[o]/[w]/[n]/[br]/[ro]/[ow]/[wn]，而Edge NGram输出[b]/[br]（maxGram等于5时，Edge NGram能输出[b]/[br]/[bro]/[brow]/[brown]）。针对document的不同域，应该设置不同的Analyzer。在处理大量网页时，一般只需对标题和关键词建立NGrams索引，而网页内容采用普通的Analyzer即可。下面定义了名为autocomplete的\textbf{Analyzer}，然后通过\textbf{multi\_field}关键字添加了额外的autocomplete分析器。搜索时可使用name来访问name域的默认版本，或者使用name.autocomplete访问另一个版本。
+\begin{verbatim}
+{
+  "settings":{
+    "analysis":{
+      "analyzer":{
+        "autocomplete":{
+          "type":"custom",
+          "tokenizer":"standard",
+          "filter":[ "standard", "lowercase", "stop", "kstem", "ngram" ] 
+        }
+      }
+    }
+  }
+}
+{
+  "articles":{
+    "properties":{
+      "name":{
+        "type":"multi_field",
+        "fields":{
+          "name":{
+            "type":"string"
+          },
+          "autocomplete":{
+            "analyzer":"autocomplete",
+            "type":"string"
+          }
+        }
+      }
+    }
+  }
+}
+\end{verbatim}
+\subsubsection{布尔查询}
+A query that matches documents matching boolean combinations of other queries. The bool query maps to Lucene BooleanQuery. It is built using one or more boolean clauses, each clause with a typed occurrence. 例如：
+\begin{verbatim}
+{
+    "query": {
+        "bool": {
+            "must": [
+                {
+                  "simple_query_string": {
+                      "analyzer": "soul_query", 
+                      "default_operator": "and", 
+                      "fields": [ "content^1.0", "title^2.0" ], 
+                      "query": "中国"
+                   }
+                }, 
+                { "term": { "tag": "行政服务" } }
+            ]
+        }
+    } 
+}
+\end{verbatim}
+\par 布尔查询的主要作用是可将多个查询组合起来，注意下面查询中的minimum\_should\_match，该变量必须设置should语句，否则不起作用，如果该变量没有提及，则默认为0。
+\begin{verbatim}
+curl -XGET 192.168.50.75:9200/official_mini/table/_search?pretty -d '{
+    "query": {
+        "bool": {
+            "must": [ {  "term": { "tag": "锡城资讯" } } ], 
+            "should": [
+                {
+                    "simple_query_string": {
+                        "analyzer": "soul_query", 
+                        "default_operator": "and", 
+                        "fields": [ "content^1.0", "contenttitle^2.0" ], 
+                        "query": "太湖春涛"
+                    }
+                }, 
+                {
+                    "term": {
+                        "contenttitle.untouched^4.0": "太湖春涛"
+                    }
+                }
+            ], 
+            "minimum_should_match" : 1
+        }
+    } 
+}'
+\end{verbatim}
+\subsubsection{Span Multi Term Query}
+\par Matches spans which are near one another. One can specify slop, the maximum number of intervening unmatched positions, as well as whether matches are required to be in-order. The span near query maps to Lucene SpanNearQuery. Here is an example:
+\par SpanNearQuery主要用作精确查询，比如某个term之后，是另一个term，term之间的距离可以自己设定，从而实现精确匹配。例如搜索包含了“共青团中央下发实施意见”字符串的文章。不妨设“共青团中央下发实施意见”分词为：“共青团中央”，“下发”，“实施意见”。当设置slop为0，inOrder为true时，代码如下：
+\begin{verbatim}
+SpanNearQueryBuilder span=QueryBuilders.spanNearQuery();
+span.clause(QueryBuilders.spanTermQuery("content","共青团中央") );
+span.clause(QueryBuilders.spanTermQuery("content","实施意见") );
+span.inOrder(true).slop(1);
+client.prepareSearch("test").setQuery(span).execute().actionGet();
+\end{verbatim}
