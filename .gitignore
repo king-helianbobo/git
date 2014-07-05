@@ -52,8 +52,8 @@ _region_.tex
 
 
 ## ignore below directory types
-#./*/target/
-#./*/test-output/
+*/target/
+*/test-output/
 
 ## ignore below directories
 fnlp/
