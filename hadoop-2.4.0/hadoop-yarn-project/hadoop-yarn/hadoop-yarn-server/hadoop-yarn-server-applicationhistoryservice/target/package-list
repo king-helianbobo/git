@@ -1,0 +1,5 @@
+org.apache.hadoop.yarn.server.applicationhistoryservice
+org.apache.hadoop.yarn.server.applicationhistoryservice.records
+org.apache.hadoop.yarn.server.applicationhistoryservice.records.impl.pb
+org.apache.hadoop.yarn.server.applicationhistoryservice.timeline
+org.apache.hadoop.yarn.server.applicationhistoryservice.webapp

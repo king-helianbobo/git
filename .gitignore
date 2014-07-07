@@ -49,6 +49,7 @@ _region_.tex
 *.ear
 .project
 .classpath
+.cmd
 
 
 ## ignore below directory types
@@ -60,4 +61,4 @@ fnlp/
 soul_seg/
 soul-core/
 soul-client/
-hadoop-2.4.0/
+

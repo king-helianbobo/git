@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/src/main/native/examples/impl/sort.cc
+hadoop/Pipes.hh
+/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/src/main/native/examples/impl/hadoop/Pipes.hh
+hadoop/TemplateFactory.hh
+/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/src/main/native/examples/impl/hadoop/TemplateFactory.hh
+
+/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/src/main/native/pipes/api/hadoop/Pipes.hh
+string
+-
+stdint.h
+-
+
+/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/src/main/native/pipes/api/hadoop/TemplateFactory.hh
+
