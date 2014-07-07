@@ -50,17 +50,14 @@ _region_.tex
 .project
 .classpath
 
-## ignore below directories
-soul_seg/
-soul_seg/target/
-soul_seg/test-output/
-elasticsearch/target/
-elasticsearch/test-output/
-synonym/target/
-synonym/test-output/
+
+## ignore below directory types
+*/target/
+*/test-output/
 
 ## ignore below directories
 fnlp/
+soul_seg/
 soul-core/
 soul-client/
 hadoop-2.4.0/
