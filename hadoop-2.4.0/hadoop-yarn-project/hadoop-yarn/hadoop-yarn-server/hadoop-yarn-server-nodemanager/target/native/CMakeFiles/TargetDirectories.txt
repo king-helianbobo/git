@@ -1,3 +1,0 @@
-/home/liubo/git/hadoop-2.4.0/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/target/native/CMakeFiles/container.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/target/native/CMakeFiles/container-executor.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/target/native/CMakeFiles/test-container-executor.dir

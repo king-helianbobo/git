@@ -1,3 +1,0 @@
-/home/liubo/git/hadoop-2.4.0/hadoop-common-project/hadoop-common/target/native/CMakeFiles/hadoop.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-common-project/hadoop-common/target/native/CMakeFiles/hadoop_static.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-common-project/hadoop-common/target/native/CMakeFiles/test_bulk_crc32.dir

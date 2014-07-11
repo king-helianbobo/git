@@ -1,0 +1,21 @@
+{"LR_SJ":"录入时间","MC_J":"简称","XY_BJ":"选用标记","ZSXM_DM":"征收项目","KJKMFL_DM":"会计科目分类","SF_LX":"税费类型","MC":"名称","XG_SJ":"修改时间"}
+{"LR_SJ":"","MC_J":"增值税","XY_BJ":"1","ZSXM_DM":"01","KJKMFL_DM":"1","SF_LX":"0","MC":"增值税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"营业税","XY_BJ":"1","ZSXM_DM":"02","KJKMFL_DM":"1","SF_LX":"0","MC":"营业税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"个人所得税","XY_BJ":"1","ZSXM_DM":"05","KJKMFL_DM":"1","SF_LX":"0","MC":"个人所得税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"土地增值税","XY_BJ":"1","ZSXM_DM":"08","KJKMFL_DM":"1","SF_LX":"0","MC":"土地增值税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"城市维护建设税","XY_BJ":"1","ZSXM_DM":"10","KJKMFL_DM":"1","SF_LX":"0","MC":"城市维护建设税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"房产税","XY_BJ":"1","ZSXM_DM":"12","KJKMFL_DM":"1","SF_LX":"0","MC":"房产税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"资源税","XY_BJ":"1","ZSXM_DM":"14","KJKMFL_DM":"1","SF_LX":"0","MC":"资源税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"城镇土地使用税","XY_BJ":"1","ZSXM_DM":"15","KJKMFL_DM":"1","SF_LX":"0","MC":"城镇土地使用税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"印花税","XY_BJ":"1","ZSXM_DM":"16","KJKMFL_DM":"1","SF_LX":"0","MC":"印花税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"固定资产投资方向调节税","XY_BJ":"1","ZSXM_DM":"18","KJKMFL_DM":"1","SF_LX":"0","MC":"固定资产投资方向调节税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"企业所得税","XY_BJ":"1","ZSXM_DM":"51","KJKMFL_DM":"1","SF_LX":"0","MC":"企业所得税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"教育费附加","XY_BJ":"1","ZSXM_DM":"61","KJKMFL_DM":"9","SF_LX":"0","MC":"教育费附加","XG_SJ":"21-1月 -14 09.10.02.000000 上午"}
+{"LR_SJ":"","MC_J":"地方教育附加","XY_BJ":"1","ZSXM_DM":"63","KJKMFL_DM":"9","SF_LX":"0","MC":"地方教育附加","XG_SJ":"21-1月 -14 09.10.02.000000 上午"}
+{"LR_SJ":"","MC_J":"文化事业建设费收入","XY_BJ":"1","ZSXM_DM":"65","KJKMFL_DM":"9","SF_LX":"0","MC":"文化事业建设费收入","XG_SJ":""}
+{"LR_SJ":"","MC_J":"耕地占用税","XY_BJ":"1","ZSXM_DM":"74","KJKMFL_DM":"9","SF_LX":"0","MC":"耕地占用税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"契税","XY_BJ":"1","ZSXM_DM":"75","KJKMFL_DM":"1","SF_LX":"0","MC":"契税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"江苏地方基金","XY_BJ":"1","ZSXM_DM":"90","KJKMFL_DM":"1","SF_LX":"1","MC":"江苏地方基金","XG_SJ":""}
+{"LR_SJ":"","MC_J":"车船税","XY_BJ":"1","ZSXM_DM":"22","KJKMFL_DM":"1","SF_LX":"0","MC":"车船税","XG_SJ":""}
+{"LR_SJ":"","MC_J":"罚没收入","XY_BJ":"1","ZSXM_DM":"81","KJKMFL_DM":"9","SF_LX":"0","MC":"税务部门其他罚没收入","XG_SJ":"21-1月 -14 09.10.02.000000 上午"}
+{"LR_SJ":"","MC_J":"其他收入","XY_BJ":"1","ZSXM_DM":"69","KJKMFL_DM":"1","SF_LX":"0","MC":"其他收入","XG_SJ":""}

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>智能搜索-演示Demo</title>
+
+    <link rel="stylesheet" href="/static/page/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/page/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/static/page/css/jquery.autocomplete.css">
+    <style type='text/css'>
+      body {
+      padding-top: 300px;
+      }
+
+      .starter-template {
+      padding: 10px 5px;
+      text-align: center;
+      }
+    </style>
+
+    <script type="text/javascript" src="/static/jquery/jquery-1.8.2.min.js"></script>
+    <script type="text/javascript" src="/static/jquery/jquery-ui-1.9.1.custom.min.js"></script>
+    <script type="text/javascript" src="/static/dt-1.9.4/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/static/yarn.dt.plugins.js"></script>
+    <script type="text/javascript" src="/static/page/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/page/js/jquery.autocomplete.min.js"></script>
+    <script type="text/javascript" src="/static/page/js/indexUtil.js"></script>
+    <script type="text/javascript" src="/static/page/js/bootstrap.min.js"></script>
+    <script>
+      function OnInput (event) { 
+      $.ajax({ 
+      type:"GET",
+      url:'./suggest?method=base&nature=true',
+      data:'input='+event.target.value,
+      async: true,
+      cache: false,
+      success : function(data) {
+      // parse result json string
+      var jsonobj=eval('('+data+')');
+      var dataArray = new Array();
+      dataArray = jsonobj.suggestions;
+      $('#kw2').AutoComplete({
+      'data': dataArray,
+      'itemHeight': 10,
+      "listDirection":"up",
+      'width': "auto",
+      'term':jsonobj.term
+      }).AutoComplete('show');
+      }
+      });
+      }
+      //搜索按钮ajax请求返回结果
+      function skipUrl (v) { 
+      $.ajax({ 
+      type:"GET", 
+      url:'./query?method=mypage&nature=true',
+      data:'input='+v+'&&from=0&&size='+size+'&&tagType=tag1',
+      success : function(data) {
+      var tabStr ='';
+      htmlStr =initPage(v,data);//查询后初始化界面
+      tabStr += getCss();//获取css标签
+      tabStr +=importJs();//引入js标签
+      tabStr +="<script>";//添加script标签
+	tabStr += jqueryColumn(v);//jquery实现切换栏目
+	tabStr += columnUrl(v);//切换栏目,内容填充
+	tabStr += pagination(v);//分页:上一页,下一页,页码
+	tabStr += "<"+"/script>";//结束script标签
+	  tabStr += getColumn(htmlStr);//获取栏目标签
+	  clearCache(tabStr); //frame里面填充内容
+	  }
+	  });
+	  }
+
+	  $(document).ready(
+	  function() {   
+	  $('#segButton').click(function() {//点击搜索按钮执行的操作
+	  skipUrl(document.getElementById('kw2').value);//执行查询的方法
+	  });
+	  });
+
+      </script>
+  </head>
+  
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" >
+      <div class="container">
+	<div class="navbar-header">
+	  <button type="button" class="navbar-toggle" data-toggle="collapse"
+		  data-target=".navbar-collapse">
+	    <span class="sr-only">Toggle navigation</span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	  </button>
+	  <a class="navbar-brand" href="">智能搜索-Demo</a>
+	</div>
+      </div>
+    </div>
+
+    
+
+    <!-- <div class="container"> -->
+    <!--   <form name="form1" id="form1" method="get" action="./haha"> -->
+    <!-- 	<div class="starter-template"> -->
+    <!-- 	  <input id="kw1" type="text" style="width: 65%; height:35px;" maxlength="100" name="input" autocomplete="off"> -->
+    <!-- 	  <input type="hidden" value="mypage" name="method"> -->
+    <!-- 	  <input type="hidden" value="true" name="nature"> -->
+    <!-- 	  <input type="hidden" value="0" name="from"> -->
+    <!-- 	  <input type="hidden" value="10" name="size"> -->
+    <!-- 	  <input type="submit" class="btn btn-primary" id="segButton" value="Search" /> -->
+    <!-- 	</div> -->
+    <!--   </form> -->
+    <!-- </div> -->
+
+
+    <div class="container">
+      <form name="form1" id="form1" method="get">
+    	<div class="starter-template">
+    	  <input id="kw2" type="text" style="width: 65%; height:35px;" maxlength="100" name="input"  oninput="OnInput(event)" autoComplete="off"> </input>
+    	  <input type="button" class="btn btn-primary" id="segButton" value="Search"></input>
+    	</div>
+      </form>
+      <div class="starter-template">
+    	<iframe id="NLP" name="NLP" style="height:500px; width:100%;"  frameborder="0">
+    	</iframe>
+      </div>
+    </div>
+
+  </body>
+</html>

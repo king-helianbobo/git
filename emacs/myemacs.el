@@ -1,4 +1,4 @@
-;;Last Modified: 2014-04-24 11:54:48.
+;;Last Modified: 2014-07-07 11:25:59.
 (require 'unicad);;多个字符集在emacs下显示的问题
 (require 'sdcv);;emacs下的字典接口
 (require 'init-emms)
@@ -70,7 +70,7 @@
 (set-background-color "white");;设置背景色为白色
 (set-cursor-color "black");;指针颜色设置为黑色
 (set-mouse-color "black");;鼠标颜色设置为黑色
-;;(display-time-mode 1);;启用时间显示设置,在mode-line上
+(display-time-mode 1);;启用时间显示设置,在mode-line上
 ;;(setq display-time-24hr-format t);;时间使用24小时制.
 ;;(setq display-time-day-and-date t);;时间显示包括日期和具体时间.
 (column-number-mode t);;在mode-line上显示当前所处的列号，从0开始。   

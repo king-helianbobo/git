@@ -1,6 +1,0 @@
-/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/target/native/CMakeFiles/hadooppipes.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/target/native/CMakeFiles/hadooputils.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/target/native/CMakeFiles/pipes-sort.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/target/native/CMakeFiles/wordcount-nopipe.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/target/native/CMakeFiles/wordcount-part.dir
-/home/liubo/git/hadoop-2.4.0/hadoop-tools/hadoop-pipes/target/native/CMakeFiles/wordcount-simple.dir

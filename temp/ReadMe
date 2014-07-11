@@ -1,0 +1,3 @@
+mvn clean compile test-compile 可以编译
+mvn eclipse:eclipse 生成Eclipse project文件，然后导入。
+右键单击soul-client工程，选择Source -> Format，可以format all java files.
