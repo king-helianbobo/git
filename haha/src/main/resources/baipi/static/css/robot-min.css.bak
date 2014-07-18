@@ -1,0 +1,782 @@
+strong, b {
+    font-weight: 700;
+}
+a:link, a:visited {
+    color: #5382AA;
+}
+.hidden {
+    display: none;
+}
+.disabled {
+    background-color: #EEEEEE !important;
+}
+.error {
+    color: #FF8080;
+}
+.error b {
+    cursor: pointer;
+}
+html {
+    overflow: hidden;
+}
+body {
+    background-color: #FFFFFF;
+    height: 100%;
+    overflow: hidden;
+    width: 100%;
+}
+#header {
+    background: url("../images/T1p9q5Xm8XXXXXXXXX-1-55.png.png") repeat-x scroll 0 0 #3C78C4;
+    box-shadow: 0 3px 3px #CCCCCC;
+    height: 55px;
+}
+.appside {
+    background-color: #E7ECF3;
+    border-left: 1px solid #B9C1D1;
+    box-shadow: 0 0 5px #AAAAAA;
+    width: 219px !important;
+}
+.ks-ext-mask {
+    background-color: #FFFFFF;
+    opacity: 0.5;
+}
+.clear-dialog {
+    background: none repeat scroll 0 0 #F2F2F2;
+    border: 1px solid #999999;
+    border-radius: 3px;
+    box-shadow: 0 0 5px #999999;
+    left: -9999px;
+    position: absolute;
+    top: -9999px;
+}
+.ks-contentbox {
+    padding: 15px 20px;
+}
+.ks-ext-close {
+    cursor: pointer;
+    height: 8px;
+    outline: 0 none;
+    overflow: hidden;
+    position: absolute;
+    right: 6px;
+    text-decoration: none;
+    top: 6px;
+    vertical-align: middle;
+    width: 8px;
+}
+.ks-ext-close .ks-ext-close-x {
+    background: url("http://img03.taobaocdn.com/tps/i3/T1fRe5XkxcXXXXXXXX-8-8.png") no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    display: block;
+    text-indent: -9999px;
+}
+.ks-ext-close:hover {
+}
+.skin-side .box {
+    border-bottom: 1px solid #F4F6FA;
+}
+.skin-side .hd {
+    background-color: #E7ECF3;
+    border-bottom: 1px solid #B9C1D1;
+    height: 32px;
+}
+.skin-side .hdext {
+    background-color: #D4DAE2;
+    border-bottom: 0 none;
+}
+.skin-side .hd h3 {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 30px;
+    padding-left: 19px;
+}
+.skin-side .bd {
+    background-color: #F8FBFE;
+    border-bottom: 1px solid #B9C1D1;
+    padding: 10px;
+}
+.col-main {
+    float: left;
+    min-height: 1px;
+    width: 100%;
+	margin-left:10px;
+}
+.col-sub, .col-extra {
+    float: left;
+}
+.layout:after, .main-wrap:after, .col-sub:after, .col-extra:after {
+    clear: both;
+    content: " ";
+    display: block;
+    height: 0;
+}
+.layout, .main-wrap, .col-sub, .col-extra {
+}
+.grid-chat .main-wrap {
+    margin-right: 220px;
+}
+.grid-chat .col-sub {
+    margin-left: -220px;
+    width: 220px;
+}
+.grid-talkf .main-wrap {
+    margin-right: 36px;
+}
+.grid-talkf .col-sub {
+    margin-left: -36px;
+    width: 36px;
+}
+.grid-talk .main-wrap {
+    margin-left: 36px;
+}
+.grid-talk .col-sub {
+    margin-left: -100%;
+    width: 36px;
+}
+.appinfo {
+    float: left;
+    height: 36px;
+    padding: 9px 0 0 10px;
+    position: relative;
+    width: 500px;
+}
+.appinfo .logo {
+    background-color: #FFFFFF;
+    border: 1px solid #335A8B;
+    border-radius: 5px;
+    float: left;
+    margin-right: 10px;
+    padding: 2px;
+    width: 30px;
+}
+.appinfo .logo img {
+    display: block;
+    width: 30px;
+}
+.appinfo h1 {
+    line-height: 120%;
+}
+.appinfo h1 a, .appinfo h1 a:visited {
+    color: #FFFFFF;
+    font-size: 14px;
+}
+.appinfo .welcomemsg {
+    color: #BDD4F0;
+    line-height: 200%;
+}
+.otherservice {
+    float: right;
+    height: 36px;
+    margin-top: 11px;
+    overflow: hidden;
+}
+.otherservice li {
+    background: url("http://img01.taobaocdn.com/tps/i1/T16755XXNdXXXXXXXX-2-36.png") no-repeat scroll left top rgba(0, 0, 0, 0);
+    float: left;
+    height: 36px;
+    line-height: 36px;
+    margin: 0 15px 0 -2px;
+    padding-left: 15px;
+}
+.otherservice li a {
+    color: #BDD4F0;
+    display: block;
+    font-size: 14px;
+    padding-left: 25px;
+}
+.otherservice li a:visited {
+    color: #BDD4F0;
+}
+.otherservice li.yun a {
+    background: url("http://img01.taobaocdn.com/tps/i1/T1NIa5XoVwXXXXXXXX-25-25.png") no-repeat scroll left center rgba(0, 0, 0, 0);
+}
+.otherservice li.help a {
+    background: url("http://img04.taobaocdn.com/tps/i4/T158y5XoNbXXXXXXXX-25-25.png") no-repeat scroll left center rgba(0, 0, 0, 0);
+}
+#chatpanel {
+    background-color: #FFFFFF;
+}
+#inputpanel {
+    background-color: #D4DAE2;
+    box-shadow: 0 -3px 8px #DDDDDD;
+    height: 88px;
+    padding-top: 55px;
+    position: relative;
+    width: 460px;
+}
+.chatform {
+    background-color: #FFFFFF;
+    border-color: #D4DAE2;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    height: 39px;
+    margin: 0 10px;
+}
+.chatformfocus {
+    animation: 1.5s ease 0s normal none 1 myfirst;
+    border-color: #66BAEE;
+    box-shadow: 0 0 10px #66BAEE;
+}
+@-moz-keyframes myfirst {
+0% {
+    box-shadow: 0 0 1px #66BAEE;
+}
+100% {
+    box-shadow: 0 0 10px #66BAEE;
+}
+}
+@-moz-keyframes myfirst {
+0% {
+    box-shadow: 0 0 1px #66BAEE;
+}
+100% {
+    box-shadow: 0 0 10px #66BAEE;
+}
+}
+.chatform input {
+    background-color: #FFFFFF;
+    border-width: 0;
+    float: left;
+    font-size: 14px;
+    height: 29px;
+    line-height: 29px;
+    margin: 5px 10px;
+    outline: 0 none;
+    overflow: hidden;
+    width: 80%;
+}
+.chatbtn {
+    background: url("http://img01.taobaocdn.com/tps/i1/T1RMW5XalmXXXXXXXX-61-39.png") no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    border-width: 0;
+    float: right;
+    height: 39px;
+    
+}
+.chatbtn s {
+    visibility: hidden;
+}
+.chatextfun {
+    margin: 5px 10px 0;
+}
+.chatextfun .chkinput {
+    float: right;
+}
+.chkinput {
+    background: url("http://img02.taobaocdn.com/tps/i2/T1eMG5XkdmXXXXXXXX-16-16.png") no-repeat scroll left center rgba(0, 0, 0, 0);
+    padding-left: 20px;
+}
+.chkinput em {
+    font-family: Constantia,Georgia;
+    font-size: 16px;
+    font-weight: 700;
+}
+.talk-item {
+    margin: 10px 0 5px;
+}
+.talk-item .info-user {
+    background-color: #FFFFFF;
+    border: 1px solid #335A8B;
+    border-radius: 5px;
+    padding: 2px;
+    width: 30px;
+}
+.talk-item .info-user img {
+    display: block;
+    width: 30px;
+}
+.talk-item .time {
+    clear: both;
+    color: #CCCCCC;
+}
+.talk-item .msg {
+    border-radius: 5px;
+    color: #5E5E5E;
+    line-height: 180%;
+    padding: 10px;
+    position: relative;
+}
+.talk-item .msg .hank {
+    height: 1px;
+    overflow: hidden;
+    width: 200px;
+}
+.talk-item .msg s.arrow {
+    background: url("http://img01.taobaocdn.com/tps/i1/T1cMO5Xf8mXXXXXXXX-7-13.png") no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    display: block;
+    height: 13px;
+    position: absolute;
+    top: 10px;
+    width: 7px;
+}
+.talk-a {
+    margin-right: 20px;
+}
+.talk-a .info-talk {
+    float: right;
+    padding: 0 10px 10px 0;
+}
+.talk-a .msg {
+    border: 1px solid #CCCCCC;
+    float: left;
+}
+.talk-a .msg s.arrow {
+    background: url("http://img01.taobaocdn.com/tps/i1/T1oKC5XbhrXXXXXXXX-7-13.png") no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    left: 100%;
+}
+.talk-b {
+}
+.talk-b .info-talk {
+    float: left;
+    margin-right: 20%;
+    padding-left: 11px;
+}
+.talk-b .msg {
+    background-color: #F5F9FE;
+    border: 1px solid #ADCAE3;
+    padding: 10px 30px 25px 10px;
+}
+.talk-b .msg s.arrow {
+    left: -7px;
+}
+.talk-b .fun {
+    height: 20px;
+    margin-top: -26px;
+    position: absolute;
+    right: 6px;
+    top: 100%;
+}
+.talk-b .fun li {
+    float: left;
+    line-height: 18px;
+}
+.talk-b .fun li a {
+    border: 1px solid rgba(0, 0, 0, 0);
+    display: block;
+    height: 18px;
+    line-height: 18px;
+    padding: 0 4px;
+    width: auto;
+}
+.talk-b .fun li a:hover {
+    border: 1px solid #C8D0DB;
+    display: block;
+}
+.talk-b .fun li s {
+    background-image: url("http://img01.taobaocdn.com/tps/i1/T17xS5XXRkXXXXXXXX-13-39.png");
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 13px;
+    margin: 2px 3px 0 0;
+    width: 13px;
+}
+.talk-b .fun li.good s {
+    background-position: 0 0;
+}
+.talk-b .fun li.bad s {
+    background-position: 0 -26px;
+}
+.talk-b .contact-service {
+    border-top: 1px dashed #ADCAE3;
+    margin-top: 10px;
+}
+.talk-b .contact-service img {
+    margin-bottom: -5px;
+    margin-top: 10px;
+    width: 120px;
+}
+.chattips {
+    background-color: #FFFCFB;
+    border: 1px solid #F5DFD1;
+    margin: 0 20px 15px 0;
+    padding: 10px;
+    position: relative;
+}
+.chattips dt {
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.chattips .close {
+    left: 100%;
+    margin-left: -10px;
+    position: absolute;
+    top: 0;
+}
+.sysinfo {
+    font-size: 12px;
+    margin: 5px 0;
+    padding: 2px 5px 2px 0;
+}
+.sysinfo .icon {
+    background: url("http://img04.taobaocdn.com/tps/i4/T1T755XapdXXXXXXXX-60-280.png") no-repeat scroll 0 -120px rgba(0, 0, 0, 0);
+    float: left;
+    font-size: 0;
+    height: 16px;
+    line-height: 0;
+    margin: 2px 5px 1px 0;
+    width: 16px;
+}
+.sysinfo .att {
+    color: #FF8800;
+}
+.tipbox {
+    margin-top: 10px;
+}
+.exttipsbg {
+    background-color: #E7ECF3 !important;
+    border-bottom: 0 none !important;
+}
+.exttips {
+    background: url("http://img04.taobaocdn.com/tps/i4/T1L8gqXjVeXXaP4HAN-196-164.png") no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    height: 164px;
+    width: 196px;
+}
+.exttips h3 {
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+}
+.exttips ul {
+    padding: 6px 4px 0;
+}
+.exttips ul li {
+    background: url("http://img04.taobaocdn.com/tps/i4/T1eZ15XdhvXXXXXXXX-2-2.png") no-repeat scroll 9px 12px rgba(0, 0, 0, 0);
+    border-bottom: 1px solid #DBEEF6;
+    height: 24px;
+    line-height: 23px;
+    overflow: hidden;
+    padding-left: 16px;
+    width: 170px;
+}
+.exthot {
+    height: 200px;
+    overflow: hidden;
+}
+.exthot li {
+    background: url("http://img04.taobaocdn.com/tps/i4/T1eZ15XdhvXXXXXXXX-2-2.png") no-repeat scroll 0 11px rgba(0, 0, 0, 0);
+    line-height: 23px;
+    padding-left: 7px;
+    width: 190px;
+}
+.extabout .item {
+    border-bottom: 1px dashed #E2E7EE;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+.extabout h4 {
+    font-size: 12px;
+    font-weight: 400;
+    margin-bottom: 10px;
+}
+.extabout ul {
+    padding-left: 6px;
+}
+.extabout ul.list li {
+    background: url("http://img04.taobaocdn.com/tps/i4/T1eZ15XdhvXXXXXXXX-2-2.png") no-repeat scroll 0 center rgba(0, 0, 0, 0);
+    height: 24px;
+    line-height: 23px;
+    overflow: hidden;
+    padding-left: 7px;
+    width: 190px;
+}
+.extabout ul.list li.tel {
+    background: url("http://img02.taobaocdn.com/tps/i2/T1uIC5XhxvXXXXXXXX-16-16.png") no-repeat scroll 0 center rgba(0, 0, 0, 0);
+    padding-left: 20px;
+}
+.toolbar {
+    float: left;
+}
+.toolbar li {
+    background: url("http://img03.taobaocdn.com/tps/i3/T1Eyu5XkNiXXXXXXXX-17-17.png") no-repeat scroll left center rgba(0, 0, 0, 0);
+    float: left;
+    margin-right: 20px;
+    padding-left: 20px;
+}
+.talk-item .J_TopKnowledge {
+    background: url("http://img02.taobaocdn.com/tps/i2/T1kyO5XaliXXXXXXXX-11-15.png") no-repeat scroll 0 3px rgba(0, 0, 0, 0);
+    display: inline-block;
+    padding: 0 0 0 16px;
+}
+.clear-track, .clear-track-hover, .clear-track-active, .clear-arrowup, .clear-arrowup-hover, .clear-arrowup-active, .clear-arrowdown, .clear-arrowdown-hover, .clear-arrowdown-active, .clear-drag, .clear-drag-hover, .clear-drag-active, .clear-dragtop, .clear-dragbottom, .clear-dragcenter {
+    background-image: url("http://img02.taobaocdn.com/tps/i2/T1Dl9VXcJfXXXXXXXX-108-20.png");
+    background-repeat: repeat-y;
+    width: 9px;
+}
+.clear-track {
+    background-position: -18px 0;
+    width: 9px;
+}
+.clear-track-hover {
+    background-position: -27px 0;
+}
+.clear-track-active {
+    background-position: -27px 0;
+}
+.clear-arrowup, .clear-arrowdown {
+    display: block;
+    height: 2px;
+    overflow: hidden;
+    text-indent: -1000px;
+    width: 9px;
+}
+.clear-arrowup {
+    background-position: 0 0;
+}
+.clear-arrowup-hover {
+    background-position: -9px 0;
+}
+.clear-arrowup-active {
+    background-position: -9px 0;
+}
+.clear-arrowdown {
+    background-position: 0 -18px;
+}
+.clear-arrowdown-hover {
+    background-position: -9px -18px;
+}
+.clear-arrowdown-active {
+    background-position: -9px -18px;
+}
+.clear-drag {
+    background-position: -54px 0;
+    width: 9px;
+}
+.clear-drag .clear-dragtop {
+    background-position: -72px 0;
+    height: 4px;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    width: 9px;
+}
+.clear-drag .clear-dragbottom {
+    background-position: -72px -4px;
+    height: 5px;
+    margin-top: -4px;
+    overflow: hidden;
+    position: absolute;
+    top: 100%;
+    width: 9px;
+}
+.clear-drag .clear-dragcenter {
+    background-position: -63px 0;
+    height: 20px;
+    margin-top: -10px;
+    position: absolute;
+    top: 50%;
+    width: 9px;
+}
+.clear-drag-hover {
+    background-position: -81px 0;
+}
+.clear-drag-hover .clear-dragtop {
+    background-position: -99px 0;
+}
+.clear-drag-hover .clear-dragbottom {
+    background-position: -99px -4px;
+}
+.clear-drag-hover .clear-dragcenter {
+    background-position: -90px 0;
+}
+.clear-drag-active {
+    background-position: -81px 0;
+}
+.clear-drag-active .clear-dragtop {
+    background-position: -99px 0;
+}
+.clear-drag-active .clear-dragbottom {
+    background-position: -99px -4px;
+}
+.clear-drag-active .clear-dragcenter {
+    background-position: -90px 0;
+}
+.new-popup {
+    background-color: #E7E7E7;
+    border: 1px solid #949494;
+    padding: 3px;
+}
+.new-popup .ks-contentbox {
+    background-color: #FAFAFA;
+    border: 0 none;
+    padding: 10px;
+}
+.new-popup frame {
+    height: 250px;
+    overflow: hidden;
+}
+.new-popup .form {
+    padding: 20px 0;
+}
+.new-popup input {
+    padding: 3px 5px;
+}
+.new-popup button {
+    padding: 2px 5px;
+}
+.new-popup .button-area {
+    padding: 10px 0 0 102px;
+}
+.new-popup .title {
+    font-weight: 700;
+}
+.extfun {
+    height: 30px;
+    line-height: 30px;
+    margin-left: 60px;
+}
+.extfun li {
+    float: left;
+    margin-right: 10px;
+}
+.usernamecheck {
+    background: url("http://img01.taobaocdn.com/tps/i1/T1LkO5XdBjXXXXXXXX-86-26.png") no-repeat scroll 0 0 rgba(0, 0, 0, 0);
+    border: 0 none;
+    color: #FFFFFF;
+    cursor: pointer;
+    height: 26px;
+    width: 86px;
+}
+table {
+    width: 100%;
+}
+thead {
+    background: none repeat scroll 0 0 #E6EAF0;
+}
+tbody, tfoot {
+    background: none repeat scroll 0 0 rgba(0, 0, 0, 0);
+}
+thead tr {
+    border: 1px solid #DADEE3;
+}
+tbody tr, tfoot tr {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    border-color: #DADEE3;
+    border-image: none;
+    border-right: 1px solid #DADEE3;
+    border-style: solid;
+    border-width: 0 1px 1px;
+}
+tbody tr:hover {
+    background: none repeat scroll 0 0 #D8E2F0;
+}
+tr.highlight {
+    background: none repeat scroll 0 0 #ADCAE3;
+}
+td, th {
+    padding: 5px 0;
+    text-align: center;
+}
+.paging-container {
+}
+.paging-container .pg-disabled {
+    color: #BFBFBF;
+}
+.paging-container .pg-disabled:hover {
+    text-decoration: none;
+}
+.paging-container .pg-num {
+    letter-spacing: -0.1em;
+    margin-right: 10px;
+}
+
+body, h1, h2, h3, h4, h5, h6, hr, p, blockquote, dl, dt, dd, ul, ol, li, pre, form, fieldset, legend, button, input, textarea, th, td {
+    margin: 0;
+    padding: 0;
+}
+body, button, input, select, textarea {
+    font: 12px/1.5 tahoma,arial,ËÎÌו,sans-serif;
+}
+h1, h2, h3, h4, h5, h6 {
+   
+}
+address, cite, dfn, em, var {
+    font-style: normal;
+}
+code, kbd, pre, samp {
+    font-family: courier new,courier,monospace;
+}
+small {
+    font-size: 12px;
+}
+ul, ol {
+    list-style: none outside none;
+}
+a {
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+sup {
+    vertical-align: text-top;
+}
+sub {
+    vertical-align: text-bottom;
+}
+legend {
+    color: #000000;
+}
+fieldset, img {
+    border: 0 none;
+}
+button, input, select, textarea {
+    font-size: 100%;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section, summary, time, mark, audio, video {
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+mark {
+    background: none repeat scroll 0 0 #FFFF00;
+}
+.ps-container .ps-scrollbar-x {
+    background-color: #AAAAAA;
+    border-radius: 4px;
+    bottom: 3px;
+    height: 8px;
+    opacity: 0;
+    position: absolute;
+    transition: opacity 0.2s linear 0s;
+}
+.ps-container.ie6 .ps-scrollbar-x {
+    font-size: 0;
+}
+.ps-container:hover .ps-scrollbar-x, .ps-container.hover .ps-scrollbar-x {
+    opacity: 0.6;
+}
+.ps-container .ps-scrollbar-x:hover, .ps-container .ps-scrollbar-x.hover {
+    cursor: default;
+    opacity: 0.9;
+}
+.ps-container .ps-scrollbar-x.in-scrolling {
+    opacity: 0.9;
+}
+.ps-container .ps-scrollbar-y {
+    background-color: #AAAAAA;
+    border-radius: 4px;
+    opacity: 0;
+    position: absolute;
+    right: 3px;
+    transition: opacity 0.2s linear 0s;
+    width: 8px;
+}
+.ps-container.ie .ps-scrollbar-y {
+    font-size: 0;
+}
+.ps-container:hover .ps-scrollbar-y, .ps-container.hover .ps-scrollbar-y {
+    opacity: 0.6;
+}
+.ps-container .ps-scrollbar-y:hover, .ps-container .ps-scrollbar-y.hover {
+    cursor: default;
+    opacity: 0.9;
+}
+.ps-container .ps-scrollbar-y.in-scrolling {
+    opacity: 0.9;
+}

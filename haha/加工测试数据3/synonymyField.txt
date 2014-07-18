@@ -1,0 +1,14 @@
+DJZCLX_DM(注册类型代码)=ZCLX_DM(注册类型)
+
+SWJG_DM(税务机关)=FWJG_DM(服务机关)=ZSJG_DM(征收机关)=GLJG_DM(管理机关)=SJSWJG_DM(上级税务机关)=JCJG_DM(稽查机关代码)=SKSSJG_DM(税款所属机关)=JIANCJG_DM(检查机关代码)
+				=HSJG_DM(核算机关)=LRJG_DM(录入机关)=ZSJG_DM(征收机关)
+
+SFZMLX_DM(身份证明类型)=ZJLX_DM(证件类型)
+
+SKGK_DM(收款国库)=SKZHID(收款国库)
+
+NSR_MC(纳税人名称)=LSNSR_MC(历史纳税人名称)=SKF_MC(收款方名称)
+
+SWGLM(税务管理码)=SKF_GLM(收款方管理码)
+
+GBHY_DM(国标行业)=HY_DM(行业)

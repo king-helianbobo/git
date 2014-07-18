@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>知识库</title>
+<link rel="stylesheet" type="text/css" href="static/css/perfect-scrollbar.css">
+<link rel="stylesheet" type="text/css" href="static/css/jquery.powertip.css">
+<link rel="stylesheet" type="text/css" href="static/css/smoothness/jquery-ui-1.10.3.custom.min.css">
+<link rel="stylesheet" type="text/css" href="static/css/robot-min.css">
+<script type="text/javascript" src="static/js/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="static/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="static/js/jquery.mousewheel.js"></script>
+<script type="text/javascript" src="static/js/perfect-scrollbar.js"></script>
+<script type="text/javascript" src="static/js/jquery.powertip.min.js"></script>
+<script type="text/javascript" src="static/js/layout.js"></script>
+<script type="text/javascript" src="static/js/robot.js"></script> 
+</head>
+<body data-spm="6974569">
+<div id="header" style="width: 560px;">
+	<!--<ul class="otherservice">
+		<li class="yun">
+			<a href="#" target="_blank">人工云客服</a>
+		</li>
+		<li class="help">
+			<a href="#" target="_blank">服务中心</a>
+		</li>
+	</ul>
+	--><div class="appinfo">
+		<h1>
+			<a title="关于智能机器人" href="#" data-spm-anchor-id="a215a.6974569.0.0">知识库</a>
+		</h1>
+		<!--<p class="welcomemsg">为了更好的帮助智能淘小二成长，请您对我们的答案给予评价哦^_^</p>
+	--></div>
+</div>
+<div id="content" class="layout grid-chat" style="width: 950px;height:710px;">
+	<div id="main" class="col-main" style="height: 445px;">
+		<div class="main-wrap">
+			<div id="chatpanel" style="height: 337px;">
+				<div class="clear-container" style="position: relative;scrollbar-base-color:#ff6600;width: 460px; height: 550px; outline: medium none;" tabindex="19">
+					<div id="chatlist" class="clear-body" style="position: absolute; top: 0px; left: 0px; width: 100%; height: auto; overflow: visible;"><!--
+							<div class="chattips">
+							<a class="close" href="#">x</a>
+							<dl>
+							<dt>温馨提示：</dt>
+							<dd>中国无锡知识库</dd>
+							<dd>对于您收到的网站链接、邮箱等信息的真伪，需要您自行判断；</dd>
+							<dd>近期有人冒充淘宝发布虚假活动和中奖消息，以“十周年庆梦想基金奖金”、“免费体验或试用”等形式骗取所谓的手续费、快递费，谨防上当；如果卖家发送链接或二维码，要求您转账或代付支付，请提高警惕，按照淘宝正常购物流程下单付款，购物更有保障。更多防骗请点击（http://bbs.taobao.com/catalog/thread/154501-265192476.htm?spm=0.0.0.0.Vf6zyo）</dd>
+							</dl>
+						</div>
+						<div class="talk-item talk-a">
+							<div class="layout grid-talkf">
+								<div class="col-main">
+									<div class="main-wrap info-talk">
+									<div class="msg">
+									<s class="arrow"></s>
+									<div class="J_content">保险公司服务热线</div>
+									</div>
+									<div class="time">14-06-16 14:28:43</div>
+									</div>
+								</div>
+								<div class="col-sub info-user">
+									<img src="http://wwc.taobaocdn.com/avatar/getAvatar.do?userId=82882451&width=120&height=120&type=sns">
+									</a>
+								</div>
+							</div>
+						</div>-->
+						<div class="talk-item talk-b" data-question="保险公司服务热线" data-logid="591169857" style="position: static; top: 0px; opacity: 1;">
+							<div class="layout grid-talk">
+								<div class="col-main">
+								<div class="main-wrap info-talk">
+								<div class="msg">
+								<div class="hank"></div>
+								<div class="J_content">
+								<p style="color:red">个人社保能在网上停保吗?</p>
+								<div>&nbsp;&nbsp;人力社保局回复:以灵活就业身份参保的人员,目前还不能在网上办理停保手续,必须要本人携带身份证到窗口办理,咨询电话96150</div>
+								<p style="color:red">外籍人士可否在无锡参加社保?</p>
+								<div>&nbsp;&nbsp;无锡市96150数字城市工作人员答复:在无锡市内依法就业的外国人可以参加职工基本养老、职工基本医疗、工伤、失业、生育等五险（根据中德协议规定，德国人在中国境内工作可以只参加基本医疗、生育、工伤保险；中韩互免协定规定，韩国人在中国境内工作可以只参加基本医疗、生育、工伤险）。所需材料：用人单位提供的公章；税务登记证副本；外国人的有效护照；外国人的就业证或专家证；一寸免冠彩照一张；办理人身份证。办理地址：无锡市国际贸易服务中心二楼（江滨北路279号）</div>
+								<p style="color:red">公司能否辞退孕妇?</p>
+								<div>&nbsp;&nbsp;无锡市劳动监察大队工作人员答复:根据有关规定，任何单位不得以结婚、怀孕、产假、哺乳等为由，辞退女职工或者单方解除劳动合同，不得在女职工孕期、产期、哺乳期解除劳动合同</div>
+								<p style="color:red">医保中断后是否需要补足?</p>
+								<div>&nbsp;&nbsp;无锡的钱先生咨询：我辞职了，单位给缴纳的城镇职工医疗保险中断了，中断一段时间后自己又重新开始交，这样是不是需要把中断的月份补上？不补能享受医保待遇吗？
+　　无锡市社保处工作人员答复:参保单位和个人不按规定缴费的，医保经办机构从欠费当月起暂停该单位职工和个人享受医疗保险的待遇，直至补足全部欠费为止。暂停期间发生医疗费用的，待补缴医疗保险欠费后给予结算。若累计欠费或中断月份达6个月及以上的，则设立6个月的医疗保险待遇等待期，即从补缴欠费或中断月份医疗保险费及正常缴费后的第7个月起恢复医疗保险待遇，暂停期间和等待期期间发生的医疗费用医疗保险基金不予支付</div>
+								</div>
+								<div class="time">14-06-16 14:28:44</div>
+								</div>
+								</div>
+								<div class="col-sub info-user">
+								<a title="智能机器人" href="#">
+								<img alt="智能机器人" src="http://img01.taobaocdn.com/tps/i1/T1t74VXr8XXXcu8V6l-64-64.png">
+								</a>
+								</div>
+								</div>
+						</div>
+					</div>
+					<div class="clear-track" style="position: absolute; right: 0px; -moz-user-select: none; display: none;">
+						<div class="clear-drag" style="position: absolute; left: 0px; overflow: hidden; top: 0px;">
+							<div class="clear-dragtop"></div>
+							<div class="clear-dragbottom"></div>
+							<div class="clear-dragcenter"></div>
+						</div>
+					</div>
+					<a class="clear-arrowup" style="position: absolute; right: 0px; text-indent: -9999px; top: 0px; display: none;" href="javascript:void('scroll up')">scroll up</a>
+					<a class="clear-arrowdown" style="position: absolute; right: 0px; text-indent: -9999px; bottom: 0px; display: none;" href="javascript:void('scroll down')">scroll down</a>
+				</div>
+			</div>
+			<!--<div id="inputpanel">
+				<div class="chatform">
+					<input id="chat-input" class="" type="text" lang="zh-CN" x-webkit-speech="" name="msg" autocomplete="off" placeholder="请用一句话简要描述您要查询的资料">
+					<button id="chat-btn" class="chatbtn" type="button"> class="chatbtn" 
+					<s>发送</s>
+					</button>
+				</div>
+				<div class="chatextfun">
+					<ul id="toolbar" class="toolbar">
+						<li>
+							<a href="#" data-spm-anchor-id="a215a.6974569.0.0">保存聊天记录</a>
+						</li>
+					</ul>
+					<div class="chkinput">
+					还可以输入
+					<em id="inputconext">30</em>
+					字
+					</div>
+				</div>
+			</div>
+		--></div>
+	</div>
+	<!--<div id="side" class="col-sub appside" style="height: 445px;">
+		<div id="ext-panel" class="skin-side">
+			<div class="box">
+				<div class="hd hdext">
+					<h3>热点问题</h3>
+				</div>
+				<div class="bd" style="">
+					<div class="exthot">
+						<ul>
+						
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="box">
+				<div class="hd">
+					<h3>相关内容</h3>
+				</div>
+				<div class="bd extabout" style="display: none;">
+					<div>暂时没有相关内容，请继续提问！</div>
+				</div>
+			</div>
+			<div class="tipbox">
+				<div class="bd exttipsbg">
+						<div class="exttips">
+							<h3>小贴士</h3>
+						<ul> </ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+--></div>
+</body>
+</html>

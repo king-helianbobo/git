@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>智能搜索-演示Demo</title>
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="/static/page/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/page/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/static/page/css/jquery.autocomplete.css">
+
+<style type='text/css'>
+.order_box .stitle { 
+width: 825px;clear: right;height: 27px;border-bottom: 2px solid #A10000;
+}
+.order_box .stitle .close {width: 80px;height: 18px;border-top: 1px solid #dedede;border-left: 1px solid #dedede;border-right: 1px solid #dedede;background: #f1f1f1;color: #000;text-align: center;float: left;margin-right: 5px;padding-top: 8px;}
+.order_box .stitle .open {width: 82px;height: 20px;background: #A10000;color: #fff;text-align: center;float: left;margin-right: 5px;padding-top: 8px;overflow: hidden;}
+.order_box ul li {cursor: pointer;display: list-item;list-style:none;}
+</style>
+<script  type="text/javascript" src="/static/page/js/jquery.min.js"></script>
+<script  type="text/javascript" src="/static/page/js/jquery.autocomplete.min.js"></script> 
+<script  type="text/javascript" src="/static/page/js/indexUtil.js"></script>
+<script>
+$(function () {$('.stitle li').click(function () { var tabFlag='';var index_tab = $(this).parent().children().index($(this));tabFlag = index_tab;$(this).parent().find('.open').removeClass('open').addClass('close'); $(this).removeClass('close').addClass('open');var content_obj = $('.cntorder');content_obj.hide();content_obj.eq(index_tab).show();columnPage("大米",tabFlag,document.getElementById('tabInfoDiv'));});});
+
+function columnPage(v,flag,div) {$.ajax({type:'POST',url:'./query?method=mypage&nature=true',data:'input='+v+'&&from=0&&size=8&&tagType=tag'+parseInt(flag+1)+'',success : function(data) {var obj='';var time;var jsonobj=eval('('+data+')');for(var i=0;i<jsonobj.pageList.length;i++){if(jsonobj.pageList[i].time=='null'){	  time ='';	}else{  time = jsonobj.pageList[i].time;}obj+='<li><a href='+jsonobj.pageList[i].url+'>'+jsonobj.pageList[i].contenttitle+'</a>&nbsp;'+time+'<br>'+jsonobj.pageList[i].content+'</li><br>';}obj+='<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp</span>';for (var i = 1; i <= Math.ceil(jsonobj.count/8); i++){ if (i <= 8){if(i==1||i==parseInt(jsonobj.from/8)){var  pg = '<Font color=black>' + i + '</font>';}else{var pg = '<Font color=red>' + i + '</font>';}obj+='<a style=cursor:pointer onclick=javascript:pageT("大米",'+i+','+jsonobj.from+','+flag+');>['+pg+']</a>&nbsp;'}}if(jsonobj.from/8>8){obj+='<span style=cursor:pointer onclick=pages_next("大米",'+currentPage+','+flag+')>下一页>></span>';}document.getElementById('tabInfoDiv').style.display='none';document.getElementById('tabInfoDiv').innerHTML='';div.style.display='block';div.innerHTML=obj;}});}
+
+function pageT(v,n,c,f) { 
+    $.ajax(
+	{type:'POST',
+	 url:'./query?method=mypage&nature=true',
+	 data:'input='+v+'&&from='+parseInt(n-1)*8+'&&size=8&&tagType=tag'+parseInt(f+1)+'',
+	 success : function(data) { 
+	     var obj='';
+	     var time;
+	     var t=1;
+	     var flag= '';
+	     document.getElementById('tabInfoDiv').innerHTML='';
+	     var jsonobj=eval('('+data+')');
+	     var currentPage =jsonobj.from;
+	     for(var i=0;i<jsonobj.pageList.length;i++) {
+		 if(jsonobj.pageList[i].time=='null') {	  time ='';	}
+		 else {  
+		     time = jsonobj.pageList[i].time;
+		 }
+		 obj+='<li><a href='+jsonobj.pageList[i].url+'>'+jsonobj.pageList[i].contenttitle+'</a>&nbsp;'+time+'<br>'+jsonobj.pageList[i].content+'</li><br>';
+	     }
+	     obj+='<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp</span>';
+	     if(jsonobj.from!=0){ 
+		 obj+='<span style=cursor:pointer; onclick=pages_prev("大米",'+currentPage+','+f+')><<上一页&nbsp;</span>';
+	     }
+	     if(c<n) {
+		 if(c==0) {
+		     flag=parseInt(n-c-1)
+		 } else if(c==1) {
+		     flag=parseInt(n-c+2)
+		 } else if(c==2) {
+		     flag=parseInt(n-c+1)
+		 } else {
+		     flag=parseInt(n-1)
+		 }
+	     } else {
+		 if(n==2) {
+		     flag=1
+		 } else if(n==1) {
+		     flag=0
+		 } else {
+		     flag=n			
+		 }
+	     }
+	     if(n>=12) {
+		 t=parseInt(n-10)
+	     } else {
+		 t=1
+	     }
+	     for (var i=t; i <= Math.ceil(jsonobj.count/8); i++) {
+		 if (i <= parseInt(flag+10)) { 
+		     if(i==1||i==parseInt(jsonobj.from+8)/8) { 
+			 var  pg = '<Font color=black>' + i + '</font>';
+		     } else {  
+			 var  pg = '<Font color=red>' + i + '</font>';
+		     }
+		     obj+='<a style=cursor:pointer onclick=javascript:pageT("大米",'+i+','+(jsonobj.from+8)/8+','+f+');>['+pg+']</a>&nbsp;'
+		 }
+	     }
+	     if(n!=Math.ceil(jsonobj.count/8)) {
+		 obj+='<span style=cursor:pointer onclick=pages_next("大米",'+currentPage+','+f+')>下一页>></span>';
+	     }
+	     document.getElementById('tabInfoDiv').innerHTML=obj
+	 }
+	});
+}
+
+function pages_next(v,n,f) {$.ajax({type:'POST',url:'./query?method=mypage&nature=true',data:'input='+v+'&&from='+parseInt(n+8)+'&&size=8&&tagType=tag'+parseInt(f+1)+'',success : function(data) { var obj='';var time;var t=1;var flag= '';document.getElementById('tabInfoDiv').innerHTML='';var jsonobj=eval('('+data+')');var currentPage =jsonobj.from;for(var i=0;i<jsonobj.pageList.length;i++){if(jsonobj.pageList[i].time=='null'){	  time ='';	}else{  time = jsonobj.pageList[i].time;}obj+='<li><a href='+jsonobj.pageList[i].url+'>'+jsonobj.pageList[i].contenttitle+'</a>&nbsp;'+time+'<br>'+jsonobj.pageList[i].content+'</li><br>';}obj+='<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp</span>';obj+='<span style=cursor:pointer; onclick=pages_prev("大米",'+currentPage+','+f+')><<上一页&nbsp;</span>';flag=parseInt((n/8)+1);if(flag>=11){t=flag-9}else{t=1}for (var i = t; i <= Math.ceil(jsonobj.count/8); i++){if (i <= parseInt(flag+10)){ if(i==t||i==parseInt(jsonobj.from+8)/8){ var  pg = '<Font color=black>' + i + '</font>';}else{  var  pg = '<Font color=red>' + i + '</font>';}obj+='<a style=cursor:pointer onclick=javascript:pageT("大米",'+i+','+f+');>['+pg+']</a>&nbsp;'}}obj+='<span style=cursor:pointer onclick=pages_next("大米",'+currentPage+','+f+')>下一页>></span>';document.getElementById('tabInfoDiv').innerHTML=obj}});}
+
+function pages_prev(v,n,f) {$.ajax({type:'POST',url:'./query?method=mypage&nature=true',data:'input='+v+'&&from='+parseInt(n-8)+'&&size=8&&tagType=tag'+parseInt(f+1)+'',success : function(data) { var obj='';var time;var t=1;var flag= '';document.getElementById('tabInfoDiv').innerHTML='';var jsonobj=eval('('+data+')');var currentPage =jsonobj.from;for(var i=0;i<jsonobj.pageList.length;i++){if(jsonobj.pageList[i].time=='null'){	  time ='';	}else{  time = jsonobj.pageList[i].time;}obj+='<li><a href='+jsonobj.pageList[i].url+'>'+jsonobj.pageList[i].contenttitle+'</a>&nbsp;'+time+'<br>'+jsonobj.pageList[i].content+'</li><br>';}obj+='<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp</span>';if(jsonobj.from!=0){obj+='<span style=cursor:pointer; onclick=pages_prev("大米",'+currentPage+','+f+')><<上一页&nbsp;</span>';}flag=parseInt((n/8));if(flag<11){t=1}else{t=parseInt(flag-10)}for (var i = t; i <= Math.ceil(jsonobj.count/8); i++){if (i <= parseInt(flag+9)){ if(i==1||i==parseInt(jsonobj.from+8)/8){ var  pg = '<Font color=black>' + i + '</font>';}else{  var  pg = '<Font color=red>' + i + '</font>';}obj+='<a style=cursor:pointer onclick=javascript:pageT("大米",'+i+','+f+');>['+pg+']</a>&nbsp;'}}obj+='<span style=cursor:pointer onclick=pages_next("大米",'+currentPage+','+f+')>下一页>></span>';document.getElementById('tabInfoDiv').innerHTML=obj}});
+}
+</script>
+</head>
+<body>
+
+<div class='order_box'>
+<div class='stitle'>
+<ul>
+<li class='open'>魅力锡城</li>
+<li class='close'>锡城资讯</li>
+<li class='close'>信息公开</li>
+<li class='close'>公共服务</li>
+<li class='close'>行政服务</li>
+<li class='close'>政民互动</li>
+</ul>
+</div>
+
+<div class='cntorder' id='tabInfoDiv'>
+    <div style=width:600px;text-align:center;>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp</div>
+<div class='cntorder' id='publicDiv' style='display: none;'></div>
+<div class='cntorder' id='serverDiv' style='display: none;'></div>
+<div class='cntorder' id='interactionDiv' style='display: none;'></div>
+<div class='cntorder' id='ontherDiv' style='display: none;'></div>
+</div> 
+</div>
+</body>
+</html>

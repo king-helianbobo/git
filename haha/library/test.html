@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.0.js">
+</script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("button").click(function() {
+			//$("p").hide();
+			alert('1');
+		});
+	});
+</script>
+
+</head>
+<body>
+	<div>
+      <form name="form1" id="form1" method="get">
+    	<div>
+    	  <input id="kw2" type="text" style="width: 65%;" maxlength="100" name="input"  oninput="OnInput(event)" autoComplete="off" />
+    	  <input type="button" class="btn btn-primary" id="segButton" value="Search" />
+    	</div>
+      </form>
+      <div class="starter-template">
+    	<iframe id="NLP" name="NLP" style="height:500px; width:100%;"  frameborder="0">
+    	</iframe>
+      </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<title>“中国无锡”智能服务平台</title>
+
+		<link rel="stylesheet" type="text/css" href="static/css/css_sh.css">
+		<link rel="stylesheet" type="text/css" href="static/css/screen.css">
+		<link rel="stylesheet" type="text/css"
+			href="static/css/answercontent.css">
+		<link rel="stylesheet" type="text/css"
+			href="static/css/perfect-scrollbar.css">
+		<link rel="stylesheet" type="text/css"
+			href="static/css/jquery.powertip.css">
+		<link rel="stylesheet" type="text/css"
+			href="static/css/smoothness/jquery-ui-1.10.3.custom.min.css">
+		<link rel="stylesheet" type="text/css" href="static/css/robot-min.css">
+		<script type="text/javascript" src="static/js/jquery-1.10.2.min.js"></script>
+		<script type="text/javascript"
+			src="static/js/jquery-ui-1.10.3.custom.min.js"></script>
+		<script type="text/javascript" src="static/js/jquery.mousewheel.js"></script>
+		<script type="text/javascript" src="static/js/perfect-scrollbar.js"></script>
+		<script type="text/javascript" src="static/js/jquery.powertip.min.js"></script>
+		<script>
+	function show(id){
+		 var div = document.getElementById(id);
+		  if(div.style.display=="none"){
+             div.style.display="block";
+          }else{
+             div.style.display="none";
+          }
+	}
+	function showDiv(obj){
+		obj.parent().next().slideToggle();
+		obj.parent().next().next().slideToggle();
+	}
+</script>
+		<script>
+$(function(){
+		$('ul.mtabs>li').click(function(){
+			$(this).addClass('selected').siblings('.mtabli').removeClass('selected');
+			$(this).parent().next().find('.mcontent').removeClass('selected').eq($(this).index()).addClass('selected');
+			if($(this).index()==1){
+				var sbtitle=document.getElementById('1');
+				sbtitle.style.display='block';
+			}
+		})
+	})
+</script>
+	</head>
+
+	<body>
+		<div>
+			<!-- 头部 -->
+			<div class="header">
+				<!-- logo -->
+				<div class="logo">
+					<a target="_blank" href="http://www.szns.gov.cn"> <img
+							src="logo.gif" /> </a>
+				</div>
+				<!-- 搜索框 -->
+				<div class="serch">
+					<table id="serch_tab" width="100%" cellspacing="0" cellpadding="0"
+						border="0">
+						<form id="searchForm"
+							onsubmit="if($('#q').val()=='') {alert('请输入检索关键词','提示信息');$('#q').focus();return false;}"
+							method="get" action=""></form>
+						<input id="ty" type="hidden" value="" name="ty">
+						<input id="w" type="hidden" value="false" name="w">
+						<input id="f" type="hidden" value="" name="f">
+						<input id="dr" type="hidden" value="true" name="dr">
+						<input id="p" type="hidden" value="1" name="p">
+						<input id="sr" type="hidden" value="score desc" name="sr">
+						<input id="rp" type="hidden" value="szns" name="rp">
+						<input id="advtime" type="hidden" value="" name="advtime">
+						<input id="advrange" type="hidden" value="" name="advrange">
+						<tbody>
+							<tr>
+								<td class="serch_td01" width="450">
+									<input id="q" class="serch_text ui-autocomplete-input"
+										type="text" value="" name="q" style="padding-left: 8px;"
+										size="50" autocomplete="off" role="textbox"
+										aria-autocomplete="list" aria-haspopup="true">
+								</td>
+								<td width="5"></td>
+								<!--<td class="serch_td02" style="padding-left: 5px;padding-right: 5px;width: 50px;">
+						<select id="fq" class="serch_select" name="fq">
+						<option value="{name}">全部栏目</option>
+						<option value="tabName:魅力锡城">魅力锡城</option>
+						<option value="tabName:锡城资讯">锡城资讯</option>
+						<option value="tabName:信息公开">信息公开</option>
+						<option value="tabName:公共服务>公共服务</option>
+						<option value="tabName:行政服务">行政服务</option>
+						<option value="tabName:政民互动">政民互动</option>
+						</select>
+					</td>
+					-->
+								<td width="5"></td>
+								<td width="81">
+									<input class="serch_submit" type="submit" value="搜索">
+								</td>
+								<!--<td align="left">
+						<a class="advSearch" href="/dig/advsearch.action">
+						高级
+						<br>
+						搜索
+						</a>
+					</td>
+				-->
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<hr></hr>
+			<!-- 内容 -->
+			<div class="content">
+				<!--<div class="left">
+		<h3>结果分类</h3>
+			<ul>
+				<li>
+				<a class="selected" onclick="setFilter('')" href="javascript:void(0)">全部</a>
+				</li>
+				<li>
+				<a id="tabName:新闻资讯" onclick="setFilter('tabName:新闻资讯')" href="javascript:void(0)">
+						新闻资讯 （<font color="blue">199</font>）
+				</a>
+				</li>
+				<li>
+				<a id="tabName:互动交流" onclick="setFilter('tabName:互动交流')" href="javascript:void(0)">
+						互动交流（<font color="blue">1</font>）
+				</a>
+				</li>
+			</ul>
+		<h3>查询范围</h3>
+			<ul>
+				<li>
+				<a onclick="setAdvrange('0')" href="javascript:void(0)">所有结果</a>
+				</li>
+				<li>
+				<a onclick="setAdvrange('title')" href="javascript:void(0)">标题</a>
+				</li>
+				<li>
+				<a onclick="setAdvrange('text')" href="javascript:void(0)">正文</a>
+				</li>
+			</ul>
+		<h3>时间范围</h3>
+			<ul>
+				<li>
+				<a onclick="setSearchTime(0)" href="javascript:void(0)">时间不限</a>
+				</li>
+				<li>
+				<a onclick="setSearchTime(2)" href="javascript:void(0)">1周内</a>
+				</li>
+				<li>
+				<a onclick="setSearchTime(3)" href="javascript:void(0)">1个月内</a>
+				</li>
+				<li>
+				<a onclick="setSearchTime(4)" href="javascript:void(0)">1年内</a>
+				</li>
+			</ul>
+		<h3>结果排序</h3>
+			<ul>
+				<li>
+				<a onclick="setSr('score asc')" href="javascript:void(0)">按相关度升序</a>
+				</li>
+				<li>
+				<a class="selected" onclick="setSr('score desc')" href="javascript:void(0)">按相关度降序</a>
+				</li>
+				<li>
+				<a onclick="setSr('datetime asc')" href="javascript:void(0)">时间升序</a>
+				</li>
+				<li>
+				<a onclick="setSr('datetime desc')" href="javascript:void(0)">时间降序</a>
+				</li>
+			</ul>
+	</div>
+	-->
+				<div class="cen">
+					<div class="cen_list">
+						<ul>
+							<h3>
+								<div id="question_1" class="msg user">
+									<div class="m">
+										<div class="s"></div>
+										<div id="laba"></div>
+										<div id="msguserload1" class="waitanswer"></div>
+										<div style="float: left">
+											营业执照
+										</div>
+										<div onClick="showanswer('1')" class="up" id="showanswer_1"></div>
+									</div>
+								</div>
+							</h3>
+							<br>
+							<div>
+								<!-- answerType = Multi -->
+								<!-- answerMd5 = ${answerMd5} style="display:block;-->
+								<div class="msg bot" id="answer_1">
+									<div class="m"
+										style="background: #fff; border: 1px solid #CCCCCC; border-radius: 3px; box-shadow: 1px 1px 1px #CCCCCC; margin-top: 7px; padding: 10px; width: 900px;">
+										<div id="1" class="submain" style="display: block">
+											<div class="submain_left"
+												style="float: left; margin-top: 5px">
+												<img border="0" src="huanglixin.jpg">
+											</div>
+											<div class="submain_right" style="overflow: hidden;font-size:15px;">
+												<h2>
+													省委常委、市委书记
+												</h2>
+												<h5>
+													【简历】
+												</h5>
+												<p>
+													黄莉新，女，1962年8月生，汉族，江苏宿迁人，中央党校研究生学历，工学学士学位，高级工程师，1983年6月加入中国共产党，1983年7月参加工作。现任省委常委、市委书记。
+												</p>
+												<p>
+													1979年9月江苏农学院机电排灌系机电排灌专业学习；1983年7月省防汛防旱指挥部办公室科员；1987年10月省水利厅工程管理处闸站科副科长；1989年7月省水利厅工程管理处闸站科科长（1991年4月工程师，其间：1992年2月至1993年2月省委驻沭阳县颜集乡扶贫工作队队员）<a href="#" target=_blank style="color: red;">[查看全文]</a>
+												</p>
+												<p>
+													十二届省委委员、常委，省十一届人大代表。
+												</p>
+											</div>
+										</div>
+										<div class="s"></div>
+										<ul class="mtabs">
+											<li class="mtabli selected" numid="0">
+												魅力锡城
+											</li>
+											<li class="mtabli" numid="1">
+												锡城资讯
+											</li>
+											<li class="mtabli" numid="2">
+												信息公开
+											</li>
+											<li class="mtabli" numid="3">
+												公共服务
+											</li>
+											<li class="mtabli" numid="4">
+												行政服务
+											</li>
+											<li class="mtabli" numid="5">
+												政民互动
+											</li>
+										</ul>
+										<div class="mtabcontents">
+											<div class="mcontent  selected">
+												<ul class="mcontentul">
+													<li>
+														<a onclick="javascript:showDiv($(this))"
+															; style="cursor: pointer; color: blue; font-size: 15px;">关于营业执照变更</a>
+													</li>
+													<div class="tags" style="display: none;">
+														<b style="color: #888888; font-size: 12px;">标签：</b>
+														<span class="tag"><a href='#' target="_blank"
+															style="color: black">经济犯罪</a>
+														</span>&nbsp&nbsp
+														<span class="tag"><a href='#' target="_blank"
+															style="color: black">公安机关</a>
+														</span>&nbsp&nbsp
+														<span class="tag"><a href='#' target="_blank"
+															style="color: black">流动人口</a>
+														</span>&nbsp&nbsp
+														<span class="tag"><a href='#' target="_blank"
+															style="color: black">财产损失</a>
+														</span>
+													</div>
+													<div style="display: none; color: #4B7BBE">
+														&nbsp;&nbsp;&nbsp;&nbsp;网上考试等业务，进一步缩短出入境审批办理周期、群众户口迁移的办理时间；利用通信、网络技术与信息资源优势，开展信息查询服务，向人民群众提供人口等信息查询服务。技防乡镇、技防街道建设取得新突破，全市星级“技防镇”达84个。组建运作的区域联网报警系统用户数达17052个。进一步加大科技强警机制建设力度
+														<a href="#" target=_blank style="color: red;">[查看全文]</a>
+													</div>
+													<li>
+														<a href="#" target="_blank">营业执照办理咨询</a>
+													</li>
+													<li>
+														<a href="#" target="_blank">如何办理营业执照</a>
+													</li>
+													<li>
+														<a href="#" target="_blank">营业执照地址变更</a>
+													</li>
+													<li>
+														<a href="#" target="_blank">诊所是否要办理工商营业执照？</a>
+													</li>
+													<li>
+														<a href="#" target="_blank">网上批发的营业执照申办</a>
+													</li>
+													<li>
+														<a href="#" target="_blank">一个地址三本营业执照，正常经营的不给年…</a>
+													</li>
+													<li>
+														<a href="#" target="_blank">金华公司到无锡需要办理营业执照么？</a>
+													</li>
+												</ul>
+											</div>
+											<div id="1" class="submain" style="display: none">
+												<div class="submain_left"
+													style="float: left; margin-top: 5px">
+													<img border="0" src="huanglixin.jpg">
+												</div>
+												<div class="submain_right" style="overflow: hidden;">
+													<h2>
+														省委常委、市委书记
+													</h2>
+													<h5>
+														【简历】
+													</h5>
+													<p>
+														黄莉新，女，1962年8月生，汉族，江苏宿迁人，中央党校研究生学历，工学学士学位，高级工程师，1983年6月加入中国共产党，1983年7月参加工作。现任省委常委、市委书记。
+													</p>
+													<p>
+														1979年9月江苏农学院机电排灌系机电排灌专业学习；1983年7月省防汛防旱指挥部办公室科员；1987年10月省水利厅工程管理处闸站科副科长；1989年7月省水利厅工程管理处闸站科科长（1991年4月工程师，其间：1992年2月至1993年2月省委驻沭阳县颜集乡扶贫工作队队员）；1993年11月省水利厅工程管理处副处长（其间：1996年10月至1998年6月南京大学哲学系马克思主义哲学专业研究生课程进修班学习）；1996年12月省防汛防旱指挥部办公室副主任（正处级）、省水利厅工程管理处副处长；1997年6月省水利厅厅长助理、省防汛防旱指挥部办公室常务副主任（其间：1998年9月至1998年12月参加省高级管理人才经济研究班赴宾夕法尼亚大学沃顿商学院培训）；1998年10月省水利厅厅长助理、党组成员、省防汛防旱指挥部办公室常务副主任（1998年11月高级工程师）；2000年5月省水利厅厅长、党组书记，省防汛防旱指挥部副指挥（其间：2002年9月至2004年1月省委党校政治经济学专业在职研究生）；2003年2月副省长、省政府党组成员（其间：2004年9月至2007年7月中央党校函授学院省部级干部在职研究生班政治学专业学习）；2007年12月省委常委，副省长、省政府党组成员（其间：2010年4月至2010年6月中组部公共管理高级培训班赴美国哈佛大学肯尼迪政府学院学习）；2011年12月任省委常委、无锡市委书记。
+													</p>
+													<p>
+														十二届省委委员、常委，省十一届人大代表。
+													</p>
+												</div>
+											</div>
+											<!--<div class="mcontent">
+                          <ul class="mcontentul">
+                            <li> <a href="#" score="2652" class="whenClickGoAsk" target="_blank">如何变更营业执照地址</a> 2013-10-22 </li>
+                            <li> <a href="#" score="2539" class="whenClickGoAsk" target="_blank">营业执照遗失如何补办</a> 2012-03-13 </li>
+                          </ul>
+                        </div>
+                        <div class="mcontent">
+                          <ul class="mcontentul">
+                            <li> <a href="#" score="2603" class="whenClickGoAsk" target="_blank">我市发放首张新版营业执照</a> 2014-03-04 </li>
+                            <li> <a href="#" score="2536" class="whenClickGoAsk" target="_blank">河南：将率先向企业发放电子营业执照</a> 2014-02-01 </li>
+                          </ul>
+                          <div class="recommend"> <span>查看更多您关注的答案</span>
+                            <ul>
+                              <li> <a href="#" score="1030" class="whenClickGoAsk" target="_blank">营业执照、税务证类遗失</a> </li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div class="mcontent">
+                          <ul class="mcontentul">
+                            <li> <a href="#" score="2603" class="whenClickGoAsk" target="_blank">我市发放首张新版营业执照</a> 2014-03-04 </li>
+                            <li> <a href="#" score="2603" class="whenClickGoAsk" target="_blank">无锡发放首张新版营业执照</a> 2014-03-05 </li>
+                          </ul>
+                        </div>
+                        <div class="mcontent">
+                          <div class="title"> <a href="#" target="_blank">营业执照办理需知</a> </div>
+                          <div class="source"> <s>来源：</s> <a href="#" target="_blank">工商局</a> </div>
+                          <div class="tags"> <s>标签：</s> <span class="tag"><a href="#" target="_blank">营业执照</a></span> <span class="tag"><a href="#" target="_blank">办理须知</a></span> </div>
+                          <div class="content"> cn 2011年09月29日 来源： 企业营业执照在行政服务中心（地址：望道路300号）注册大厅窗口办理，个体工商户、独资企业营业执照按管辖区域在相应的工商所（分局）办理。 工商所（分局） 管辖区域 联系电话 地址 小商品城分局 中国小商品城、篁园市场、宾王市场、国际商贸城 宾王市场85552299篁园市场85369796国际商贸城：一期85288478二期85182823 稠城工商所 稠城街道（机场路－五叉路口－城中北路－化工路以南区域） 85418153 稠州中路... <a href="http://gsj.yw.gov.cn/bszn/qydj/201109/t20110929_70318.html" class="qw" target="_blank">[查看全文]</a> <span class="date">2011-09-29</span> </div>
+                        </div>
+                      -->
+										</div>
+										<br>
+										<div class="cen_next">
+											<ul>
+												<li class="lidown">
+													<a href="javascript:void(0)">1</a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(2)" href="javascript:void(0)">2 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(3)" href="javascript:void(0)">3 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(4)" href="javascript:void(0)">4 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(5)" href="javascript:void(0)">5 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(6)" href="javascript:void(0)">6 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(7)" href="javascript:void(0)">7 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(8)" href="javascript:void(0)">8 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(9)" href="javascript:void(0)">9 </a>
+												</li>
+												<li class="liup">
+													<a onclick="setPage(10)" href="javascript:void(0)">10 </a>
+												</li>
+												<li class="lifirst">
+													<a onclick="setPage(1+1)" href="javascript:void(0)">
+														下一页</a>
+												</li>
+											</ul>
+										</div>
+									</div>
+									<div class="fankui">
+										<a target="_blank"
+											onClick="wentifankui('营业执照',false);return false" href="#"><img
+												width="21" src="static/images/bad.png">无帮助</a>
+										<a target="_blank"
+											onClick="wentifankui('营业执照',true);return false" href="#"><img
+												width="21" src="static/images/good.png">有帮助</a>
+										<div style="clean: both"></div>
+									</div>
+								</div>
+							</div>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<!-- 底部 -->
+			<div class="footer">
+				<p>
+					江苏省无锡市新区震泽路18号国家软件园金牛座A栋6层
+				</p>
+				<p>
+					邮编：214028 网络报障：+86 510 8538 5788 备案号：京ICP备05019335号
+				</p>
+				<p>
+					产品支持:
+					<i
+						style="padding-left: 10px; padding-right: 0px; margin-right: 0px; color: #666;">《中国无锡》政府门户网站版权所有
+						苏ICP备09024546号 技术支持:<a href="http://www.intertid.com/"
+						style="cursor: normal; color: #666;" target="_blank">众志和达股份有限公司</a>
+					</i>
+				</p>
+			</div>
+		</div>
+	</body>
+</html>

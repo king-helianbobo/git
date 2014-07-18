@@ -1,0 +1,561 @@
+field: XG_SJ(修改时间)'s frequency of occurrence is 15
+the field appear in these table: 登记注册类型代码表		利润表		人员类型代码		税种鉴定表		资产负债表		财务报表主表		个人所得税申报		征收项目代码表		税务机关代码表		机构纳税人主表		纳税申报		人员情况表		机构纳税人附表		
+================================================================================================================
+field: LR_SJ(录入时间)'s frequency of occurrence is 14
+the field appear in these table: 利润表		人员类型代码		税种鉴定表		资产负债表		财务报表主表		个人所得税申报		征收项目代码表		税务机关代码表		机构纳税人主表		纳税申报		人员情况表		机构纳税人附表		
+================================================================================================================
+field: SWGLM(税务管理码)'s frequency of occurrence is 9
+the field appear in these table: 利润表		税种鉴定表		资产负债表		财务报表主表		个人所得税申报		机构纳税人主表		纳税申报		人员情况表		机构纳税人附表		
+================================================================================================================
+field: GLJG_DM(管理机关)'s frequency of occurrence is 7
+the field appear in these table: 利润表		税种鉴定表		资产负债表		财务报表主表		个人所得税申报		机构纳税人主表		纳税申报		
+================================================================================================================
+field: PZ_XH(凭证序号)'s frequency of occurrence is 6
+the field appear in these table: 利润表		资产负债表		财务报表主表		个人所得税申报		纳税申报		
+================================================================================================================
+field: LRRY_DM(录入人员)'s frequency of occurrence is 6
+the field appear in these table: 税种鉴定表		个人所得税申报		机构纳税人主表		纳税申报		人员情况表		机构纳税人附表		
+================================================================================================================
+field: NSRSBM(纳税人识别码)'s frequency of occurrence is 5
+the field appear in these table: 利润表		税种鉴定表		资产负债表		财务报表主表		机构纳税人主表		
+================================================================================================================
+field: ZT(状态)'s frequency of occurrence is 5
+the field appear in these table: 利润表		资产负债表		财务报表主表		
+================================================================================================================
+field: NSR_MC(纳税人名称)'s frequency of occurrence is 5
+the field appear in these table: 利润表		资产负债表		财务报表主表		个人所得税申报		机构纳税人主表		
+================================================================================================================
+field: MC(名称)'s frequency of occurrence is 4
+the field appear in these table: 登记注册类型代码表		人员类型代码		征收项目代码表		税务机关代码表		
+================================================================================================================
+field: PZZL_DM(票证种类)'s frequency of occurrence is 4
+the field appear in these table: 利润表		资产负债表		财务报表主表		纳税申报		
+================================================================================================================
+field: XGRY_DM(修改人员)'s frequency of occurrence is 4
+the field appear in these table: 税种鉴定表		机构纳税人主表		纳税申报		人员情况表		
+================================================================================================================
+field: ZSXM_DM(征收项目)'s frequency of occurrence is 4
+the field appear in these table: 税种鉴定表		个人所得税申报		征收项目代码表		纳税申报		
+================================================================================================================
+field: MC_J(简称)'s frequency of occurrence is 4
+the field appear in these table: 登记注册类型代码表		人员类型代码		征收项目代码表		税务机关代码表		
+================================================================================================================
+field: XY_BJ(选用标记)'s frequency of occurrence is 3
+the field appear in these table: 人员类型代码		征收项目代码表		税务机关代码表		
+================================================================================================================
+field: LRJG_DM(录入机关)'s frequency of occurrence is 3
+the field appear in these table: 税种鉴定表		机构纳税人主表		纳税申报		
+================================================================================================================
+field: TB_RQ(填报日期)'s frequency of occurrence is 3
+the field appear in these table: 利润表		资产负债表		财务报表主表		
+================================================================================================================
+field: SSQ(所属期)'s frequency of occurrence is 3
+the field appear in these table: 利润表		资产负债表		财务报表主表		
+================================================================================================================
+field: XGJG_DM(修改机关)'s frequency of occurrence is 3
+the field appear in these table: 税种鉴定表		机构纳税人主表		纳税申报		
+================================================================================================================
+field: ZSPM_DM(征收品目)'s frequency of occurrence is 3
+the field appear in these table: 税种鉴定表		个人所得税申报		纳税申报		
+================================================================================================================
+field: ZSFS_DM(征收方式)'s frequency of occurrence is 3
+the field appear in these table: 税种鉴定表		纳税申报		机构纳税人附表		
+================================================================================================================
+field: ZSJG_DM(征收机关)'s frequency of occurrence is 3
+the field appear in these table: 个人所得税申报		机构纳税人主表		纳税申报		
+================================================================================================================
+field: MX_XH(明细序号)'s frequency of occurrence is 3
+the field appear in these table: 利润表		资产负债表		个人所得税申报		
+================================================================================================================
+field: QY_SJ(启用时间)'s frequency of occurrence is 3
+the field appear in these table: 利润表		资产负债表		财务报表主表		
+================================================================================================================
+field: TJ_SJ(提交时间)'s frequency of occurrence is 3
+the field appear in these table: 利润表		资产负债表		财务报表主表		
+================================================================================================================
+field: KGLX_DM(控股类型)'s frequency of occurrence is 2
+the field appear in these table: 机构纳税人主表		纳税申报		
+================================================================================================================
+field: RYLX_DM(人员类型)'s frequency of occurrence is 2
+the field appear in these table: 人员类型代码		人员情况表		
+================================================================================================================
+field: JCJG_DM(稽查机关)'s frequency of occurrence is 2
+the field appear in these table: 机构纳税人主表		纳税申报		
+================================================================================================================
+field: XH(序号)'s frequency of occurrence is 2
+the field appear in these table: 税种鉴定表		人员情况表		
+================================================================================================================
+field: FWJG_DM(服务机关代码)'s frequency of occurrence is 2
+the field appear in these table: 个人所得税申报		机构纳税人主表		
+================================================================================================================
+field: YSFPBL_DM(预算分配比率)'s frequency of occurrence is 2
+the field appear in these table: 税种鉴定表		纳税申报		
+================================================================================================================
+field: YSKM_DM(预算科目)'s frequency of occurrence is 2
+the field appear in these table: 税种鉴定表		纳税申报		
+================================================================================================================
+field: SKSSJG_DM(税款所属机关)'s frequency of occurrence is 2
+the field appear in these table: 机构纳税人主表		纳税申报		
+================================================================================================================
+field: SFSSQ_QSRQ(税费所属期起始日期)'s frequency of occurrence is 2
+the field appear in these table: 个人所得税申报		纳税申报		
+================================================================================================================
+field: LSGX_DM(隶属关系)'s frequency of occurrence is 2
+the field appear in these table: 机构纳税人主表		纳税申报		
+================================================================================================================
+field: GJDQ_DM(国籍地区)'s frequency of occurrence is 2
+the field appear in these table: 个人所得税申报		人员情况表		
+================================================================================================================
+field: DJZCLX_DM(登记注册类型)'s frequency of occurrence is 2
+the field appear in these table: 登记注册类型代码表		机构纳税人主表		
+================================================================================================================
+field: JYHY_DM(经营行业)'s frequency of occurrence is 2
+the field appear in these table: 税种鉴定表		机构纳税人主表		
+================================================================================================================
+field: CZSD_DM(财政属地)'s frequency of occurrence is 2
+the field appear in these table: 税种鉴定表		纳税申报		
+================================================================================================================
+field: SFSSQ_ZZRQ(税费所属期终止日期)'s frequency of occurrence is 2
+the field appear in these table: 个人所得税申报		纳税申报		
+================================================================================================================
+field: SL(税率)'s frequency of occurrence is 2
+the field appear in these table: 个人所得税申报		纳税申报		
+================================================================================================================
+field: JZFS_DM(建账方式)'s frequency of occurrence is 2
+the field appear in these table: 税种鉴定表		机构纳税人附表		
+================================================================================================================
+field: ZZHM(证照号码)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: LSNSR_MC(历史纳税人名称)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: SJSWJG_DM(上级税务机关)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: FYKCBZ_JE(费用扣除标准)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: SCJYDLXDH(实际经营地联系电话)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: ZJH(证件号)'s frequency of occurrence is 1
+the field appear in these table: 人员情况表		
+================================================================================================================
+field: ZDSYRDSJ(重点税源认定时间)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: YINGNSSDE_JE(应纳税所得)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: YZMX_XH(应征明细序号)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: SJJYDZ(实际经营地址)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: XH_SD(双定序号)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: YIJSE_JE(已缴税额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: ZN_DM(职能代码)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: JS_YJ(计税依据)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: ZZRTZ_BL(自然人投资占比)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SKSX2_DM(税款属性2)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: SWBM_BJ(税务部门标记)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: JGJC(机关级次)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: BQYBTSE_JE(本期应补退税额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: NSFS_DM(纳税方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: YKP_BJ(已开票标记)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: BL_BJ(补录标记)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: GTHHRS(个体合伙人数)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: NSRZT_DM(纳税人状态)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: SWDJLX_DM(税务登记类型)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: YHS_XWQYBJ(印花税小微企业标记)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SFZMLX_DM(身份证明类型)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: SBFS_DM(申报方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: QYKJZD_DM(企业会计制度)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZDSYRDBJ(重点税源认定标记)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: MISPOS_BJ(POS机标记)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: ZGFS_DM(征管方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: WZTZ_BL(外资投资占比)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SWDJZZ_RQ(税务登记终止日期)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SKGK_DM(收款国库)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: YZSF_JE(应税税费金额)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: YINGNSE_JE(应纳税额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: ZW_DM(职务)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: JDLY_DM(鉴定来源)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: FZQCS(负债期初数)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: PINGZZL_XH(凭证种类)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: SKSX1_DM(税款属性1)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: DZSX_DM(代征属性)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: QYSSLX_DM(企业税收统计类型)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: XM(姓名)'s frequency of occurrence is 1
+the field appear in these table: 人员情况表		
+================================================================================================================
+field: JS_JE(计税金额)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: JIANCJG_DM(检查机关代码)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: ZCHC(资产行次)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: ZZLB_DM(证照类别)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZJLX_DM(证件类型)'s frequency of occurrence is 1
+the field appear in these table: 人员情况表		
+================================================================================================================
+field: SDLX_DM(所得类型)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: WSH(文书号)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: EMAIL()'s frequency of occurrence is 1
+the field appear in these table: 人员情况表		
+================================================================================================================
+field: KJKMFL_DM(会计科目分类)'s frequency of occurrence is 1
+the field appear in these table: 征收项目代码表		
+================================================================================================================
+field: ZSL(征收率)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: HSFS_DM(核算方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SBQXR_DM(申报期限)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: SWJG_DM(税务机关)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: HC(行次)'s frequency of occurrence is 1
+the field appear in these table: 利润表		
+================================================================================================================
+field: KYSLRQ(开业设立日期)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: YXKCSF_JE(允许扣除税费金额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: JNSRE_JE(境内收入金额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: GDDH(固定电话)'s frequency of occurrence is 1
+the field appear in these table: 人员情况表		
+================================================================================================================
+field: ZLDLB_DM(坐落地类别)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZCXM_DM(资产项目)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: FZHC(负债行次)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: SX_BJ(市县标记)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: YHS_XWQYRDYXQ(印花税小微企业认定有效期)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: JSYJ_DM(计税依据)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: SKZHID(收款国库)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: SIJMSSRE_JE(四金)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: SBMX_XH(申报明细序号)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: ZCDZYB(注册地址邮编)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: YSJC_DM(预算级次)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: SJJYDZYB(实际经营地址邮编)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: HD_QSRQ(核定起始日期)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: YD_DH(移动电话)'s frequency of occurrence is 1
+the field appear in these table: 人员情况表		
+================================================================================================================
+field: ZNTS(滞纳天数)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: GBHYXL96_DM(国标代码)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SWDJQS_RQ(税务登记起始日期)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZCQCS(资产期初数)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: HY_DM(行业)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: GSDJZT_DM(工商登记状态)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: JYMS_DM(经营模式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: QYCWZD_DM(企业财务制度)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: JIZFS_DM(记账方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: JZYZ_JE(记账应征金额)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: ZY_DM(职业)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: SF_BJ(税费标记)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: DLWZXZ_DM(地理位置乡镇)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: ZZSLX_DM(增值税类型)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: QYSSLX_RDSJ(企业税收统计认定时间)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: CYRS(从业人数)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: GBHY_DM(国标行业)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: QYSDSZGQX_DM(企业所得税征管权限)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: PZGLFW(凭证管理范围)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: SBZL_DM(申报表种类)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: ZF_BJ(作废标记)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: ZZJGTYDM(组织机构代码)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: SB_RQ(申报日期)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: ZYKCJZE_JE(准予扣除捐赠金额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: QTMSSRE_JE(其他免税收入)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: GYTZ_BL(个体投资占比)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: JKQXR_DM(缴款期限)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: YJFS_DM(预缴方式)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: DWXZ_DM(单位性质)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: DLWZC_DM(地理位置村)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: ZX_BJ(注销标记)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: SCJYQX(生产经营期限)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: JYFWZY(经营范围)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: WJRYRS(外籍人员人数)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZCDZ(注册地址)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: HD_ZZRQ(核定终止日期)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: HSJG_DM(核算机关)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: SFZHM(身份证号码)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: QYLB_DM(企业类别)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZCQMS(资产期末数)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: JK_QX(缴款期限)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: JKFS_DM(缴款方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: FZQMS(负债期末数)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: JYFS_DM(经营方式)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: YZFS_RQ(应征发生日期)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: YHS_XWQYRDSJ(印花税小微企业认定时间)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZNFW(职能范围)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: PZXM_DM(凭证项目)'s frequency of occurrence is 1
+the field appear in these table: 利润表		
+================================================================================================================
+field: BNLJS(本年累计数)'s frequency of occurrence is 1
+the field appear in these table: 利润表		
+================================================================================================================
+field: ZCLX_DM(注册类型)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: HJMSSRE_JE(合计免税收入)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: PZSLJG_DM(批准设立机关)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: TZLX_DM(调账类型)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: BQS(本期数)'s frequency of occurrence is 1
+the field appear in these table: 利润表		
+================================================================================================================
+field: FZXM_DM(负债项目)'s frequency of occurrence is 1
+the field appear in these table: 资产负债表		
+================================================================================================================
+field: SF_LX(税费类型)'s frequency of occurrence is 1
+the field appear in these table: 征收项目代码表		
+================================================================================================================
+field: HJSRE_JE(合计收入金额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: JWSRE_JE2(境外收入金额)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: SSKCS_JE(速算扣除数)'s frequency of occurrence is 1
+the field appear in these table: 个人所得税申报		
+================================================================================================================
+field: ND_ZZRQ(拟定终止日期)'s frequency of occurrence is 1
+the field appear in these table: 税种鉴定表		
+================================================================================================================
+field: WSJG(文书字号)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: PZWH(批准文号)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: ZCDLXDH(注册地联系电话)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人主表		
+================================================================================================================
+field: CC(层次)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================
+field: GTGGRS(个体雇工人数)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: DJJGLX_DM(登记机构类型)'s frequency of occurrence is 1
+the field appear in these table: 机构纳税人附表		
+================================================================================================================
+field: KCSE_JE(扣除税额)'s frequency of occurrence is 1
+the field appear in these table: 纳税申报		
+================================================================================================================
+field: XTGLFW(系统管理分类)'s frequency of occurrence is 1
+the field appear in these table: 税务机关代码表		
+================================================================================================================

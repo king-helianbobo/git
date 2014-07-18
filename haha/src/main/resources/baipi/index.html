@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<title>“中国无锡”智能服务平台</title>
+
+		<link rel="stylesheet" type="text/css" href="static/css/css_sh.css">
+		<link rel="stylesheet" type="text/css" href="static/css/screen.css">
+		<link rel="stylesheet" type="text/css" href="static/css/answercontent.css">
+		<link rel="stylesheet" type="text/css" href="static/css/perfect-scrollbar.css">
+		<link rel="stylesheet" type="text/css" href="static/css/jquery.powertip.css">
+		<link rel="stylesheet" type="text/css" href="static/css/smoothness/jquery-ui-1.10.3.custom.min.css">
+		<link rel="stylesheet" type="text/css" href="static/css/robot-min.css">
+
+		
+		<script type="text/javascript" src="static/js/jquery-1.10.2.min.js"></script>
+		<script type="text/javascript" src="static/js/jquery-ui-1.10.3.custom.min.js"></script>
+		<script type="text/javascript" src="static/js/jquery.mousewheel.js"></script>
+		<script type="text/javascript" src="static/js/perfect-scrollbar.js"></script>
+		<script type="text/javascript" src="static/js/jquery.powertip.min.js"></script>
+		<script type="text/javascript" src="static/js/layout.js"></script>
+		<script type="text/javascript" src="static/js/robot.js"></script> 
+
+<script>
+	function show(id){
+		 var div = document.getElementById(id);
+		  if(div.style.display=="none"){
+             div.style.display="block";
+          }else{
+             div.style.display="none";
+          }
+	}
+	function showDiv(obj){
+		obj.parent().next().slideToggle();
+		obj.parent().next().next().slideToggle();
+	}
+</script>
+
+<script type="text/javascript">
+	var sessionId = '000001458c054b7154fc604f83fa5e53';
+	//var suggestService = '/sg';注掉的
+		$(document).ready(function() {
+	})
+</script>
+	</head>
+
+	<body>
+		<div>
+			<!-- 头部 -->
+			<div class="header">
+				<!-- logo -->
+				<div class="logo">
+					<a target="_blank" href="http://www.szns.gov.cn"> 
+						<img src="http://www.wuxi.gov.cn/static/images/logo.gif" /> 
+					</a>
+				</div>
+				<!-- 搜索框 -->
+				<div id="chatform" style=" margin-left: 200px;margin-top: 40px;width: 800px;">
+				    <input id="text-input" type="text" name="msg" lang="zh-CN" style="width: 65%; height:35px;font-size:20px"  maxlength="100" autoComplete="off" placeholder="尝试输入1-2个词，我会给您提示"></input>
+					<input type="button" class="btn btn-primary" id="chat-btn-send" hight="13px" value="搜索" />
+				</div><!--
+				  <div id="chatform" style="margin-right: 85px">
+                <input id="text-input" type="text" name="msg" x-webkit-speech="" lang="zh-CN" autocomplete="off" placeholder="尝试输入1-2个词，我会给您提示">
+              </div>
+			--></div>
+			<hr></hr>
+			<!-- 内容 -->
+			<div class="content" id="content" >
+			<script type="text/javascript">
+			function setTab(num){
+				var size=10;
+				var sbtitle=document.getElementById('tabInfoDiv');
+				var pageHtml = document.getElementById('page');
+				$('li#'+num).addClass('selected').siblings('li').removeClass('selected');
+				sbtitle.innerHTML="";
+				pageHtml.innerHTML="";
+				$.ajax({
+		            url:'../?method=nlp&nature=true',
+		            type:'post',
+		            dataType:'html',
+		            data:'input='+document.getElementById('text-input').value+'&&from=0&&size=10&&tagType=tag'+num+'',
+		            cache:true,
+		            success :function( html , textStatus , xhrObj) {
+		            	 var jsonobj=eval('('+html+')');
+		                 //console.dir(jsonobj);
+		                 var obj="";
+		                 obj += "<div class='mcontent  selected'>"+
+		                       "<ul class='mcontentul'>";
+		                 		for(var i=0;i<jsonobj.pageList.length;i++){
+		                 		//alert(jsonobj.pageList[i].time);
+			                 		if(jsonobj.pageList[i].time==null){
+										time="";
+									}else{
+										time=jsonobj.pageList[i].time;
+									}
+		                 				obj +="<li><span class=tag><a onclick='javascript:showDiv($(this))'; style='cursor:pointer; color:blue; font-size:15px;'>"+jsonobj.pageList[i].contenttitle+"</a>&nbsp;"+time+"</span></li>"+
+		                 					  "<div class='tags' style='display:none;'>"+
+		                 					   "&nbsp&nbsp&nbsp&nbsp&nbsp<s style='text-decoration: none;'>标签：</s>";
+		                 					   for(var j=0;j<jsonobj.pageList[i].keywords.length;j++){
+							 					if(j<4)
+							 						obj += "<span class='tag'><a href='#' target='_blank' style='color:black'>"+jsonobj.pageList[i].keywords[j]+"</a></span>&nbsp&nbsp&nbsp";
+							 				   }
+		                 				obj +="</div>"+
+		                 					  "<div style='display: none;color:#4B7BBE'>"+jsonobj.pageList[i].content+"<a href="+jsonobj.pageList[i].url+" target='_blank' style='color:red;'>[查看全文]</a></div>";
+		                 		}
+		                 obj +="</ul>"+
+		                 		"</div>"+
+		                 		"<br>"+
+		                 		"<div class='cen_next'>"+
+								"<ul>";
+							     for(var i=1;i<=Math.ceil(jsonobj.count/size);i++){
+									if(i==1){
+										obj+="<li class='lidown'> <a onclick='paging("+i+",\""+document.getElementById('text-input').value+"\","+num+")'>"+i+"</a></li>";
+									}else if(i<=10){
+										obj+="<li class='liup'> <a onclick='paging("+i+",\""+document.getElementById('text-input').value+"\","+num+")'>"+i+"</a></li>";
+									}
+									if(i==Math.ceil(jsonobj.count/size)){
+										obj+="<li class='lifirst'> <a onclick='paging(parseInt("+i+"+1),\""+document.getElementById('text-input').value+"\","+num+")'>下一页</a></li><span style='color: #bbb;display: block;margin-left: 100px;margin-top: -2px; width: 500px;'>(共搜索到<span style='color:red'>"+jsonobj.count+"</span>条结果)</span>";
+									}
+									}
+				obj+= "</ul>"+
+							"</div>";
+						sbtitle.innerHTML = obj;
+		            }
+		         });
+			}
+			</script>
+			</div>
+			<!-- 底部 -->
+			<div class="footer">
+				<p>
+					江苏省无锡市新区震泽路18号国家软件园金牛座A栋6层
+				</p>
+				<p>
+					邮编：214028 网络报障：+86 510 8538 5788 备案号：京ICP备05019335号
+				</p>
+				<p>
+					产品支持:
+					<i
+						style="padding-left: 10px; padding-right: 0px; margin-right: 0px; color: #666;">《中国无锡》政府门户网站版权所有
+						苏ICP备09024546号 技术支持:<a href="http://www.intertid.com/"
+						style="cursor: normal; color: #666;" target="_blank">众志和达股份有限公司</a>
+					</i>
+				</p>
+			</div>
+		</div>
+	</body>
+</html>
