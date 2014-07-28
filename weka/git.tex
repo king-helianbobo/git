@@ -8,6 +8,7 @@
 \begin{verbatim}
 rsync -av --exclude='path1/exclude' --exclude='path2/exclude' [source] [dest]
 rsync -av --include='*.shtml' --include='*.doc' --include='*.pdf' --include='*/' --exclude='*' /mnt/d data/
+rsync -av --exclude='wap2013' --exclude='wap' --exclude='blind' --exclude='blind1111111111'  --include='*.shtml' --include='*/' --exclude='*' /mnt/d /opt/data-07-23/
 \end{verbatim}
 \par 注意[source]与[source/]不同，前者表示拷贝source目录，后者表示拷贝目录下的内容。如果需要过滤的文件太多，可使用[--exclude-from=FILE]参数，其中FILE存储需过滤的文件或目录。也可过滤类型，如[--exclude=*/.svn*]。
 \begin{verbatim}
