@@ -1,3 +1,0 @@
-curl -XGET localhost:9200/official_mini/_search?pretty -d '{
- "fields" : ["url", "contenttitle","content"]
-}'
