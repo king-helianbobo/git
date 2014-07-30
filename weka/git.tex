@@ -10,7 +10,7 @@ rsync -av --exclude='path1/exclude' --exclude='path2/exclude' [source] [dest]
 rsync -av --include='*.shtml' --include='*.doc' --include='*.pdf' --include='*/' --exclude='*' /mnt/d data/
 rsync -av --exclude='wap2013' --exclude='wap' --exclude='blind' --exclude='blind1111111111'  --include='*.shtml' --include='*/' --exclude='*' /mnt/d /opt/data-07-23/
 \end{verbatim}
-\par 注意[source]与[source/]不同，前者表示拷贝source目录，后者表示拷贝目录下的内容。如果需要过滤的文件太多，可使用[--exclude-from=FILE]参数，其中FILE存储需过滤的文件或目录。也可过滤类型，如[--exclude=*/.svn*]。
+\par '*/'表示提取目录，'*'表示忽略文件类型，注意[source]与[source/]不同，前者表示拷贝source目录，后者表示拷贝目录下的内容。如果需要过滤的文件太多，可使用[--exclude-from=FILE]参数，其中FILE存储过滤的文件或目录，也可过滤类型，如[--exclude=*/.svn*]。
 \begin{verbatim}
 sudo apt-get autoremove pulseaudio
 \end{verbatim}
@@ -59,17 +59,22 @@ git checkout -b 1.2 origin/1.2
 git checkout master 切换到master分支
 git checkout 1.2 切换到1.2分支
 \end{verbatim}
-\subsubsection{不同仓库的操作}
+\subsubsection{git高级操作}
 \begin{enumerate}[(1)]
 \item git branch -r 查看远程仓库有哪些分支
 \item git clone gitosis@192.168.2.4:liubo/soul-client
-\item 执行<git init>,修改当前目录下的<.git/config>文件，将xhw改为liubo
+\item 执行<git init>,修改当前目录下的<.git/config>文件，将liubo改为smq
 \item 执行<git remote -v>查看有哪些远程仓库
 \item git remote add smq gitosis@192.168.2.4:/smq/soul-client
 \item git remote add chen gitosis@192.168.2.4:/chengjie/soul-client
 \item 再次执行<git remote -v>查看远程仓库有何更新
 \item 执行<git pull smq master>拉取更新
 \end{enumerate}
+\par 当向远程仓库推送的文件过大时，如文件超过100M，写入操作会被远程仓库拒绝，此时可执行命令：
+\begin{verbatim}
+git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch hadoop-2.4.0/hadoop-dist/target/hadoop-2.4.0.tar.gz'
+git push
+\end{verbatim}
 \subsection{Maven入门}
 \begin{enumerate}[(1)]
 \item 配置maven环境，最主要的是设置环境变量：M2\_HOME，将其设置为maven安装目录，例子目录为：/usr/share/maven;

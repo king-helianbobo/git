@@ -293,7 +293,7 @@ private final Map<Class<? extends AttributeImpl>, AttributeImpl> attributeImpls;
 \item TypeAttributeImpl，分词的词汇类型，默认值为“word”；
 \item KeywordAttributeImpl，用于标识一个分词是否为关键字。TokenStream可以用此属性判断分词（Token）是否为关键字，决定是否进行修改，TokenFilter可以根据分词是否为关键字进行跳过(skip)处理；
 \item OffsetAttributeImpl，Token分词的起始字符，结束字符偏移量； 
-\item PositionIncrementAttribute，它表示tokenStream中的当前token与前一个token在实际的原文本中相隔的词语数量；
+\item PositionIncrementAttribute，它表示tokenStream中当前token与前一个token在实际的原文本中相隔的词语数量；
 \item PositionLengthAttributeImpl，Token占用的位置个数。
 \end{enumerate}
 \par 假如原文本：I'm a student. These are apples，生成的TokenSteam：
