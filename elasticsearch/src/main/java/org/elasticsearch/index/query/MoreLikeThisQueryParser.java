@@ -68,6 +68,7 @@ public class MoreLikeThisQueryParser implements QueryParser {
         public static final ParseField DOCUMENT_IDS = new ParseField("ids");
         public static final ParseField DOCUMENTS = new ParseField("docs");
         public static final ParseField INCLUDE = new ParseField("include");
+        public static final ParseField EXCLUDE = new ParseField("exclude");
     }
 
     public MoreLikeThisQueryParser() {
@@ -135,6 +136,8 @@ public class MoreLikeThisQueryParser implements QueryParser {
                     queryName = parser.text();
                 } else if (Fields.INCLUDE.match(currentFieldName, parseContext.parseFlags())) {
                     include = parser.booleanValue();
+                } else if (Fields.EXCLUDE.match(currentFieldName, parseContext.parseFlags())) {
+                    include = !parser.booleanValue();
                 } else {
                     throw new QueryParsingException(parseContext.index(), "[mlt] query does not support [" + currentFieldName + "]");
                 }

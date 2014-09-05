@@ -80,6 +80,9 @@ import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRespons
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsRequest;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsRequestBuilder;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
+import org.elasticsearch.action.admin.indices.status.IndicesStatusRequest;
+import org.elasticsearch.action.admin.indices.status.IndicesStatusRequestBuilder;
+import org.elasticsearch.action.admin.indices.status.IndicesStatusResponse;
 import org.elasticsearch.action.admin.indices.recovery.RecoveryRequest;
 import org.elasticsearch.action.admin.indices.recovery.RecoveryRequestBuilder;
 import org.elasticsearch.action.admin.indices.recovery.RecoveryResponse;
@@ -188,6 +191,32 @@ public interface IndicesAdminClient extends ElasticsearchClient<IndicesAdminClie
      * Indices recoveries
      */
     RecoveryRequestBuilder prepareRecoveries(String... indices);
+
+    /**
+     * The status of one or more indices. Use the recovery API instead
+     *
+     * @param request The indices status request
+     * @return The result future
+     * @see Requests#indicesStatusRequest(String...)
+     */
+    @Deprecated
+    ActionFuture<IndicesStatusResponse> status(IndicesStatusRequest request);
+
+    /**
+     * The status of one or more indices. Use the recovery API instead.
+     *
+     * @param request  The indices status request
+     * @param listener A listener to be notified with a result
+     * @see Requests#indicesStatusRequest(String...)
+     */
+    @Deprecated
+    void status(IndicesStatusRequest request, ActionListener<IndicesStatusResponse> listener);
+
+    /**
+     * The status of one or more indices. Use the recovery API instead
+     */
+    @Deprecated
+    IndicesStatusRequestBuilder prepareStatus(String... indices);
 
     /**
      * The segments of one or more indices.

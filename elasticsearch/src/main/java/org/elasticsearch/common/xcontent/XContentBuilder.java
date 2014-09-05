@@ -27,6 +27,7 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.io.BytesStream;
 import org.elasticsearch.common.io.stream.BytesStreamOutput;
+import org.elasticsearch.common.lease.Releasable;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
@@ -47,7 +48,7 @@ import java.util.Map;
 /**
  *
  */
-public final class XContentBuilder implements BytesStream {
+public final class XContentBuilder implements BytesStream, Releasable {
 
     public static enum FieldCaseConversion {
         /**
@@ -530,6 +531,16 @@ public final class XContentBuilder implements BytesStream {
     }
 
     public XContentBuilder utf8Field(XContentBuilderString name, BytesRef value) throws IOException {
+        field(name);
+        generator.writeUTF8String(value.bytes, value.offset, value.length);
+        return this;
+    }
+
+    /**
+     * replaced with {@link #utf8Field(XContentBuilderString, org.apache.lucene.util.BytesRef)}
+     */
+    @Deprecated
+    public XContentBuilder field(XContentBuilderString name, BytesRef value) throws IOException {
         field(name);
         generator.writeUTF8String(value.bytes, value.offset, value.length);
         return this;
@@ -1094,8 +1105,6 @@ public final class XContentBuilder implements BytesStream {
 
     /**
      * Returns a string representation of the builder (only applicable for text based xcontent).
-     * <p/>
-     * <p>Only applicable when the builder is constructed with {@link FastByteArrayOutputStream}.
      */
     public String string() throws IOException {
         close();

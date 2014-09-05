@@ -103,6 +103,8 @@ import org.elasticsearch.action.admin.indices.settings.put.TransportUpdateSettin
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsAction;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsAction;
 import org.elasticsearch.action.admin.indices.stats.TransportIndicesStatsAction;
+import org.elasticsearch.action.admin.indices.status.IndicesStatusAction;
+import org.elasticsearch.action.admin.indices.status.TransportIndicesStatusAction;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateAction;
 import org.elasticsearch.action.admin.indices.template.delete.TransportDeleteIndexTemplateAction;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesAction;
@@ -117,7 +119,6 @@ import org.elasticsearch.action.admin.indices.warmer.get.GetWarmersAction;
 import org.elasticsearch.action.admin.indices.warmer.get.TransportGetWarmersAction;
 import org.elasticsearch.action.admin.indices.warmer.put.PutWarmerAction;
 import org.elasticsearch.action.admin.indices.warmer.put.TransportPutWarmerAction;
-import org.elasticsearch.action.bench.*;
 import org.elasticsearch.action.bulk.BulkAction;
 import org.elasticsearch.action.bulk.TransportBulkAction;
 import org.elasticsearch.action.bulk.TransportShardBulkAction;
@@ -136,6 +137,12 @@ import org.elasticsearch.action.explain.TransportExplainAction;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.IndexAction;
 import org.elasticsearch.action.index.TransportIndexAction;
+import org.elasticsearch.action.indexedscripts.delete.DeleteIndexedScriptAction;
+import org.elasticsearch.action.indexedscripts.delete.TransportDeleteIndexedScriptAction;
+import org.elasticsearch.action.indexedscripts.get.GetIndexedScriptAction;
+import org.elasticsearch.action.indexedscripts.get.TransportGetIndexedScriptAction;
+import org.elasticsearch.action.indexedscripts.put.PutIndexedScriptAction;
+import org.elasticsearch.action.indexedscripts.put.TransportPutIndexedScriptAction;
 import org.elasticsearch.action.mlt.MoreLikeThisAction;
 import org.elasticsearch.action.mlt.TransportMoreLikeThisAction;
 import org.elasticsearch.action.percolate.*;
@@ -218,6 +225,7 @@ public class ActionModule extends AbstractModule {
         registerAction(SnapshotsStatusAction.INSTANCE, TransportSnapshotsStatusAction.class);
 
         registerAction(IndicesStatsAction.INSTANCE, TransportIndicesStatsAction.class);
+        registerAction(IndicesStatusAction.INSTANCE, TransportIndicesStatusAction.class);
         registerAction(IndicesSegmentsAction.INSTANCE, TransportIndicesSegmentsAction.class);
         registerAction(CreateIndexAction.INSTANCE, TransportCreateIndexAction.class);
         registerAction(DeleteIndexAction.INSTANCE, TransportDeleteIndexAction.class);
@@ -282,9 +290,11 @@ public class ActionModule extends AbstractModule {
         registerAction(ExplainAction.INSTANCE, TransportExplainAction.class);
         registerAction(ClearScrollAction.INSTANCE, TransportClearScrollAction.class);
         registerAction(RecoveryAction.INSTANCE, TransportRecoveryAction.class);
-        registerAction(BenchmarkAction.INSTANCE, TransportBenchmarkAction.class);
-        registerAction(AbortBenchmarkAction.INSTANCE, TransportAbortBenchmarkAction.class);
-        registerAction(BenchmarkStatusAction.INSTANCE, TransportBenchmarkStatusAction.class);
+
+        //Indexed scripts
+        registerAction(PutIndexedScriptAction.INSTANCE, TransportPutIndexedScriptAction.class);
+        registerAction(GetIndexedScriptAction.INSTANCE, TransportGetIndexedScriptAction.class);
+        registerAction(DeleteIndexedScriptAction.INSTANCE, TransportDeleteIndexedScriptAction.class);
 
         // register Name -> GenericAction Map that can be injected to instances.
         MapBinder<String, GenericAction> actionsBinder

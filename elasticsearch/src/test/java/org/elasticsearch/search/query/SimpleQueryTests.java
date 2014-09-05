@@ -2085,10 +2085,11 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
         assertFirstHit(searchResponse, hasId("4"));
 
         searchResponse = client().prepareSearch().setQuery(
-                simpleQueryString("spaghetti").field("body", 10.0f).field("otherbody", 2.0f)).get();
+                simpleQueryString("spaghetti").field("body", 10.0f).field("otherbody", 2.0f).queryName("myquery")).get();
         assertHitCount(searchResponse, 2l);
         assertFirstHit(searchResponse, hasId("5"));
         assertSearchHits(searchResponse, "5", "6");
+        assertThat(searchResponse.getHits().getAt(0).getMatchedQueries()[0], equalTo("myquery"));
     }
 
     @Test
@@ -2336,9 +2337,9 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
                 .get();
         assertHitCount(searchResponse, 1l);
 
-        // The range filter is now explicitly cached, so it now it is in the filter cache.
+        // The range filter is now explicitly cached but we don't want to cache now even if the user asked for it
         statsResponse = client().admin().indices().prepareStats("test").clear().setFilterCache(true).get();
-        assertThat(statsResponse.getIndex("test").getTotal().getFilterCache().getMemorySizeInBytes(), cluster().hasFilterCache() ? greaterThan(filtercacheSize) : is(filtercacheSize));
+        assertThat(statsResponse.getIndex("test").getTotal().getFilterCache().getMemorySizeInBytes(), is(filtercacheSize));
     }
 
     @Test
@@ -2457,27 +2458,26 @@ public class SimpleQueryTests extends ElasticsearchIntegrationTest {
     @Test
     public void testQueryStringParserCache() throws Exception {
         createIndex("test");
-        indexRandom(true, Arrays.asList(
-                client().prepareIndex("test", "type", "1").setSource("nameTokens", "xyz")
-        ));
+        indexRandom(true, false, client().prepareIndex("test", "type", "1").setSource("nameTokens", "xyz"));
 
         SearchResponse response = client().prepareSearch("test")
+                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .setQuery(QueryBuilders.queryString("xyz").boost(100))
                 .get();
-
         assertThat(response.getHits().totalHits(), equalTo(1l));
         assertThat(response.getHits().getAt(0).id(), equalTo("1"));
 
-        float score = response.getHits().getAt(0).getScore();
-
+        float first = response.getHits().getAt(0).getScore();
         for (int i = 0; i < 100; i++) {
             response = client().prepareSearch("test")
+                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                     .setQuery(QueryBuilders.queryString("xyz").boost(100))
                     .get();
 
             assertThat(response.getHits().totalHits(), equalTo(1l));
             assertThat(response.getHits().getAt(0).id(), equalTo("1"));
-            assertThat(Float.compare(score, response.getHits().getAt(0).getScore()), equalTo(0));
+            float actual = response.getHits().getAt(0).getScore();
+            assertThat(i + " expected: " + first + " actual: " + actual, Float.compare(first, actual), equalTo(0));
         }
     }
 

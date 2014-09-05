@@ -25,7 +25,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.lucene.util.CollectionUtil;
-import org.apache.lucene.util.IOUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionListener;
@@ -48,6 +47,7 @@ import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.compress.CompressedString;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.io.Streams;
+import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.regex.Regex;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
@@ -70,6 +70,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -84,6 +85,8 @@ import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilde
  * Service responsible for submitting create index requests
  */
 public class MetaDataCreateIndexService extends AbstractComponent {
+
+    public final static int MAX_INDEX_NAME_BYTES = 100;
 
     private final Environment environment;
     private final ThreadPool threadPool;
@@ -169,6 +172,18 @@ public class MetaDataCreateIndexService extends AbstractComponent {
         }
         if (!index.toLowerCase(Locale.ROOT).equals(index)) {
             throw new InvalidIndexNameException(new Index(index), index, "must be lowercase");
+        }
+        int byteCount = 0;
+        try {
+            byteCount = index.getBytes("UTF-8").length;
+        } catch (UnsupportedEncodingException e) {
+            // UTF-8 should always be supported, but rethrow this if it is not for some reason
+            throw new ElasticsearchException("Unable to determine length of index name", e);
+        }
+        if (byteCount > MAX_INDEX_NAME_BYTES) {
+            throw new InvalidIndexNameException(new Index(index), index,
+                    "index name is too long, (" + byteCount +
+                    " > " + MAX_INDEX_NAME_BYTES + ")");
         }
         if (state.metaData().aliases().containsKey(index)) {
             throw new InvalidIndexNameException(new Index(index), index, "already exists as alias");
@@ -372,7 +387,7 @@ public class MetaDataCreateIndexService extends AbstractComponent {
 
                     // now, update the mappings with the actual source
                     Map<String, MappingMetaData> mappingsMetaData = Maps.newHashMap();
-                    for (DocumentMapper mapper : mapperService) {
+                    for (DocumentMapper mapper : mapperService.docMappers(true)) {
                         MappingMetaData mappingMd = new MappingMetaData(mapper);
                         mappingsMetaData.put(mapper.type(), mappingMd);
                     }
@@ -491,7 +506,7 @@ public class MetaDataCreateIndexService extends AbstractComponent {
                     } catch (Exception e) {
                         logger.warn("[{}] failed to read template [{}] from config", e, request.index(), templatesFile.getAbsolutePath());
                     } finally {
-                        IOUtils.closeWhileHandlingException(parser);
+                        Releasables.closeWhileHandlingException(parser);
                     }
                 }
             }

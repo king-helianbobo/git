@@ -20,12 +20,11 @@ setup:
   - is_false: metadata
   - is_false: routing_table
   - is_false: routing_nodes
+  - is_false: allocations
   - length:   { blocks: 0 }
 
 ---
 "Filtering the cluster state by blocks should return the blocks":
-# read only index
-# TODO: can this cause issues leaving it read only when deleting it in teardown
   - do:
       indices.put_settings:
         index: testidx
@@ -40,7 +39,14 @@ setup:
   - is_false: metadata
   - is_false: routing_table
   - is_false: routing_nodes
+  - is_false: allocations
   - length:   { blocks: 1 }
+
+  - do:
+      indices.put_settings:
+        index: testidx
+        body:
+          index.blocks.read_only: false
 
 ---
 "Filtering the cluster state by nodes only should work":
@@ -53,6 +59,7 @@ setup:
   - is_false: metadata
   - is_false: routing_table
   - is_false: routing_nodes
+  - is_false: allocations
 
 ---
 "Filtering the cluster state by metadata only should work":
@@ -65,6 +72,7 @@ setup:
   - is_true: metadata
   - is_false: routing_table
   - is_false: routing_nodes
+  - is_false: allocations
 
 
 ---
@@ -78,6 +86,7 @@ setup:
   - is_false: metadata
   - is_true: routing_table
   - is_true: routing_nodes
+  - is_true: allocations
 
 ---
 "Filtering the cluster state by indices should work in routing table and metadata":
@@ -114,3 +123,4 @@ setup:
   - is_true: metadata
   - is_true: routing_table
   - is_true: routing_nodes
+  - is_true: allocations

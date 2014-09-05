@@ -21,7 +21,6 @@ package org.elasticsearch.cluster.action.index;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequestValidationException;
@@ -35,7 +34,6 @@ import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaDataMappingService;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.Nullable;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.compress.CompressedString;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -45,12 +43,16 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.index.mapper.DocumentMapper;
+import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.node.settings.NodeSettingsService;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,6 +64,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MappingUpdatedAction extends TransportMasterNodeOperationAction<MappingUpdatedAction.MappingUpdatedRequest, MappingUpdatedAction.MappingUpdatedResponse> {
 
     public static final String INDICES_MAPPING_ADDITIONAL_MAPPING_CHANGE_TIME = "indices.mapping.additional_mapping_change_time";
+
+    private static final String ACTION_NAME = "cluster/mappingUpdated";
 
     private final AtomicLong mappingUpdateOrderGen = new AtomicLong();
     private final MetaDataMappingService metaDataMappingService;
@@ -85,7 +89,7 @@ public class MappingUpdatedAction extends TransportMasterNodeOperationAction<Map
     @Inject
     public MappingUpdatedAction(Settings settings, TransportService transportService, ClusterService clusterService, ThreadPool threadPool,
                                 MetaDataMappingService metaDataMappingService, NodeSettingsService nodeSettingsService) {
-        super(settings, transportService, clusterService, threadPool);
+        super(settings, ACTION_NAME, transportService, clusterService, threadPool);
         this.metaDataMappingService = metaDataMappingService;
         // this setting should probably always be 0, just add the option to wait for more changes within a time window
         this.additionalMappingChangeTime = settings.getAsTime(INDICES_MAPPING_ADDITIONAL_MAPPING_CHANGE_TIME, TimeValue.timeValueMillis(0));
@@ -107,12 +111,8 @@ public class MappingUpdatedAction extends TransportMasterNodeOperationAction<Map
     }
 
     public void updateMappingOnMaster(String index, DocumentMapper documentMapper, String indexUUID, MappingUpdateListener listener) {
+        assert !documentMapper.type().equals(MapperService.DEFAULT_MAPPING) : "_default_ mapping should not be updated";
         masterMappingUpdater.add(new MappingChange(documentMapper, index, indexUUID, listener));
-    }
-
-    @Override
-    protected String transportAction() {
-        return "cluster/mappingUpdated";
     }
 
     @Override
@@ -305,13 +305,21 @@ public class MappingUpdatedAction extends TransportMasterNodeOperationAction<Map
 
             @Override
             public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
+                if (this == o) {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass()) {
+                    return false;
+                }
 
                 UpdateKey updateKey = (UpdateKey) o;
 
-                if (!indexUUID.equals(updateKey.indexUUID)) return false;
-                if (!type.equals(updateKey.type)) return false;
+                if (!indexUUID.equals(updateKey.indexUUID)) {
+                    return false;
+                }
+                if (!type.equals(updateKey.type)) {
+                    return false;
+                }
 
                 return true;
             }

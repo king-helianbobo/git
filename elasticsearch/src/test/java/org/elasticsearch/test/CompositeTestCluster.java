@@ -23,7 +23,10 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import org.apache.lucene.util.IOUtils;
-import org.elasticsearch.client.*;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.client.FilterClient;
+import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 
@@ -67,7 +70,7 @@ public class CompositeTestCluster extends TestCluster {
         for (int i = 0; i < externalNodes.length; i++) {
             if (!externalNodes[i].running()) {
                 try {
-                    externalNodes[i] = externalNodes[i].start(client, defaultSettings, NODE_PREFIX + i, cluster.getClusterName());
+                    externalNodes[i] = externalNodes[i].start(client, defaultSettings, NODE_PREFIX + i, cluster.getClusterName(), i);
                 } catch (InterruptedException e) {
                     Thread.interrupted();
                     return;
@@ -97,6 +100,30 @@ public class CompositeTestCluster extends TestCluster {
      */
     public synchronized boolean upgradeOneNode() throws InterruptedException, IOException {
       return upgradeOneNode(ImmutableSettings.EMPTY);
+    }
+
+    /**
+     * Upgrades all external running nodes to a node from the version running the tests.
+     * All nodes are shut down before the first upgrade happens.
+     * @return <code>true</code> iff at least one node as upgraded.
+     */
+    public synchronized boolean upgradeAllNodes() throws InterruptedException, IOException {
+        return upgradeAllNodes(ImmutableSettings.EMPTY);
+    }
+
+
+    /**
+     * Upgrades all external running nodes to a node from the version running the tests.
+     * All nodes are shut down before the first upgrade happens.
+     * @return <code>true</code> iff at least one node as upgraded.
+     * @param nodeSettings settings for the upgrade nodes
+     */
+    public synchronized boolean upgradeAllNodes(Settings nodeSettings) throws InterruptedException, IOException {
+        boolean upgradedOneNode = false;
+        while(upgradeOneNode(nodeSettings)) {
+            upgradedOneNode = true;
+        }
+        return upgradedOneNode;
     }
 
     /**
@@ -201,6 +228,13 @@ public class CompositeTestCluster extends TestCluster {
     @Override
     public synchronized Iterator<Client> iterator() {
         return Iterators.singletonIterator(client());
+    }
+
+    /**
+     * Delegates to {@link org.elasticsearch.test.InternalTestCluster#fullRestart()}
+     */
+    public void fullRestartInternalCluster() throws Exception {
+        cluster.fullRestart();
     }
 
     /**

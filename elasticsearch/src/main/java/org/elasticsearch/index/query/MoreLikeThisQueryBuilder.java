@@ -162,6 +162,15 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
     }
 
     /**
+     * @deprecated This is replaced by <code>include</code>.
+     */
+    @Deprecated
+    public MoreLikeThisQueryBuilder exclude(boolean exclude) {
+        this.include = !exclude;
+        return this;
+    }
+
+    /**
      * The percentage of terms to match. Defaults to <tt>0.3</tt>.
      */
     public MoreLikeThisQueryBuilder percentTermsToMatch(float percentTermsToMatch) {
@@ -337,7 +346,7 @@ public class MoreLikeThisQueryBuilder extends BaseQueryBuilder implements Boosta
             builder.array("docs", docs.toArray());
         }
         if (include != null) {
-            builder.field("include", include);
+            builder.field("exclude", !include); // keep on using exclude for bw compat with 1.x
         }
         builder.endObject();
     }

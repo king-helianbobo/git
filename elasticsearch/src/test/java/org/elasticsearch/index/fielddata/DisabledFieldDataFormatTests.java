@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.fielddata;
 
-import com.google.common.base.Predicate;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -33,12 +32,19 @@ import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.elasticsearch.test.ElasticsearchIntegrationTest.ClusterScope;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
 
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertFailures;
-import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertNoFailures;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 @ClusterScope(randomDynamicTemplates = false)
 public class DisabledFieldDataFormatTests extends ElasticsearchIntegrationTest {
+
+    @Override
+    protected int numberOfReplicas() {
+        return 0;
+    }
 
     public void test() throws Exception {
         prepareCreate("test").addMapping("type", "s", "type=string").execute().actionGet();
@@ -49,7 +55,7 @@ public class DisabledFieldDataFormatTests extends ElasticsearchIntegrationTest {
         }
         logger.info("indexing data end");
 
-        final int searchCycles = 20;
+        final int searchCycles = 1;
 
         refresh();
 
@@ -105,7 +111,7 @@ public class DisabledFieldDataFormatTests extends ElasticsearchIntegrationTest {
 
     private void updateFormat(final String format) throws Exception {
         logger.info(">> put mapping start {}", format);
-        client().admin().indices().preparePutMapping("test").setType("type").setSource(
+        assertAcked(client().admin().indices().preparePutMapping("test").setType("type").setSource(
                 XContentFactory.jsonBuilder().startObject().startObject("type")
                         .startObject("properties")
                             .startObject("s")
@@ -116,42 +122,26 @@ public class DisabledFieldDataFormatTests extends ElasticsearchIntegrationTest {
                             .endObject()
                         .endObject()
                         .endObject()
-                        .endObject()).execute().actionGet();
+                        .endObject()).get());
         logger.info(">> put mapping end {}", format);
-        boolean applied = awaitBusy(new Predicate<Object>() {
+        assertBusy(new Callable<Object>() {
             @Override
-            public boolean apply(Object input) {
-                try {
-                    Set<String> nodes = internalCluster().nodesInclude("test");
-                    if (nodes.isEmpty()) { // we expect at least one node to hold an index, so wait if not allocated yet
-                        return false;
-                    }
-                    for (String node : nodes) {
-                        IndicesService indicesService = internalCluster().getInstance(IndicesService.class, node);
-                        IndexService indexService = indicesService.indexService("test");
-                        if (indexService == null) {
-                            return false;
-                        }
-                        final SmartNameFieldMappers mappers = indexService.mapperService().smartName("s");
-                        if (mappers == null || !mappers.hasMapper()) {
-                            return false;
-                        }
-                        final String currentFormat = mappers.mapper().fieldDataType().getFormat(ImmutableSettings.EMPTY);
-                        if (!format.equals(currentFormat)) {
-                            return false;
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.info("got exception waiting for concrete mappings", e);
-                    return false;
+            public Object call() throws Exception {
+                Set<String> nodes = internalCluster().nodesInclude("test");
+                assertFalse(nodes.isEmpty());
+                for (String node : nodes) {
+                    IndicesService indicesService = internalCluster().getInstance(IndicesService.class, node);
+                    IndexService indexService = indicesService.indexService("test");
+                    assertThat(indexService, notNullValue());
+                    final SmartNameFieldMappers mappers = indexService.mapperService().smartName("s");
+                    assertThat(mappers, notNullValue());
+                    assertTrue(mappers.hasMapper());
+                    final String currentFormat = mappers.mapper().fieldDataType().getFormat(ImmutableSettings.EMPTY);
+                    assertThat(currentFormat, equalTo(format));
                 }
-                return true;
+                return null;
             }
         });
-        logger.info(">> put mapping verified {}, applies {}", format, applied);
-        if (!applied) {
-            fail();
-        }
     }
 
 }

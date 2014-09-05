@@ -47,7 +47,7 @@ public class TransportMultiTermVectorsAction extends TransportAction<MultiTermVe
     @Inject
     public TransportMultiTermVectorsAction(Settings settings, ThreadPool threadPool, TransportService transportService,
                                            ClusterService clusterService, TransportSingleShardMultiTermsVectorAction shardAction) {
-        super(settings, threadPool);
+        super(settings, MultiTermVectorsAction.NAME, threadPool);
         this.clusterService = clusterService;
         this.shardAction = shardAction;
 
@@ -71,12 +71,12 @@ public class TransportMultiTermVectorsAction extends TransportAction<MultiTermVe
                         termVectorRequest.type(), termVectorRequest.id(), "[" + termVectorRequest.index() + "] missing")));
                 continue;
             }
+            termVectorRequest.index(clusterState.metaData().concreteSingleIndex(termVectorRequest.index()));
             if (termVectorRequest.routing() == null && clusterState.getMetaData().routingRequired(termVectorRequest.index(), termVectorRequest.type())) {
-                responses.set(i, new MultiTermVectorsItemResponse(null, new MultiTermVectorsResponse.Failure(termVectorRequest.index(),
-                        termVectorRequest.type(), termVectorRequest.id(), "routing is required, but hasn't been specified")));
+                responses.set(i, new MultiTermVectorsItemResponse(null, new MultiTermVectorsResponse.Failure(termVectorRequest.index(), termVectorRequest.type(), termVectorRequest.id(),
+                        "routing is required for [" + termVectorRequest.index() + "]/[" + termVectorRequest.type() + "]/[" + termVectorRequest.id() + "]")));
                 continue;
             }
-            termVectorRequest.index(clusterState.metaData().concreteSingleIndex(termVectorRequest.index()));
             ShardId shardId = clusterService
                     .operationRouting()
                     .getShards(clusterState, termVectorRequest.index(), termVectorRequest.type(), termVectorRequest.id(),

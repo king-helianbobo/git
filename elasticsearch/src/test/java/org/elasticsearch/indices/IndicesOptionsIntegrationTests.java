@@ -36,6 +36,7 @@ import org.elasticsearch.action.admin.indices.segments.IndicesSegmentsRequestBui
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequestBuilder;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsRequestBuilder;
+import org.elasticsearch.action.admin.indices.status.IndicesStatusRequestBuilder;
 import org.elasticsearch.action.admin.indices.validate.query.ValidateQueryRequestBuilder;
 import org.elasticsearch.action.admin.indices.warmer.get.GetWarmersRequestBuilder;
 import org.elasticsearch.action.count.CountRequestBuilder;
@@ -80,6 +81,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush("test1", "test2"),true);
         verify(segments("test1", "test2"), true);
         verify(stats("test1", "test2"), true);
+        verify(status("test1", "test2"), true);
         verify(optimize("test1", "test2"), true);
         verify(refresh("test1", "test2"), true);
         verify(validateQuery("test1", "test2"), true);
@@ -103,6 +105,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush("test1", "test2").setIndicesOptions(options),true);
         verify(segments("test1", "test2").setIndicesOptions(options), true);
         verify(stats("test1", "test2").setIndicesOptions(options), true);
+        verify(status("test1", "test2").setIndicesOptions(options), true);
         verify(optimize("test1", "test2").setIndicesOptions(options), true);
         verify(refresh("test1", "test2").setIndicesOptions(options), true);
         verify(validateQuery("test1", "test2").setIndicesOptions(options), true);
@@ -126,6 +129,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush("test1", "test2").setIndicesOptions(options), false);
         verify(segments("test1", "test2").setIndicesOptions(options), false);
         verify(stats("test1", "test2").setIndicesOptions(options), false);
+        verify(status("test1", "test2").setIndicesOptions(options), false);
         verify(optimize("test1", "test2").setIndicesOptions(options), false);
         verify(refresh("test1", "test2").setIndicesOptions(options), false);
         verify(validateQuery("test1", "test2").setIndicesOptions(options), false);
@@ -151,6 +155,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush("test1", "test2").setIndicesOptions(options),false);
         verify(segments("test1", "test2").setIndicesOptions(options), false);
         verify(stats("test1", "test2").setIndicesOptions(options), false);
+        verify(status("test1", "test2").setIndicesOptions(options), false);
         verify(optimize("test1", "test2").setIndicesOptions(options), false);
         verify(refresh("test1", "test2").setIndicesOptions(options), false);
         verify(validateQuery("test1", "test2").setIndicesOptions(options), false);
@@ -207,6 +212,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush(indices),false);
         verify(segments(indices), true);
         verify(stats(indices), false);
+        verify(status(indices), false);
         verify(optimize(indices), false);
         verify(refresh(indices), false);
         verify(validateQuery(indices), true);
@@ -231,6 +237,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush(indices).setIndicesOptions(options),false);
         verify(segments(indices).setIndicesOptions(options), false);
         verify(stats(indices).setIndicesOptions(options), false);
+        verify(status(indices).setIndicesOptions(options), false);
         verify(optimize(indices).setIndicesOptions(options), false);
         verify(refresh(indices).setIndicesOptions(options), false);
         verify(validateQuery(indices).setIndicesOptions(options), false);
@@ -258,6 +265,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush(indices),false);
         verify(segments(indices), false);
         verify(stats(indices), false);
+        verify(status(indices), false);
         verify(optimize(indices), false);
         verify(refresh(indices), false);
         verify(validateQuery(indices), false);
@@ -282,6 +290,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush(indices),false);
         verify(segments(indices), true);
         verify(stats(indices), false);
+        verify(status(indices), false);
         verify(optimize(indices), false);
         verify(refresh(indices), false);
         verify(validateQuery(indices), true);
@@ -306,6 +315,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         verify(_flush(indices).setIndicesOptions(options),false);
         verify(segments(indices).setIndicesOptions(options), false);
         verify(stats(indices).setIndicesOptions(options), false);
+        verify(status(indices).setIndicesOptions(options), false);
         verify(optimize(indices).setIndicesOptions(options), false);
         verify(refresh(indices).setIndicesOptions(options), false);
         verify(validateQuery(indices).setIndicesOptions(options), false);
@@ -325,6 +335,8 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
     @Test
     public void testWildcardBehaviour_snapshotRestore() throws Exception {
         createIndex("foobar");
+        ensureGreen("foobar");
+        waitForRelocation();
 
         PutRepositoryResponse putRepositoryResponse = client().admin().cluster().preparePutRepository("dummy-repo")
                 .setType("fs").setSettings(ImmutableSettings.settingsBuilder().put("location", newTempDir())).get();
@@ -341,7 +353,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
 
         assertAcked(prepareCreate("barbaz"));
         //TODO: temporary work-around for #5531
-        ensureGreen();
+        ensureGreen("barbaz");
         waitForRelocation();
         options = IndicesOptions.fromOptions(false, false, true, false);
         verify(snapshot("snap3", "foo*", "bar*").setIndicesOptions(options), false);
@@ -475,7 +487,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
     @Test
     public void testDeleteMapping() throws Exception {
         assertAcked(prepareCreate("foobar").addMapping("type1", "field", "type=string"));
-        ensureYellow();
+        ensureGreen();
 
         verify(client().admin().indices().prepareDeleteMapping("foo").setType("type1"), true);
         assertThat(client().admin().indices().prepareTypesExists("foobar").setTypes("type1").get().isExists(), equalTo(true));
@@ -491,7 +503,9 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         assertAcked(prepareCreate("foobar").addMapping("type1", "field", "type=string"));
         assertAcked(prepareCreate("bar").addMapping("type1", "field", "type=string"));
         assertAcked(prepareCreate("barbaz").addMapping("type1", "field", "type=string"));
-        ensureYellow();
+        // we wait for green to make sure indices with mappings have been created on all relevant
+        // nodes, and that recovery won't re-introduce a mapping
+        ensureGreen();
 
         verify(client().admin().indices().prepareDeleteMapping("foo*").setType("type1"), false);
         assertThat(client().admin().indices().prepareTypesExists("foo").setTypes("type1").get().isExists(), equalTo(false));
@@ -575,7 +589,7 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
         assertAcked(prepareCreate("bar").addMapping("type3", "field", "type=string"));
         assertAcked(prepareCreate("barbaz").addMapping("type4", "field", "type=string"));
         
-        ensureYellow();
+        ensureGreen();
 
         assertThat(client().admin().indices().prepareTypesExists("foo").setTypes("type1").get().isExists(), equalTo(true));
         assertThat(client().admin().indices().prepareTypesExists("foobar").setTypes("type2").get().isExists(), equalTo(true));
@@ -753,6 +767,10 @@ public class IndicesOptionsIntegrationTests extends ElasticsearchIntegrationTest
 
     private static IndicesStatsRequestBuilder stats(String... indices) {
         return client().admin().indices().prepareStats(indices);
+    }
+
+    private static IndicesStatusRequestBuilder status(String... indices) {
+        return client().admin().indices().prepareStatus(indices);
     }
 
     private static OptimizeRequestBuilder optimize(String... indices) {

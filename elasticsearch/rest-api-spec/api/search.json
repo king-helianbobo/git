@@ -1,6 +1,6 @@
 {
   "search": {
-    "documentation": "http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/search-search.html",
+    "documentation": "http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.x/search-search.html",
     "methods": ["GET", "POST"],
     "url": {
       "path": "/_search",
@@ -59,6 +59,10 @@
             "options" : ["open","closed"],
             "default" : "open",
             "description" : "Whether to expand wildcard expression to concrete indices that are open, closed or both."
+        },
+        "indices_boost": {
+          "type" : "list",
+          "description" : "Comma-separated list of index boosts"
         },
         "lenient": {
           "type" : "boolean",

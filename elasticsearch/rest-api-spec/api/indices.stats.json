@@ -1,6 +1,6 @@
 {
   "indices.stats": {
-    "documentation": "http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/indices-stats.html",
+    "documentation": "http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.x/indices-stats.html",
     "methods": ["GET"],
     "url": {
       "path": "/_stats",
@@ -35,7 +35,7 @@
           "description" : "A comma-separated list of fields for `fielddata` and `completion` index metric (supports wildcards)"
         },
         "groups": {
-          "type" : "boolean",
+          "type" : "list",
           "description" : "A comma-separated list of search groups for `search` index metric"
         },
         "human": {

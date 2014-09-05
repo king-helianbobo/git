@@ -120,7 +120,7 @@ public class InternalHistogram<B extends InternalHistogram.Bucket> extends Inter
         }
 
         void toXContent(XContentBuilder builder, Params params, boolean keyed, @Nullable ValueFormatter formatter) throws IOException {
-            if (formatter != null) {
+            if (formatter != null && formatter != ValueFormatter.RAW) {
                 Text keyTxt = new StringText(formatter.format(key));
                 if (keyed) {
                     builder.startObject(keyTxt.string());
@@ -320,10 +320,11 @@ public class InternalHistogram<B extends InternalHistogram.Bucket> extends Inter
                 B nextBucket = list.get(iter.nextIndex());
                 if (lastBucket != null) {
                     long key = emptyBucketInfo.rounding.nextRoundingValue(lastBucket.key);
-                    while (key != nextBucket.key) {
+                    while (key < nextBucket.key) {
                         iter.add(createBucket(key, 0, emptyBucketInfo.subAggregations, formatter));
                         key = emptyBucketInfo.rounding.nextRoundingValue(key);
                     }
+                    assert key == nextBucket.key;
                 }
                 lastBucket = iter.next();
             }

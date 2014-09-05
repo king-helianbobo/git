@@ -22,6 +22,7 @@ package org.elasticsearch.snapshots;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -42,14 +43,12 @@ import org.elasticsearch.cluster.metadata.SnapshotMetaData;
 import org.elasticsearch.cluster.routing.allocation.decider.FilterAllocationDecider;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.store.support.AbstractIndexStore;
 import org.elasticsearch.indices.InvalidIndexNameException;
 import org.elasticsearch.repositories.RepositoriesService;
 import org.elasticsearch.snapshots.mockstore.MockRepositoryModule;
 import org.elasticsearch.test.junit.annotations.TestLogging;
-import org.elasticsearch.test.store.MockDirectoryHelper;
 import org.junit.Test;
 
 import java.io.File;
@@ -199,6 +198,63 @@ public class SharedClusterSnapshotRestoreTests extends AbstractSnapshotTests {
         assertThat(createSnapshotResponse.getSnapshotInfo().successfulShards(), equalTo(0));
 
         assertThat(client.admin().cluster().prepareGetSnapshots("test-repo").setSnapshots("test-snap").get().getSnapshots().get(0).state(), equalTo(SnapshotState.SUCCESS));
+    }
+
+    @Test
+    public void restoreAliasesTest() throws Exception {
+        Client client = client();
+
+        logger.info("-->  creating repository");
+        assertAcked(client.admin().cluster().preparePutRepository("test-repo")
+                .setType("fs").setSettings(ImmutableSettings.settingsBuilder().put("location", newTempDir())));
+
+        logger.info("--> create test indices");
+        createIndex("test-idx-1", "test-idx-2", "test-idx-3");
+        ensureGreen();
+
+        logger.info("--> create aliases");
+        assertAcked(client.admin().indices().prepareAliases()
+                .addAlias("test-idx-1", "alias-123")
+                .addAlias("test-idx-2", "alias-123")
+                .addAlias("test-idx-3", "alias-123")
+                .addAlias("test-idx-1", "alias-1")
+                .get());
+        assertAliasesExist(client.admin().indices().prepareAliasesExist("alias-123").get());
+
+        logger.info("--> snapshot");
+        assertThat(client.admin().cluster().prepareCreateSnapshot("test-repo", "test-snap").setIndices().setWaitForCompletion(true).get().getSnapshotInfo().state(), equalTo(SnapshotState.SUCCESS));
+
+        logger.info("-->  delete all indices");
+        cluster().wipeIndices("test-idx-1", "test-idx-2", "test-idx-3");
+        assertAliasesMissing(client.admin().indices().prepareAliasesExist("alias-123", "alias-1").get());
+
+        logger.info("--> restore snapshot with aliases");
+        RestoreSnapshotResponse restoreSnapshotResponse = client.admin().cluster().prepareRestoreSnapshot("test-repo", "test-snap").setWaitForCompletion(true).setRestoreGlobalState(true).execute().actionGet();
+        // We don't restore any indices here
+        assertThat(restoreSnapshotResponse.getRestoreInfo().successfulShards(), allOf(greaterThan(0), equalTo(restoreSnapshotResponse.getRestoreInfo().totalShards())));
+
+        logger.info("--> check that aliases are restored");
+        assertAliasesExist(client.admin().indices().prepareAliasesExist("alias-123", "alias-1").get());
+
+
+        logger.info("-->  update aliases");
+        assertAcked(client.admin().indices().prepareAliases().removeAlias("test-idx-3", "alias-123"));
+        assertAcked(client.admin().indices().prepareAliases().addAlias("test-idx-3", "alias-3"));
+
+        logger.info("-->  delete and close indices");
+        cluster().wipeIndices("test-idx-1", "test-idx-2");
+        assertAcked(client.admin().indices().prepareClose("test-idx-3"));
+        assertAliasesMissing(client.admin().indices().prepareAliasesExist("alias-123", "alias-1").get());
+
+        logger.info("--> restore snapshot without aliases");
+        restoreSnapshotResponse = client.admin().cluster().prepareRestoreSnapshot("test-repo", "test-snap").setWaitForCompletion(true).setRestoreGlobalState(true).setIncludeAliases(false).execute().actionGet();
+        // We don't restore any indices here
+        assertThat(restoreSnapshotResponse.getRestoreInfo().successfulShards(), allOf(greaterThan(0), equalTo(restoreSnapshotResponse.getRestoreInfo().totalShards())));
+
+        logger.info("--> check that aliases are not restored and existing aliases still exist");
+        assertAliasesMissing(client.admin().indices().prepareAliasesExist("alias-123", "alias-1").get());
+        assertAliasesExist(client.admin().indices().prepareAliasesExist("alias-3").get());
+
     }
 
     @Test

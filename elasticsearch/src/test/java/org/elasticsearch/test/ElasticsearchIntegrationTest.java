@@ -56,6 +56,7 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
+import org.elasticsearch.cluster.service.PendingClusterTask;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.Strings;
@@ -83,7 +84,9 @@ import org.elasticsearch.index.merge.policy.*;
 import org.elasticsearch.index.merge.scheduler.ConcurrentMergeSchedulerProvider;
 import org.elasticsearch.index.merge.scheduler.MergeSchedulerModule;
 import org.elasticsearch.index.merge.scheduler.MergeSchedulerProvider;
+import org.elasticsearch.index.merge.scheduler.SerialMergeSchedulerProvider;
 import org.elasticsearch.index.service.IndexService;
+import org.elasticsearch.index.store.StoreModule;
 import org.elasticsearch.index.translog.TranslogService;
 import org.elasticsearch.indices.IndicesService;
 import org.elasticsearch.indices.recovery.RecoverySettings;
@@ -91,6 +94,7 @@ import org.elasticsearch.indices.store.IndicesStore;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchService;
 import org.elasticsearch.test.client.RandomizingClient;
+import org.hamcrest.Matchers;
 import org.junit.*;
 
 import java.io.IOException;
@@ -99,10 +103,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_REPLICAS;
 import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_SHARDS;
@@ -112,6 +113,7 @@ import static org.elasticsearch.test.InternalTestCluster.clusterName;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * {@link ElasticsearchIntegrationTest} is an abstract base class to run integration
@@ -424,6 +426,10 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
         }
 
         if (random.nextBoolean()) {
+            builder.put(StoreModule.DISTIBUTOR_KEY, random.nextBoolean() ? StoreModule.LEAST_USED_DISTRIBUTOR : StoreModule.RANDOM_WEIGHT_DISTRIBUTOR);
+        }
+
+        if (random.nextBoolean()) {
             if (random.nextInt(10) == 0) { // do something crazy slow here
                 builder.put(RecoverySettings.INDICES_RECOVERY_MAX_BYTES_PER_SEC, new ByteSizeValue(RandomInts.randomIntBetween(random, 1, 10), ByteSizeUnit.MB));
             } else {
@@ -456,7 +462,10 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
         if (random.nextBoolean()) {
             builder.put(MergeSchedulerProvider.FORCE_ASYNC_MERGE, random.nextBoolean());
         }
-        switch (random.nextInt(4)) {
+        switch (random.nextInt(5)) {
+            case 4:
+                builder.put(MergeSchedulerModule.MERGE_SCHEDULER_TYPE_KEY, SerialMergeSchedulerProvider.class.getName());
+                break;
             case 3:
                 builder.put(MergeSchedulerModule.MERGE_SCHEDULER_TYPE_KEY, ConcurrentMergeSchedulerProvider.class);
                 final int maxThreadCount = RandomInts.randomIntBetween(random, 1, 4);
@@ -543,16 +552,19 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
             }
             throw e;
         } finally {
-            if (!success) {
+            if (!success || suiteFailureMarker.hadFailures()) {
                 // if we failed that means that something broke horribly so we should
                 // clear all clusters and if the current cluster is the global we shut that one
                 // down as well to prevent subsequent tests from failing due to the same problem.
+                // we also reset everything in the case we had a failure in the suite to make sure subsequent
+                // tests get a new / clean cluster
                 clearClusters();
                 if (currentCluster == GLOBAL_CLUSTER) {
                     GLOBAL_CLUSTER.close();
                     GLOBAL_CLUSTER = null;
                     initializeGlobalCluster(); // re-init that cluster
                 }
+                currentCluster = null;
             }
             if (currentCluster != null) {
                 // this can be null if the test fails due to static initialization ie. missing parameter on the cmd
@@ -712,152 +724,89 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
     /**
      * Waits until all nodes have no pending tasks.
      */
-    public void waitNoPendingTasksOnAll() throws InterruptedException {
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get();
-        final PendingClusterTasksResponse[] reference = new PendingClusterTasksResponse[1];
-        boolean applied = awaitBusy(new Predicate<Object>() {
+    public void waitNoPendingTasksOnAll() throws Exception {
+        assertNoTimeout(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get());
+        assertBusy(new Runnable() {
             @Override
-            public boolean apply(Object input) {
-                reference[0] = null;
+            public void run() {
                 for (Client client : clients()) {
                     PendingClusterTasksResponse pendingTasks = client.admin().cluster().preparePendingClusterTasks().setLocal(true).get();
-                    if (!pendingTasks.pendingTasks().isEmpty()) {
-                        reference[0] = pendingTasks;
-                        return false;
-                    }
+                    assertThat("client " + client + " still has pending tasks " + pendingTasks.prettyPrint(), pendingTasks, Matchers.emptyIterable());
                 }
-                return true;
             }
         });
-        if (!applied) {
-            fail(reference[0].prettyPrint());
-        }
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get();
+        assertNoTimeout(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get());
     }
 
     /**
      * Waits until the elected master node has no pending tasks.
      */
-    public void waitNoPendingTasksOnMaster() throws InterruptedException {
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get();
-        final PendingClusterTasksResponse[] reference = new PendingClusterTasksResponse[1];
-        boolean applied = awaitBusy(new Predicate<Object>() {
+    public void waitNoPendingTasksOnMaster() throws Exception {
+        assertNoTimeout(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get());
+        assertBusy(new Runnable() {
             @Override
-            public boolean apply(Object input) {
-                reference[0] = null;
-                PendingClusterTasksResponse pendingTasks = client().admin().cluster().preparePendingClusterTasks().get();
-                if (!pendingTasks.pendingTasks().isEmpty()) {
-                    reference[0] = pendingTasks;
-                    return false;
-                }
-                return true;
+            public void run() {
+                PendingClusterTasksResponse pendingTasks = client().admin().cluster().preparePendingClusterTasks().setLocal(true).get();
+                assertThat("master still has pending tasks " + pendingTasks.prettyPrint(), pendingTasks, Matchers.emptyIterable());
             }
         });
-        if (!applied) {
-            fail(reference[0].prettyPrint());
-        }
-        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get();
+        assertNoTimeout(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).get());
     }
 
     /**
      * Waits till a (pattern) field name mappings concretely exists on all nodes. Note, this waits for the current
      * started shards and checks for concrete mappings.
      */
-    public void waitForConcreteMappingsOnAll(final String index, final String type, final String... fieldNames) throws InterruptedException {
-        boolean applied = awaitBusy(new Predicate<Object>() {
+    public void waitForConcreteMappingsOnAll(final String index, final String type, final String... fieldNames) throws Exception {
+        assertBusy(new Runnable() {
             @Override
-            public boolean apply(Object input) {
-                try {
-                    Set<String> nodes = internalCluster().nodesInclude(index);
-                    if (nodes.isEmpty()) { // we expect at least one node to hold an index, so wait if not allocated yet
-                        return false;
+            public void run() {
+                Set<String> nodes = internalCluster().nodesInclude(index);
+                assertThat(nodes, Matchers.not(Matchers.emptyIterable()));
+                for (String node : nodes) {
+                    IndicesService indicesService = internalCluster().getInstance(IndicesService.class, node);
+                    IndexService indexService = indicesService.indexService(index);
+                    assertThat("index service doesn't exists on " + node, indexService, notNullValue());
+                    DocumentMapper documentMapper = indexService.mapperService().documentMapper(type);
+                    assertThat("document mapper doesn't exists on " + node, documentMapper, notNullValue());
+                    for (String fieldName : fieldNames) {
+                        Set<String> matches = documentMapper.mappers().simpleMatchToFullName(fieldName);
+                        assertThat("field " + fieldName + " doesn't exists on " + node, matches, Matchers.not(emptyIterable()));
                     }
-                    for (String node : nodes) {
-                        IndicesService indicesService = internalCluster().getInstance(IndicesService.class, node);
-                        IndexService indexService = indicesService.indexService(index);
-                        if (indexService == null) {
-                            return false;
-                        }
-                        DocumentMapper documentMapper = indexService.mapperService().documentMapper(type);
-                        if (documentMapper == null) {
-                            return false;
-                        }
-                        for (String fieldName : fieldNames) {
-                            Set<String> matches = documentMapper.mappers().simpleMatchToFullName(fieldName);
-                            if (matches.isEmpty()) {
-                                return false;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.info("got exception waiting for concrete mappings", e);
-                    return false;
                 }
-                return true;
             }
         });
-        if (!applied) {
-            fail("failed to find mappings on all nodes for index " + index + ", type " + type + ", and fieldName " + Arrays.toString(fieldNames));
-        }
         waitForMappingOnMaster(index, type, fieldNames);
     }
 
     /**
      * Waits for the given mapping type to exists on the master node.
      */
-    public void waitForMappingOnMaster(final String index, final String type, final String... fieldNames) throws InterruptedException {
-        final GetMappingsResponse[] lastResponse = new GetMappingsResponse[1];
-        boolean applied = awaitBusy(new Predicate<Object>() {
+    public void waitForMappingOnMaster(final String index, final String type, final String... fieldNames) throws Exception {
+        assertBusy(new Callable() {
             @Override
-            public boolean apply(Object input) {
-                GetMappingsResponse response = lastResponse[0] = client().admin().indices().prepareGetMappings(index).setTypes(type).get();
+            public Object call() throws Exception {
+                GetMappingsResponse response = client().admin().indices().prepareGetMappings(index).setTypes(type).get();
                 ImmutableOpenMap<String, MappingMetaData> mappings = response.getMappings().get(index);
-                if (mappings == null) {
-                    return false;
-                }
+                assertThat(mappings, notNullValue());
                 MappingMetaData mappingMetaData = mappings.get(type);
-                if (mappingMetaData == null) {
-                    return false;
-                }
+                assertThat(mappingMetaData, notNullValue());
 
-                Map<String, Object> mappingSource;
-                try {
-                    mappingSource = mappingMetaData.getSourceAsMap();
-                } catch (IOException e) {
-                    throw ExceptionsHelper.convertToElastic(e);
-                }
-                if (mappingSource.isEmpty() && !mappingSource.containsKey("properties")) {
-                    return false;
-                }
+                Map<String, Object> mappingSource = mappingMetaData.getSourceAsMap();
+                assertFalse(mappingSource.isEmpty());
+                assertTrue(mappingSource.containsKey("properties"));
 
                 for (String fieldName : fieldNames) {
                     Map<String, Object> mappingProperties = (Map<String, Object>) mappingSource.get("properties");
                     if (fieldName.indexOf('.') != -1) {
                         fieldName = fieldName.replace(".", ".properties.");
                     }
-                    if (XContentMapValues.extractValue(fieldName, mappingProperties) == null) {
-                        return false;
-                    }
+                    assertThat("field " + fieldName + " doesn't exists in mapping " + mappingMetaData.source().string(), XContentMapValues.extractValue(fieldName, mappingProperties), notNullValue());
                 }
 
-                return true;
+                return null;
             }
         });
-        if (!applied) {
-            String source = null;
-            ImmutableOpenMap<String, MappingMetaData> mappings = lastResponse[0].getMappings().get(index);
-            if (mappings != null) {
-                MappingMetaData mappingMetaData = mappings.get(type);
-                if (mappingMetaData != null) {
-                    try {
-                        source = mappingMetaData.source().string();
-                    } catch (IOException e) {
-                        throw ExceptionsHelper.convertToElastic(e);
-                    }
-                }
-            }
-            fail("failed to find mappings for index " + index + ", type " + type + " on master node[" + source + "]");
-        }
     }
 
     /**
@@ -1023,8 +972,10 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
     }
 
     void ensureClusterSizeConsistency() {
-        logger.trace("Check consistency for [{}] nodes", cluster().size());
-        assertNoTimeout(client().admin().cluster().prepareHealth().setWaitForNodes(Integer.toString(cluster().size())).get());
+        if (cluster() != null) { // if static init fails the cluster can be null
+            logger.trace("Check consistency for [{}] nodes", cluster().size());
+            assertNoTimeout(client().admin().cluster().prepareHealth().setWaitForNodes(Integer.toString(cluster().size())).get());
+        }
     }
 
     /**
@@ -1169,7 +1120,7 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
 
     /**
      * Indexes the given {@link IndexRequestBuilder} instances randomly. It shuffles the given builders and either
-     * indexes they in a blocking or async fashion. This is very useful to catch problems that relate to internal document
+     * indexes them in a blocking or async fashion. This is very useful to catch problems that relate to internal document
      * ids or index segment creations. Some features might have bug when a given document is the first or the last in a
      * segment or if only one document is in a segment etc. This method prevents issues like this by randomizing the index
      * layout.
@@ -1192,7 +1143,7 @@ public abstract class ElasticsearchIntegrationTest extends ElasticsearchTestCase
      * layout.
      *
      * @param forceRefresh   if <tt>true</tt> all involved indices are refreshed once the documents are indexed.
-     * @param dummyDocuments if <tt>true</tt> some empty dummy documents are may be randomly inserted into the document list and deleted once
+     * @param dummyDocuments if <tt>true</tt> some empty dummy documents may be randomly inserted into the document list and deleted once
      *                       all documents are indexed. This is useful to produce deleted documents on the server side.
      * @param builders       the documents to index.
      */

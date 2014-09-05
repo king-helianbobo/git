@@ -66,7 +66,7 @@ public class TransportClusterStatsAction extends TransportNodesOperationAction<C
     public TransportClusterStatsAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
                                        ClusterService clusterService, TransportService transportService,
                                        NodeService nodeService, IndicesService indicesService) {
-        super(settings, clusterName, threadPool, clusterService, transportService);
+        super(settings, ClusterStatsAction.NAME, clusterName, threadPool, clusterService, transportService);
         this.nodeService = nodeService;
         this.indicesService = indicesService;
     }
@@ -74,11 +74,6 @@ public class TransportClusterStatsAction extends TransportNodesOperationAction<C
     @Override
     protected String executor() {
         return ThreadPool.Names.MANAGEMENT;
-    }
-
-    @Override
-    protected String transportAction() {
-        return ClusterStatsAction.NAME;
     }
 
     @Override
@@ -119,11 +114,7 @@ public class TransportClusterStatsAction extends TransportNodesOperationAction<C
         NodeInfo nodeInfo = nodeService.info(false, true, false, true, false, false, true, false, true);
         NodeStats nodeStats = nodeService.stats(CommonStatsFlags.NONE, false, true, true, false, false, true, false, false, false);
         List<ShardStats> shardsStats = new ArrayList<>();
-        for (String index : indicesService.indices()) {
-            IndexService indexService = indicesService.indexService(index);
-            if (indexService == null) {
-                continue;
-            }
+        for (IndexService indexService : indicesService.indices().values()) {
             for (IndexShard indexShard : indexService) {
                 if (indexShard.routingEntry().active()) {
                     // only report on fully started shards

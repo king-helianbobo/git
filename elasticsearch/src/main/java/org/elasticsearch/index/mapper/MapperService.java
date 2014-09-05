@@ -21,9 +21,9 @@ package org.elasticsearch.index.mapper;
 
 import com.carrotsearch.hppc.ObjectOpenHashSet;
 import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.SimpleAnalyzerWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.FilterClause;
@@ -60,6 +60,7 @@ import org.elasticsearch.index.similarity.SimilarityLookupService;
 import org.elasticsearch.indices.InvalidTypeNameException;
 import org.elasticsearch.indices.TypeMissingException;
 import org.elasticsearch.percolator.PercolatorService;
+import org.elasticsearch.script.ScriptService;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,13 +76,23 @@ import static org.elasticsearch.index.mapper.DocumentMapper.MergeFlags.mergeFlag
 /**
  *
  */
-public class MapperService extends AbstractIndexComponent implements Iterable<DocumentMapper> {
+public class MapperService extends AbstractIndexComponent  {
 
     public static final String DEFAULT_MAPPING = "_default_";
     private static ObjectOpenHashSet<String> META_FIELDS = ObjectOpenHashSet.from(
             "_uid", "_id", "_type", "_all", "_analyzer", "_boost", "_parent", "_routing", "_index",
             "_size", "_timestamp", "_ttl"
     );
+
+    public static final String FIELD_MAPPERS_COLLECTION_SWITCH = "index.mapper.field_mappers_collection_switch";
+    public static final int DEFAULT_FIELD_MAPPERS_COLLECTION_SWITCH = 100;
+
+    public static int getFieldMappersCollectionSwitch(@Nullable Settings settings) {
+        if (settings == null) {
+            return DEFAULT_FIELD_MAPPERS_COLLECTION_SWITCH;
+        }
+        return settings.getAsInt(MapperService.FIELD_MAPPERS_COLLECTION_SWITCH, MapperService.DEFAULT_FIELD_MAPPERS_COLLECTION_SWITCH);
+    }
 
     private final AnalysisService analysisService;
     private final IndexFieldDataService fieldDataService;
@@ -94,12 +105,13 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
     private volatile String defaultMappingSource;
     private volatile String defaultPercolatorMappingSource;
 
+
     private volatile Map<String, DocumentMapper> mappers = ImmutableMap.of();
 
     private final Object typeMutex = new Object();
     private final Object mappersMutex = new Object();
 
-    private final FieldMappersLookup fieldMappers = new FieldMappersLookup();
+    private final FieldMappersLookup fieldMappers;
     private volatile ImmutableOpenMap<String, ObjectMappers> fullPathObjectMappers = ImmutableOpenMap.of();
     private boolean hasNested = false; // updated dynamically to true when a nested object is added
 
@@ -115,46 +127,42 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
 
     @Inject
     public MapperService(Index index, @IndexSettings Settings indexSettings, Environment environment, AnalysisService analysisService, IndexFieldDataService fieldDataService,
-                         PostingsFormatService postingsFormatService, DocValuesFormatService docValuesFormatService, SimilarityLookupService similarityLookupService) {
+                         PostingsFormatService postingsFormatService, DocValuesFormatService docValuesFormatService, SimilarityLookupService similarityLookupService,
+                         ScriptService scriptService) {
         super(index, indexSettings);
         this.analysisService = analysisService;
         this.fieldDataService = fieldDataService;
-        this.documentParser = new DocumentMapperParser(index, indexSettings, analysisService, postingsFormatService, docValuesFormatService, similarityLookupService);
+        this.fieldMappers = new FieldMappersLookup(indexSettings);
+        this.documentParser = new DocumentMapperParser(index, indexSettings, analysisService, postingsFormatService, docValuesFormatService, similarityLookupService, scriptService);
         this.searchAnalyzer = new SmartIndexNameSearchAnalyzer(analysisService.defaultSearchAnalyzer());
         this.searchQuoteAnalyzer = new SmartIndexNameSearchQuoteAnalyzer(analysisService.defaultSearchQuoteAnalyzer());
 
         this.dynamic = componentSettings.getAsBoolean("dynamic", true);
         String defaultMappingLocation = componentSettings.get("default_mapping_location");
-        URL defaultMappingUrl;
-        if (defaultMappingLocation == null) {
-            try {
-                defaultMappingUrl = environment.resolveConfig("default-mapping.json");
-            } catch (FailedToResolveConfigException e) {
-                // not there, default to the built in one
-                defaultMappingUrl = indexSettings.getClassLoader().getResource("org/elasticsearch/index/mapper/default-mapping.json");
-                if (defaultMappingUrl == null) {
-                    defaultMappingUrl = MapperService.class.getClassLoader().getResource("org/elasticsearch/index/mapper/default-mapping.json");
-                }
-            }
+        final URL defaultMappingUrl;
+        if (index.getName().equals(ScriptService.SCRIPT_INDEX)){
+            defaultMappingUrl = getMappingUrl(indexSettings, environment, defaultMappingLocation,"script-index-defaults.json","org/elasticsearch/index/mapper/script-index-defaults.json");
         } else {
-            try {
-                defaultMappingUrl = environment.resolveConfig(defaultMappingLocation);
-            } catch (FailedToResolveConfigException e) {
-                // not there, default to the built in one
-                try {
-                    defaultMappingUrl = new File(defaultMappingLocation).toURI().toURL();
-                } catch (MalformedURLException e1) {
-                    throw new FailedToResolveConfigException("Failed to resolve dynamic mapping location [" + defaultMappingLocation + "]");
-                }
-            }
+            defaultMappingUrl = getMappingUrl(indexSettings, environment, defaultMappingLocation,"default-mapping.json","org/elasticsearch/index/mapper/default-mapping.json");
         }
 
         if (defaultMappingUrl == null) {
             logger.info("failed to find default-mapping.json in the classpath, using the default template");
-            defaultMappingSource = "{\n" +
-                    "    \"_default_\":{\n" +
-                    "    }\n" +
-                    "}";
+            if (index.getName().equals(ScriptService.SCRIPT_INDEX)){
+                defaultMappingSource =  "{" +
+                        "\"_default_\": {" +
+                        "\"properties\": {" +
+                        "\"script\": { \"enabled\": false }," +
+                        "\"template\": { \"enabled\": false }" +
+                        "}" +
+                        "}" +
+                        "}";
+            } else {
+                defaultMappingSource = "{\n" +
+                        "    \"_default_\":{\n" +
+                        "    }\n" +
+                        "}";
+            }
         } else {
             try {
                 defaultMappingSource = Streams.copyToString(new InputStreamReader(defaultMappingUrl.openStream(), Charsets.UTF_8));
@@ -205,6 +213,33 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
         }
     }
 
+    private URL getMappingUrl(Settings indexSettings, Environment environment, String mappingLocation, String configString, String resourceLocation) {
+        URL mappingUrl;
+        if (mappingLocation == null) {
+            try {
+                mappingUrl = environment.resolveConfig(configString);
+            } catch (FailedToResolveConfigException e) {
+                // not there, default to the built in one
+                mappingUrl = indexSettings.getClassLoader().getResource(resourceLocation);
+                if (mappingUrl == null) {
+                    mappingUrl = MapperService.class.getClassLoader().getResource(resourceLocation);
+                }
+            }
+        } else {
+            try {
+                mappingUrl = environment.resolveConfig(mappingLocation);
+            } catch (FailedToResolveConfigException e) {
+                // not there, default to the built in one
+                try {
+                    mappingUrl = new File(mappingLocation).toURI().toURL();
+                } catch (MalformedURLException e1) {
+                    throw new FailedToResolveConfigException("Failed to resolve dynamic mapping location [" + mappingLocation + "]");
+                }
+            }
+        }
+        return mappingUrl;
+    }
+
     public void close() {
         for (DocumentMapper documentMapper : mappers.values()) {
             documentMapper.close();
@@ -215,10 +250,33 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
         return this.hasNested;
     }
 
-    @Override
-    public UnmodifiableIterator<DocumentMapper> iterator() {
-        return Iterators.unmodifiableIterator(mappers.values().iterator());
+    /**
+     * returns an immutable iterator over current document mappers.
+     *
+     * @param includingDefaultMapping indicates whether the iterator should contain the {@link #DEFAULT_MAPPING} document mapper.
+     *                                As is this not really an active type, you would typically set this to false
+     */
+    public Iterable<DocumentMapper> docMappers(final boolean includingDefaultMapping) {
+        return  new Iterable<DocumentMapper>() {
+            @Override
+            public Iterator<DocumentMapper> iterator() {
+                final Iterator<DocumentMapper> iterator;
+                if (includingDefaultMapping) {
+                    iterator = mappers.values().iterator();
+                } else {
+                    iterator = Iterators.filter(mappers.values().iterator(), NOT_A_DEFAULT_DOC_MAPPER);
+                }
+                return Iterators.unmodifiableIterator(iterator);
+            }
+        };
     }
+
+    private static final Predicate<DocumentMapper> NOT_A_DEFAULT_DOC_MAPPER = new Predicate<DocumentMapper>() {
+        @Override
+        public boolean apply(DocumentMapper input) {
+            return !DEFAULT_MAPPING.equals(input.type());
+        }
+    };
 
     public AnalysisService analysisService() {
         return this.analysisService;
@@ -330,7 +388,7 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
         }
     }
 
-    private void addFieldMappers(Iterable<FieldMapper>  fieldMappers) {
+    private void addFieldMappers(List<FieldMapper> fieldMappers) {
         synchronized (mappersMutex) {
             this.fieldMappers.addNewMappers(fieldMappers);
         }
@@ -383,7 +441,7 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
         String defaultMappingSource;
         if (PercolatorService.TYPE_NAME.equals(mappingType)) {
             defaultMappingSource = this.defaultPercolatorMappingSource;
-        } else {
+        }  else {
             defaultMappingSource = this.defaultMappingSource;
         }
         return documentParser.parseCompressed(mappingType, mappingSource, applyDefault ? defaultMappingSource : null);
@@ -1046,7 +1104,7 @@ public class MapperService extends AbstractIndexComponent implements Iterable<Do
         }
 
         @Override
-        public void fieldMappers(Iterable<FieldMapper>  fieldMappers) {
+        public void fieldMappers(List<FieldMapper> fieldMappers) {
             addFieldMappers(fieldMappers);
         }
     }

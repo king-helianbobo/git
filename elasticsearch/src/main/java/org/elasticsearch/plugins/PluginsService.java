@@ -33,6 +33,7 @@ import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.lucene.Lucene;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
@@ -414,7 +415,7 @@ public class PluginsService extends AbstractComponent {
 
                     PluginInfo pluginInfo = new PluginInfo(plugin.name(), plugin.description(), isSite, true, pluginVersion);
 
-                    plugins.add(new Tuple<>(pluginInfo, plugin));
+                    plugins.add(new Tuple<PluginInfo, Plugin>(pluginInfo, plugin));
                 } catch (Throwable e) {
                     logger.warn("failed to load plugin from [" + pluginUrl + "]", e);
                 } finally {
@@ -571,7 +572,7 @@ public class PluginsService extends AbstractComponent {
                 String parts[] = luceneVersion.split("\\.");
 
                 // Should fail if the running node is too old!
-                org.apache.lucene.util.Version luceneExpectedVersion = org.apache.lucene.util.Version.parseLeniently(parts[0]+"."+parts[1]);
+                org.apache.lucene.util.Version luceneExpectedVersion = Lucene.parseVersionLenient(parts[0] + "." + parts[1], null);
 
                 if (Version.CURRENT.luceneVersion.equals(luceneExpectedVersion)) {
                     logger.debug("starting analysis plugin for Lucene [{}].", luceneExpectedVersion);
