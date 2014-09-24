@@ -1,0 +1,20 @@
+\section{Lucene范围查询}
+如果不需要范围查询，那么简单的将整数转换成字符串即可。但是要支持范围查询，又想提高效率，就十分麻烦。因为Lucene2.x/3.x索引的基本单位是Term，保存在tis或者tii（前者是字典文件，后者是字典的索引）文件里。lucene要求term都是按照字典序(lexicographic sortable)排列，然后它的范围查询根据tii找到范围的起始Term，然后把这中间的所有Term展开成一个BooleanQuery。
+\par 如果简单的把数字变成字符串，那么2  4  8 31的字母顺序变成了 2 31 4 8，那么查找[2, 4]的RangeQuery也会把31也搜索出来，这显然是错误的。当然最容易想到的技巧就是在前面补0，比如把上面的数字变成字符串02 04 08 31，这样就不会有问题了。但是补多少个0是个问题。补0太多了，浪费空间（不过lucene的tis会使用前缀压缩，所以还不算太坏）；补0太少了，不能保存太大的数值。
+\par 这是RangeQuery的第一个问题，第二个问题就是展开成所有Term的Boolean查询有一个问题，那就是如果范围太大，那么可能包含非常多的Boolean Clause，较早的版本可能会抛出Too Many Boolean Clause的Exception。后来的版本做了改进，不展开所有的term，而是直接合并这些term的倒排表，这样的缺点是合并后的term的打分成了问题，比如tf，你是把所有term的tf加起来算一个term，idf呢，coord呢？算法暂且放下，即使可以合并成一个term，合并这些term的docIds也是很费时间，因为这些信息都在磁盘上。
+\par Uwe Schindler（Generic XML-based Framework for Metadata Portals）基于Trie的数据结构做了优化。简单的介绍一下他的思路：
+\par 首先可以把数值转换成一个字符串，并且保持顺序。如果$n_1 \le n_2$ ，那么$transform(n_1) \le transform(n_2)$。transform就是把数值转成字符串的函数，如果拿数学术语来说，transform是单调的。
+\par 首先float可以转成int，double可以转成long，并且保持顺序。这个不难实现，因为float和int都是4个字节，double和long都是8个字节，从概念上讲，如果是用科学计数法，把指数放在前面就行了，因为指数大的肯定大，指数相同的尾数大的排前面。比如0.5e3，0.4e3,0.2e4，那么逻辑上保存的就是<4,0.2><3,0.5><3,0.4>，那么显然是保持顺序的。Java浮点数采用了ieee 754的表示方法，它的指数在前，尾数在后。这很好，不过有一点，它的最高位是符号位，正数0，负数1。这样就有点问题了。
+\par 如果这个float是正数，那么把它看成int也是正数，而且根据前面的说明，指数在前，所以顺序也是保持好的。如果它是个负数，把它看作int也是负数，但是顺序就反了，举个例子 <4,-0.2> <3,-0.5>，如果不看符号，显然是前者大，但是加上符号，那么正好反过来。也就是说，负数的顺序需要反过来，怎么反过来呢？可以发现NumericUtils有这样一个方法，通过异或实现。
+\begin{verbatim}
+public static int floatToSortableInt(float val) {
+   int f = Float.floatToIntBits(val);
+   if (f<0) f ^= 0x7fffffff;
+   return f;
+}
+\end{verbatim}
+\par 一个int可以转换成一个字符串，并且保持顺序，这里考虑的是java的int，也就是有符号的32位整数，补码表示。如果只考虑正数，从0x0-0x7fffffff，那么它的二进制位是升序的（也就是把它看成无符号整数的时候）；如果只考虑负数，从0x10000000-0xffffffff，那么它的二进制位也是升序的。唯一美中不足的就是负数排在正数后面。因此如果我们把正数的最高符号位变成1，把负数的最高符号位变成0，那么就可以把一个int变成有序的二进制位。可以在intToPrefixCoded看到这样的代码：
+\begin{verbatim}
+int sortableBits = val ^ 0x80000000;
+\end{verbatim}
+\par 因为lucene只能索引字符串，那么现在剩下的问题就是怎么把一个4个byte变成字符串了。Java在内存使用Unicode字符集，并且一个Java的char占用两个字节（16位），我们可能很自然的想到把4个byte变成两个char。但是Lucene保存Unicode时使用的是UTF-8编码，这种编码的特点是，0-127使用一个字节编码，大于127的字符一般两个字节，汉字则需要3个字节。这样4个byte最多需要6个字节。其实我们可以把32位的int看出5个7位的整数，这样的utf8编码就只有5个字节了。这段代码就是上面算法的实现：
