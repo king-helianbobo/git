@@ -281,7 +281,7 @@ public abstract class AbstractFieldMapper<T> implements FieldMapper<T> {
                 normsLoading, fieldDataSettings, indexSettings, MultiFields.empty(), null);
     }
 
-    protected AbstractFieldMapper(Names names, float boost, FieldType fieldType, Boolean docValues, NamedAnalyzer indexAnalyzer,
+    protected AbstractFifeldMapper(Names names, float boost, FieldType fieldType, Boolean docValues, NamedAnalyzer indexAnalyzer,
                                   NamedAnalyzer searchAnalyzer, PostingsFormatProvider postingsFormat,
                                   DocValuesFormatProvider docValuesFormat, SimilarityProvider similarity,
                                   Loading normsLoading, @Nullable Settings fieldDataSettings, Settings indexSettings, MultiFields multiFields, CopyTo copyTo) {

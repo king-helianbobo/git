@@ -104,6 +104,7 @@ curl -v --cookie ./cookie.txt  -A "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT
 如被百度防御系统封闭，考虑删除cookies文件，再重新生成cookies文件。
 \end{verbatim}
 \subsection{同步网页文件}
+\par 城市云装个TeamViewer，用户名为268576744，密码为b144xg或者b144gx。
 \par 使用nutch时，如果目录中文件太多，且包含了很多不需要的类型（如音频，视频），可使用rsync命令，保持源文件夹目录结构，同时只提取指定类型。
 \begin{verbatim}
 rsync -av --exclude='path1/exclude' --exclude='path2/exclude' [source] [dest]
@@ -111,7 +112,7 @@ rsync -av --include='*.shtml' --include='*.doc' --include='*.pdf' --include='*/'
 rsync -av --exclude='wap2013' --exclude='wap' --exclude='blind' --exclude='blind1111111111'  --include='*.shtml' --include='*/' --exclude='*' /mnt/d /opt/data-07-23/
 \end{verbatim}
 \par '*/'表示提取目录，'*'表示忽略文件类型，注意[source]与[source/]不同，前者表示拷贝source目录，后者表示拷贝目录下的内容。如果需要过滤的文件太多，可使用[--exclude-from=FILE]参数，其中FILE存储过滤的文件或目录，也可过滤类型，如[--exclude=*/.svn*]。
-\par 将远程镜像目录/mnt/d的内容同步到本地目录/opt/data-07-23/后，再用程序读取data-07-23目录下有哪些新增网页（根据html文件的生成时间判断），然后用nutch解析这些网页。
+\par 将远程镜像目录/mnt/d的内容同步到本地目录/opt/data-07-23/后，再用程序读取data-07-23目录下有哪些新增网页（根据html文件的生成时间判断），然后用nutch解析这些网页，nutch解析后的网页发送给ES即可。
 \subsection{数据导入ES过程}
 \par 首先在ES中建立每个域的类型和分词方式(mapping)，政府网站搜索有：url域（不需要分词），标题域（contenttitle），正文域（content），时间域（postTime，不需要分词），关键词（对应信息公开目录）以及网页分类（魅力锡城，锡城资讯，信息公开，政务大厅，政民互动等，不需要分词）。
 \par 每个网页，经数据处理后转换成一个Map对象，这些Map对象以bulk方式写入ES，根据上一步中的mapping，ES会自动为每个域建立索引，负载均衡，索引分片，副本拷贝等操作均由ES负责。nutch处理后的数据，需转换成JSON，代码在org.soul.elasticsearch.test.DataProcessTest包中。nutch解析后的数据文件为/mnt/e/official-data-07-22.txt，写入目录为/mnt/e/official-08-27/，处理函数为officialDataTest1()。读取时，根据网页的url和标题，判断同一个url或同一个标题是否出现多次。如下标题出现很多次，且毫无意义，因此凡是标题为如下字段的网页都被忽略。其中"无锡市锡山区人民政府关于对锡东新城全面开展殡葬整治工作的实施意见”这个标题的网页重复出现了4万六千多次。
