@@ -53,7 +53,7 @@ git checkout -b 1.2 origin/1.2
 git checkout master 切换到master分支
 git checkout 1.2 切换到1.2分支
 \end{verbatim}
-\subsubsection{git高级操作}
+\subsection{git常见问题}
 \begin{enumerate}[(1)]
 \item git branch -r 查看远程仓库有哪些分支
 \item git clone gitosis@192.168.2.4:liubo/soul-client
@@ -68,6 +68,14 @@ git checkout 1.2 切换到1.2分支
 \begin{verbatim}
 git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch hadoop-2.4.0/hadoop-dist/target/hadoop-2.4.0.tar.gz'
 git push
+\end{verbatim}
+\par 使用OSChina的免费服务器时，必须使用https的地址，而非ssh地址，否则push操作有push权限问题。为了避免每次都要输入账号和密码，可使用如下命令：
+\begin{verbatim}
+git config --global user.name "user"
+git config --global user.mail "user@aliyun.com"
+git config --global credential.helper "store"
+# 配置helper参数，使git记得用户输入的用户名和密码。
+git config --list
 \end{verbatim}
 \subsection{Maven入门}
 \begin{enumerate}[(1)]
