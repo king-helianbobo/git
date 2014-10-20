@@ -1,4 +1,4 @@
-;;Last Modified: 2014-07-07 11:25:59.
+;;Last Modified: 2014-10-19 20:16:06.
 (require 'unicad);;多个字符集在emacs下显示的问题
 (require 'sdcv);;emacs下的字典接口
 (require 'init-emms)
@@ -78,7 +78,7 @@
 ;;(highlight-parentheses-mode t);将括号匹配显示出来,方便快速定位括号.
 (fset 'yes-or-no-p  'y-or-n-p);;不要问yes或no,而问我y或n  
 (setq user-full-name "刘波")  ;;设置用户名是我的名字
-(tool-bar-mode nil);;关闭工具栏,turn off tool bar
-(menu-bar-mode nil);;turn off menu bar
+(tool-bar-mode 0);;关闭工具栏,turn off tool bar
+(menu-bar-mode 0);;turn off menu bar
 (scroll-bar-mode nil);;关闭滚动条栏,turn off scroll bar
 (setq-default line-spacing 4);;设置两行间的额外间距,单位为像素
