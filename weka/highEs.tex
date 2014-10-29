@@ -269,3 +269,4 @@ span.clause(QueryBuilders.spanTermQuery("content","实施意见") );
 span.inOrder(true).slop(1);
 client.prepareSearch("test").setQuery(span).execute().actionGet();
 \end{verbatim}
+\par 当在本地机器上重启ElasticSearch后，会出现无法连接到master的错误，修改config/elasticsearch.yml文件，设置如下值。\textbf{discovery.zen.ping.multicast.enabled: false}
