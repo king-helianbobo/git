@@ -269,4 +269,13 @@ span.clause(QueryBuilders.spanTermQuery("content","实施意见") );
 span.inOrder(true).slop(1);
 client.prepareSearch("test").setQuery(span).execute().actionGet();
 \end{verbatim}
-\par 当在本地机器上重启ElasticSearch后，会出现无法连接到master的错误，修改config/elasticsearch.yml文件，设置如下值。\textbf{discovery.zen.ping.multicast.enabled: false}
+\par 当在本地机器上重启ElasticSearch后，会出现无法连接到master的错误，修改config/elasticsearch.yml文件，设置如下值。
+\begin{verbatim}
+discovery.zen.ping.multicast.enabled: false  ## 使用unicast模式
+discovery.zen.ping.unicast.hosts:["192.168.1.2"] ##地址顺序表
+\end{verbatim}
+当使用CentOs搭建集群时，如果没有禁用防火墙，则两台机器间无法通信。使用命令
+\begin{verbatim}
+iptables -F            ##隔离IP地址有效，重启机器后恢复。
+service iptables stop   ##隔离IP地址无效，重启机器后恢复。
+\end{verbatim}
