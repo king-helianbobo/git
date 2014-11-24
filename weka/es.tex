@@ -582,7 +582,7 @@ curl -XPUT "localhost:9200/nutch/doc/_mapping?pretty" -d' {
 \begin{verbatim}
 ./runtime/deploy/bin/nutch index /crawl/crawldb/ -linkdb /crawl/linkdb/ -dir /crawl/segments/
 \end{verbatim}
-\item 使用简单的查询命令：
+\item 使用简单查询命令：
 \begin{verbatim}
 curl -XGET http://localhost:9200/nutch/doc/_search?pretty  -d '{
     "query" : { "term" : { "content" : "黄莉新" }},
