@@ -6,29 +6,6 @@
 \item 英文拼写错误，（暂时不作考虑，可以考虑使用开源的库）。
 \item 形近词错误，（这个需要吗，当用户使用五笔或记错某个字的样子时）
 \end{enumerate}
-\subsection{拼写错误检查}
-\par 拼音转汉字想法是较为直接的，建立一个以拼音为term的查询词索引，posting list中只保存查询频率最高的K个查询词，如
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|l|l|}
-\hline
-jiujingkaoyan &“久经考验”,“酒精考验”\\ \hline
-zhijiucaotang & “子九草堂', “子久草堂” \\ \hline
-xufuniuza & “徐福牛杂”,“许府牛杂”,“徐府牛杂”\\ \hline
-shoujichongzhi&“手机冲值”, “手机充值”\\ \hline
-  \end{tabular}
-\end{table}
-\par 这一步可以在自动提示中使用，但自动提示与它的区别是，自动提示在拼音输入了一部分的情况下也要提示，比如输入 “xufu”就要提示“许府牛杂”。
-\par 同音词拼写错误也基于同样的想法，但是需要一个可能出错的查询词列表，这个列表可以为借鉴于下列几种情况：
-\begin{enumerate}[(1)]
-\item 以carot为例，返回有carot的文档，也返回一些包含纠错后的term carrot和torot的文档。
-\item 与(1)相似，但仅当carot不在词典中时，返回纠错后的结果。
-\item 与(1)相似，但仅当包含carot的文档数小于一个预定义的阈值时，即当原始查询返回文档数小于预定义的阈值时，搜索引擎给出纠错后的词列表。
-\end{enumerate}
-\par 情况(1)相当于是对所有查询都进行纠错处理，发现那些搜索比较少的，就给出一个纠错提示，比如“天浴”搜索次数比较少，而“天娱”搜索次数比较多，那么在用户搜索“天浴”时就提示“天娱”，即使“天浴”也是一个正常的查询词。情况(2)就是当查询没有获得文档，才对它进行纠错处理，然后查询相应结果。情况(3)是一个查询它返回的文档数少于一个预定义阈值时，才进行纠错处理。
-\par 英文拼写错误，在lucene中已有贡献者实现了spellchecker模块，主要算法有：Jaro Winkler distance，Levenstein Distance(Edit Distance)，NGram Distance。但Lucene中的实现过于简单，使用两两比较，时间复杂性是$O(n^2)$。
-\par 形近字错误，形近字一般是用户记错了形声字，或是使用五笔的用户输入错误。在网上可以下载SunWb\_mb文件，它里面包含五笔的编码和笔画的编码，但字根比如“马”比“口”笔画更多，也更有代表性，但在这种方法中却是相同的。
-\par 方言纠错,可以用soudex进行纠错
 \subsection{网站群的一些问题}
 \par 政府网站中的特殊字符需要进行转换。
 \par 当对政府网站中的网页建立索引时，如果使用url作为文档id，相同内容的文档可能出现多次。下面两个url仅仅是字符大小写不同，却作为不同的id出现。解决办法是文档id一律小写。
@@ -104,7 +81,6 @@ curl -v --cookie ./cookie.txt  -A "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT
 如被百度防御系统封闭，考虑删除cookies文件，再重新生成cookies文件。
 \end{verbatim}
 \subsection{同步网页文件}
-\par 城市云装个TeamViewer，用户名为268576744，密码为b144xg或者b144gx。
 \par 使用nutch时，如果目录中文件太多，且包含了很多不需要的类型（如音频，视频），可使用rsync命令，保持源文件夹目录结构，同时只提取指定类型。
 \begin{verbatim}
 rsync -av --exclude='path1/exclude' --exclude='path2/exclude' [source] [dest]
@@ -129,3 +105,21 @@ rsync -av --exclude='wap2013' --exclude='wap' --exclude='blind' --exclude='blind
 \end{verbatim}
 \par 大学生们整理的同义词，主要是检测每行同义词组中是否出现空格，非中文字符，",,"，“，”等，对这些不合法的字符串进行转换，最后两两比较同义词组，检测同义词组A是否完全包含同义词组B，如果完全包含，则删除同义词组B，处理后的同义词文件在soul-core工程的library/synonym-0925.txt文件中，完全包含的例子如：[冰棍, 雪条]与[冰棍, 冰棍儿, 冰棒, 冰糕, 棒冰, 雪条]。
 \par 对网页标题和中文中的特殊字符需要转换，转换代码在OfficialChars类中，特殊字符比较多的是word和pdf文件。例如需要将"Ⅰ"转换成"一"，将"Ⅱ"转换成"二"，将"Ⅲ"转换成"三"，"Ⅺ"转换成"十一"。
+\section{地税数据}
+\par 搜索地税数据时，会遇到Excel表中小数四舍五入的情况，如搜索身份证号码：320219195609196990
+\par 对整数的处理，当用户输入整数时，例如“10”，则扩展成“[10,10.0]”，前者用于查询文本域和整数域，后者只用来查询小数域。
+\par 对日期的处理，当用户输入日期以查询时，索引中存在两部分日期：（1）日期域（2）文本域，文本中有一部分日期信息，如“2014年1月份开票项目”。当输入“2008年9月”，此时可以扩展成两部分：“[2008,年,9,月]”和“[2008年09月]”，前者用于查询文本域，后者用来查询日期域。
+\par 当用户输入查询字符串时，是不是需要返回每个token的类型呢？如输入“10”，扩展后为“[10,10.0]”，类型分别为“[integer,float]”。当用户输入“20080909”时，扩展后为“[2008-09-09,20080909]”，类型分别为“[date,integer]”。
+\par 使用CentOs搭建集群时，如果没有禁用防火墙，则两台机器间无法通信。使用命令
+\begin{verbatim}
+iptables -F ##隔离IP地址有效，该命令将iptables暂时清空。
+其中前两个命令表示接受相应地址的端口请求，第三个命令表示拒绝所有来自其它地址的端口请求。
+iptables -I INPUT 1 -p tcp --dport 9200:9300 -s 141.24.212.191,141.24.212.192 -j ACCEPT
+iptables -I INPUT 3 -p tcp --dport 9200:9300 -s 141.24.24.23,141.24.24.25 -j ACCEPT
+iptables -I INPUT 5 -p tcp --dport 9200:9300  -j REJECT
+service iptablse save   ##保存这些防火墙规则
+iptables -L ##查看防火墙规则
+service iptables stop   ##关闭防火墙服务
+service iptables start   ##启动防火墙服务
+\end{verbatim}
+

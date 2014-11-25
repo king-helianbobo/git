@@ -56,10 +56,3 @@ _region_.tex
 ## ignore below directory types
 */target/
 */test-output/
-
-## ignore below directories
-fnlp/
-soul_seg/
-soul-core/
-soul-client/
-hadoop-2.4.0/
